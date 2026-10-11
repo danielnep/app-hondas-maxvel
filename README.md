@@ -2,6 +2,23 @@
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Horizon (branco, azul celeste e azul-prateado), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
+## Experiência de produto · versão 2.0
+
+A interface desta versão foi **reestruturada no código**, não produzida apenas como imagem:
+
+- Entrada de produto com identidade **Hondas Maxvel · Horizon**, iconografia própria e mapa de ruas reais.
+- Painel de operações com quatro métricas calculadas, mapa ampliado, alertas, tabela de rondas e linha do tempo.
+- Entrada direta para um **cenário interativo**, especialmente quando a supervisão ainda não tem dados no navegador.
+- Tela de ronda móvel com estado, próximo ponto, progresso, mapa amplo, círculos de 25 m e orientação contextual.
+- Central de supervisão com sequência visual dos quatro pontos, indicadores de permanência, mapa e alertas.
+- Escolha de mapa OpenStreetMap / CARTO claro, trilha percorrida e alertas geolocalizados; alternativa esquemática quando a cartografia online falhar.
+- Ícone vetorial `assets/maxvel-icon.svg`, utilizado também no HTML e embarcado na WebView Android; ícone Android redesenhado.
+- Testes automáticos no GitHub Actions, incluindo sintaxe, domínio e verificação visual de abertura em navegador quando disponível.
+
+Leia [critérios e estudo de produto/UI/UX 2.0](docs/PRODUTO-UX-V2.md).
+
+**Escopo de funcionamento:** o sistema é interativo, mas os dados de simulação permanecem locais e identificados. Rondas reais centralizadas, alertas enviados para supervisores e implantação nativa validada em campo ainda exigem backend e piloto. A apresentação não deve ser confundida com operação de produção.
+
 ## O que este projeto entrega
 
 - **Primeira abertura:** aviso claro de uso de localização durante a ronda, inclusive segundo plano no Android nativo. Botão **“Li e aceito · Continuar”** só ativa com marcação de ciência. Permissão do sistema é pedida separadamente.
