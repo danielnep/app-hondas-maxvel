@@ -328,3 +328,23 @@ dialog{background:#fff;color:#193c55;border:1px solid #dbeaf3;box-shadow:0 30px 
 .leaflet-control-layers-list{font-size:12px!important;color:#20445a}
 .leaflet-control-layers label{min-height:28px;display:flex;align-items:center}
 @media(max-width:690px){.ops-scenario-banner{flex-direction:column;align-items:stretch}.ops-scenario-banner .button{width:100%}.ops-scenario-shortcut{flex-direction:column;align-items:flex-start}.ops-scenario-shortcut .button{width:100%}.mobile-map-fit{top:60px;bottom:auto}}
+
+
+/* Conferência de pontos: componente compartilhado na supervisão. */
+.supervisor-checkpoints .card-title{align-items:flex-start}
+.supervisor-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:15px}
+.supervisor-point{display:flex;align-items:center;gap:10px;border:1px solid #e0eaf1;background:#f9fcff;border-radius:12px;padding:12px;min-width:0}
+.supervisor-point-num{width:34px;height:34px;flex-shrink:0;display:grid;place-items:center;background:#e8f2f9;border:1px solid #d7e7f1;color:#2e729e;border-radius:50%;font:800 12px Manrope}
+.supervisor-point-num svg{width:17px}
+.supervisor-point>div{min-width:0;flex:1}
+.supervisor-point strong{display:block;font-size:11px;line-height:1.4}
+.supervisor-point small{display:block;font-size:10px;line-height:1.5}
+.supervisor-point-state{font-size:9px;color:#6e8497;background:#eef4f8;border-radius:12px;padding:5px 7px;white-space:nowrap}
+.supervisor-point.done .supervisor-point-num{background:#e2f7ee;color:#10856a;border-color:#bee9d9}
+.supervisor-point.done .supervisor-point-state{background:#e4f7ef;color:#127a65}
+.supervisor-point.in-progress{border-color:#94d3f4;background:#f0faff}
+.supervisor-point.in-progress .supervisor-point-num{background:#0a8cda;color:#fff;border-color:#0a8cda}
+.supervisor-point.in-progress .supervisor-point-state{background:#d6f0ff;color:#0a78b7}
+.supervisor-points-note{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:10px;color:#6d8a9d}
+.supervisor-points-note svg{width:16px;color:#0986c9}
+@media(max-width:650px){.supervisor-points{grid-template-columns:1fr}.supervisor-point-state{font-size:10px}}
