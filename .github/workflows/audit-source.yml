@@ -18,3 +18,26 @@ jobs:
           name: maxvel-fonte-auditoria
           path: app-hondas-maxvel-audit.zip
           retention-days: 3
+  mobile-ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar controlador de navegador
+        run: pip install playwright==1.55.0
+      - name: Auditar telas reais (320–430 px e desktop)
+        run: |
+          export MAXVEL_CHROMIUM="$(command -v chromium || command -v google-chrome || command -v chromium-browser)"
+          python scripts/mobile-audit.py
+      - name: Salvar evidências e resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maxvel-ux-audit-stage02
+          path: artifacts/mobile-ux-audit/
+          if-no-files-found: warn
+          retention-days: 7
