@@ -29,13 +29,20 @@ test('a navegação compacta não pode ser substituída por display block',()=>{
  assert.match(theme,/safe-area-inset-bottom/);
 });
 
-test('a ação principal da ronda aparece antes do mapa',()=>{
+test('ação da ronda, mapa e progresso são o próprio aplicativo e não mockup',()=>{
+ const action=app.slice(app.indexOf('function patrolActionContent()'),app.indexOf('function patrolScenarioControls()'));
  const fn=app.indexOf('function phoneContent()');
  const end=app.indexOf('function phoneMockup()',fn);
- const fragment=app.slice(fn,end);
- assert.ok(fragment.indexOf('readyStartPanel()')>=0);
- assert.ok(fragment.indexOf('readyStartPanel()')<fragment.indexOf('id="mobile-map"'));
- assert.match(app,/Iniciar minha ronda/);
+ const workspace=app.slice(fn,end);
+ assert.match(action,/readyStartPanel\(\)/);
+ assert.match(action,/Iniciar ronda|Concluir ponto e seguir/);
+ assert.ok(workspace.includes('patrolActionContent()'));
+ assert.ok(workspace.includes('id="mobile-map"'));
+ assert.ok(workspace.includes('patrol-workspace'));
+ assert.match(app,/simulation-rolebar/);
+ assert.match(app,/beginSimulation\(/);
+ assert.match(app,/screen='dashboard'/);
+ assert.match(app,/Experimente o aplicativo real/);
 });
 
 test('aviso compacto preserva a ciência, a escolha sem GPS e os limites nativos',()=>{
