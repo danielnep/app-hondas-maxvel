@@ -5,6 +5,8 @@ on:
     paths:
       - 'scripts/ux-mobile-audit.mjs'
       - 'src/app.js'
+      - 'src/map.js'
+      - 'assets/horizon-operacional.css'
       - 'index.html'
       - 'styles/**'
       - 'styles.css'
