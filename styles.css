@@ -309,3 +309,22 @@ dialog{background:#fff;color:#193c55;border:1px solid #dbeaf3;box-shadow:0 30px 
 @media(prefers-reduced-motion:reduce){
  .mobile-mini-meter>span{transition:none}
 }
+
+
+/* Descoberta do cenário operacional a partir do painel (sem números fictícios disfarçados). */
+.ops-scenario-banner{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:16px 19px;margin-bottom:18px;border:1px solid #b5e3f9;border-radius:17px;background:linear-gradient(100deg,#e8f8ff,#f4fbff 62%,#fff)}
+.ops-scenario-message{display:flex;align-items:center;gap:13px}
+.ops-scenario-message strong{display:block;font-size:13px;color:#164261}
+.ops-scenario-message p{font-size:11px;line-height:1.6;margin-top:4px}
+.ops-scenario-symbol{width:43px;height:43px;display:grid;place-items:center;color:#0b83c6;background:#d4efff;border-radius:13px;flex-shrink:0}
+.ops-scenario-banner .button{flex-shrink:0;min-height:43px}
+.ops-scenario-shortcut{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:12px 15px;background:#edf9ff;border:1px solid #d2eaf7;border-radius:14px;margin-bottom:18px}
+.ops-scenario-shortcut>span{display:flex;gap:9px;align-items:center;font-size:11px;font-weight:750;color:#316783}
+.ops-scenario-shortcut svg{width:16px}
+.map-person-host{background:none!important;border:0!important}
+.map-person-ring{display:grid;place-items:center;width:34px;height:34px;border:2px solid rgba(255,255,255,.95);border-radius:50%;background:rgba(5,147,220,.18);box-shadow:0 0 0 6px rgba(10,144,219,.11),0 4px 14px #03314b22}
+.map-person-dot{display:block;width:16px;height:16px;border:4px solid white;background:#067acf;border-radius:50%;box-shadow:0 1px 6px #07548144}
+.leaflet-control-layers{border-radius:11px!important;background:#fff!important}
+.leaflet-control-layers-list{font-size:12px!important;color:#20445a}
+.leaflet-control-layers label{min-height:28px;display:flex;align-items:center}
+@media(max-width:690px){.ops-scenario-banner{flex-direction:column;align-items:stretch}.ops-scenario-banner .button{width:100%}.ops-scenario-shortcut{flex-direction:column;align-items:flex-start}.ops-scenario-shortcut .button{width:100%}.mobile-map-fit{top:60px;bottom:auto}}
