@@ -205,3 +205,42 @@ dialog p{color:var(--hx-muted)}
  .dashboard .ops-scenario-banner,.dashboard .ops-scenario-shortcut{min-width:0;max-width:100%}
  .dashboard .ops-map-actions{min-width:0;max-width:100%}
 }
+
+
+/* Ajustes específicos após revisão visual de 320px: o CTA de ronda deve aparecer sem caça ao botão. */
+.dashboard .ready-start-card{background:linear-gradient(135deg,#123451,#0C2842);border-color:#47728F;box-shadow:0 9px 21px #00142855;}
+.dashboard .ready-start-card h3{color:#F0FAFF!important;font-size:18px!important;line-height:1.2;}
+.dashboard .ready-start-card p{color:#D2E5F1!important;font-size:13px!important;line-height:1.48;}
+.dashboard .ready-start-card .eyebrow{color:#96DFFF!important;}
+.dashboard .ready-start-card .map-caption{color:#C2DDEA!important;}
+.dashboard .ready-start-card .ready-kpis span{background:#204864;color:#DFF2FE;border-color:#4E7490;}
+.dashboard .ready-start-card .ready-info>span{color:#B0E7FF;}
+.dashboard .ready-start-card .tabs button{font-size:13px;}
+.dashboard .ready-start-card .tabs button.active{background:#E9F5FE;color:#0B4580;border-color:#E9F5FE;}
+@media(max-width:900px){
+ .dashboard .ronda-page .page-title{display:flex;flex-wrap:nowrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px;}
+ .dashboard .ronda-page .page-title>div{min-width:0;flex:1;}
+ .dashboard .ronda-page .page-title .eyebrow,.dashboard .ronda-page .page-title p{display:none;}
+ .dashboard .ronda-page .page-title h1{font-size:22px!important;line-height:1.1;margin:0;letter-spacing:-.7px;}
+ .dashboard .ronda-page .page-title .button{min-height:44px;flex-shrink:0;margin:0;}
+ .dashboard .ronda-page .mobile-operational-strip{margin-bottom:9px;padding:10px 12px;}
+ .dashboard .ronda-page .mobile-tracking-meta{margin-bottom:9px;padding:9px 12px;}
+ .dashboard .ready-start-card{margin-bottom:11px;padding:13px 14px!important;}
+ .dashboard .ready-start-card .eyebrow{font-size:10px;}
+ .dashboard .ready-start-card .ready-info{margin-top:4px;}
+ .dashboard .ready-start-card .ready-info>span{display:none;}
+ .dashboard .ready-start-card .ready-info h3{margin:1px 0 4px;font-size:17px!important;}
+ .dashboard .ready-start-card .ready-info p{font-size:12px!important;}
+ .dashboard .ready-start-card .tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:10px 0 9px;padding:0;border:0;}
+ .dashboard .ready-start-card .tabs button{width:100%;min-width:0;min-height:43px;padding:8px 5px;font-size:12px;}
+ .dashboard .ready-start-card .button.primary{min-height:50px!important;font-size:14px;}
+ .dashboard .ready-start-card .ready-kpis{margin:9px 0 2px;gap:5px;}
+ .dashboard .ready-start-card .ready-kpis span{font-size:10px;padding:5px 7px;}
+ .dashboard .ready-start-card .map-caption{font-size:11px!important;margin-top:6px;}
+}
+@media(max-width:359px){
+ .dashboard .ronda-page .page-title h1{font-size:21px!important;}
+ .dashboard .ronda-page .page-title .button{font-size:11px;padding:9px;}
+ .dashboard .ronda-page .mobile-location-status small{font-size:10px;}
+ .dashboard .ronda-page .mobile-operational-strip .mobile-progress-chip{font-size:17px;}
+}
