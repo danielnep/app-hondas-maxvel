@@ -164,6 +164,7 @@ dialog.consent-dialog {width:min(485px,calc(100vw - 26px));max-height:calc(100dv
 .consent-compact-points {display:grid;gap:7px;margin:12px 0 13px;}
 .consent-compact-points>div {display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;color:#244E6A;}
 .consent-compact-points svg {width:17px;height:17px;flex-shrink:0;color:#0B62A6;margin-top:1px;}
+.consent-compact-points>div>span {display:block;min-width:0;flex:1;}
 .consent-details {margin:11px 0;border:1px solid #BDD3E3;border-radius:12px;background:#F1F7FB;}
 .consent-details summary {cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;font-weight:750;color:#0B4D83;padding:11px 13px;font-size:13px;min-height:44px;}
 .consent-details summary::after {content:"⌄";font-size:17px;}
