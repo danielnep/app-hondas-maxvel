@@ -19,6 +19,12 @@ Leia [critérios e estudo de produto/UI/UX 2.0](docs/PRODUTO-UX-V2.md).
 
 **Escopo de funcionamento:** o sistema é interativo, mas os dados de simulação permanecem locais e identificados. Rondas reais centralizadas, alertas enviados para supervisores e implantação nativa validada em campo ainda exigem backend e piloto. A apresentação não deve ser confundida com operação de produção.
 
+## Reformulação profissional mobile-first · outubro de 2026
+
+**Etapa 01 concluída:** pesquisa atual de UI/UX, acessibilidade, experiência mobile e diagnóstico visual de cores e ergonomia. Os problemas levantados, critérios de contraste, proposta preliminar de paleta Horizon Operacional e roadmap de sete etapas estão documentados em [Pesquisa UX Mobile 2026](docs/PESQUISA-UX-MOBILE-2026.md).
+
+**Etapa 02 em preparação:** [auditoria mobile por perfil e wireflow](https://github.com/danielnep/app-hondas-maxvel/issues/1). Implementações de UI/CSS serão feitas sequencialmente após a auditoria, sem prejudicar o fluxo funcional da ronda. Evitar design infantil, azul pastel em excesso e testes baseados em uma única altura de tela.
+
 ## O que este projeto entrega
 
 - **Primeira abertura:** aviso claro de uso de localização durante a ronda, inclusive segundo plano no Android nativo. Botão **“Li e aceito · Continuar”** só ativa com marcação de ciência. Permissão do sistema é pedida separadamente.
