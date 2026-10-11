@@ -1038,3 +1038,5 @@ dialog p{color:var(--hx-muted)}
  .horizon-maxvel-brand .brand-compact .maxvel-word{font-size:11px!important}
  .horizon-maxvel-brand .brand-compact .brand-icon{width:33px;height:33px}
 }
+
+.sim-onboarding .onboarding-lockup{display:block;width:min(100%,300px);height:auto;aspect-ratio:780/160;object-fit:contain;object-position:left;background:#102E4B;border-radius:13px;padding:7px 11px;margin:0 0 13px}
