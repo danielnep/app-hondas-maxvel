@@ -1,0 +1,32 @@
+name: Auditoria de acessibilidade
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/a11y-audit.mjs'
+      - 'index.html'
+      - 'src/app.js'
+      - 'styles.css'
+      - 'assets/horizon-operacional.css'
+      - '.github/workflows/a11y.yml'
+jobs:
+  axe-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalar auditor
+        run: npm install --no-save --no-package-lock playwright-core@1.56.1 axe-core@4.10.3
+      - name: Analisar páginas reais
+        run: node scripts/a11y-audit.mjs
+      - name: Publicar relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maxvel-accessibility-baseline
+          path: artifacts/accessibility/
+          if-no-files-found: warn
