@@ -19,3 +19,12 @@ jobs:
         run: npm run check
       - name: Testes de domínio e interface
         run: npm test
+      - name: Abertura real em Chromium
+        run: bash scripts/browser-smoke.sh
+      - name: Capturas da interface
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maxvel-browser-captures
+          path: artifacts/
+          if-no-files-found: ignore
