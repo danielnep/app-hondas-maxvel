@@ -154,5 +154,8 @@ writeFileSync(OUT+'/summary.md',[
  'Observação: a métrica de elementos <44px é uma triagem conservadora e inclui itens de interface não essenciais; validar relevância manualmente.',
  'Os mapas podem mostrar fallback devido a rede do runner; não interpretar como falha do provedor cartográfico.'
 ].join('\n'));
-console.log(JSON.stringify({widths:WIDTHS,scenarios:browserErrors.map(s=>({width:s.width,steps:s.steps,error:s.error,consoleErrors:s.errors.length})),metrics:output.length,fatal}));
-if(fatal>0)process.exitCode=1;
+const virtualViewportBugs=output.filter(m=>m.width<500&&m.viewport?.w>m.width+2).map(m=>({deviceWidth:m.width,innerWidth:m.viewport.w,state:m.screen}));
+summary.virtualViewportBugs=virtualViewportBugs;
+writeFileSync(OUT+'/audit.json',JSON.stringify(summary,null,2));
+console.log(JSON.stringify({widths:WIDTHS,scenarios:browserErrors.map(s=>({width:s.width,steps:s.steps,error:s.error,consoleErrors:s.errors.length})),metrics:output.length,fatal,virtualViewportBugs}));
+if(fatal>0||virtualViewportBugs.length>0)process.exitCode=1;
