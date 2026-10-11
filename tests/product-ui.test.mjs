@@ -32,7 +32,7 @@ test('central operacional oferece mapa, progresso, alertas e histórico local',(
 
 test('tela móvel orienta trabalho sem gamificação',()=>{
  for(const key of ['mobile-operational-strip','patrol-map-panel','patrol-workspace','guide-inline','complete-point'])assert.ok(app.includes(key),key);
- assert.match(app,/30 s contínuos/);
+ assert.match(app,/30 segundos de permanência|30 segundos contínuos/);
  assert.match(app,/Dentro de 25 m|Dentro do raio/);
  assert.doesNotMatch(app,/ranking de vigilantes|pontos de experiência|leaderboard/i);
 });
