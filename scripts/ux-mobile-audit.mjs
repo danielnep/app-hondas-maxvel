@@ -106,7 +106,13 @@ try{
     await wait(250);
     await assess(page,width,'08-justified');
    }
-   await clickAction(page,'logout');
+   const logoutButton=page.locator('[data-action="logout"]').first();
+   if(await logoutButton.isVisible())await clickAction(page,'logout');
+   else{
+    scenario.steps.push('logout inaccessible on this viewport (UX issue)');
+    await logoutButton.evaluate(el=>el.click());
+    await wait(240);
+   }
    await enterProfile(page,'supervisor');
    await assess(page,width,'09-supervisor');
    scenario.steps.push('supervisor');
