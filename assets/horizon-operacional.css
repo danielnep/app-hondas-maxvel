@@ -770,3 +770,12 @@ dialog p{color:var(--hx-muted)}
  .report-roster .table-wrap{overflow:visible!important;}
  .report-roster .data-table{min-width:0!important;}
 }
+
+
+/* Etapa 07 · correções verificadas com axe-core (contraste + toque). */
+.report-progress-label>span{color:#3E6079!important;}
+.reports-empty p{color:#34586F!important;}
+.report-page .empty,.report-roster .empty,.report-events .empty{color:#365D77!important;}
+.dashboard .app-header .button.small,.presentation .app-header .button.small{color:#EDF8FF!important;background:#163854!important;border-color:#61809A!important;}
+.dashboard .app-header .button.small:hover,.presentation .app-header .button.small:hover{background:#255173!important;}
+.mobile-map-fit{top:60px!important;bottom:auto!important;right:9px;min-width:44px;min-height:44px;}
