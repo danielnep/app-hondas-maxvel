@@ -1,0 +1,35 @@
+name: Experiencia real do app simulada
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/app-immersive-test.mjs'
+      - 'src/app.js'
+      - 'assets/horizon-operacional.css'
+      - 'index.html'
+      - '.github/workflows/immersive.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  real-app-experience:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalar controlador de navegador
+        run: npm install --no-save --no-package-lock playwright-core@1.56.1
+      - name: Executar fluxos do próprio app em sete tamanhos
+        run: node scripts/app-immersive-test.mjs
+      - name: Guardar capturas e medidas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maxvel-app-immersive-ux
+          path: artifacts/app-immersive/
+          if-no-files-found: warn
