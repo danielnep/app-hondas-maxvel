@@ -1,0 +1,20 @@
+name: Auditoria responsiva · Etapa 02
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/audit-source.yml'
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar fonte verificada
+        run: |
+          zip -qr app-hondas-maxvel-audit.zip . -x '.git/*' 'node_modules/*' 'artifacts/*'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maxvel-fonte-auditoria
+          path: app-hondas-maxvel-audit.zip
+          retention-days: 3
