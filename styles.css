@@ -22,3 +22,290 @@
 .consent-small{font-size:10px;line-height:1.65;opacity:.76;margin-top:13px}
 .button.secondary{background:#23313b;border-color:#435665;color:#e2f1f9}
 @media(max-width:640px){.consent-features{grid-template-columns:1fr}.consent-header h2{font-size:21px}.consent-feature{padding:11px}}
+
+/* Horizon x Hondas Maxvel | Product Experience 2.0
+   Interface real da operação: contraste acessível, hierarquia clara e estados explícitos. */
+:root{
+  --navy:#0c2d51;--ink:#132f4d;--muted:#667f94;
+  --sky:#087dd5;--cyan:#18b4f5;--line:#dae7f1;
+  --wash:#f4f8fd;--blue-silver:#d1e9f8;--safe:#0c9874;--bad:#ca4256;
+  --surface:#fff;--shadow-soft:0 12px 35px rgba(22,79,131,.07);
+}
+body{background:#f3f8fc;color:var(--ink)}
+.brand{gap:10px;min-width:0;flex-shrink:0}
+.brand-icon{width:43px;height:43px;object-fit:cover;border-radius:13px;box-shadow:0 3px 10px rgba(12,92,164,.14);flex-shrink:0}
+.brand-copy{display:flex;align-items:flex-start;flex-direction:column;line-height:1.05;gap:4px}
+.brand .maxvel-word{display:block;font:650 13px/1.13 Manrope,system-ui,sans-serif;letter-spacing:.45px;color:#17324d}
+.brand .maxvel-word strong{font-weight:850;color:#0b82cc}
+.brand .maxvel-word small{display:block;margin-top:5px;font-size:8px;font-weight:700;letter-spacing:1.2px;color:#7490a5}
+.brand-by{font-size:9px;letter-spacing:.35px;color:#7b92a6}
+.brand-by b{letter-spacing:1px;color:#0a80b8}
+.topnav .brand-icon{width:52px;height:52px}
+.topnav .brand .maxvel-word{font-size:16px}
+.button.primary{background:linear-gradient(125deg,#078be5,#065fc2);border-color:#0a80d1;box-shadow:0 11px 26px rgba(12,112,213,.18)}
+.button.primary:hover:not(:disabled){background:linear-gradient(125deg,#0578ce,#064fa7)}
+.button{border-radius:12px}
+.tag{font-size:11px;font-weight:750}
+.card{border:1px solid #e1ebf3;box-shadow:var(--shadow-soft)}
+.app-header{box-shadow:0 1px 16px rgba(32,75,114,.035)}
+.sidebar{background:linear-gradient(174deg,#10375b,#092441 68%,#0c3152);border-right:0;box-shadow:8px 0 26px rgba(20,52,94,.07)}
+.sidebar>.brand{border-bottom:1px solid #ffffff20}
+.sidebar .brand .maxvel-word{color:#fff}
+.sidebar .brand .maxvel-word strong{color:#61c7ff}
+.sidebar .brand .maxvel-word small,.sidebar .brand-by{color:#a1bfd6}
+.sidebar .brand-by b{color:#c5eaff}
+.sidebar .side-caption{color:#92b2ce}
+.sidebar .side-link{color:#c4d6e5}
+.sidebar .side-link .icon-svg{color:#afd3ed}
+.sidebar .side-link.active{background:linear-gradient(100deg,#158ce7,#0871c6);color:white;box-shadow:0 6px 20px rgba(0,23,48,.23)}
+.sidebar .side-link.active svg{color:#fff}
+.sidebar .side-link:hover:not(.active){background:#ffffff15;color:#fff}
+.sidebar .side-bottom{border-color:#ffffff24;color:#b8cddd}
+.sidebar .side-bottom .foot-link,.sidebar .side-bottom p{color:#bfddf1}
+.sidebar .side-bottom .tag{background:#ffffff15;border-color:#ffffff30;color:#d7f2ff}
+.page-title h1{color:#112e4c}
+.page-title p{max-width:740px}
+.app-content{padding-top:27px}
+.map-container,.hero-map{border-radius:17px;overflow:hidden;isolation:isolate}
+.leaflet-container{font:12px 'DM Sans',system-ui,sans-serif}
+.leaflet-container .leaflet-control-attribution{font-size:10px!important;background:rgba(255,255,255,.85)!important}
+.leaflet-control-zoom a,.leaflet-control-layers{border-radius:10px!important;border:1px solid #dce8f4!important;box-shadow:0 3px 16px #153c571f!important}
+.map-marker{font-family:Manrope,'DM Sans',system-ui,sans-serif}
+
+/* Entrada: produto completo, não landing provisória. */
+.product-home{background:radial-gradient(ellipse at 78% 3%,rgba(126,211,255,.26),transparent 40%),linear-gradient(158deg,#fff 10%,#f6fbff 61%,#e9f5ff)}
+.product-home .hero-container{max-width:1440px;padding-inline:clamp(20px,4vw,72px)}
+.product-home .topnav{min-height:100px;gap:20px;border-bottom:1px solid #b8d8ed55}
+.product-hero{display:grid;grid-template-columns:minmax(340px,.84fr) minmax(470px,1.16fr);align-items:center;gap:clamp(28px,5vw,80px);min-height:690px;padding:62px 0 78px}
+.product-hero-copy{max-width:590px}
+.product-hero-copy>.eyebrow{display:inline-flex;align-items:center;gap:9px;color:#0a81c5;background:#e9f7ff;border:1px solid #cce9fb;padding:10px 14px;border-radius:50px;font-size:10px;letter-spacing:1.2px}
+.product-hero-copy h1{font:800 clamp(41px,4.5vw,67px)/1.09 Manrope,system-ui;letter-spacing:-3.5px;margin:25px 0 22px;color:#0e2f51}
+.product-hero-copy h1 span{color:#0b8ce3}
+.product-hero-copy>p:not(.product-fineprint){max-width:500px;font-size:16px;line-height:1.83;color:#5e7c93}
+.product-hero-copy .hero-buttons{margin:30px 0 29px}
+.product-hero-copy .hero-buttons .button{min-height:51px;padding-inline:20px;font-size:13px}
+.product-benefits{display:grid;gap:12px;margin-bottom:25px}
+.product-benefits span{display:flex;align-items:center;gap:10px;color:#3b637c;font-size:12px;font-weight:650}
+.product-benefits .icon-svg{width:19px;height:19px;color:#08a2b4}
+.product-fineprint{display:flex;gap:9px;align-items:flex-start;color:#7692a6!important;font-size:11px!important;line-height:1.65!important;max-width:490px}
+.product-fineprint svg{flex-shrink:0;width:16px;height:16px}
+.product-showcase{min-width:0;position:relative;filter:drop-shadow(0 25px 30px rgba(34,95,144,.13))}
+.showcase-main{border-radius:24px;overflow:hidden;position:relative;border:1px solid #c9e2f2;background:#fff;padding:13px;box-shadow:0 10px 40px #5c9bc021}
+.showcase-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 3px 12px}
+.showcase-title{display:flex;align-items:center;gap:10px;min-width:0;font-size:13px;color:#163f59}
+.showcase-title svg{width:18px;color:#0a94d9}
+.showcase-title small{display:block;font-size:10px;max-width:160px}
+.showcase-status{color:#127e72;font-size:10px;font-weight:750;white-space:nowrap;background:#e9f9f5;border:1px solid #bfe9dc;padding:7px 10px;border-radius:30px}
+.showcase-status i,.ops-live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#14ae86;box-shadow:0 0 0 4px #14ae8519;flex-shrink:0}
+.showcase-status i{margin-right:5px}
+.showcase-map{height:425px;border-radius:16px;overflow:hidden;background:#e9f5fb}
+.showcase-map-badge,.showcase-overlay-stats{position:absolute;z-index:450;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border:1px solid #d7eaf4;box-shadow:0 5px 18px #10395316;border-radius:13px}
+.showcase-map-badge{top:77px;left:25px;display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:11px;font-weight:800}
+.showcase-map-badge svg{width:16px;color:#0879bc}
+.showcase-map-badge span{font-size:10px;color:#6c8ba3;font-weight:600}
+.showcase-overlay-stats{right:28px;bottom:80px;display:flex;align-items:center;gap:18px;padding:12px 14px}
+.showcase-overlay-stats small{display:block;font-size:10px}
+.showcase-overlay-stats strong{display:block;color:#113851;font-size:12px}
+.showcase-overlay-stats>span{white-space:nowrap;border-radius:8px;background:#dff4ff;padding:7px;color:#0787c7;font-weight:800;font-size:11px}
+.showcase-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 7px}
+.showcase-detail{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid #dcecf5;border-radius:15px;padding:13px}
+.showcase-detail-icon{width:37px;height:37px;display:grid;place-items:center;background:#e8f7ff;border-radius:11px;color:#0a88c6;flex-shrink:0}
+.showcase-detail small{display:block;font-size:10px}
+.showcase-detail strong{display:block;font-size:11px;color:#163d58}
+.showcase-disclaimer{font-size:10px;color:#6e8c9b;text-align:right;margin:8px 3px}
+.product-capabilities{padding:55px 0 72px;border-top:1px solid #dcedf7}
+.capabilities-intro{max-width:610px}
+.capabilities-intro h2{font-size:clamp(25px,3vw,37px);font-weight:800;letter-spacing:-1.6px;line-height:1.26;margin:14px 0}
+.capabilities-intro p{line-height:1.7}
+.capability-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:29px}
+.capability{position:relative;min-height:210px;border:1px solid #dbeaf3;background:#fff;padding:24px;border-radius:21px;box-shadow:var(--shadow-soft)}
+.capability-index{position:absolute;top:24px;right:24px;font-size:11px;font-weight:750;color:#9bb4c5}
+.capability-icon{display:grid;place-items:center;width:43px;height:43px;border-radius:13px;color:#0b88c9;background:#eaf8ff;margin-bottom:20px}
+.capability h3{font-size:14px;margin-bottom:9px}
+.capability p{font-size:12px;line-height:1.65}
+.product-endcap{display:flex;justify-content:space-between;align-items:center;gap:25px;padding:38px;margin-bottom:50px;border-radius:24px;background:linear-gradient(120deg,#0d3c66,#0876bd);box-shadow:0 15px 40px #12568327}
+.product-endcap .eyebrow{color:#a4e4ff}
+.product-endcap h2{font-size:25px;color:white;letter-spacing:-1px;margin:9px 0}
+.product-endcap p{color:#b8d9ee}
+.product-endcap .button.primary{background:white;color:#075f9e;border-color:white;white-space:nowrap}
+
+/* Central de operações: métricas, mapa, justificativas, histórico */
+.operations-page .page-title{margin-bottom:20px}
+.ops-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:17px}
+.ops-topline>div{display:flex;align-items:center;gap:10px}
+.ops-topline strong{font-size:12px}
+.ops-topline span:not(.tag):not(.ops-live-dot){font-size:11px;color:#7790a2}
+.ops-topline-right svg{width:15px;color:#7da2b9}
+.ops-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:18px}
+.ops-metric{min-width:0;padding:20px 21px;border-radius:19px;border:1px solid #dfebf4;background:#fff;box-shadow:var(--shadow-soft)}
+.ops-metric-top{display:flex;align-items:center;justify-content:space-between}
+.ops-metric-icon{display:grid;place-items:center;background:#eaf6ff;color:#087cc2;width:41px;height:41px;border-radius:12px}
+.ops-metric-arrow{color:#91a8ba}
+.ops-metric-arrow svg{width:14px;height:14px}
+.ops-metric>strong{display:block;font:800 29px Manrope;margin:17px 0 4px;letter-spacing:-1.8px;line-height:1.1}
+.ops-metric h3{font-size:12px;font-weight:800}
+.ops-metric p{font-size:11px;margin-top:6px;line-height:1.5}
+.ops-metric.tone-green .ops-metric-icon{background:#e9f8f1;color:#10876c}
+.ops-metric.tone-red .ops-metric-icon{background:#fff0f3;color:#bb3c50}
+.ops-workspace{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,.78fr);gap:16px}
+.ops-map-card,.ops-activity{min-width:0;background:#fff;border:1px solid #e0ecf3;border-radius:20px;padding:19px;box-shadow:var(--shadow-soft)}
+.ops-panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.ops-panel-heading .eyebrow{font-size:9px}
+.ops-panel-heading h2{font-size:17px;margin:7px 0 4px}
+.ops-panel-heading h2 svg{color:#078aca;width:21px}
+.ops-panel-heading p{font-size:11px}
+.ops-map-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.ops-map-stage,.mobile-map-stage{position:relative;border-radius:15px;overflow:hidden}
+.ops-map-stage .map-container.large{height:460px;border-radius:15px}
+.ops-map-corner{position:absolute;top:13px;left:13px;z-index:450;display:flex;flex-direction:column;gap:4px;padding:11px 13px;border:1px solid #d9e8f3;border-radius:12px;background:rgba(255,255,255,.95);box-shadow:0 6px 16px #103d601c;pointer-events:none}
+.ops-map-corner strong{display:flex;align-items:center;gap:6px;font-size:11px;color:#124260}
+.ops-map-corner svg{width:17px;height:17px;color:#0792c9}
+.ops-map-corner span{font-size:10px;color:#68899e}
+.ops-map-legend{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding-top:10px}
+.ops-map-note{font-size:10px;color:#8298a5}
+.ops-activity{display:flex;flex-direction:column}
+.ops-alert-list{display:flex;flex-direction:column;gap:9px;max-height:440px;overflow-y:auto;flex:1}
+.ops-activity .event-item{border:1px solid #e0edf4;border-radius:12px;padding:12px}
+.ops-empty{border:1px dashed #c7e3ef;background:linear-gradient(150deg,#f7fcff,#edf8fe);border-radius:16px;text-align:center;padding:30px 17px;margin:auto 0}
+.ops-empty>span{display:grid;place-items:center;width:54px;height:54px;border-radius:16px;margin:0 auto 16px;background:#e1f4ff;color:#0a8bc9}
+.ops-empty strong{font-size:13px}
+.ops-empty p{font-size:11px;margin-top:8px;line-height:1.7}
+.ops-help{display:flex;gap:9px;align-items:flex-start;border-top:1px solid #e5edf3;margin-top:14px;padding-top:13px;font-size:10px;line-height:1.7;color:#718a9c}
+.ops-help svg{width:15px;color:#1186b6;flex-shrink:0}
+.ops-bottom-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,.78fr);gap:16px;margin-top:17px}
+.ops-progress>h2{margin:5px 0 8px}
+.ops-progress>p{font-size:11px}
+.ops-timeline{margin-top:15px;display:grid;gap:0}
+.ops-timeline-item{display:flex;gap:14px;padding:0 0 17px;min-width:0}
+.ops-timeline-item i{width:12px;height:12px;flex-shrink:0;border:3px solid #168fce;border-radius:50%;margin-top:4px;box-shadow:0 0 0 4px #e8f6ff}
+.ops-timeline-item:not(:last-child)>div{border-bottom:1px solid #e7eef4;padding-bottom:15px;width:100%}
+.ops-timeline-item strong{font-size:11px;line-height:1.5;display:block}
+.ops-timeline-item small{display:block;font-size:10px}
+.ops-footer-note{display:flex;align-items:center;gap:9px;color:#69899a;font-size:10px;padding:16px 2px}
+.ops-footer-note svg{width:15px;color:#238fbe}
+
+/* Experiência móvel fiel: status claro, progresso, ação contextual, mapa dominante. */
+.mobile-operational-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;margin-bottom:10px;border:1px solid #cfebf9;border-radius:15px;background:linear-gradient(110deg,#f3fbff,#e9f7ff)}
+.mobile-location-status{display:flex;gap:11px;align-items:center}
+.mobile-location-status strong{font-size:12px;color:#104263;display:block}
+.mobile-location-status small{display:block;font-size:10px}
+.mobile-progress-chip{font:800 18px Manrope;color:#0b80c6;white-space:nowrap}
+.mobile-progress-chip span{font:650 10px 'DM Sans';color:#698aa0}
+.mobile-tracking-meta{background:white;border:1px solid #e0edf5;padding:12px 14px;border-radius:15px;margin-bottom:12px}
+.mobile-tracking-meta>div:first-child{display:flex;align-items:center;gap:9px;font-size:11px}
+.mobile-tracking-meta>div:first-child svg{color:#0b92ce;width:16px}
+.mobile-tracking-meta small{font-size:10px}
+.mobile-mini-meter,.progress-bar{height:7px;background:#e2eff7;border-radius:10px;overflow:hidden;margin:9px 0}
+.mobile-mini-meter>span,.progress-bar>span{display:block;height:100%;background:linear-gradient(90deg,#087ccf,#26c0f5);border-radius:10px;transition:width .25s}
+.mobile-route-card{padding:13px!important}
+.mobile-route-card>.card-title{margin-bottom:11px}
+.mobile-route-card>.map-caption{padding:0 5px}
+.mobile-map-stage{border:1px solid #d6e5f0;background:#e4f2fa;margin-top:13px}
+.mobile-map-stage .map-container.mini{height:320px!important;border:0;border-radius:0}
+.mobile-map-top{position:absolute;top:10px;left:10px;z-index:500;font-size:10px;font-weight:800;display:flex;align-items:center;gap:7px;padding:8px 10px;background:rgba(255,255,255,.95);border:1px solid #d6eafa;border-radius:10px;pointer-events:none;box-shadow:0 3px 10px #1b566215}
+.mobile-map-top svg{width:14px;height:14px;color:#007bc5}
+.mobile-map-fit{position:absolute;right:9px;bottom:54px;z-index:500;display:grid;place-items:center;width:38px;height:38px;border:1px solid #cbdee9;background:#fff;color:#117caf;border-radius:12px;box-shadow:0 4px 12px #00355320}
+.mobile-map-fit svg{width:18px;height:18px}
+.phone-frame{box-shadow:0 20px 52px rgba(11,41,83,.16),0 3px 10px #06467112}
+.phone-screen{background:#f3f8fc}
+.phone-frame .mobile-top{background:#fff}
+.phone-frame .brand-icon{width:32px;height:32px;border-radius:9px}
+.phone-frame .brand .maxvel-word{font-size:10px}
+.phone-frame .brand .maxvel-word small,.phone-frame .brand-by{font-size:7px}
+.phone-frame .checkpoint-card{border-color:#cdeaf8}
+.phone-frame .guide-inline{border-color:#cce3f3}
+.phone-frame .timer-ring{filter:drop-shadow(0 4px 12px #1696c522)}
+.phone-frame .mobile-nav{background:#fff;border-top:1px solid #e0eaf2}
+.mobile-nav button:focus-visible{outline-offset:-4px}
+
+/* Consentimento legível e visualmente consistente com Horizon. */
+dialog{background:#fff;color:#193c55;border:1px solid #dbeaf3;box-shadow:0 30px 90px rgba(7,39,83,.24)}
+.consent-feature{border:1px solid #d7e8f4;background:#f6fbff}
+.consent-feature>span{background:#e6f6ff;border:1px solid #c3e5f8;color:#0b83c2}
+.consent-feature strong{color:#173f5d}
+.consent-feature p{color:#66849b}
+.consent-disclosure{color:#396579;background:#eaf7ff;border-left-color:#0e95d1}
+.button.secondary{background:#fff;color:#1c6586;border:1px solid #c9e2ee}
+.consent-check{color:#25495e}
+
+/* Integração entre experiência de venda e sistema operacional. */
+.presentation{background:linear-gradient(180deg,#f5faff,#eaf4fa)}
+.presentation-title h1 span{color:#0c85cf}
+.presentation-main{max-width:1520px}
+.presentation .commercial-coach{border:1px solid #cfe7f7;background:linear-gradient(130deg,#fff,#eff9ff)}
+.preview-layout .phone-frame{margin-left:auto;margin-right:auto}
+.supervision-stack .card{border:1px solid #dfebf4}
+.supervision-stack .map-container{height:400px}
+.mobile-nav .icon-svg{max-width:21px}
+
+/* Responsive: preservar o mapa e a ação dominante sem lateralizar controles. */
+@media(max-width:1200px){
+ .product-hero{grid-template-columns:minmax(310px,.85fr) minmax(400px,1fr);gap:28px}
+ .ops-workspace,.ops-bottom-grid{grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr)}
+ .capability-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:950px){
+ .product-hero{grid-template-columns:1fr;min-height:auto;padding:45px 0}
+ .product-hero-copy{max-width:750px}
+ .product-hero-copy h1{font-size:clamp(40px,6vw,58px)}
+ .product-showcase{width:100%}
+ .ops-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ops-workspace,.ops-bottom-grid{grid-template-columns:1fr}
+ .ops-map-stage .map-container.large{height:460px}
+}
+@media(max-width:600px){
+ .product-home .hero-container{padding-inline:16px}
+ .product-home .topnav{min-height:80px;padding:12px 0}
+ .topnav .brand-icon{width:43px;height:43px}
+ .topnav .brand .maxvel-word{font-size:12px}
+ .product-home .nav-actions{gap:5px}
+ .product-home .nav-actions .button:not(.primary){display:none}
+ .product-home .nav-actions .button{min-height:41px;font-size:11px;padding:8px 11px}
+ .product-hero{padding:30px 0 37px}
+ .product-hero-copy h1{font-size:clamp(36px,10vw,52px);letter-spacing:-2px}
+ .product-hero-copy>p:not(.product-fineprint){font-size:14px}
+ .product-hero-copy .hero-buttons{display:grid;grid-template-columns:1fr;gap:10px}
+ .showcase-main{padding:8px;border-radius:18px}
+ .showcase-title{flex-wrap:wrap}
+ .showcase-title small{display:none}
+ .showcase-toolbar{margin-bottom:7px}
+ .showcase-status{font-size:9px}
+ .showcase-map{height:340px;border-radius:12px}
+ .showcase-map-badge{left:16px;top:64px;padding:7px 8px;max-width:220px;flex-wrap:wrap}
+ .showcase-map-badge span{display:none}
+ .showcase-overlay-stats{left:16px;right:16px;bottom:93px;justify-content:space-between}
+ .showcase-detail-grid{grid-template-columns:1fr}
+ .product-capabilities{padding:40px 0}
+ .capability-grid{grid-template-columns:1fr 1fr;gap:10px}
+ .capability{padding:17px;min-height:190px}
+ .capability h3{font-size:12px}
+ .capability p{font-size:11px}
+ .product-endcap{flex-direction:column;align-items:flex-start;padding:25px 20px}
+ .product-endcap .button{width:100%}
+ .ops-metrics{gap:10px}
+ .ops-metric{padding:15px}
+ .ops-metric>strong{font-size:24px;margin:13px 0 5px}
+ .ops-metric h3{font-size:11px}
+ .ops-metric p{font-size:10px}
+ .ops-metric-icon{height:35px;width:35px}
+ .ops-map-card,.ops-activity{padding:13px;border-radius:15px}
+ .ops-panel-heading{flex-direction:column}
+ .ops-map-actions{width:100%;justify-content:flex-start}
+ .ops-map-stage .map-container.large{height:360px}
+ .ops-map-corner{left:7px;top:7px;padding:7px 9px}
+ .ops-map-note{display:none}
+ .ops-topline-right{display:none!important}
+ .app-header .brand-icon{width:33px;height:33px}
+ .app-header .brand .maxvel-word{font-size:10px}
+ .app-header .brand .maxvel-word small,.app-header .brand-by{font-size:7px}
+ .mobile-map-stage .map-container.mini{height:300px!important}
+ .mobile-operational-strip{padding:10px}
+ .mobile-progress-chip{font-size:15px}
+ .phone-frame{max-width:100%}
+ .presentation .app-header{padding-inline:10px}
+ .presentation .app-header .brand-icon{width:30px;height:30px}
+ .presentation .header-actions .tag{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .mobile-mini-meter>span{transition:none}
+}
