@@ -1,0 +1,21 @@
+name: Validação Hondas Maxvel
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  web-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validar sintaxe
+        run: npm run check
+      - name: Testes de domínio e interface
+        run: npm test
