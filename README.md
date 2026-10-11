@@ -25,6 +25,21 @@ Leia [critérios e estudo de produto/UI/UX 2.0](docs/PRODUTO-UX-V2.md).
 
 **Etapa 02 em preparação:** [auditoria mobile por perfil e wireflow](https://github.com/danielnep/app-hondas-maxvel/issues/1). Implementações de UI/CSS serão feitas sequencialmente após a auditoria, sem prejudicar o fluxo funcional da ronda. Evitar design infantil, azul pastel em excesso e testes baseados em uma única altura de tela.
 
+## Evolução UI/UX operacional
+
+O aplicativo foi reformulado com foco **mobile-first** e identidade visual Horizon Operacional: navegação acessível por perfil, aviso de localização compacto, ação primária de iniciar ronda em destaque, contraste reforçado e mapa cartográfico detalhado. A supervisão agora inclui um destino **Mapa** com seleção de pontos e uma fila de alertas filtrável entre **Pendentes** e **Todos**.
+
+O mapa usa cartografia OpenStreetMap quando disponível; a linha entre os pontos de demonstração é **ilustrativa**, não um trajeto validado pelas ruas. A apresentação comercial compartilha os componentes operacionais, mas os eventos continuam locais e simulados.
+
+Documentos de execução:
+- [Pesquisa e diagnóstico mobile](docs/PESQUISA-UX-MOBILE-2026.md)
+- [Auditoria de UX (Etapa 02)](docs/AUDITORIA-UX-MOBILE-ETAPA-02.md)
+- [Design System (Etapa 03)](docs/DESIGN-SYSTEM-ETAPA-03.md)
+- [Implementação mobile (Etapa 04)](docs/IMPLEMENTACAO-MOBILE-ETAPA-04.md)
+- [Mapa e supervisão (Etapa 05)](docs/MAPA-SUPERVISAO-ETAPA-05.md)
+
+A demonstração não substitui validação em dispositivos reais, autenticação, infraestrutura de supervisão ou piloto de GPS nativo.
+
 ## O que este projeto entrega
 
 - **Primeira abertura:** aviso claro de uso de localização durante a ronda, inclusive segundo plano no Android nativo. Botão **“Li e aceito · Continuar”** só ativa com marcação de ciência. Permissão do sistema é pedida separadamente.
