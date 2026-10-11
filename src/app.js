@@ -42,7 +42,7 @@ const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{day:'2-digit',month:'short',h
 const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
 const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
-const brand=()=>`<div class="brand" aria-label="Hondas Maxvel, tecnologia Horizon"><img class="brand-icon" src="./assets/maxvel-icon.svg" alt="" width="43" height="43"><span class="brand-copy"><span class="maxvel-word">HONDAS <strong>MAXVEL</strong><small>GESTÃO DE RONDAS</small></span><span class="brand-by">por <b>HORIZON</b></span></span></div>`;
+const brand=()=>`<div class="brand horizon-maxvel-brand" aria-label="Hondas Maxvel, desenvolvido por Horizon"><img class="brand-lockup" src="./assets/horizon-maxvel-lockup.svg" alt="Hondas Maxvel · Tecnologia Horizon" width="390" height="80"><span class="brand-compact" aria-hidden="true"><img class="brand-icon" src="./assets/maxvel-icon.svg" alt="" width="37" height="37"><span class="brand-copy"><span class="maxvel-word">HONDAS <strong>MAXVEL</strong></span><span class="brand-by">por <b>HORIZON</b></span></span></span></div>`;
 const persisted=loadState();
 let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
 let user=null,screen='landing',view='overview',presentation=false,guideStage=0,presentationName='Lucas Ferreira',mode='simulation',session=null;
