@@ -1,0 +1,187 @@
+/* Hondas Maxvel · Design system Horizon Operacional v3
+   Tokens semânticos e camadas de superfícies verificáveis. Sem gamificação.
+   Etapa 03: estilo/contraste. Etapa 04: arquitetura de mobile e controles. */
+:root{
+  --hx-navy-950:#081c31;--hx-navy-900:#0a1f36;--hx-navy-850:#10283f;
+  --hx-navy-800:#14344f;--hx-blue-700:#0755b5;--hx-blue-650:#0863c2;
+  --hx-blue-600:#006dc9;--hx-cyan-400:#54c8f5;--hx-cyan-300:#8de5ff;
+  --hx-light-50:#f7fbff;--hx-light-100:#eaf6ff;--hx-light-200:#d3e8f6;
+  --hx-ink:#142c42;--hx-muted:#506a80;--hx-on-dark:#e8f5ff;
+  --hx-muted-on-dark:#a9c7dc;--hx-success:#09856b;--hx-danger:#b52241;
+  --hx-warning:#a05b14;--hx-border:#cbdce9;
+  --hx-radius-control:11px;--hx-radius-card:16px;
+  --hx-shadow:0 16px 40px rgba(0,20,44,.15);
+  --navy:var(--hx-navy-950);--ink:var(--hx-ink);--muted:var(--hx-muted);
+  --sky:var(--hx-blue-700);--cyan:var(--hx-cyan-400);
+  --wash:var(--hx-light-50);--line:var(--hx-border);
+  --bad:var(--hx-danger);--safe:var(--hx-success);--warn:var(--hx-warning);
+  --r:var(--hx-radius-card);
+}
+body{color:var(--hx-ink);background:var(--hx-navy-950)}
+a{color:var(--hx-blue-700)}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--hx-cyan-400);outline-offset:3px}
+.button{border-radius:var(--hx-radius-control);font-weight:750;min-height:48px;font-size:13px}
+.button.primary{background:var(--hx-blue-700);border-color:var(--hx-blue-700);color:white;box-shadow:0 9px 21px rgba(5,65,141,.2)}
+.button.primary:hover:not(:disabled){background:var(--hx-blue-650);border-color:var(--hx-blue-650)}
+.button:not(.primary):not(.danger):not(.ghost){color:var(--hx-blue-700);border-color:#aac5d9}
+.button.small{min-height:44px;padding:9px 14px;font-size:12px}
+.button:disabled{opacity:.62;filter:saturate(.45)}
+.tag{font-size:11px;font-weight:800;border-radius:8px}
+.eyebrow{color:var(--hx-blue-700);font-size:11px;font-weight:800;letter-spacing:1.3px}
+.map-caption{font-size:12px!important;line-height:1.65;color:var(--hx-muted)!important}
+.card{border:1px solid var(--hx-border);border-radius:var(--hx-radius-card);box-shadow:0 8px 28px rgba(10,50,95,.07)}
+.card p{color:var(--hx-muted)}
+.card small{color:var(--hx-muted)}
+.card h2,.card h3{color:var(--hx-ink)}
+.card .button{min-height:45px}
+.point-bubble{width:46px;height:46px}
+.dialog-close,dialog .dialog-close{width:44px;height:44px;min-width:44px;min-height:44px;display:grid;place-items:center}
+dialog{color:var(--hx-ink);border:1px solid #b9d2e5;border-radius:17px}
+dialog::backdrop{background:rgba(2,16,31,.76);backdrop-filter:blur(5px)}
+dialog h2{color:var(--hx-ink);letter-spacing:-.8px}
+dialog .eyebrow{color:var(--hx-blue-700)}
+dialog p{color:var(--hx-muted)}
+.check-label,.field{color:var(--hx-ink)}
+.consent-feature,.section-note{border-radius:12px}
+.consent-feature strong{color:var(--hx-ink)}
+.consent-feature p{color:var(--hx-muted)}
+.consent-disclosure{color:#21495f;background:var(--hx-light-100)}
+
+/* Landing: visual empresarial, noturno/tecnológico, apresentação da plataforma funcional. */
+.product-home{background:radial-gradient(ellipse at 75% 2%,rgba(28,137,229,.18),transparent 43%),linear-gradient(140deg,#0c2946,#081c31 69%,#0b2c49)}
+.product-home .topnav{border-bottom-color:#6385a141}
+.product-home .brand .maxvel-word{color:#e8f5ff}
+.product-home .brand .maxvel-word strong,.product-home .brand-by b{color:#70d8ff}
+.product-home .brand .maxvel-word small,.product-home .brand-by{color:#a9c7dc}
+.product-home .product-hero-copy>.eyebrow{color:#b7eaff;background:#0b446a;border:1px solid #236b97}
+.product-home .product-hero-copy h1{color:#f1f9ff;letter-spacing:-2.8px}
+.product-home .product-hero-copy h1 span{color:#5bcaf6}
+.product-home .product-hero-copy>p:not(.product-fineprint){color:#b9d3e6}
+.product-home .product-benefits span{color:#d1e6f5}
+.product-home .product-benefits .icon-svg{color:#58dbcb}
+.product-home .product-fineprint,.product-home .product-fineprint svg{color:#bdd0df!important}
+.product-home .nav-actions .button:not(.primary){color:#d6f2ff;background:transparent;border-color:#4e7394}
+.product-home .nav-actions .button.primary{border-color:#237bd1;background:#0755b5}
+.product-home .showcase-main{border-color:#48708f;background:#e8f5ff}
+.product-home .showcase-toolbar .showcase-title{color:#173a55}
+.product-home .showcase-detail{background:#f8fbff;border-color:#9cbcd3}
+.product-home .showcase-detail strong{color:#123750}
+.product-home .showcase-disclaimer{color:#b0c9db}
+.product-home .showcase-map-badge,.product-home .showcase-overlay-stats{background:#fff;color:#1b3a52}
+.product-home .product-capabilities{border-top:1px solid #53718d49;background:rgba(6,24,41,.3)}
+.product-home .capabilities-intro h2,.product-home .product-endcap h2{color:#f1f8ff}
+.product-home .capabilities-intro p,.product-home .product-endcap p{color:#b5d0e3}
+.product-home .capability{background:#112f4a;border-color:#294e6b;box-shadow:none}
+.product-home .capability h3{color:#e9f6ff}
+.product-home .capability p{color:#b4cddd}
+.product-home .capability-icon{color:#57cbfa;background:#1c4766}
+.product-home .capability-index{color:#9ebad1}
+.product-home .product-endcap{background:linear-gradient(115deg,#153e60,#0755b5);border:1px solid #3f7eb5}
+.product-home .product-endcap .button.primary{background:#fff;color:#0755b5}
+.product-home .hero-foot{color:#abc8db;border-color:#53718d60}
+.product-home .hero-foot a{color:#83d6ff}
+
+/* Workspace: dark authority on the shell, high contrast reading surfaces. */
+.dashboard{background:var(--hx-navy-950)}
+.dashboard .app-shell{background:var(--hx-navy-950)}
+.dashboard .app-header,.presentation .app-header{background:#0a243e;border-color:#274965;box-shadow:0 3px 18px rgba(0,0,0,.12)}
+.dashboard .app-header .brand .maxvel-word,.presentation .app-header .brand .maxvel-word{color:#f2f9ff}
+.dashboard .app-header .brand .maxvel-word strong,.presentation .app-header .brand .maxvel-word strong{color:#6dd1fb}
+.dashboard .app-header .brand-by,.presentation .app-header .brand-by,.dashboard .app-header .brand .maxvel-word small,.presentation .app-header .brand .maxvel-word small{color:#a5c1d3}
+.dashboard .app-header .brand-by b,.presentation .app-header .brand-by b{color:#8bd9fc}
+.dashboard .app-header .user-pill strong{color:#e8f5ff}
+.dashboard .app-header .user-pill small{color:#b0c9db}
+.dashboard .app-header .eyebrow{color:#a5d6f7}
+.dashboard .app-header .help-toggle,.presentation .app-header .help-toggle{background:#183b59;color:#e9f5ff;border-color:#3c6685}
+.dashboard .app-header .button,.presentation .app-header .button{border-color:#50718a;color:#e9f5ff;background:#163956}
+.dashboard .app-header .avatar{background:#164a73;color:#e8f5ff}
+.dashboard .sidebar{background:linear-gradient(180deg,#102c45,#071b2f 80%)}
+.dashboard .sidebar .side-link:not(.active){color:#c5d7e8}
+.dashboard .sidebar .side-link.active{background:var(--hx-blue-700)}
+.dashboard .app-content{background:radial-gradient(ellipse at 78% 0%,rgba(21,105,171,.2),transparent 42%),#0b2036;color:#e8f5ff}
+.dashboard .page-title h1,.dashboard .page-title .eyebrow{color:#f0f7ff}
+.dashboard .page-title .eyebrow{color:#81d8fd}
+.dashboard .page-title p{color:#b4cbdd}
+.dashboard .ops-topline strong{color:#e4f3ff}
+.dashboard .ops-topline span:not(.tag):not(.ops-live-dot){color:#b2cbdc}
+.dashboard .ops-topline-right svg{color:#85c7eb}
+.dashboard .ops-scenario-banner{background:linear-gradient(100deg,#113752,#163f60);border-color:#2e698e}
+.dashboard .ops-scenario-message strong{color:#eaf5ff}
+.dashboard .ops-scenario-message p{color:#b9d5e8}
+.dashboard .ops-scenario-shortcut{background:#133956;border-color:#2b6285}
+.dashboard .ops-scenario-shortcut span{color:#d2e9fa}
+.dashboard .ops-metric{border-color:#31516c;background:linear-gradient(150deg,#173a58,#112d48);box-shadow:0 10px 22px #0014232d}
+.dashboard .ops-metric h3,.dashboard .ops-metric>strong{color:#f1f8ff}
+.dashboard .ops-metric p{color:#b7cfe0}
+.dashboard .ops-metric-icon{background:#234c69;color:#71cefc}
+.dashboard .ops-metric.tone-green .ops-metric-icon{background:#103f40;color:#6bdcb6}
+.dashboard .ops-metric.tone-red .ops-metric-icon{background:#502b42;color:#ff91a4}
+.dashboard .ops-metric-arrow{color:#b5cddd}
+.dashboard .ops-footer-note{color:#b2c9dc}
+.dashboard .ops-map-card,.dashboard .ops-activity,.dashboard .ops-recent,.dashboard .ops-progress{background:#f8fbfe;border-color:#d0dfeb}
+.dashboard .ops-map-card h2,.dashboard .ops-activity h2,.dashboard .ops-recent h2,.dashboard .ops-progress h2{color:#142f49}
+.dashboard .ops-map-card p,.dashboard .ops-activity p,.dashboard .ops-progress p{color:#536e83}
+.dashboard .ops-map-card .eyebrow,.dashboard .ops-activity .eyebrow{color:#0755b5}
+.dashboard .ops-map-legend,.dashboard .ops-map-note{color:#526d80}
+.dashboard .footer-app{background:#081b2f;color:#abc6d8;border-color:#27425c}
+
+/* Mobile work state: richer contrast while preserving clear readable cards. */
+.dashboard .mobile-operational-strip{background:linear-gradient(105deg,#123f61,#0d2c49);border:1px solid #31729c;box-shadow:0 7px 21px #0007}
+.dashboard .mobile-location-status strong{color:#f2fbff}
+.dashboard .mobile-location-status small{color:#c0d9e8}
+.dashboard .mobile-progress-chip{color:#76dbff}
+.dashboard .mobile-progress-chip span{color:#bfdbef}
+.dashboard .mobile-tracking-meta{background:#173954;border-color:#366583;box-shadow:0 7px 19px #00192f55}
+.dashboard .mobile-tracking-meta>div:first-child strong{color:#edf8ff}
+.dashboard .mobile-tracking-meta svg{color:#89dbfa}
+.dashboard .mobile-tracking-meta small{color:#bfd4e6}
+.dashboard .mobile-mini-meter{background:#49677f}
+.dashboard .guide-inline{background:#183c59;border:1px solid #416986}
+.dashboard .guide-inline strong{color:#eef8ff}
+.dashboard .guide-inline p{color:#c0d7e8}
+.dashboard .guide-inline .stepnum{background:#0b6cb4;color:#eaf9ff;border-color:#1884c3}
+.dashboard .guide-inline button{color:#a6e8ff}
+.dashboard .mobile-route-card{border:1px solid #d1e3ee;background:#f9fcff}
+.dashboard .mobile-route-card .map-caption{color:#526e82!important}
+.dashboard .checkpoint-card{border:1px solid #b6d7e9}
+.dashboard .checkpoint-card h3{color:#183650}
+.dashboard .checkpoint-card p{color:#4d677d}
+.dashboard .mobile-nav{background:#09253f;border-color:#355875}
+.dashboard .mobile-nav button{background:transparent;color:#b5d3e6}
+.dashboard .mobile-nav button.active{background:#164a76;color:#fff}
+.dashboard .mobile-nav svg{color:inherit}
+.dashboard .tag.neutral{background:#e9f3fa;color:#36576d;border-color:#b8d2e3}
+.dashboard .tag.green{background:#e5f5ee;color:#137357;border-color:#addcc6}
+.dashboard .tag.red{background:#fff0f3;color:#a32942;border-color:#efb9c5}
+
+/* Presentation shares real operational widgets but never looks like a toy. */
+.presentation{background:radial-gradient(ellipse at 40% 0%,#174668 0%,#0b1f35 50%,#081c31 100%)}
+.presentation-title h1,.presentation-title h1 span{color:#f2f9ff}
+.presentation-title h1 span{color:#64d4ff}
+.presentation-title p{color:#b6d0e0}
+.presentation-title .eyebrow{color:#79d7fb}
+.presentation-main>.hero-foot{color:#b2cddd;border-color:#4f6880}
+.presentation .commercial-coach{background:#143853;border-color:#3a6c8b}
+.presentation .commercial-coach strong{color:#e9f5ff}
+.presentation .commercial-coach p{color:#bdd5e5}
+.presentation .commercial-coach .eyebrow{color:#84dcff}
+.presentation .commercial-coach .coach-footer{color:#bfe3f4}
+.presentation .commercial-coach .button{background:#e6f4ff;color:#0755b5}
+.presentation .presentation-title+.tag,.presentation .tag.neutral{color:#35556b}
+.presentation .preview-layout>.side-head,.presentation .preview-layout>section>.side-head{color:#eaf6ff}
+.presentation .preview-layout>section>.side-head small{color:#b1cada}
+.presentation .supervision-stack .card{background:#f8fbfe;border-color:#d1dfec}
+.presentation .supervision-stack .card h2,.presentation .supervision-stack .card h3{color:#18374f}
+.presentation .phone-screen{background:#f2f7fc}
+.presentation .phone-frame{border-color:#0b1925;box-shadow:0 25px 60px #010d19b8}
+
+@media(max-width:650px){
+  .dashboard .app-content{background:linear-gradient(160deg,#102e49,#091e34 73%)}
+  .dashboard .page-title h1{font-size:clamp(25px,7.2vw,31px)}
+  .dashboard .page-title p{color:#bed5e6;font-size:13px}
+  .dashboard .card h3{font-size:15px}
+  .dashboard .checkpoint-card p{font-size:13px}
+  .dashboard .ops-topline{color:#e8f5ff}
+  .product-home .product-hero-copy h1{letter-spacing:-1.8px}
+}
+@media(prefers-reduced-motion:reduce){.button{transition:none!important}}
