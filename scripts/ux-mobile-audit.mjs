@@ -127,6 +127,9 @@ try{
    await assess(page,width,'09-supervisor');
    scenario.steps.push('supervisor');
    await clickAction(page,'launch-scenario');
+   const titleContrast=await page.locator('.presentation-title h1').evaluate(el=>getComputedStyle(el).color);
+   const titleChannels=titleContrast.match(/\d+(?:\.\d+)?/g)?.slice(0,3).map(Number)??[];
+   if(titleChannels.length!==3||titleChannels.some(v=>v<205))throw new Error('Título da apresentação tem contraste insuficiente: '+titleContrast);
    await assess(page,width,'10-integrated');
    scenario.steps.push('integrated');
   }catch(err){fatal++;scenario.error=String(err).slice(0,1000);}
