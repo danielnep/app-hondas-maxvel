@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 const styles=readFileSync(new URL('../assets/horizon-operacional.css',import.meta.url),'utf8');
 const manifest=readFileSync(new URL('../android/app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
 const service=readFileSync(new URL('../android/app/src/main/java/br/com/horizon/maxvel/PatrolLocationService.java',import.meta.url),'utf8');
@@ -22,6 +22,7 @@ test('cores primárias usadas no tema têm pelo menos contraste AA para texto co
 test('aplicativo Android declara rastreamento transparente com encerramento visível',()=>{
  assert.match(manifest,/FOREGROUND_SERVICE_LOCATION/);
  assert.match(manifest,/android:foregroundServiceType="location"/);
+ assert.ok(existsSync(new URL('../android/app/src/main/res/drawable/ic_maxvel.xml',import.meta.url)),'ícone deve estar em res/drawable');
  assert.match(manifest,/android:allowBackup="false"/);
  assert.match(manifest,/android:usesCleartextTraffic="false"/);
  assert.match(service,/setOngoing\(true\)/);
