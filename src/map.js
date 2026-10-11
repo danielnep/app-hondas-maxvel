@@ -42,7 +42,7 @@ const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${k
 export class PatrolMap{
  constructor(container,{route,session=null,position=null,interactive=true,compact=false}={}){
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;
-  this.instance=null;this.leaflet=null;this.layers=[];this.destroyed=false;this.tracePositions=[this.position];this.traceLayer=null;
+  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.tracePositions=[this.position];this.traceLayer=null;
   this.showFallback();this.setup();
  }
  showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
@@ -73,7 +73,7 @@ export class PatrolMap{
  }
  refreshGeometry(){
   const L=this.leaflet,m=this.instance;if(!m||!L)return;
-  this.layers.forEach(layer=>m.removeLayer(layer));this.layers=[];
+  this.layers.forEach(layer=>m.removeLayer(layer));this.layers=[];this.pointMarkers=[];
   const add=(layer)=>{layer.addTo(m);this.layers.push(layer);return layer};
   const pts=pointsOf(this.route).map(latlng);
   add(L.polyline(pts,{color:'#f7ffff',weight:13,opacity:.9,lineJoin:'round',interactive:false}));
@@ -83,7 +83,9 @@ export class PatrolMap{
    const done=i>0&&this.session?.checkpoints[i-1]?.completedAt;const active=i>0&&this.session?.index===i-1;
    if(i>0)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#087cad':'#4e9dc5',weight:2,fillColor:active?'#2aa7e1':'#73c8ed',fillOpacity:active?.14:.08,interactive:false}));
    const ic=L.divIcon({className:'map-pin-host',html:markerHtml(i===0?'B':done?'✓':i,done?'done':active?'active':i===0?'base':'point'),iconSize:[36,36],iconAnchor:[18,18]});
-   add(L.marker(latlng(p),{icon:ic,keyboard:true,title:i===0?'Base operacional (fictícia)':`${p.name} · raio ${p.radius} m`}).bindPopup(`<strong>${escapeHtml(p.name)}</strong><br>${i===0?'Retorno à base':`Ponto ${i} · raio ${p.radius} m`}<br><small>Localização ilustrativa</small>`));
+const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado';
+   const popup=`<div class="maxvel-map-popup"><small>PONTO ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Localização do cenário ilustrativo'}</em></div>`;
+   this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,keyboard:true,title:i===0?'Base operacional (fictícia)':`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
   });
   const userIcon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
   this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:true,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição simulada do ronda'}));
@@ -107,6 +109,13 @@ export class PatrolMap{
   this.tracePositions.push({lat:this.position.lat,lng:this.position.lng});
   if(this.tracePositions.length>180)this.tracePositions.shift();
   this.traceLayer?.setLatLngs(this.tracePositions.map(latlng));
+ }
+ focusPoint(index){
+  const p=this.route.points[index];
+  if(!p||!this.instance)return false;
+  this.instance.flyTo(latlng(p),Math.max(17,Math.min(18,this.instance.getZoom())),{animate:true,duration:0.4});
+  this.pointMarkers[index+1]?.openPopup();
+  return true;
  }
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
  fit(){if(!this.instance)return;const b=routeBounds(this.route);this.instance.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
