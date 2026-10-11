@@ -207,7 +207,7 @@ dialog .rules li p {font-size:13px;line-height:1.6;}
  .dashboard .app-header .user-profile-button {min-width:48px;min-height:48px;padding:4px;border-color:#375770;}
  .dashboard .app-header .user-profile-button .avatar {width:35px;height:35px;}
  .dashboard .app-header .user-profile-button svg {display:none;}
- .dashboard .app-header .user-profile-button>div:not(.avatar) {display:none;}
+ .dashboard .app-header .user-profile-button>span:not(.avatar) {display:none;}
  .dashboard .page-title {margin-bottom:16px;gap:11px;}
  .dashboard .page-title h1 {font-size:26px;}
  .dashboard .page-title p {font-size:14px;}
