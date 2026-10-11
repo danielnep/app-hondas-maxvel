@@ -295,3 +295,20 @@ dialog .rules li p {font-size:13px;line-height:1.6;}
  .dashboard .app-content{padding:0;}
  .dashboard .card,.ops-metric{box-shadow:none;}
 }
+/* Narrow phones: prevent the integrated presentation toolbar forcing layout wider than viewport. */
+@media(max-width:420px){
+ .presentation .app-header{gap:7px;padding:0 9px;min-width:0;max-width:100%;}
+ .presentation .app-header .brand{gap:6px;min-width:0;}
+ .presentation .app-header .brand-icon{width:29px;height:29px;flex:0 0 29px;}
+ .presentation .app-header .brand-copy{min-width:0;}
+ .presentation .app-header .brand .maxvel-word{font-size:10px;letter-spacing:0;}
+ .presentation .app-header .brand .maxvel-word small{font-size:7px;letter-spacing:.45px;}
+ .presentation .app-header .brand-by{display:none;}
+ .presentation .app-header .header-actions{gap:5px;min-width:0;flex-shrink:0;}
+ .presentation .app-header .header-actions .help-toggle{display:inline-flex;align-items:center;justify-content:center;font-size:0;min-width:44px;width:44px;flex:0 0 44px;min-height:44px;padding:0;border-radius:10px;}
+ .presentation .app-header .header-actions .help-toggle .icon-svg{width:19px;height:19px;}
+ .presentation .app-header .header-actions .button.small{font-size:11px;min-width:0;padding-inline:8px;min-height:44px;white-space:nowrap;}
+ .presentation-main,.preview-layout,.preview-layout>section,.supervision-stack,.presentation-control,.presentation .phone-frame{min-width:0;max-width:100%;}
+ .presentation-control .control-row{display:flex;flex-wrap:wrap;}
+ .presentation-control .control-row .button{max-width:100%;overflow-wrap:anywhere;}
+}
