@@ -1,0 +1,87 @@
+import {routeWaypoints} from './domain.js';
+
+/**
+ * Maps use genuine OpenStreetMap tiles when Leaflet and the network are available.
+ * Patrol routes in demo mode are schematic STRAIGHT SEGMENTS, not verified street paths.
+ * Markers and geofences are overlays and do not represent real Maxvel facilities.
+ */
+const escapeHtml = x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pointsOf=route=>[route.base,...route.points,route.base];
+let leafletPromise;
+export function loadLeaflet(){
+ if(typeof window==='undefined'||typeof document==='undefined')return Promise.reject(new Error('Navegador necessário'));
+ if(window.L)return Promise.resolve(window.L);
+ if(leafletPromise)return leafletPromise;
+ leafletPromise=new Promise((resolve,reject)=>{
+  const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.async=true;s.crossOrigin='anonymous';
+  const timer=setTimeout(()=>reject(new Error('Mapa online indisponível')),9000);
+  s.onload=()=>{clearTimeout(timer);window.L?resolve(window.L):reject(new Error('Biblioteca cartográfica indisponível'));};
+  s.onerror=()=>{clearTimeout(timer);reject(new Error('Falha ao carregar mapa'));};
+  document.head.appendChild(s);
+ }).catch(err=>{leafletPromise=null;throw err});
+ return leafletPromise;
+}
+export function routeBounds(route){
+ const pts=pointsOf(route);return {
+  minLat:Math.min(...pts.map(p=>p.lat)),maxLat:Math.max(...pts.map(p=>p.lat)),
+  minLng:Math.min(...pts.map(p=>p.lng)),maxLng:Math.max(...pts.map(p=>p.lng))
+ };
+}
+export function project(point,route,width=680,height=360){
+ const b=routeBounds(route),latSpan=Math.max(.001,b.maxLat-b.minLat),lngSpan=Math.max(.0012,b.maxLng-b.minLng);
+ return {x:55+(point.lng-b.minLng)/lngSpan*(width-110),y:height-45-(point.lat-b.minLat)/latSpan*(height-90)};
+}
+export function fallbackSVG(route,session,position){
+ const path=pointsOf(route).map(x=>{const p=project(x,route);return `${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ');
+ const visual=pointsOf(route).slice(0,-1),pos=project(position??route.base,route);
+ return `<svg class="fallback-svg" viewBox="0 0 680 360" role="img" aria-label="Esquema alternativo da rota, sem cartografia de ruas" preserveAspectRatio="xMidYMid meet"><defs><pattern id="roadgrid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M 56 0 L 0 0 0 56" fill="none" stroke="#d8e6ee" stroke-width="1"/></pattern></defs><rect width="680" height="360" fill="#ebf5fa"/><rect width="680" height="360" fill="url(#roadgrid)"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="white" stroke-width="22"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#c0d3e0" stroke-width="1" stroke-dasharray="7 6"/><polyline points="${path}" fill="none" stroke="#fff" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#0b8cc3" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=project(p,route),done=i>0&&session?.checkpoints[i-1]?.completedAt,active=i>0&&session?.index===i-1;return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#0e91c8" fill-opacity=".10"/><circle r="17" fill="${done?'#147c68':active?'#117eaf':'#163b50'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}<g transform="translate(${pos.x} ${pos.y})"><circle r="25" fill="#0499d5" fill-opacity=".15"/><circle r="11" fill="#0383bf" stroke="white" stroke-width="5"/></g><rect x="15" y="13" rx="10" width="241" height="31" fill="#fff"/><text x="26" y="33" font-family="system-ui" font-size="12" fill="#274d62">Modo alternativo · mapa esquemático</text></svg>`;
+}
+const latlng=p=>[p.lat,p.lng];
+const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${kind}">${content}</span>`;
+export class PatrolMap{
+ constructor(container,{route,session=null,position=null,interactive=true,compact=false}={}){
+  this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;
+  this.instance=null;this.leaflet=null;this.layers=[];this.destroyed=false;
+  this.showFallback();this.setup();
+ }
+ showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
+ async setup(){try{
+  const L=await loadLeaflet();if(this.destroyed)return;
+  this.leaflet=L;this.container.innerHTML='';
+  const m=L.map(this.container,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:true});this.instance=m;
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,minZoom:3,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'}).addTo(m);
+  L.control.zoom({position:'bottomright'}).addTo(m);
+  this.refreshGeometry();
+  const b=routeBounds(this.route),span=Math.max(b.maxLat-b.minLat,b.maxLng-b.minLng);
+  if(span<.0006)m.setView(latlng(this.route.base),18);else m.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[44,44],maxZoom:18,animate:false});
+  setTimeout(()=>{if(!this.destroyed)m.invalidateSize(false)},80);
+ }catch(err){if(!this.destroyed){this.showFallback();this.container.setAttribute('data-map-fallback','true');}}
+ }
+ refreshGeometry(){
+  const L=this.leaflet,m=this.instance;if(!m||!L)return;
+  this.layers.forEach(layer=>m.removeLayer(layer));this.layers=[];
+  const add=(layer)=>{layer.addTo(m);this.layers.push(layer);return layer};
+  const pts=pointsOf(this.route).map(latlng);
+  add(L.polyline(pts,{color:'#f7ffff',weight:13,opacity:.9,lineJoin:'round',interactive:false}));
+  add(L.polyline(pts,{color:'#117fb7',weight:5,opacity:1,dashArray:'11 8',lineJoin:'round',interactive:false}));
+  const bases=[this.route.base,...this.route.points];
+  bases.forEach((p,i)=>{
+   const done=i>0&&this.session?.checkpoints[i-1]?.completedAt;const active=i>0&&this.session?.index===i-1;
+   if(i>0)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#087cad':'#4e9dc5',weight:2,fillColor:active?'#2aa7e1':'#73c8ed',fillOpacity:active?.14:.08,interactive:false}));
+   const ic=L.divIcon({className:'map-pin-host',html:markerHtml(i===0?'B':done?'✓':i,done?'done':active?'active':i===0?'base':'point'),iconSize:[36,36],iconAnchor:[18,18]});
+   add(L.marker(latlng(p),{icon:ic,keyboard:true,title:i===0?'Base operacional (fictícia)':`${p.name} · raio ${p.radius} m`}).bindPopup(`<strong>${escapeHtml(p.name)}</strong><br>${i===0?'Retorno à base':`Ponto ${i} · raio ${p.radius} m`}<br><small>Localização ilustrativa</small>`));
+  });
+  this.positionMarker=add(L.circleMarker(latlng(this.position),{radius:11,color:'#ffffff',weight:4,fillColor:'#006fae',fillOpacity:1}));
+  this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#098bc6',weight:1,fillColor:'#37b5eb',fillOpacity:.14,interactive:false}));
+ }
+ update({session=this.session,position=this.position}={}){
+  if(this.destroyed)return;const indexWas=this.session?.index,statusWas=this.session?.status;this.session=session;this.position=position??this.route.base;
+  if(this.instance){if(indexWas!==session?.index||statusWas!==session?.status)this.refreshGeometry();
+   else{this.positionMarker?.setLatLng(latlng(this.position));this.accuracyCircle?.setLatLng(latlng(this.position));this.accuracyCircle?.setRadius(Math.max(3,Number(this.position.accuracy)||8));}}
+  else{const holder=this.container?.querySelector('.map-fallback');if(holder)holder.innerHTML=fallbackSVG(this.route,session,this.position);}
+ }
+ center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
+ fit(){if(!this.instance)return;const b=routeBounds(this.route);this.instance.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
+ invalidate(){this.instance?.invalidateSize(false)}
+ destroy(){this.destroyed=true;this.instance?.remove();this.instance=null;if(this.container)this.container.innerHTML=''}
+}
