@@ -7,7 +7,7 @@ import {chromium} from 'playwright-core';
 import {spawn,execFileSync} from 'node:child_process';
 import {mkdirSync,writeFileSync} from 'node:fs';
 
-const WIDTHS=[320,360,390,430,768,1440];
+const WIDTHS=[320,360,390,430,768,1024,1440,1920];
 const OUT='artifacts/ux-mobile-audit';
 mkdirSync(OUT,{recursive:true});
 const port=8177;
@@ -142,6 +142,10 @@ try{
    await allFilter.click({timeout:6000});
    await wait(180);
    await assess(page,width,'09c-alerts-all');
+   await viewNav('relatorios').click({timeout:6000});
+   await wait(250);
+   await assess(page,width,'09d-reports');
+   scenario.steps.push('reports');
    await viewNav('overview').click({timeout:6000});
    await wait(200);
    scenario.steps.push('map and alert filtering');
