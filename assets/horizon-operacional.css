@@ -1006,3 +1006,35 @@ dialog p{color:var(--hx-muted)}
  .patrol-action-body{padding:8px 10px;}
  .patrol-action-heading{padding:5px 10px;}
 }
+
+
+/* Co-branding Horizon × Hondas Maxvel · responsive lockup */
+.horizon-maxvel-brand{display:flex;align-items:center;gap:0;min-width:0;transform:none!important;margin-right:0!important;max-width:100%}
+.horizon-maxvel-brand .brand-lockup{display:block;width:min(100%,294px);height:auto;aspect-ratio:780/160;object-fit:contain;object-position:left center;flex-shrink:1;border:0}
+.horizon-maxvel-brand .brand-compact{display:none;align-items:center;gap:8px;min-width:0}
+.horizon-maxvel-brand .brand-compact .brand-icon{width:37px;height:37px;flex-shrink:0}
+.horizon-maxvel-brand .brand-compact .brand-copy{display:flex;gap:4px}
+.horizon-maxvel-brand .brand-compact .maxvel-word{font-size:12px!important;letter-spacing:.15px!important;color:#F0F8FF!important}
+.horizon-maxvel-brand .brand-compact .maxvel-word strong{color:#5CD5FF!important}
+.horizon-maxvel-brand .brand-compact .brand-by{display:block!important;font-size:9px!important;color:#B4D4E8!important}
+.horizon-maxvel-brand .brand-compact .brand-by b{color:#8EE4FF!important}
+.product-home .topnav .horizon-maxvel-brand .brand-lockup{width:min(100%,355px)}
+.sidebar>.horizon-maxvel-brand{padding:8px 4px 22px;min-width:0}
+.sidebar>.horizon-maxvel-brand .brand-lockup{width:100%;max-width:250px}
+.app-header .horizon-maxvel-brand{min-width:0;flex-shrink:1}
+.app-header .horizon-maxvel-brand .brand-lockup{width:min(100%,220px)}
+@media(max-width:1200px){
+ .sidebar>.horizon-maxvel-brand .brand-lockup{display:none}
+ .sidebar>.horizon-maxvel-brand .brand-compact{display:flex}
+}
+@media(max-width:900px){
+ .app-header .horizon-maxvel-brand .brand-lockup{display:none}
+ .app-header .horizon-maxvel-brand .brand-compact{display:flex}
+ .product-home .topnav .horizon-maxvel-brand .brand-lockup{width:min(100%,270px)}
+}
+@media(max-width:390px){
+ .product-home .topnav .horizon-maxvel-brand .brand-lockup{display:none}
+ .product-home .topnav .horizon-maxvel-brand .brand-compact{display:flex}
+ .horizon-maxvel-brand .brand-compact .maxvel-word{font-size:11px!important}
+ .horizon-maxvel-brand .brand-compact .brand-icon{width:33px;height:33px}
+}
