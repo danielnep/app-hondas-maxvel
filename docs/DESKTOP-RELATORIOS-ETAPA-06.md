@@ -9,7 +9,7 @@ Elevar a experiência desktop/tablet e dar continuidade à qualidade mobile, sem
 - **Visão desktop com informação densa:** cartões KPIs mais legíveis, progresso operacional, feed de eventos com links para detalhamento, histórico e impressão local.
 - **Ajustes responsivos:** relatório em duas colunas largas; empilha de forma controlada em tablet/mobile; histórico tabelado com scroll próprio; nenhum scroll horizontal global deve surgir.
 - **Impressão e PDF via navegador:** estilos específicos removem sidebar, menu e controles não úteis e apresentam os indicadores com superfícies legíveis, sem transmitir documentos a servidor.
-- **CSS consolidado:** `styles/horizon-operacional.css` e `assets/horizon-operacional.css` foram concatenados, na mesma ordem da cascata, em **uma folha** `assets/horizon-operacional.css`; `index.html` carrega esse arquivo. O arquivo antigo é mantido temporariamente para comparação e deve ser excluído somente após validar a equivalência. `styles.css` ainda permanece como camada base compatível. Reorganizar completamente esse legado em componentes é melhoria arquitetural futura, não uma tarefa segura de fazer sem regressão visual.
+- **CSS consolidado:** `styles/horizon-operacional.css` e `assets/horizon-operacional.css` foram concatenados, na mesma ordem da cascata, em **uma folha** `assets/horizon-operacional.css`; `index.html` carrega esse arquivo. O arquivo antigo foi excluído após preservar seu conteúdo completo na folha consolidada, conservando o histórico no GitHub. `styles.css` ainda permanece como camada base compatível. Reorganizar completamente esse legado em componentes é melhoria arquitetural futura, não uma tarefa segura de fazer sem regressão visual.
 - **Cobertura automatizada:** novos testes do relatório em `tests/reports-desktop.test.mjs`; Playwright da auditoria percorre os perfis e as telas de relatório, com larguras **320, 360, 390, 430, 768, 1024, 1440 e 1920 px**. Testes de integração ainda devem rodar após a última consolidação para concluir a etapa.
 
 ## Critérios e limitações
@@ -26,9 +26,14 @@ Elevar a experiência desktop/tablet e dar continuidade à qualidade mobile, sem
 - [Auditoria ampliada Chromium mobile/tablet/desktop](https://github.com/danielnep/app-hondas-maxvel/actions)
 - [Issue da etapa](https://github.com/danielnep/app-hondas-maxvel/issues/6)
 
-**Estado deste documento:** entregas implementadas; conclusão final condicionada a QA da versão atual após consolidação.
+**Resultado:** auditoria ampliada de **112 estados** em 8 larguras, nenhuma expansão de viewport e nenhum erro no fluxo, concluída com sucesso antes da exclusão da cópia redundante. Após a exclusão, a validação funcional e a publicação do projeto atual passaram; a auditoria extra do commit final foi iniciada, sem alterações comportamentais nesse commit.
 
 ## Próxima etapa
 Etapa 07: validação integral de fluxos, segurança e transparência do protótipo, acessibilidade (contraste, foco, leitor de tela), performance e especificação do build/piloto Android.
 
 **Desenvolvido por Horizon | Daniel N. Xavier**.
+
+## Evidências de conclusão
+- [Auditoria responsiva 112 estados, 320 a 1920 px, sucesso](https://github.com/danielnep/app-hondas-maxvel/actions/runs/38180576008)
+- [Validação automatizada e publicação após remoção da cópia de CSS](https://github.com/danielnep/app-hondas-maxvel/actions/runs/38180746352)
+- [Site publicado](https://danielnep.github.io/app-hondas-maxvel/)
