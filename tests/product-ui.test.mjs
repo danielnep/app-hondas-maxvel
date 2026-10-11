@@ -50,5 +50,5 @@ test('transparência: aviso e opção de dispensar GPS, sem alegar rastreamento 
  assert.match(app,/Li e aceito · Continuar/);
  assert.match(app,/não concede permissão ao GPS/);
  assert.match(app,/Explorar sem localização GPS|demonstração sem GPS/);
- assert.match(app,/No navegador, o GPS para ao fechar a página/);
+ assert.match(app,/O navegador não acompanha sua posição depois de fechado|No navegador, o GPS para ao fechar a página/);
 });
