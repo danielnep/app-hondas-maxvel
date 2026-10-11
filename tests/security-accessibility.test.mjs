@@ -33,7 +33,8 @@ test('aplicativo Android declara rastreamento transparente com encerramento vis�
 });
 
 test('ponte nativa só inicia serviço ao acionar a ronda real',()=>{
- assert.match(web,/mode==='real'&&screen!=='presentation'/);
+ assert.match(web,/mode==='real'&&!presentation/);
+ assert.match(web,/if\(presentation&&act==='mode-real'\)/);
  assert.match(web,/AndroidTracking\?\.startTracking\(\)/);
  assert.match(web,/AndroidTracking\?\.stopTracking\(\)/);
  assert.match(web,/O navegador não acompanha sua posição depois de fechado/);
