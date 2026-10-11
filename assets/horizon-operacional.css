@@ -185,3 +185,23 @@ dialog p{color:var(--hx-muted)}
   .product-home .product-hero-copy h1{letter-spacing:-1.8px}
 }
 @media(prefers-reduced-motion:reduce){.button{transition:none!important}}
+
+/* Etapa 04 | Correção de min-content intrínseco no painel de supervisão.
+   Tabelas de histórico não podem expandir o layout viewport do telefone. */
+.dashboard .operations-page,.dashboard .ops-workspace,.dashboard .ops-bottom-grid,
+.dashboard .ops-map-card,.dashboard .ops-activity,.dashboard .ops-recent,
+.dashboard .ops-progress,.dashboard .ops-map-stage,.dashboard .table-wrap{
+ min-width:0;max-width:100%;
+}
+.dashboard .ops-recent .table-wrap{display:block;width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.dashboard .ops-recent .data-table{min-width:590px;width:100%}
+@media(max-width:950px){
+ .dashboard .ops-workspace,.dashboard .ops-bottom-grid{grid-template-columns:minmax(0,1fr)!important}
+ .dashboard .ops-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+ .dashboard .app-shell,.dashboard .shell-main,.dashboard .app-content,.dashboard .operations-page{min-width:0;max-width:100%}
+ .dashboard .ops-topline>div:first-child{min-width:0;flex-wrap:wrap}
+ .dashboard .ops-scenario-banner,.dashboard .ops-scenario-shortcut{min-width:0;max-width:100%}
+ .dashboard .ops-map-actions{min-width:0;max-width:100%}
+}
