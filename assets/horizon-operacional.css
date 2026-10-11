@@ -262,3 +262,8 @@ dialog p{color:var(--hx-muted)}
   pointer-events:none;
  }
 }
+
+/* Final visual QA: ensure presentation heading stays legible on dark Horizon surfaces. */
+.presentation .presentation-title h1{color:#F3FAFF!important;}
+.presentation .presentation-title h1 span{color:#75D8FF!important;}
+.presentation .presentation-title .eyebrow{color:#8BDDFD;}
