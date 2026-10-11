@@ -57,11 +57,11 @@ export class PatrolMap{
   L.control.layers({'Ruas e bairros · OpenStreetMap':standard,'Claro · CARTO':light},null,{collapsed:true,position:'topright'}).addTo(m);
   let tileFailures=0,alternateFailures=0;
   standard.on('tileerror',()=>{
-   if(this.destroyed)return;
+   if(this.destroyed||this.instance!==m)return;
    if(++tileFailures>=5&&m.hasLayer(standard)){m.removeLayer(standard);light.addTo(m);}
   });
   light.on('tileerror',()=>{
-   if(this.destroyed)return;
+   if(this.destroyed||this.instance!==m)return;
    if(++alternateFailures>=5){m.remove();this.instance=null;this.showFallback();this.container.setAttribute('data-map-fallback','true');}
   });
   L.control.zoom({position:'bottomright'}).addTo(m);
