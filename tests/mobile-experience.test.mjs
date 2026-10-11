@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const theme=readFileSync(new URL('../styles/horizon-operacional.css',import.meta.url),'utf8');
+const theme=readFileSync(new URL('../assets/horizon-operacional.css',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const gradle=readFileSync(new URL('../android/app/build.gradle',import.meta.url),'utf8');
 
 test('tema operacional é carregado na web e empacotado no Android',()=>{
- assert.ok(existsSync(new URL('../styles/horizon-operacional.css',import.meta.url)));
- assert.match(html,/styles\/horizon-operacional\.css/);
- assert.match(gradle,/styles\/\*\*/);
+ assert.ok(existsSync(new URL('../assets/horizon-operacional.css',import.meta.url)));
+ assert.match(html,/assets\/horizon-operacional\.css/);
+ assert.match(gradle,/assets\/\*\*/);
 });
 
 test('a navegação mobile é definida por papel, com perfil acessível',()=>{
