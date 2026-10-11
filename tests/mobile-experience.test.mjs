@@ -32,7 +32,7 @@ test('a navegação compacta não pode ser substituída por display block',()=>{
 test('ação da ronda, mapa e progresso são o próprio aplicativo e não mockup',()=>{
  const action=app.slice(app.indexOf('function patrolActionContent()'),app.indexOf('function patrolScenarioControls()'));
  const fn=app.indexOf('function phoneContent()');
- const end=app.indexOf('function phoneMockup()',fn);
+ const end=app.indexOf('const lessonNames=',fn);
  const workspace=app.slice(fn,end);
  assert.match(action,/readyStartPanel\(\)/);
  assert.match(action,/Iniciar ronda|Concluir ponto e seguir/);
