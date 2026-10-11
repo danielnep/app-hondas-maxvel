@@ -16,7 +16,8 @@ test('aplicativo usa identidade Maxvel própria nos acessos web e Android',()=>{
 
 test('entrada mostra plataforma com acesso à operação e mapa cartográfico',()=>{
  assert.match(app,/product-hero/);
- assert.match(app,/Conhecer a operação/);
+ assert.match(app,/Experimentar o aplicativo/);
+ assert.match(app,/simulationIntro\(/);
  assert.match(app,/Acessar minha área/);
  assert.match(app,/id="hero-map"/);
  assert.match(app,/Pontos e trajeto de demonstração|cenário operacional|cenário operacional fictício/);
@@ -30,9 +31,9 @@ test('central operacional oferece mapa, progresso, alertas e histórico local',(
 });
 
 test('tela móvel orienta trabalho sem gamificação',()=>{
- for(const key of ['mobile-operational-strip','mobile-map-stage','mobile-progress-chip','guide-inline','complete-point'])assert.ok(app.includes(key),key);
+ for(const key of ['mobile-operational-strip','patrol-map-panel','patrol-workspace','guide-inline','complete-point'])assert.ok(app.includes(key),key);
  assert.match(app,/30 s contínuos/);
- assert.match(app,/Dentro do raio/);
+ assert.match(app,/Dentro de 25 m|Dentro do raio/);
  assert.doesNotMatch(app,/ranking de vigilantes|pontos de experiência|leaderboard/i);
 });
 
