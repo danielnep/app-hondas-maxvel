@@ -244,3 +244,8 @@ dialog p{color:var(--hx-muted)}
  .dashboard .ronda-page .mobile-location-status small{font-size:10px;}
  .dashboard .ronda-page .mobile-operational-strip .mobile-progress-chip{font-size:17px;}
 }
+
+/* Avisos não podem bloquear barra inferior nem controles de ronda. */
+@media(max-width:900px){
+ #toast{bottom:calc(79px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 24px);width:max-content;font-size:12px;line-height:1.45;padding:11px 14px;border:1px solid #436982;background:#0E2C46;box-shadow:0 10px 30px #00162555;}
+}
