@@ -46,7 +46,9 @@ async function assess(page,width,slug){
      modalCTA:position('[data-action="accept-location-notice"]'),
      actionStart:position('[data-action="start"]'),
      nav:position('.mobile-nav'),map:map?{...position('#mobile-map')||position('#ops-map')||position('#hero-map'),real:!!map.querySelector('.leaflet-container'),fallback:!!map.querySelector('.map-fallback')}:null,
-     guide:position('.guide-inline'),topbar:position('.app-header'),hero:position('.product-hero')};
+     guide:position('.guide-inline'),topbar:position('.app-header'),hero:position('.product-hero'),
+     startInitiallyVisible:!!position('[data-action="start"]') && position('[data-action="start"]').bottom<=innerHeight,
+     noticeCTAInitiallyVisible:!!position('[data-action="accept-location-notice"]') && position('[data-action="accept-location-notice"]').bottom<=innerHeight};
  });
  output.push({width,screen:slug,...metrics});
  await shot(page,width,slug);
@@ -86,6 +88,10 @@ try{
    scenario.steps.push('landing');
    await enterProfile(page,'ronda');
    await assess(page,width,'03-ronda-before');
+   if(width<=900){
+    const nav=await page.locator('.mobile-nav.mobile-only').boundingBox();
+    if(!nav||nav.height>96)throw new Error('Navegação mobile inválida: '+JSON.stringify(nav));
+   }
    scenario.steps.push('ronda');
    await clickAction(page,'start');
    await assess(page,width,'04-start-rules');
@@ -106,12 +112,16 @@ try{
     await wait(250);
     await assess(page,width,'08-justified');
    }
-   const logoutButton=page.locator('[data-action="logout"]').first();
-   if(await logoutButton.isVisible())await clickAction(page,'logout');
-   else{
-    scenario.steps.push('logout inaccessible on this viewport (UX issue)');
-    await logoutButton.evaluate(el=>el.click());
+   if(width<=900){
+    await clickAction(page,'profile-menu');
+    const logoutInMenu=page.locator('#dialog [data-action="logout"]');
+    await logoutInMenu.waitFor({state:'visible',timeout:5000});
+    await logoutInMenu.click();
     await wait(240);
+    scenario.steps.push('profile menu logout accessible');
+   }else{
+    await clickAction(page,'logout');
+    scenario.steps.push('desktop logout accessible');
    }
    await enterProfile(page,'supervisor');
    await assess(page,width,'09-supervisor');
