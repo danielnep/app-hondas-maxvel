@@ -85,10 +85,10 @@ export class PatrolMap{
    const ic=L.divIcon({className:'map-pin-host',html:markerHtml(i===0?'B':done?'✓':i,done?'done':active?'active':i===0?'base':'point'),iconSize:[36,36],iconAnchor:[18,18]});
 const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado';
    const popup=`<div class="maxvel-map-popup"><small>PONTO ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Localização do cenário ilustrativo'}</em></div>`;
-   this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,keyboard:true,title:i===0?'Base operacional (fictícia)':`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
+   this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,interactive:i>0,keyboard:i>0,title:i===0?undefined:`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
   });
   const userIcon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
-  this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:true,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição simulada do ronda'}));
+  this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição simulada do ronda'}));
   this.traceLayer=add(L.polyline(this.tracePositions.map(latlng),{color:'#00a5de',weight:4,opacity:.9,lineCap:'round',interactive:false}));
   for(const d of this.session?.deviations??[]){
    if(!d.position)continue;
