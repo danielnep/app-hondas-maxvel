@@ -26,10 +26,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Preparar SDK Android
-        uses: android-actions/setup-android@v3
+      - name: Verificar SDK Android pré-instalado
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
       - name: Instalar Android 35
-        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
       - name: Preparar Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
