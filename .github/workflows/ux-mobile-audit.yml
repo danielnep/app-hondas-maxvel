@@ -4,6 +4,10 @@ on:
   push:
     paths:
       - 'scripts/ux-mobile-audit.mjs'
+      - 'src/app.js'
+      - 'index.html'
+      - 'styles/**'
+      - 'styles.css'
       - '.github/workflows/ux-mobile-audit.yml'
 
 jobs:
