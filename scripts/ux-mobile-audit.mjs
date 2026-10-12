@@ -53,6 +53,15 @@ try{
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="supervisor"]');
    await state(page,width,height,'06-supervisao');
+   if(!await page.locator('.dashboard-v4.v4-supervision').count())throw Error('Supervisor sem dashboard operacional próprio');
+   await click(page,'[data-v4-tab="insights"]');
+   if(!await page.locator('.v4-insights-pane:not([hidden]) .v4-insight-row').count())throw Error('Insights da supervisão inacessíveis');
+   await click(page,'[data-v4-tab="mapa"]');
+   await page.locator('[data-supervisor-watcher]').selectOption('v03');
+   if(!await page.locator('.v4-map-pane .ops-panel-heading h2').innerText().then(t=>t.includes('Rafael Costa')))
+    throw Error('Trocar vigia não mudou o mapa supervisionado');
+   await state(page,width,height,'06b-mapa-vigia');
+
    await click(page,'[data-view="rondas"]:visible');
    await state(page,width,height,'07-agenda');
    if(width<=900){
@@ -68,6 +77,18 @@ try{
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="gestor"]');
    await state(page,width,height,'09-gestao');
+   if(!await page.locator('.dashboard-v4.v4-management').count())throw Error('Gestão sem dashboard próprio');
+   if(await page.locator('.v4-summary-metric').count()!==6)throw Error('Gestão sem seis indicadores baseados em dados');
+   await click(page,'[data-v4-tab="equipe"]');
+   if(await page.locator('.v4-team-row').count()!==4)throw Error('Equipe demonstrativa não contém quatro vigias');
+   await click(page,'[data-v4-watcher="v02"]');
+   if(!await page.locator('.v4-map-pane .ops-panel-heading h2').innerText().then(t=>t.includes('Ana Beatriz')))
+    throw Error('Seleção da equipe não abriu a rota do vigia');
+   await click(page,'[data-v4-tab="insights"]');
+   if(!await page.locator('.v4-insights-pane:not([hidden]) .v4-insight-row').count())
+    throw Error('Insights da Gestão não acessíveis por aba');
+   await state(page,width,height,'09b-insights-gestao');
+
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await state(page,width,height,'10-admin');
