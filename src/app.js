@@ -701,8 +701,8 @@ function phoneContent(){
  return `<div class="patrol-workspace${patrolSheetCollapsed?' sheet-collapsed':''}">
   <div class="patrol-statusline">${phoneTelemetry()}</div>
   <section class="patrol-map-panel" aria-label="Mapa da ronda">
-   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(route.name)}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
-   <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div><button type="button" class="ux06-map-help" data-action="feature-help" data-topic="map" aria-label="Ajuda sobre mapa">${ic("help")}</button></div>
+   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(route.name)}${window.innerWidth>900?helpButton('map','mapa e pontos'):''}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
+   <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div>${window.innerWidth<=900?`<button type="button" class="ux06-map-help" data-action="feature-help" data-topic="map" aria-label="Ajuda sobre mapa">${ic("help")}</button>`:""}</div>
    <div class="patrol-map-footer"><span>${mode==='real'?'GPS autorizado':'Localização simulada'}</span><span data-live="coords">${locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)}`:'Aguardando início'}</span></div>
   </section>
   <section class="patrol-actions" aria-label="Ação principal da ronda">
