@@ -42,7 +42,7 @@ const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${k
 export class PatrolMap{
  constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null}={}){
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;
-  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.tracePositions=[this.position];this.traceLayer=null;
+  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.tracePositions=[this.position];this.traceLayer=null;
   this.showFallback();this.setup();
  }
  showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
@@ -88,7 +88,12 @@ export class PatrolMap{
   this.refreshGeometry();
   const b=routeBounds(this.route),span=Math.max(b.maxLat-b.minLat,b.maxLng-b.minLng);
   if(span<.0006)m.setView(latlng(this.route.base),18);else m.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[44,44],maxZoom:18,animate:false});
-  setTimeout(()=>{if(!this.destroyed)m.invalidateSize(false)},80);
+  setTimeout(()=>{
+   if(this.destroyed||this.instance!==m)return;
+   m.invalidateSize(false);
+   if(this.pendingFocus!==null){const focus=this.pendingFocus;this.pendingFocus=null;this.focusPoint(focus);}
+   else if(this.pendingFit){this.pendingFit=false;this.fit();}
+  },80);
  }catch(err){if(!this.destroyed){this.showFallback();this.container.setAttribute('data-map-fallback','true');}}
  }
  refreshGeometry(){
@@ -132,13 +137,16 @@ const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado'
  }
  focusPoint(index){
   const p=this.route.points[index];
-  if(!p||!this.instance)return false;
+  if(!p)return false;
+  if(!this.instance){if(!this.destroyed){this.pendingFocus=index;return true;}return false;}
+  this.pendingFocus=null;
+  this.instance.invalidateSize(false);
   this.instance.flyTo(latlng(p),Math.max(17,Math.min(18,this.instance.getZoom())),{animate:true,duration:0.4});
   this.pointMarkers[index+1]?.openPopup();
   return true;
  }
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
- fit(){if(!this.instance)return;const b=routeBounds(this.route);this.instance.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
+ fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;const b=routeBounds(this.route);this.instance.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
  invalidate(){this.instance?.invalidateSize(false)}
  destroy(){this.destroyed=true;this.instance?.remove();this.instance=null;if(this.container)this.container.innerHTML=''}
 }

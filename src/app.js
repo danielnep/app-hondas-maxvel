@@ -76,7 +76,7 @@ function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
 function registerMap(id,route,sessionRef=null,position=null,compact=false){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true}))}
 
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
-let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo';
+let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo',uxRondaPane='mapa';
 const uxDashboardPane={supervisor:'mapa',gestor:'resumo',admin:'resumo'};
 const uxListSizes=()=>Math.max(1,Math.min(3,Math.floor((window.innerHeight-385)/82)));
 function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
@@ -217,32 +217,59 @@ function installViewportViews(){
   const switcher=workspace?.querySelector('.schedule-switch');
   if(switcher&&workspace)workspace.before(switcher);
   const mapPage=main.querySelector('.map-command-page');
-  const mapHistory=main.querySelector('.map-history');
+  const history=main.querySelector('.map-history');
   if(mapPage){
-   const nodes={mapa:mapPage.querySelector('.map-command-panel'),
-     pontos:mapPage.querySelector('.map-checkpoint-panel'),historico:mapHistory};
-   const nav=document.createElement('nav');nav.className='ux-ronda-tabs';
-   nav.setAttribute('aria-label','Detalhes do vigia');
-   const stage=document.createElement('div');stage.className='ux-ronda-stage';
+   const nodes={mapa:mapPage.querySelector('.map-command-panel'),pontos:mapPage.querySelector('.map-checkpoint-panel'),historico:history};
+   const nav=document.createElement('nav');
+   nav.className='ux-ronda-tabs hx05-ronda-tabs';
+   nav.setAttribute('role','tablist');nav.setAttribute('aria-label','Mapa e registros da ronda');
+   const stage=document.createElement('div');stage.className='ux-ronda-stage hx05-ronda-stage';
    const parts=[['mapa','Mapa'],['pontos','Pontos'],['historico','Histórico']];
-   for(const [key] of parts){if(nodes[key]){nodes[key].dataset.uxSubpage=key;stage.append(nodes[key]);}}
-   nav.innerHTML=parts.map(([k,label])=>'<button type="button" data-ux-ronda-tab="'+k+'">'+label+'</button>').join('');
-   let active='mapa';
+   for(const [key] of parts){
+    if(!nodes[key])continue;
+    nodes[key].dataset.uxSubpage=key;
+    nodes[key].id='rondas-painel-'+key;
+    nodes[key].setAttribute('role','tabpanel');
+    stage.append(nodes[key]);
+   }
+   // Previsão curta e detalhamento por janela, sem amontoar painéis.
+   const points=nodes.pontos?.querySelectorAll('.map-point-row')??[];
+   for(const button of points){
+    const item=document.createElement('div');item.className='hx05-list-row hx05-point-row';
+    const summary=document.createElement('span');summary.className='hx05-list-preview';
+    const number=button.querySelector('.map-point-number');
+    const detail=button.querySelector('.map-point-info');
+    if(number)summary.append(number);
+    if(detail)summary.append(detail);
+    const open=document.createElement('button');open.type='button';open.className='hx05-open-button';
+    open.textContent='Abrir';open.dataset.action='open-route-point';open.dataset.index=button.dataset.index;
+    open.setAttribute('aria-label',button.getAttribute('aria-label')||'Abrir detalhes do ponto');
+    item.append(summary,open);button.replaceWith(item);
+   }
+   nav.innerHTML=parts.filter(([key])=>!!nodes[key]).map(([key,label])=>
+    '<button type="button" role="tab" aria-controls="rondas-painel-'+key+'" data-ux-ronda-tab="'+key+'">'+label+'</button>').join('');
    const paint=()=>{
-    for(const [k] of parts){if(nodes[k])nodes[k].hidden=k!==active;}
-    nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.uxRondaTab===active)));
-    if(active==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m.invalidate()));
+    if(!nodes[uxRondaPane])uxRondaPane='mapa';
+    for(const [key] of parts){if(nodes[key])nodes[key].hidden=key!==uxRondaPane;}
+    nav.querySelectorAll('button').forEach(button=>{
+     const active=button.dataset.uxRondaTab===uxRondaPane;
+     button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;
+    });
+    if(uxRondaPane==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m.invalidate()));
    };
-   nav.addEventListener('click',e=>{const b=e.target.closest('[data-ux-ronda-tab]');if(b){active=b.dataset.uxRondaTab;paint();}});
+   nav.addEventListener('click',event=>{
+    const button=event.target.closest('[data-ux-ronda-tab]');if(!button)return;
+    uxRondaPane=button.dataset.uxRondaTab;paint();
+   });
    mapPage.replaceChildren(nav,stage);
-   paginateRows(nodes.pontos,'.map-point-row','Pontos',3);
-   paginateRows(nodes.historico,'tbody tr','Historico',3);
+   paginateRows(nodes.pontos,'.hx05-list-row','Pontos',uxListSizes());
+   paginateRows(nodes.historico,'tbody tr','Historico',uxListSizes());
    paint();
   }
   if(scheduleFiltersOpen)main.querySelector('.schedule-refine')?.classList.add('ux-filters-open');
   paginateRows(main,'.schedule-row','Programas',3);
  }
- 
+
  if(view==='relatorios'){
   const report=main.querySelector('.report-page');
   const summaryBody=report?.querySelector('.grid-kpis');
@@ -908,7 +935,32 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='nav-rondas'){view='rondas';render();return;}
  if(act==='my-records'||act==='records'){if(presentation&&session){detailSession(session.id);return;}view='registros';render();return;}
  if(act==='map-help'){showDialog(`<div class="eyebrow">COMO LER O MAPA</div><h2>Localização e pontos de ronda</h2><div class="map-help-list"><p><strong>Mapa de ruas:</strong> base cartográfica OpenStreetMap, com alternativa esquemática se ficar offline.</p><p><strong>Linha tracejada:</strong> ligação ilustrativa entre pontos. Não é uma rota calculada pelas ruas.</p><p><strong>Linha contínua ciano:</strong> posições observadas enquanto a tela está ativa na simulação.</p><p><strong>Círculo ao redor do ponto:</strong> área de validação de 25 m. É necessário permanecer 30 s seguidos, com localização confiável.</p><p><strong>Marcador vermelho:</strong> ponto de evento de desvio registrado para análise. GPS impreciso, por si só, não implica irregularidade.</p></div>${btn('Entendi','close-dialog','primary full')}`);return;}
- if(act==='focus-route-point'){const idx=Number(el.dataset.index);if(!Number.isInteger(idx)||idx<0||idx>=supervisedContext().route.points.length)return;const map=liveMaps.find(m=>m.container?.id==='ops-map');if(!map?.focusPoint(idx))notify('Abra o mapa com conexão para localizar este ponto.');return;}
+ if(act==='open-route-point'){
+  const idx=Number(el.dataset.index),context=supervisedContext(),point=context.route.points[idx];
+  if(!Number.isInteger(idx)||!point)return;
+  const state=context.current?.checkpoints[idx]?.completedAt?'Verificado':context.current?.status==='active'&&context.current.index===idx?'Em execução':'Programado';
+  showDialog('<div class="hx05-point-detail"><span class="eyebrow">RONDA · PONTO '+(idx+1)+'</span>'+
+   '<h2>'+esc(point.name)+'</h2><p class="hx05-point-meta">'+esc(state)+' · Raio '+(Number(point.radius)||25)+' m</p>'+
+   '<p>'+esc(point.instruction||'Realizar a verificação prevista para este ponto.')+'</p>'+
+   '<div class="hx05-modal-footer"><button type="button" class="button small" data-action="close-dialog">Fechar</button>'+
+   '<button type="button" class="button primary small" data-action="focus-route-point" data-index="'+idx+'">'+ic('map')+' Ver no mapa</button></div></div>',true);
+  return;
+ }
+ if(act==='focus-route-point'){
+  const idx=Number(el.dataset.index);
+  if(!Number.isInteger(idx)||idx<0||idx>=supervisedContext().route.points.length)return;
+  // A aba correta precisa aparecer ANTES de enquadrar ou abrir o marcador.
+  if(modal.open)modal.close();
+  if(view==='rondas'&&scheduleTab!=='mapa')scheduleTab='mapa';
+  uxRondaPane='mapa';
+  if(view!=='rondas')view='rondas';
+  render();
+  requestAnimationFrame(()=>{
+   const currentMap=liveMaps.find(m=>m.container?.id==='ops-map');
+   if(!currentMap?.focusPoint(idx))notify('O mapa está indisponível. Tente novamente com conexão.');
+  });
+  return;
+ }
  if(act==='filter-alerts'){const filter=el.dataset.filter;if(filter!=='pending'&&filter!=='all')return;alertFilter=filter;render();return;}
  if(act==='toggle-patrol-sheet'){patrolSheetCollapsed=!patrolSheetCollapsed;render();return;}
  if(act==='center-maps'){liveMaps.forEach(m=>m.fit());return;}
