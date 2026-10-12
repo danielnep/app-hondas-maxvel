@@ -219,7 +219,17 @@ function installViewportViews(){
  
  if(view==='relatorios'){
   const report=main.querySelector('.report-page');
-  const elements={resumo:report?.querySelector('.grid-kpis'),analise:report?.querySelector('.report-breakdown'),
+  const summaryBody=report?.querySelector('.grid-kpis');
+  let summaryBodyPanel=null;
+  if(report&&summaryBody){
+   summaryBodyPanel=document.createElement('section');
+   summaryBodyPanel.className='ux-report-summary';
+   const meta=report.querySelector('.report-context-bar'),help=report.querySelector('.report-note');
+   if(meta)summaryBodyPanel.append(meta);
+   summaryBodyPanel.append(summaryBody);
+   if(help)summaryBodyPanel.append(help);
+  }
+  const elements={resumo:summaryBodyPanel,analise:report?.querySelector('.report-breakdown'),
    eventos:report?.querySelector('.report-events'),historico:report?.querySelector('.report-roster')};
   if(report&&elements.resumo){
    const tabs=[['resumo','Resumo'],['analise','Análise'],['eventos','Eventos'],['historico','Histórico']];
