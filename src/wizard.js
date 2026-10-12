@@ -99,7 +99,7 @@ export function createRoundWizard({dialog,showDialog,settings,onMap,onSave,notif
    if(!address||address.length<4){notify('Informe rua e número.');return;}
    target.disabled=true;target.textContent='Localizando…';
    try{
-    const full=address.includes('Divinópolis')?address:address+', Divinópolis, MG, Brasil';
+    const full=/Divin[óo]polis/i.test(address)?address:address+', Divinópolis, MG, Brasil';
     const res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q='+encodeURIComponent(full));
     if(!res.ok)throw Error('geocoding');
     const items=await res.json();
@@ -114,7 +114,7 @@ export function createRoundWizard({dialog,showDialog,settings,onMap,onSave,notif
    notes=dialog.querySelector('#wizard-notes')?.value.trim().slice(0,240)||'';
    const unit=worker().unit,routeId=unit==='Unidade Centro'?'centro':unit==='Unidade Norte'?'norte':'industrial';
    const result=onSave({watcherId,routeId,startAt:new Date(startAt).getTime(),endAt:new Date(endAt).getTime(),
-    repeat,notes,customRoute:{points, rules:{dwellSeconds:Number(settings.dwellSeconds||30)}}});
+    repeat,notes,customRoute:{points, rules:{dwellMs:Number(settings.dwellSeconds||30)*1000,blockOnDeviation:settings.deviationJustification!==false,logDeviations:true}}});
    if(result?.ok){destroy();}else notify(result?.error||'Não foi possível salvar.');
   }
  }

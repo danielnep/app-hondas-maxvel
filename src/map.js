@@ -40,8 +40,8 @@ const latlng=p=>[p.lat,p.lng];
 const closePositions=(a,b)=>Math.hypot((a.lat-b.lat)*111320,(a.lng-b.lng)*111320*Math.cos(a.lat*Math.PI/180))<2;
 const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${kind}">${content}</span>`;
 export class PatrolMap{
- constructor(container,{route,session=null,position=null,interactive=true,compact=false}={}){
-  this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;
+ constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null}={}){
+  this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;
   this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.tracePositions=[this.position];this.traceLayer=null;
   this.showFallback();this.setup();
  }
@@ -50,6 +50,7 @@ export class PatrolMap{
   const L=await loadLeaflet();if(this.destroyed)return;
   this.leaflet=L;this.container.innerHTML='';
   const m=L.map(this.container,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:true});this.instance=m;
+  if(typeof this.onMapClick==='function')m.on('click',event=>this.onMapClick({lat:event.latlng.lat,lng:event.latlng.lng}));
   const credit='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
   // Sempre iniciar com cartografia escura; manter alternativas e atribuições.
   const dark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{

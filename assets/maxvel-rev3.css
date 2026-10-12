@@ -162,3 +162,45 @@
  .dashboard .simulation-rolebar{flex-basis:42px!important;min-height:42px!important}
  .dashboard .patrol-primary-flow .patrol-dwell{max-height:42px!important}
 }
+
+@media screen and (max-width:900px){
+ .dashboard .schedule-refine.ux-filters-open{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important;margin:4px 0!important;padding:4px!important}
+ .dashboard .schedule-refine.ux-filters-open label{font-size:10px!important}
+ .dashboard .schedule-refine.ux-filters-open label:first-child{grid-column:1 / -1}
+ .dashboard .schedule-refine.ux-filters-open input,.dashboard .schedule-refine.ux-filters-open select{height:30px!important;min-height:30px!important;padding:2px 5px!important;font-size:11px!important}
+ .round-wizard{display:flex;flex-direction:column;gap:7px;height:min(530px,calc(100dvh - 52px));max-height:calc(100dvh - 52px);overflow:hidden}
+ .round-wizard .wizard-head{flex:0 0 auto}
+ .round-wizard .wizard-head h2{font-size:17px!important;margin:3px 36px 4px 0!important}
+ .round-wizard .wizard-progress{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+ .round-wizard .wizard-progress i{height:3px;background:#434649}
+ .round-wizard .wizard-progress i.done{background:#28B6E8}
+ .round-wizard .wizard-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+ .round-wizard .wizard-body>p{font-size:11px!important;margin:0!important}
+ .round-wizard .wizard-watchers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-content:start}
+ .round-wizard .wizard-watchers button{display:grid;align-content:center;text-align:left;gap:4px;min-height:70px;padding:8px;background:#202225;color:#F3F4F6;border:1px solid #44484B;font-size:11px}
+ .round-wizard .wizard-watchers button.selected{border-color:#28B6E8;color:#28B6E8}
+ .round-wizard .wizard-watchers small{color:#C1C4C6;font-size:10px}
+ .round-wizard label{display:grid;gap:5px;font-size:11px;color:#D5D6D8}
+ .round-wizard input,.round-wizard select{min-width:0;width:100%;min-height:36px!important;height:36px!important;padding:4px 5px!important;border:1px solid #45484B;background:#1D1E20;color:#F3F4F6;border-radius:0!important;font-size:12px!important}
+ .round-wizard .wizard-map{flex:1 1 auto;min-height:125px;max-height:none;width:100%;background:#181A1C;border:1px solid #45484B;overflow:hidden}
+ .round-wizard .wizard-address,.round-wizard .wizard-coordinates{display:flex;gap:4px;flex:0 0 34px;min-height:34px}
+ .round-wizard .wizard-address input,.round-wizard .wizard-coordinates input{flex:1 1 auto;min-width:0;width:50%;height:34px!important;min-height:34px!important;font-size:10px!important}
+ .round-wizard .wizard-address button,.round-wizard .wizard-coordinates button{min-height:34px;border:1px solid #28B6E8;background:#25272A;color:#28B6E8;padding:3px 6px;font-size:10px}
+ .round-wizard .wizard-point-foot{display:flex;justify-content:space-between;gap:3px;align-items:center;font-size:10px;color:#C2C4C6}
+ .round-wizard .wizard-point-foot button{color:#28B6E8;background:transparent;border:0;font-size:10px}
+ .round-wizard .wizard-review{display:grid;gap:5px;background:#1D1E20;border:1px solid #343638;padding:8px}
+ .round-wizard .wizard-review p{font-size:11px!important;margin:0!important}
+ .round-wizard .wizard-nav{display:flex;gap:6px;align-items:center;justify-content:space-between;flex:0 0 38px}
+ .round-wizard .wizard-nav button{min-height:37px!important;height:37px!important;padding:4px 13px!important;background:#25272A;color:#F3F4F6;border:1px solid #45484B;font-size:12px!important}
+ .round-wizard .wizard-nav .primary{background:#28B6E8!important;color:#0C0D0F!important;border-color:#28B6E8!important}
+ .round-wizard>small{font-size:9px!important;color:#B4B8BB}
+ .dashboard .operational-settings{flex:1 1 auto;min-height:0;display:grid;align-content:start;gap:9px;padding:10px;background:#15171A;border:1px solid #343638}
+ .dashboard .operational-settings label{display:grid;gap:6px;font-size:12px}
+ .dashboard .operational-settings input[type=number]{width:110px;min-height:34px!important;height:34px!important}
+ .dashboard .operational-settings .settings-toggle{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #343638}
+ .dashboard .operational-settings .settings-toggle input{width:18px;height:18px;min-width:18px}
+ .dashboard .operational-settings p{font-size:10px;color:#BFC2C4}
+ .dashboard .operational-settings .primary{min-height:38px!important;height:38px!important}
+ .dashboard .settings-data{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:8px;font-size:10px;padding:6px}
+ .dashboard .settings-data button{min-height:34px!important;padding:4px!important;font-size:10px!important}
+}
