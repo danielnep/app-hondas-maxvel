@@ -381,6 +381,22 @@ dialog .modal-actions{border-color:#40576A}
 }
 
 
+
+/* Fix auditado: conteudo mapa nao pode medir 0 px quando filhos sao absolutos.
+   Ancorar o workspace ao main ja dimensionado e manter o mapa sempre clicavel. */
+.dashboard .shell-main > main.app-content.ronda-page{
+ position:relative!important;display:block!important;min-width:0;width:100%!important;
+ overflow:hidden!important;padding:0!important;
+}
+.dashboard .ronda-page>.page-title{display:none!important;}
+.dashboard .ronda-page .patrol-workspace{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ min-width:0;min-height:0;flex:none!important;display:block!important;
+}
+.dashboard .ronda-page .patrol-map-panel{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+}
+.dashboard .ronda-page .patrol-actions{pointer-events:auto;}
 /* R1 · Vigia map-first: cartografia ocupa toda a area util.
    As acoes permanecem acessiveis em painel retratil; nenhuma funcao removida. */
 .dashboard .ronda-page .patrol-workspace{
