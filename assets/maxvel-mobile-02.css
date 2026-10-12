@@ -123,21 +123,24 @@
 .horizon-maxvel-brand .brand-partners{display:flex!important}
 @media(max-width:900px){
  .brand-partners{gap:4px;height:36px}
- .brand-partners .maxvel-partner{transform:scale(.56);transform-origin:left center;flex-basis:91px;margin-right:-70px}
+ .brand-partners .maxvel-partner{transform:scale(.45);transform-origin:left center;flex-basis:162px;margin-right:-89px}
  .brand-partners .partner-divider{height:22px}
  .brand-partners .horizon-partner{gap:2px}
  .brand-partners .horizon-partner svg{width:19px;height:22px}
- .brand-partners .horizon-partner strong{font-size:10px;letter-spacing:.025em}
+ .brand-partners .horizon-partner strong{font-size:9.5px;letter-spacing:.015em}
  .dashboard .app-header .horizon-maxvel-brand{width:146px!important;min-width:146px!important;max-width:146px!important;flex:0 0 146px!important}
  .dashboard .app-header .header-actions{margin-left:auto}
  .entry-screen .brand-partners{height:42px}
- .entry-screen .brand-partners .maxvel-partner{transform:scale(.72);flex-basis:116px;margin-right:-46px}
+ .entry-screen .brand-partners .maxvel-partner{transform:scale(.72);flex-basis:162px;margin-right:-45px}
  .entry-screen .brand-partners .horizon-partner strong{font-size:13px}
 }
 @media(max-width:350px){
+ .brand-partners .maxvel-partner{transform:scale(.40);margin-right:-97px}
+ .brand-partners .horizon-partner svg{width:17px}
+ .brand-partners .horizon-partner strong{font-size:9px}
  .dashboard .app-header .horizon-maxvel-brand{width:135px!important;min-width:135px!important;max-width:135px!important;flex-basis:135px!important}
  .dashboard .app-header .header-actions{gap:2px!important}
- .dashboard .app-header .header-actions .help-toggle{display:none!important}
+ .dashboard .app-header .header-actions .help-toggle{display:inline-flex!important;min-width:44px!important;width:44px!important;flex:0 0 44px!important}
  .dashboard .ronda-page .patrol-map-panel{height:clamp(235px,48dvh,380px)!important}
 }
 @media(max-width:900px) and (max-height:640px){
