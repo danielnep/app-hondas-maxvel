@@ -665,3 +665,19 @@ dialog .modal-actions{border-color:#40576A}
   max-height:calc(min(42dvh,200px) - 42px)!important;
  }
 }
+
+/* R4 · Evidências de cenário: acesso sob Mais opções, sem fotografias reais. */
+.patrol-evidence-link{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;border:1px solid #54748a;border-radius:9px;padding:9px 11px;background:#1a3950;color:#dceffa;text-align:left;font-weight:730;font-size:12px;cursor:pointer}
+.patrol-evidence-link svg{width:17px;height:17px;flex-shrink:0}
+.evidence-demo-dialog{display:grid;gap:10px}
+.evidence-demo-dialog>p{font-size:13px;line-height:1.55;color:#b7ccda;margin:0}
+.evidence-demo-count{font-size:12px;color:#a7dffb;font-weight:800}
+.evidence-demo-list{display:grid;gap:5px}
+.evidence-demo-row{display:flex;align-items:center;justify-content:space-between;gap:9px;border-bottom:1px solid #3a5062;padding:7px 0}
+.evidence-demo-row>span,.evidence-demo-motion>span{display:grid;gap:3px}
+.evidence-demo-row strong,.evidence-demo-motion strong{font-size:13px;color:#eaf5fb}
+.evidence-demo-row small,.evidence-demo-motion small{font-size:11px;color:#a9c7da}
+.evidence-demo-row>.button,.evidence-demo-motion>.button{min-height:40px;min-width:96px}
+.evidence-demo-motion{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #456377;padding:11px;border-radius:9px}
+.evidence-demo-note{font-size:11px;line-height:1.5;color:#a9bfcf}
+@media(max-width:400px){.evidence-demo-row>.button,.evidence-demo-motion>.button{min-width:83px;padding-inline:8px}}
