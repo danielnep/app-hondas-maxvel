@@ -117,10 +117,35 @@ function installViewportViews(){
    paint();
   }
  }
+
  if(view==='rondas'){
+  const workspace=main.querySelector('.schedule-workspace');
+  const switcher=workspace?.querySelector('.schedule-switch');
+  if(switcher&&workspace)workspace.before(switcher);
+  const mapPage=main.querySelector('.map-command-page');
+  const mapHistory=main.querySelector('.map-history');
+  if(mapPage){
+   const nodes={mapa:mapPage.querySelector('.map-command-panel'),
+     pontos:mapPage.querySelector('.map-checkpoint-panel'),historico:mapHistory};
+   const nav=document.createElement('nav');nav.className='ux-ronda-tabs';
+   nav.setAttribute('aria-label','Detalhes do vigia');
+   const stage=document.createElement('div');stage.className='ux-ronda-stage';
+   const parts=[['mapa','Mapa'],['pontos','Pontos'],['historico','Histórico']];
+   for(const [key] of parts){if(nodes[key]){nodes[key].dataset.uxSubpage=key;stage.append(nodes[key]);}}
+   nav.innerHTML=parts.map(([k,label])=>'<button type="button" data-ux-ronda-tab="'+k+'">'+label+'</button>').join('');
+   let active='mapa';
+   const paint=()=>{
+    for(const [k] of parts){if(nodes[k])nodes[k].hidden=k!==active;}
+    nav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.uxRondaTab===active)));
+    if(active==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m.invalidate()));
+   };
+   nav.addEventListener('click',e=>{const b=e.target.closest('[data-ux-ronda-tab]');if(b){active=b.dataset.uxRondaTab;paint();}});
+   mapPage.replaceChildren(nav,stage);
+   paginateRows(nodes.pontos,'.map-point-row','Pontos',3);
+   paginateRows(nodes.historico,'tbody tr','Historico',3);
+   paint();
+  }
   paginateRows(main,'.schedule-row','Programas',3);
-  paginateRows(main,'.map-point-row','Pontos',4);
-  paginateRows(main,'.map-history tbody tr','Historico',3);
  }
  if(view==='notificacoes')paginateRows(main,'.event-item','Notificacoes',3);
  if(view==='ocorrencias')paginateRows(main,'.list-row','Ocorrencias',3);
@@ -189,7 +214,7 @@ function landing(){
  return `<div class="hero product-home"><div class="hero-container"><header class="topnav">${brand()}<nav class="nav-actions" aria-label="Acesso rápido">${btn(ic('help')+' Guia da plataforma','guide','','')} ${btn('Entrar '+ic('arrow'),'login','primary small')}</nav></header><main id="main"><section class="product-hero"><div class="product-hero-copy"><div class="eyebrow">${ic('shield')} HONDAS MAXVEL · OPERAÇÕES EM CAMPO</div><h1>Uma visão completa<br>de cada <span>ronda.</span></h1><p>Acompanhe o trabalho em campo e a supervisão em um só ambiente. Pontos, trajetos, permanência e ocorrências apresentados com clareza, do celular ao computador.</p><div class="hero-buttons">${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}${btn('Acessar minha área','login')}</div><div class="product-benefits"><span>${ic('checkcircle')} Passo a passo para o colaborador</span><span>${ic('checkcircle')} Visão da supervisão</span><span>${ic('checkcircle')} Registros com contexto</span></div><p class="product-fineprint">${ic('help')} Ambiente de avaliação: trajeto, pessoas e alertas ilustrativos. A cartografia é real quando online.</p></div><div class="product-showcase"><div class="showcase-main"><div class="showcase-toolbar"><div class="showcase-title">${ic('map')} <strong>Central de acompanhamento</strong><small>Prévia funcional do mapa</small></div><span class="showcase-status"><i></i> Visualização de rota</span></div><div id="hero-map" class="showcase-map"></div><div class="showcase-map-badge">${ic('pin')} Rota Centro · Divinópolis <span>4 pontos · raio 25 m</span></div><div class="showcase-overlay-stats"><div><small>Próxima verificação</small><strong>Portaria principal</strong></div><span>${ic('crosshair')} 25 m</span></div></div><div class="showcase-detail-grid"><div class="showcase-detail"><span class="showcase-detail-icon">${ic('clock')}</span><span><small>Permanência por ponto</small><strong>30 segundos contínuos</strong></span></div><div class="showcase-detail"><span class="showcase-detail-icon">${ic('bell')}</span><span><small>Desvios de percurso</small><strong>Justificativa e análise</strong></span></div></div><div class="showcase-disclaimer">Mapa OpenStreetMap · cenário operacional fictício</div></div></section><section class="product-capabilities"><div class="capabilities-intro"><div class="eyebrow">UMA PLATAFORMA · QUATRO FRENTES</div><h2>Feita para acompanhar a operação, não para complicá-la.</h2><p>O mesmo processo apresentado de forma específica para quem executa e para quem supervisiona.</p></div><div class="capability-grid">${examples.map(([ico,title,desc],i)=>`<article class="capability"><span class="capability-index">0${i+1}</span><span class="capability-icon">${ic(ico)}</span><h3>${title}</h3><p>${desc}</p></article>`).join('')}</div></section><section class="product-endcap"><div><div class="eyebrow">VEJA O FLUXO COMPLETO</div><h2>Do primeiro ponto ao relatório final.</h2><p>Explore as telas reais da experiência proposta para ronda e supervisão, com cenário operacional interativo.</p></div>${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}</section></main><footer class="hero-foot"><span>Desenvolvido por Horizon | Daniel N. Xavier</span><a href="#" data-action="privacy">Privacidade e requisitos técnicos</a></footer></div></div>`;
 }
 const allNav={ronda:[['minha-ronda','Minha ronda','compass'],['registros','Meus registros','folder'],['ocorrencias','Ocorrências','alert']],supervisor:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Notificações','bell'],['ocorrencias','Ocorrências','alert'],['relatorios','Relatórios','clipboard']],gestor:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Notificações','bell'],['ocorrencias','Ocorrências','alert'],['equipe','Equipe','users'],['relatorios','Relatórios','clipboard'],['configuracoes','Configurações','settings']],admin:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Notificações','bell'],['ocorrencias','Ocorrências','alert'],['equipe','Equipe','users'],['relatorios','Relatórios','clipboard'],['configuracoes','Configurações','settings']]};
-const mobileNavFor=role=>role==='ronda'?[['minha-ronda','Minha ronda','compass'],['ocorrencias','Ocorrências','alert'],['registros','Histórico','folder']]:[['overview','Operação','chart'],['rondas','Rondas','map'],['notificacoes','Alertas','bell'],['relatorios','Registros','clipboard']];
+const mobileNavFor=role=>role==='ronda'?[['minha-ronda','Minha ronda','compass'],['ocorrencias','Ocorrências','alert'],['registros','Histórico','folder']]:[['overview','Operação','chart'],['rondas','Rondas','map'],['notificacoes','Alertas','bell'],['menu','Mais','list']];
 const roleName={ronda:'Vigia / Ronda',supervisor:'Supervisão',gestor:'Gestão',admin:'Administração'};
 function simRoleBar(){
  if(!presentation)return '';
@@ -251,7 +276,7 @@ function featureHelp(topic){
 
 function pageTitle(title,sub,extra=''){return `<div class="page-title"><div><div class="eyebrow">MAXVEL · ${esc(roleName[user.role])}</div><h1>${title}</h1><p>${sub}</p></div>${extra}</div>`}
 function appShell(){const entries=allNav[user.role],mobileEntries=mobileNavFor(user.role);let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
- return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Avaliação · dados locais</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Desenvolvido por Horizon</p></div></aside><div class="shell-main"><header class="app-header">${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker"):""}<button class="help-toggle" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header>${simRoleBar()}<main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${viewContent()}</main><nav class="mobile-nav mobile-only" style="--nav-items:${mobileEntries.length}" aria-label="Navegação móvel">${mobileEntries.map(([key,title,ico])=>`<button class="${view===key?'active':''}" data-view="${key}">${ic(ico)}<span>${title}</span></button>`).join('')}</nav><footer class="footer-app">Ambiente de avaliação · dados locais · Desenvolvido por Horizon</footer></div></div></div>`}
+ return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Avaliação · dados locais</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Desenvolvido por Horizon</p></div></aside><div class="shell-main"><header class="app-header">${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker"):""}<button class="help-toggle" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header>${simRoleBar()}<main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${viewContent()}</main><nav class="mobile-nav mobile-only" style="--nav-items:${mobileEntries.length}" aria-label="Navegação móvel">${mobileEntries.map(([key,title,ico])=>key==='menu'?`<button data-action="open-mobile-menu">${ic(ico)}<span>${title}</span></button>`:`<button class="${view===key?'active':''}" data-view="${key}">${ic(ico)}<span>${title}</span></button>`).join('')}</nav><footer class="footer-app">Ambiente de avaliação · dados locais · Desenvolvido por Horizon</footer></div></div></div>`}
 function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'registros':return personalRecords();case 'overview':return overview();case 'rondas':return rondas();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
 function overview(){
@@ -566,6 +591,13 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
   schedulePage=Math.max(0,Math.min(info.pages-1,info.page+(act==='schedule-next'?1:-1)));
   render();return;
  }
+ if(act==='open-mobile-menu'){
+  const options=allNav[user?.role]??[];
+  showDialog('<div class="ux-access-menu"><div class="eyebrow">NAVEGAÇÃO</div><h2>Escolha a área</h2>'+
+    options.map(([key,label,ico])=>'<button type="button" data-view="'+esc(key)+'">'+ic(ico)+' '+esc(label)+'</button>').join('')+
+    '<button type="button" data-action="guide">Guia completo</button><button type="button" data-action="tour-restart">Rever tutorial</button></div>');
+  return;
+ }
  if(act==='program-round'){if(!['supervisor','gestor','admin'].includes(user?.role))return;programRoundDialog();return;}
  if(act==='schedule-show-filters'){const ref=document.querySelector('.schedule-refine');if(ref){ref.classList.toggle('ux-filters-open');el.setAttribute('aria-expanded',String(ref.classList.contains('ux-filters-open')));}return;}
  if(act==='watcher-chooser'){if(user?.role==='ronda')watcherChooser();return;}
@@ -682,14 +714,19 @@ document.addEventListener('change',e=>{
  }
 });
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
+
+document.addEventListener('submit',e=>{
+ if(e.target.id!=='operational-settings')return;
+ e.preventDefault();
+ if(!['gestor','admin'].includes(user?.role))return;
+ const fields=new FormData(e.target),seconds=Number(fields.get('dwellSeconds'));
+ if(!Number.isInteger(seconds)||seconds<5||seconds>120){notify('Escolha de 5 a 120 segundos.');return;}
+ operationalSettings={dwellSeconds:seconds,deviationJustification:fields.has('deviationJustification'),
+  evidenceEnabled:fields.has('evidenceEnabled')};
+ persist();render();notify('Regras salvas para as próximas rondas.');
+});
+
 modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);
- if(e.target.id==='operational-settings'){
-  if(!['gestor','admin'].includes(user?.role))return;
-  const seconds=Number(f.get('dwellSeconds'));
-  if(!Number.isInteger(seconds)||seconds<5||seconds>120){notify('Escolha de 5 a 120 segundos.');return;}
-  operationalSettings={dwellSeconds:seconds,deviationJustification:f.has('deviationJustification'),evidenceEnabled:f.has('evidenceEnabled')};
-  persist();render();notify('Configurações salvas para novas rondas.');return;
- }
 
  if(e.target.id==='program-edit-form'){
   if(!['supervisor','gestor','admin'].includes(user?.role))return;

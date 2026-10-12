@@ -204,3 +204,48 @@
  .dashboard .settings-data{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:8px;font-size:10px;padding:6px}
  .dashboard .settings-data button{min-height:34px!important;padding:4px!important;font-size:10px!important}
 }
+
+@media (max-width:900px){
+ .ux-access-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:3px;min-width:0}
+ .ux-access-menu h2,.ux-access-menu .eyebrow{grid-column:1/-1}
+ .ux-access-menu button{min-height:49px;border:1px solid #44494D;background:#202225;color:#F3F4F6;font-size:12px;text-align:left;display:flex;align-items:center;gap:7px;padding:7px}
+ .ux-access-menu button svg{width:16px;height:16px;color:#28B6E8}
+ .dashboard .app-content:has(.map-command-page) .schedule-workspace{display:none!important}
+ .dashboard .app-content:has(.map-command-page) .supervision-context{flex:0 0 auto;margin:0;padding:2px;gap:1px}
+ .dashboard .app-content:has(.map-command-page) .supervision-context label{font-size:10px}
+ .dashboard .app-content:has(.map-command-page) .supervision-context select{min-height:33px!important;height:33px!important}
+ .dashboard .app-content:has(.map-command-page) .supervision-context-meta span{display:none!important}
+ .dashboard .app-content:has(.map-command-page)>.page-title{display:none!important}
+ .dashboard .app-content .schedule-switch{flex:0 0 34px!important;min-height:34px!important;height:34px!important;display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:3px!important;margin:1px 0!important}
+ .dashboard .app-content .schedule-switch button{min-height:33px!important;height:33px!important;padding:2px 3px!important;font-size:10px!important}
+ .dashboard .app-content>.map-command-page{flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:3px}
+ .ux-ronda-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;flex:0 0 35px;min-height:35px}
+ .ux-ronda-tabs button{background:#242628;border:1px solid #44474A;color:#D2D5D7;font-size:11px;padding:3px}
+ .ux-ronda-tabs button[aria-selected="true"]{color:#28B6E8;border-bottom:2px solid #28B6E8}
+ .ux-ronda-stage{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;width:100%!important}
+ .ux-ronda-stage>[data-ux-subpage]{flex:1 1 auto!important;min-height:0!important;min-width:0!important;width:100%!important;max-height:none!important;height:100%!important;overflow:hidden!important;margin:0!important}
+ .ux-ronda-stage>[hidden]{display:none!important}
+ .ux-ronda-stage .map-command-panel{display:flex!important;flex-direction:column!important;padding:5px!important}
+ .ux-ronda-stage .map-command-panel .map-command-top{flex:0 0 42px!important;min-height:42px!important;max-height:42px!important;padding:2px!important}
+ .ux-ronda-stage .map-command-panel .map-command-top h2{font-size:11px!important}
+ .ux-ronda-stage .map-command-panel .map-command-top p{display:none!important}
+ .ux-ronda-stage .map-command-panel .map-command-actions{gap:4px!important}
+ .ux-ronda-stage .map-command-panel .map-command-actions .tag{display:none!important}
+ .ux-ronda-stage .map-command-panel .map-command-map{display:flex!important;flex:1 1 auto!important;height:100%!important;min-height:0!important;max-height:none!important}
+ .ux-ronda-stage .map-command-panel .map-command-map .map-container,
+ .ux-ronda-stage .map-command-panel .map-command-map .map-container.large{flex:1!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important}
+ .ux-ronda-stage .map-command-panel .map-legend,.ux-ronda-stage .map-command-panel .map-command-disclosure{display:none!important}
+ .ux-ronda-stage .map-checkpoint-panel{display:flex!important;flex-direction:column!important;padding:6px!important}
+ .ux-ronda-stage .map-checkpoint-panel .map-checkpoint-heading{padding:4px!important}
+ .ux-ronda-stage .map-checkpoint-panel .map-point-list{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+ .ux-ronda-stage .map-checkpoint-panel .map-point-note{display:none!important}
+ .ux-ronda-stage .map-history{display:flex!important;flex-direction:column!important;padding:6px!important}
+ .ux-ronda-stage .map-history .table-wrap{flex:1 1 auto!important;min-height:0!important}
+ .dashboard .app-content:has(.schedule-workspace):not(:has(.map-command-page)) .schedule-workspace{display:flex!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important}
+ .dashboard .schedule-workspace .schedule-heading{flex:0 0 auto!important;padding:4px!important}
+ .dashboard .schedule-workspace .schedule-heading h2{font-size:12px!important}
+ .dashboard .schedule-workspace .schedule-heading p{display:none!important}
+ .dashboard .schedule-workspace .schedule-list{flex:1 1 auto!important;min-height:0!important}
+ .dashboard .schedule-workspace .schedule-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)!important;gap:4px!important;min-height:58px!important}
+ .dashboard .schedule-workspace .schedule-pagination{flex:0 0 34px!important;min-height:34px!important}
+}
