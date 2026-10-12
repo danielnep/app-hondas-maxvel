@@ -2,6 +2,16 @@
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Horizon (branco, azul celeste e azul-prateado), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
+## Revisão de clareza operacional · 12/10/2026
+
+A experiência do vigia foi simplificada para **mapa em tela inteira + estado e próxima ação**. Agenda, ferramentas de simulação, instruções e registros permanecem em **Mais opções**, com navegação persistente para Ocorrências e Histórico. Em demonstração, o antigo seletor horizontal com quatro perfis foi substituído por **Áreas** no cabeçalho; a escolha continua disponível sem sacrificar o mapa.
+
+Supervisão e Gestão apresentam menos faixas explicativas repetidas e acesso mais rápido ao mapa. O painel móvel de Alertas inclui acesso à lista de ocorrências. Supervisão/Gestão/Administração podem demonstrar atribuição, revisão, resolução e histórico de providências **apenas neste navegador**.
+
+A função R4 de verificação de ponto apresenta **cinco etapas simuladas** (frente, direita, trás, esquerda e selfie) e **giro simulado**, sem acessar câmera ou sensor nem criar imagens. É uma apresentação do fluxo, não comprovação real. O ponto continua usando as regras existentes de GPS/25 m/30 s; conclusão não passa a exigir falsas evidências. Câmera e sensor reais, upload privado, validação servidor e notificação entre aparelhos continuam na implantação pendente.
+
+[Plano R4 de evidências](docs/R4-EVIDENCIAS-CONTRATO-E-ETAPAS.md) · [Contratos de backend R6, não implantados](docs/R6-BACKEND-CONTRATOS-E-DEPENDENCIAS.md) · [Tarefa R0–R7](https://github.com/danielnep/app-hondas-maxvel/issues/24).
+
 ## Plataforma Graphite Dark · outubro de 2026
 
 **Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o lockup **Hondas Maxvel × Horizon**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
