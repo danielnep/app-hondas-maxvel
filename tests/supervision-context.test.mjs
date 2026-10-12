@@ -35,8 +35,8 @@ test('cores retas e identidade oficial das duas marcas aparecem em todos os aces
  assert.match(styles,/border-radius:0!important/);
  assert.match(styles,/#28B6E8/);
  assert.match(styles,/#0C0D0F/);
- assert.doesNotMatch(app,/maxvelseguranca\\.com\\.br\\/images\\/banner\\/01\\.jpg/);
- assert.match(app,/horizon-logo-transparente\\.webp/);
+ assert.doesNotMatch(app,/maxvelseguranca\.com\.br\/images\/banner\/01\.jpg/);
+ assert.match(app,/horizon-logo-transparente\.webp/);
  assert.match(app,/class="brand-partners"/);
  assert.match(html,/maxvel-mobile-02\.css/);
 });
