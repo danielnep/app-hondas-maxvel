@@ -2,7 +2,7 @@ import {routeWaypoints} from './domain.js';
 
 /**
  * Maps use genuine OpenStreetMap tiles when Leaflet and the network are available.
- * Patrol routes in demo mode are schematic STRAIGHT SEGMENTS, not verified street paths.
+ * Patrol routes in demo mode use INTERMEDIATE WAYPOINTS for a detailed fictional path, not verified street routing.
  * Markers and geofences are overlays and do not represent real Maxvel facilities.
  */
 const escapeHtml = x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -22,7 +22,7 @@ export function loadLeaflet(){
  return leafletPromise;
 }
 export function routeBounds(route){
- const pts=pointsOf(route);return {
+ const pts=routeWaypoints(route);return {
   minLat:Math.min(...pts.map(p=>p.lat)),maxLat:Math.max(...pts.map(p=>p.lat)),
   minLng:Math.min(...pts.map(p=>p.lng)),maxLng:Math.max(...pts.map(p=>p.lng))
  };
@@ -32,7 +32,7 @@ export function project(point,route,width=680,height=360){
  return {x:55+(point.lng-b.minLng)/lngSpan*(width-110),y:height-45-(point.lat-b.minLat)/latSpan*(height-90)};
 }
 export function fallbackSVG(route,session,position){
- const path=pointsOf(route).map(x=>{const p=project(x,route);return `${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ');
+ const path=routeWaypoints(route).map(x=>{const p=project(x,route);return `${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ');
  const visual=pointsOf(route).slice(0,-1),pos=project(position??route.base,route);
  return `<svg class="fallback-svg" viewBox="0 0 680 360" role="img" aria-label="Esquema alternativo da rota, sem cartografia de ruas" preserveAspectRatio="xMidYMid meet"><defs><pattern id="roadgrid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M 56 0 L 0 0 0 56" fill="none" stroke="#d8e6ee" stroke-width="1"/></pattern></defs><rect width="680" height="360" fill="#ebf5fa"/><rect width="680" height="360" fill="url(#roadgrid)"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="white" stroke-width="22"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#c0d3e0" stroke-width="1" stroke-dasharray="7 6"/><polyline points="${path}" fill="none" stroke="#fff" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#0b8cc3" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=project(p,route),done=i>0&&session?.checkpoints[i-1]?.completedAt,active=i>0&&session?.index===i-1;return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#0e91c8" fill-opacity=".10"/><circle r="17" fill="${done?'#147c68':active?'#117eaf':'#163b50'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}<g transform="translate(${pos.x} ${pos.y})"><circle r="25" fill="#0499d5" fill-opacity=".15"/><circle r="11" fill="#0383bf" stroke="white" stroke-width="5"/></g><rect x="15" y="13" rx="10" width="241" height="31" fill="#fff"/><text x="26" y="33" font-family="system-ui" font-size="12" fill="#274d62">Modo alternativo · mapa esquemático</text></svg>`;
 }
@@ -75,7 +75,7 @@ export class PatrolMap{
   const L=this.leaflet,m=this.instance;if(!m||!L)return;
   this.layers.forEach(layer=>m.removeLayer(layer));this.layers=[];this.pointMarkers=[];
   const add=(layer)=>{layer.addTo(m);this.layers.push(layer);return layer};
-  const pts=pointsOf(this.route).map(latlng);
+  const pts=routeWaypoints(this.route).map(latlng);
   add(L.polyline(pts,{color:'#f7ffff',weight:13,opacity:.9,lineJoin:'round',interactive:false}));
   add(L.polyline(pts,{color:'#117fb7',weight:5,opacity:1,dashArray:'11 8',lineJoin:'round',interactive:false}));
   const bases=[this.route.base,...this.route.points];
