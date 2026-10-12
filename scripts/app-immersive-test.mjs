@@ -13,7 +13,7 @@ const chrome=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v chro
 const browser=await chromium.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-dev-shm-usage']});
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900]];
 const report=[];
-async function tap(page,selector){await page.locator(selector).first().click({timeout:12000});await wait(200)}
+async function tap(page,selector){if(selector.startsWith('#dialog '))await revealDialogControl(page,selector);await page.locator(selector).first().click({timeout:12000});await wait(200)}
 async function enter(page,role='ronda'){
  await tap(page,'[data-action="login"]:visible');
  await page.locator('#dialog[open]').waitFor({timeout:8000});
