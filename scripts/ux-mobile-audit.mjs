@@ -101,6 +101,35 @@ try{
    }
    await click(page,'[data-action="schedule-tab"][data-tab="mapa"]');
    await state(page,width,height,'08-mapa');
+   if(width<=900){
+    const visiblePanels=async()=>page.locator('.ux-ronda-stage > [data-ux-subpage]').evaluateAll(nodes=>
+     nodes.filter(e=>!e.hidden&&getComputedStyle(e).display!=='none').map(e=>e.dataset.uxSubpage));
+    if(JSON.stringify(await visiblePanels())!=='["mapa"]')throw Error('Painéis sobrepostos ao entrar no mapa: '+JSON.stringify(await visiblePanels()));
+    const alignment=await page.evaluate(()=>{
+     const content=document.querySelector('.dashboard .app-content'),panel=document.querySelector('.ux-ronda-stage');
+     const nav=document.querySelector('.mobile-nav.mobile-only');
+     return {panel:panel?.getBoundingClientRect().bottom,content:content?.getBoundingClientRect().bottom,
+      nav:nav?.getBoundingClientRect().top,map:document.querySelector('#ops-map')?.getBoundingClientRect().height};
+    });
+    if(alignment.nav-alignment.panel>35)throw Error('Espaço vazio sob o painel do mapa: '+JSON.stringify(alignment));
+    if(alignment.map<130)throw Error('Mapa menor que área útil: '+JSON.stringify(alignment));
+    await click(page,'[data-ux-ronda-tab="pontos"]');
+    if(JSON.stringify(await visiblePanels())!=='["pontos"]')throw Error('Pontos e mapa aparecem simultaneamente');
+    if(!await page.locator('.hx05-point-row .hx05-open-button').count())throw Error('Prévia de pontos sem botões Abrir');
+    await click(page,'.hx05-point-row .hx05-open-button');
+    if(!await page.locator('#dialog[open] .hx05-point-detail').count())throw Error('Detalhe do ponto não abriu');
+    await click(page,'#dialog [data-action="focus-route-point"]');
+    if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Detalhe não fechou ao abrir mapa');
+    if(JSON.stringify(await visiblePanels())!=='["mapa"]')throw Error('Ver no mapa não selecionou o mapa');
+    await click(page,'.map-command-panel [data-action="center-maps"]');
+    await click(page,'[data-ux-ronda-tab="historico"]');
+    if(JSON.stringify(await visiblePanels())!=='["historico"]')throw Error('Histórico não isolado da área do mapa');
+    await state(page,width,height,'08b-historico-isolado');
+    await click(page,'[data-ux-ronda-tab="mapa"]');
+    if(JSON.stringify(await visiblePanels())!=='["mapa"]')throw Error('Mapa não voltou após histórico');
+    await checkInteractiveBounds(page,'rondas / mapa');
+   }
+
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="gestor"]');
    await state(page,width,height,'09-gestao');
@@ -140,6 +169,17 @@ try{
     await click(page,'#dialog [data-view="configuracoes"]');
     await state(page,width,height,'13-configuracoes');
     await checkInteractiveBounds(page,'configurações');
+    if(await page.locator('.hx05-setting-row').count()!==3)throw Error('Configurações não estão em três linhas com prévia');
+    await click(page,'.hx05-setting-row [data-setting="dwellSeconds"]');
+    if(!await page.locator('#dialog[open] #hx05-settings-form').count())throw Error('Configuração não abriu em janela');
+    await page.locator('#dialog #hx05-settings-value').fill('45');
+    await click(page,'#dialog #hx05-settings-form button[type="submit"]');
+    if(!await page.locator('.hx05-setting-row').first().innerText().then(t=>t.includes('45 segundos')))
+     throw Error('Salvar configuração não atualizou a prévia da lista');
+    await click(page,'.hx05-setting-row [data-setting="evidenceEnabled"]');
+    await click(page,'#dialog [data-action="close-dialog"]');
+    if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Fechar configuração não fechou janela');
+
    }
 
    if(errors.length)throw Error('Erros JS: '+errors.join('; '));
