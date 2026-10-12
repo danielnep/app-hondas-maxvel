@@ -176,8 +176,8 @@ dialog .modal-actions{border-color:#40576A}
 .schedule-heading h2{font-size:20px;color:var(--ui-text);margin:3px 0 4px}
 .schedule-heading p{font-size:12px;color:var(--ui-muted);margin:0}
 .schedule-heading .button{white-space:nowrap;min-height:44px}
-.schedule-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:12px}
-.schedule-stats>div{display:grid;gap:2px;min-width:0;padding:11px 13px;border:1px solid #354E61;background:#223444;border-radius:11px}
+.schedule-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-bottom:15px;padding:8px 0;border-top:1px solid var(--ui-border);border-bottom:1px solid var(--ui-border)}
+.schedule-stats>div{display:grid;gap:3px;min-width:0;padding:8px 13px;border-right:1px solid var(--ui-border);background:transparent;border-radius:0}.schedule-stats>div:last-child{border-right:0}
 .schedule-stats strong{color:#F4F9FF;font-size:23px}
 .schedule-stats span{font-size:11px;color:var(--ui-muted)}
 .schedule-switch{display:flex;gap:6px;border-bottom:1px solid var(--ui-border);padding-bottom:10px}
@@ -189,6 +189,41 @@ dialog .modal-actions{border-color:#40576A}
 .schedule-toolbar svg{width:16px;height:16px}
 .schedule-toolbar label{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ui-muted)}
 .schedule-toolbar select{min-height:39px;padding:5px 8px;background:#132636;color:#EDF6FC;border:1px solid #486278;border-radius:8px}
+
+.schedule-refine{display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(145px,1fr) minmax(150px,1.2fr);gap:9px;margin:0 0 8px}
+.schedule-refine label{display:grid;align-items:start;gap:5px;color:var(--ui-muted);font-size:11px;font-weight:700}
+.schedule-refine :is(input,select){min-width:0;width:100%;min-height:44px;padding:9px 11px;border:1px solid #42596D;border-radius:9px;background:#111D2A;color:#E9F5FD}
+.schedule-refine :is(input,select):focus-visible{outline:2px solid #7DDCFF;outline-offset:1px;border-color:#55BEE8}
+.schedule-refine input::placeholder{color:#8FA9BB}
+.schedule-list-count{font-size:11px;color:var(--ui-muted);padding:5px 0 10px;min-height:30px;font-variant-numeric:tabular-nums}
+.schedule-pagination{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 0 3px;color:var(--ui-muted);font-size:12px}
+.schedule-pagination .button{min-height:44px}
+.schedule-pagination .button:disabled{opacity:.36}
+.dashboard .ops-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:10px 0 20px;padding:12px 2px;border:1px solid var(--ui-border);border-radius:13px;background:var(--ui-panel);overflow:hidden}
+.dashboard .ops-metric{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:9px 17px;border:0!important;border-right:1px solid var(--ui-border)!important;border-radius:0;background:transparent!important;box-shadow:none!important}
+.dashboard .ops-metric:last-child{border-right:0!important}
+.dashboard .ops-metric-top{display:none}
+.dashboard .ops-metric>strong{display:block;font-size:clamp(22px,2.7vw,31px);font-weight:800;line-height:1.15;letter-spacing:-.02em;color:#F1F6FC;margin:0 0 6px}
+.dashboard .ops-metric h3{font-size:12px;font-weight:720;line-height:1.3;color:#DCEAF5;margin:0}
+.dashboard .ops-metric p{font-size:11px;line-height:1.35;color:#AFC7D9;margin:5px 0 0}
+.dashboard .ops-metric.tone-red>strong{color:#FFAFB7}
+.dashboard .ops-metric.tone-green>strong{color:#8DE4C6}
+@media(max-width:900px){
+ .schedule-refine{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .schedule-refine label:first-child{grid-column:1/-1}
+ .dashboard .ops-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dashboard .ops-metric:nth-child(2){border-right:0!important}
+ .dashboard .ops-metric:nth-child(-n+2){border-bottom:1px solid var(--ui-border)}
+}
+@media(max-width:390px){
+ .schedule-refine{grid-template-columns:minmax(0,1fr)}
+ .schedule-refine label:first-child{grid-column:auto}
+ .schedule-stats>div{padding:7px 5px}
+ .schedule-stats strong{font-size:17px}
+ .schedule-stats span{font-size:10px}
+ .dashboard .ops-metric{padding:10px}
+}
+
 .schedule-list{display:grid;gap:5px;max-height:min(52vh,600px);overflow:auto;scrollbar-width:thin}
 .schedule-row{display:grid;grid-template-columns:minmax(115px,.6fr) minmax(150px,1.4fr) minmax(90px,.65fr) minmax(135px,.7fr);gap:10px;align-items:center;padding:11px 12px;border:1px solid #354B5E;border-radius:10px;background:#20303E}
 .schedule-row-time,.schedule-row-person{display:grid;gap:3px;min-width:0}
