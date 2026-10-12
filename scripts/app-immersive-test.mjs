@@ -58,6 +58,7 @@ try{
    await page.locator('#dialog #declaration-check').check();
    await tap(page,'[data-action="confirm-start"]');
    await capture(page,'active',width,height);
+   await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');
    await tap(page,'.patrol-actions [data-action="demo-leave"]');
    await wait(7400);
    await capture(page,'deviation',width,height);
