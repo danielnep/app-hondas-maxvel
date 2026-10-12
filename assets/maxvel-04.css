@@ -68,3 +68,56 @@
 .dashboard-v4 .ux-row-pagination span{font-size:10px}
 @media(max-width:900px){.dashboard-v4{gap:3px!important}.v4-dashboard-heading{flex-basis:36px;min-height:36px}.v4-dashboard-heading h1{font-size:14px}.v4-local-notice{max-width:47%;font-size:9px;line-height:1.15}.v4-dashboard-tabs{flex-basis:34px;height:34px}.v4-dashboard-tabs button{font-size:10px;padding:3px 0}.v4-insight-row{min-height:60px}.v4-summary-metrics{grid-template-rows:repeat(2,53px)}}
 @media(min-width:901px){.dashboard .shell-main:has(.dashboard-v4){height:100dvh!important;display:flex;flex-direction:column;overflow:hidden}.dashboard .app-content:has(.dashboard-v4){display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}.dashboard-v4{padding:8px}.v4-summary-metrics{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:85px}.v4-insight-row{min-height:81px}.v4-team-row{min-height:59px}}
+
+/* Paginação aplicada à região da informação; nunca depender do scroll global. */
+@media(max-width:900px){
+ .ux-paged-list{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+ .ux-paged-list .ux-row-pagination{margin-top:auto!important;flex:0 0 34px!important;min-height:34px!important;max-height:34px!important;width:100%;display:flex!important;align-items:center;justify-content:space-between;gap:4px}
+ .ux-paged-list .ux-row-pagination button{min-height:30px!important;height:30px!important;min-width:36px!important;padding:2px 8px!important;font-size:12px!important;border:1px solid #484C4E;background:#25292B;color:#F3F4F6;border-radius:0!important}
+ .ux-paged-list [hidden]{display:none!important}
+ .dashboard .app-content:has(.alerts-command-page) .alerts-command-page{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+ .dashboard .alerts-command-page .alert-local-banner{display:none!important}
+ .dashboard .alerts-command-page .alerts-queue-card{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important;padding:6px!important}
+ .dashboard .alerts-command-page .alerts-queue-head{flex:0 0 auto!important;padding:3px!important}
+ .dashboard .alerts-command-page .alerts-queue-head h2{font-size:12px!important}
+ .dashboard .alerts-command-page .alerts-queue-head p{display:none!important}
+ .dashboard .alerts-command-page .alert-filter-tabs{flex:0 0 35px!important;min-height:35px!important}
+ .dashboard .alerts-command-page .alerts-queue-list{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important}
+ .dashboard .alerts-command-page .alerts-queue-list>.event-item{flex:0 0 auto!important;min-height:55px!important;max-height:74px!important;padding:5px!important}
+ .dashboard .alerts-command-page .alerts-queue-list>.event-item p{display:none!important}
+ .dashboard .alerts-command-page .alerts-footer{flex:0 0 auto!important;padding:4px!important;font-size:9px!important}
+ .dashboard .app-content:has(.list-row)>.card{flex:1 1 auto!important;min-height:0!important;max-height:none!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;padding:7px!important}
+ .dashboard .app-content .card.ux-paged-list>.list-row{flex:0 0 auto!important;min-height:60px!important;max-height:75px!important;padding:7px!important}
+ .dashboard .app-content .card.ux-paged-list>.list-row p{display:none!important}
+ .dashboard .app-content:has(.team-list) .team-list{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important}
+ .dashboard .app-content:has(.team-list) .team-row{min-height:51px!important;max-height:57px!important}
+ .dashboard .app-content .table-wrap.ux-paged-list{display:flex!important;flex-direction:column!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important}
+ .dashboard .app-content .data-table{display:block!important;width:100%!important;min-width:0!important}
+ .dashboard .app-content .data-table thead{display:none!important}
+ .dashboard .app-content .data-table tbody{display:flex!important;flex-direction:column!important}
+ .dashboard .app-content .data-table tbody tr{display:grid!important;grid-template-columns:minmax(0,1.3fr) 60px 50px;gap:3px!important;align-items:center!important;border-bottom:1px solid #34383B!important;min-height:53px!important;padding:4px!important}
+ .dashboard .app-content .data-table tbody tr[hidden]{display:none!important}
+ .dashboard .app-content .data-table tbody tr td{padding:2px!important;font-size:10px!important;min-width:0!important}
+ .dashboard .app-content .data-table tbody tr td:nth-child(2),.dashboard .app-content .data-table tbody tr td:nth-child(4),.dashboard .app-content .data-table tbody tr td:nth-child(5){display:none!important}
+ .dashboard .app-content .data-table tbody tr td:nth-child(3){font-size:9px!important}
+ .dashboard .app-content .data-table tbody tr td:last-child button{height:32px!important;min-height:32px!important;font-size:10px!important;padding:3px 6px!important}
+ .dashboard .app-content:has(.report-page) .report-page{display:flex!important;flex-direction:column!important;gap:4px!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important}
+ .dashboard .report-page>.page-title{flex:0 0 38px!important;min-height:38px!important;max-height:38px!important;margin:0!important}
+ .dashboard .report-page>.page-title h1{font-size:14px!important}
+ .dashboard .report-page>.page-title .button{height:32px!important;min-height:32px!important;font-size:10px!important;padding:3px 7px!important}
+ .dashboard .report-page>.report-context-bar,.dashboard .report-page>.report-insights-grid,.dashboard .report-page>.report-note{display:none!important}
+ .ux-report-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));flex:0 0 34px!important;min-height:34px!important;gap:2px}
+ .ux-report-tabs button{min-height:34px;border:1px solid #44484B;background:#222527;color:#C2C8CD;font-size:10px}
+ .ux-report-tabs button[aria-selected=true]{color:#28B6E8;border-bottom:2px solid #28B6E8}
+ .ux-report-stage{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+ .ux-report-stage>[data-ux-report]{display:flex!important;flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;flex-direction:column!important;overflow:hidden!important;margin:0!important;padding:7px!important}
+ .ux-report-stage>[hidden]{display:none!important}
+ .ux-report-stage .grid-kpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;align-content:start!important}
+ .ux-report-stage .grid-kpis>.kpi{min-height:70px!important;padding:7px!important}
+ .ux-report-stage .report-breakdown .report-progress-list{display:grid!important;gap:7px!important}
+ .ux-report-stage .report-events-list{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+ .ux-report-stage .report-events-list .event-item{flex:0 0 auto!important;min-height:56px!important;max-height:74px!important}
+ .ux-report-stage .report-events-list .event-item p{display:none!important}
+ .ux-report-stage .report-roster{display:flex!important;flex-direction:column!important}
+ .ux-report-stage .report-roster .table-wrap{flex:1 1 auto!important;min-height:0!important}
+}
