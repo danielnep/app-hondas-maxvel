@@ -2,7 +2,7 @@ name: Android APK de teste
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, maxvel-06-ux-mobile]
     paths:
       - 'android/**'
       - 'src/**'
