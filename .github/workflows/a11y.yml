@@ -9,6 +9,9 @@ on:
       - 'src/app.js'
       - 'styles.css'
       - 'assets/horizon-operacional.css'
+      - 'assets/horizon-graphite.css'
+      - 'src/tutorial.js'
+      - 'src/scheduling.js'
       - '.github/workflows/a11y.yml'
 jobs:
   axe-audit:
