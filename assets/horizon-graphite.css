@@ -316,3 +316,15 @@ dialog .modal-actions{border-color:#40576A}
  .simulation-roles .role-short{display:inline;font-size:10px;letter-spacing:0}
  .dashboard .simulation-roles button{flex-direction:column;gap:2px;min-width:0}
 }
+
+
+/* P0: rolebar em 320px: botões de perfis não podem interceptar uns aos outros. */
+@media(max-width:540px){
+ .dashboard .simulation-rolebar{padding:4px 5px;gap:3px;min-width:0}
+ .dashboard .simulation-roles{flex:1 1 0;min-width:0;justify-content:stretch;overflow-x:hidden}
+ .dashboard .simulation-roles button{flex:1 1 0;min-width:0!important;max-width:none;padding:5px 1px!important;overflow:hidden;white-space:nowrap}
+ .dashboard .simulation-roles button .icon-svg{flex-shrink:0}
+ .dashboard .simulation-actions .context-help{display:none}
+ .dashboard .simulation-actions{flex:0 0 auto}
+ .dashboard .simulation-actions button[data-action="end-presentation"]{width:43px;min-width:43px}
+}
