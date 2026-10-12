@@ -75,20 +75,32 @@ function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
 function registerMap(id,route,sessionRef=null,position=null,compact=false){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true}))}
 
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
-let uxOverviewPanel='mapa', uxDialogPage=0;
+let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo';
 const uxDashboardPane={supervisor:'mapa',gestor:'resumo',admin:'resumo'};
 const uxListSizes=()=>Math.max(2,Math.min(4,Math.floor((window.innerHeight-250)/85)));
 function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
- const rows=[...container.querySelectorAll(selector)].filter(e=>e.closest(selector)===e);
+ if(!container)return;
+ const rows=[...container.querySelectorAll(selector)].filter(e=>e.matches(selector));
  if(rows.length<=pageSize)return;
- const dataKey='uxPage'+groupKey;let page=Math.max(0,Math.min(Math.ceil(rows.length/pageSize)-1,Number(container.dataset[dataKey]||0)));
- const bar=document.createElement('nav');bar.className='ux-row-pagination';bar.setAttribute('aria-label','Páginas da lista');
+ // Paginação acompanha a lista, não fica solta ao fim do conteúdo cortado.
+ const parent=rows[0].parentElement;
+ const host=parent?.tagName==='TBODY'?parent.closest('table')?.parentElement:parent;
+ if(!host)return;
+ const dataKey='uxPage'+groupKey;
+ let page=Math.max(0,Math.min(Math.ceil(rows.length/pageSize)-1,Number(container.dataset[dataKey]||0)));
+ const bar=document.createElement('nav');bar.className='ux-row-pagination';
+ bar.setAttribute('aria-label','Páginas de '+groupKey);
+ host.classList.add('ux-paged-list');
  const paint=()=>{
   rows.forEach((row,i)=>row.hidden=i<page*pageSize||i>=(page+1)*pageSize);
-  bar.innerHTML='<button type="button" data-ux-page="prev" aria-label="Página anterior" '+(page===0?'disabled':'')+'>‹</button><span>Página '+(page+1)+' / '+Math.ceil(rows.length/pageSize)+'</span><button type="button" data-ux-page="next" aria-label="Próxima página" '+(page===Math.ceil(rows.length/pageSize)-1?'disabled':'')+'>›</button>';
+  bar.innerHTML='<button type="button" data-ux-page="prev" aria-label="Página anterior" '+(page===0?'disabled':'')+'>‹</button><span>Página '+(page+1)+' de '+Math.ceil(rows.length/pageSize)+'</span><button type="button" data-ux-page="next" aria-label="Próxima página" '+(page===Math.ceil(rows.length/pageSize)-1?'disabled':'')+'>›</button>';
  };
- bar.addEventListener('click',e=>{const bt=e.target.closest('[data-ux-page]');if(!bt)return;page=Math.max(0,Math.min(Math.ceil(rows.length/pageSize)-1,page+(bt.dataset.uxPage==='next'?1:-1)));container.dataset[dataKey]=String(page);paint();});
- container.append(bar);paint();
+ bar.addEventListener('click',e=>{
+  const bt=e.target.closest('[data-ux-page]');if(!bt)return;
+  page=Math.max(0,Math.min(Math.ceil(rows.length/pageSize)-1,page+(bt.dataset.uxPage==='next'?1:-1)));
+  container.dataset[dataKey]=String(page);paint();
+ });
+ host.append(bar);paint();
 }
 function installViewportViews(){
  if(window.innerWidth>900||screen==='landing')return;
@@ -204,6 +216,29 @@ function installViewportViews(){
   if(scheduleFiltersOpen)main.querySelector('.schedule-refine')?.classList.add('ux-filters-open');
   paginateRows(main,'.schedule-row','Programas',3);
  }
+ 
+ if(view==='relatorios'){
+  const report=main.querySelector('.report-page');
+  const elements={resumo:report?.querySelector('.grid-kpis'),analise:report?.querySelector('.report-breakdown'),
+   eventos:report?.querySelector('.report-events'),historico:report?.querySelector('.report-roster')};
+  if(report&&elements.resumo){
+   const tabs=[['resumo','Resumo'],['analise','Análise'],['eventos','Eventos'],['historico','Histórico']];
+   const nav=document.createElement('nav');nav.className='ux-report-tabs';nav.setAttribute('aria-label','Seções do relatório');
+   nav.innerHTML=tabs.map(([id,title])=>'<button data-ux-report-tab="'+id+'" type="button">'+title+'</button>').join('');
+   const stage=document.createElement('div');stage.className='ux-report-stage';
+   for(const [id] of tabs){if(elements[id]){stage.append(elements[id]);elements[id].dataset.uxReport=id;}}
+   const renderTab=id=>{
+    for(const [key] of tabs){if(elements[key])elements[key].hidden=key!==id;}
+    nav.querySelectorAll('button').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.uxReportTab===id)));
+   };
+   nav.addEventListener('click',e=>{const bt=e.target.closest('[data-ux-report-tab]');if(bt){uxReportPage=bt.dataset.uxReportTab;renderTab(uxReportPage);}});
+   report.prepend(nav,stage);
+   paginateRows(elements.eventos,'.event-item','ReportEvents',uxListSizes());
+   paginateRows(elements.historico,'tbody tr','ReportHistory',uxListSizes());
+   renderTab(uxReportPage);
+  }
+ }
+ 
  if(view==='notificacoes')paginateRows(main,'.event-item','Notificacoes',3);
  if(view==='ocorrencias')paginateRows(main,'.list-row','Ocorrencias',3);
  if(view==='registros'||view==='relatorios')paginateRows(main,'tbody tr','Relatorio',3);
