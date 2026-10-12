@@ -143,3 +143,12 @@
 
 /* Fechar um dialog remove completamente sua caixa, inclusive após paginação. */
 dialog.ux-dialog-paging:not([open]){display:none!important}
+
+/* Gestão: resumo também possui acesso por páginas em aparelhos baixos. */
+@media(max-width:900px){
+ .v4-summary-pager{display:flex;align-items:center;justify-content:space-between;gap:6px;flex:0 0 35px;min-height:35px;margin-top:auto;background:#15191B;border-top:1px solid #414548;padding:2px}
+ .v4-summary-pager button{min-height:31px;height:31px;padding:3px 9px;background:#222729;color:#DDE3E6;border:1px solid #45494C;font-size:11px}
+ .v4-summary-pager button:disabled{opacity:.38}
+ .v4-summary-pager span{font-size:10px;color:#CAD1D4}
+ .v4-summary-pane>[hidden]{display:none!important}
+}
