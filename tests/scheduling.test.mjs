@@ -108,7 +108,7 @@ test('reprogramação guarda dados anteriores e recusa colisão entre escalas',(
 
 test('setas da escala móvel usam o mesmo tamanho de página da lista',()=>{
  const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
- assert.match(source,/const schedulePageSize=\(\)=>window\.innerWidth<=900\?3:16;/);
+ assert.match(source,/const schedulePageSize=\(\)=>window\.innerWidth<=900\?Math\.max\(1,Math\.min\(3,/);
  assert.equal((source.match(/pagePrograms\(active,schedulePage,schedulePageSize\(\)\)/g)||[]).length,2);
  const rows=demoSchedule(new Date(2026,9,12,5).getTime());
  const first=pagePrograms(rows,0,3),second=pagePrograms(rows,1,3);
