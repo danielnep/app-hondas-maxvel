@@ -121,3 +121,22 @@
  .ux-report-stage .report-roster{display:flex!important;flex-direction:column!important}
  .ux-report-stage .report-roster .table-wrap{flex:1 1 auto!important;min-height:0!important}
 }
+
+/* Os textos longos das janelas são distribuídos por páginas; não ficam encobertos. */
+@media(max-width:900px){
+ dialog.ux-dialog-paging{display:flex!important;flex-direction:column!important;max-height:calc(100dvh - 24px)!important;height:auto!important;overflow:hidden!important;gap:3px}
+ dialog.ux-dialog-paging .ux-dialog-paging-root{display:flex!important;flex:1 1 auto!important;flex-direction:column!important;gap:5px!important;min-height:0!important;max-height:calc(100dvh - 42px)!important;overflow:hidden!important}
+ dialog.ux-dialog-paging .ux-dialog-paging-root>[hidden]{display:none!important}
+ dialog.ux-dialog-paging .ux-dialog-pagination{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:7px!important;flex:0 0 37px!important;min-height:37px!important;max-height:37px!important;margin-top:auto!important;padding-top:4px!important;border-top:1px solid #45494D}
+ dialog.ux-dialog-paging .ux-dialog-pagination button{font-size:11px!important;min-height:33px!important;height:33px!important;min-width:77px!important;padding:4px 9px!important;border:1px solid #45494D;background:#24282B;color:#F3F4F6;border-radius:0!important}
+ dialog.ux-dialog-paging .ux-dialog-pagination button:disabled{opacity:.4!important}
+ dialog.ux-dialog-paging .ux-dialog-pagination span{font-size:10px!important;color:#BBC4CA}
+ .dashboard .ux-report-stage>.ux-report-summary{display:flex!important;flex-direction:column!important;align-content:start!important;gap:7px!important}
+ .dashboard .ux-report-stage>.ux-report-summary>.grid-kpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;flex:0 0 auto!important}
+ .dashboard .ux-report-summary>.report-context-bar{display:flex!important;gap:5px!important;align-items:center!important;flex:0 0 auto!important;font-size:10px!important;padding:5px!important}
+ .dashboard .ux-report-summary>.report-note{display:flex!important;flex:0 0 auto!important;font-size:10px!important;padding:6px!important}
+ .dashboard .ux-report-summary .kpi{padding:7px!important;min-height:63px!important}
+ .dashboard .ux-report-summary .kpi small{font-size:10px!important}
+ .dashboard .ux-report-summary .kpi strong{font-size:20px!important}
+ .dashboard .ux-report-summary .kpi em{font-size:9px!important}
+}
