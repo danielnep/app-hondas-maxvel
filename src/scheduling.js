@@ -88,3 +88,26 @@ export function cancelProgram(programs,id){
 export function scheduleTotals(programs,sessions=[],now=Date.now()){
  return ['programada','em andamento','atrasada','concluída','cancelada'].reduce((a,s)=>(a[s]=programs.filter(p=>scheduleStatus(p,sessions,now)===s).length,a),{});
 }
+
+
+/** Consulta de agenda: filtros combináveis, sem depender do DOM e sem modificar os dados. */
+const normalizeSearch=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+export function filterPrograms(programs,{status='all',watcherId='all',unit='all',query='',sessions=[],now=Date.now()}={}){
+ const needle=normalizeSearch(query);
+ return programs.filter(p=>{
+  const watcher=watcherById(p.watcherId),route=routeById(p.routeId);
+  if(status!=='all'&&scheduleStatus(p,sessions,now)!==status)return false;
+  if(watcherId!=='all'&&p.watcherId!==watcherId)return false;
+  if(unit!=='all'&&watcher?.unit!==unit)return false;
+  if(!needle)return true;
+  return normalizeSearch([watcher?.name,watcher?.unit,route?.name,p.notes,p.id].join(' ')).includes(needle);
+ }).sort((a,b)=>a.startAt-b.startAt||a.id.localeCompare(b.id));
+}
+/** Paginação estável da UI. O total nunca é truncado silenciosamente. */
+export function pagePrograms(programs,page=0,pageSize=16){
+ const size=Math.min(100,Math.max(1,Math.trunc(Number(pageSize))||16)),total=programs.length;
+ const pages=Math.max(1,Math.ceil(total/size));
+ const current=Math.min(pages-1,Math.max(0,Math.trunc(Number(page))||0));
+ const start=current*size;
+ return {items:programs.slice(start,start+size),page:current,pages,total,from:total?start+1:0,to:Math.min(total,start+size)};
+}
