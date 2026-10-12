@@ -278,7 +278,7 @@ function phoneContent(){
     </div>
   </section>
   <section class="patrol-map-panel" aria-label="Mapa da ronda">
-   <header class="patrol-map-heading"><div><strong>${esc(route.name)}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div><button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
+   <header class="patrol-map-heading"><div><strong>${esc(route.name)} ${helpButton('map','mapa e pontos')}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div><button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
    <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div></div>
    <div class="patrol-map-footer"><span>${mode==='real'?'GPS autorizado':'Localização simulada'}</span><span data-live="coords">${locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)}`:'Aguardando início'}</span></div>
   </section></div>`;
