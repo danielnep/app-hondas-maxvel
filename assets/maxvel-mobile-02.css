@@ -1,0 +1,145 @@
+/* MAXVEL-MOBILE-02 | negro grafite, linhas retas, contexto por vigia
+ * Versão mobile apenas. Sem mudanças na versão desktop nem nas regras de domínio. */
+@media screen and (max-width:900px){
+ :root{
+  --ui-bg:#0C0D0F;--ui-panel:#15171A;--ui-panel-2:#1D1E20;
+  --ui-panel-3:#25272A;--ui-border:#353638;--ui-text:#F3F4F6;
+  --ui-muted:#C5C7CA;--ui-soft:#AFB2B5;
+  --ui-action:#28B6E8;--ui-action-hover:#55C9F5;--ui-accent:#28B6E8;
+  color-scheme:dark;
+ }
+ html,body,#app,.dashboard,.dashboard .app-shell,.dashboard .shell-main,.dashboard .app-content{background:#0C0D0F!important;color:#F3F4F6!important}
+ .dashboard .app-header,.dashboard .mobile-nav.mobile-only{background:#15171A!important;border-color:#353638!important}
+ .dashboard .simulation-rolebar{background:#101112!important;border-color:#353638!important}
+ .dashboard .sidebar{background:#15171A!important;border-color:#353638!important}
+ .dashboard :is(.card,.ops-card,.metric-card,.overview-card,.report-card,.report-line,.ops-map-card,.ops-activity,.ops-recent,.ops-progress,.ops-workspace,.map-command-panel,.map-checkpoint-panel,.map-history,.schedule-workspace,.alerts-queue-card,.alert-local-banner,.table-wrap,.ops-topline,.ops-map-corner,.patrol-actions,.patrol-map-panel,.patrol-action-heading,.map-command-top,.map-point-note,.map-command-disclosure,.my-schedule,.my-schedule-inner,.my-schedule-list button,.patrol-help-details,.patrol-scenario-tools,.patrol-point-list button,.guide-inline,.ops-scenario-banner,.section-note){
+  box-shadow:none!important;border-color:#353638!important;
+  background:#15171A!important;color:#F3F4F6!important;border-radius:0!important;
+ }
+ .dashboard :is(.ops-metric,.ops-metrics,.schedule-stats,.schedule-stats>div,.schedule-row,.team-row,.list-row,.event-item,.notification-row,.timeline-item,.map-point-row,.schedule-refine,.schedule-toolbar,.schedule-heading,.ops-panel-heading,.alerts-queue-head,.ops-map-actions,.patrol-stage-intro,.patrol-dwell,.patrol-dwell-tags,.patrol-stage-index){
+  background:transparent!important;box-shadow:none!important;border-color:#353638!important;border-radius:0!important;
+ }
+ .dashboard :is(.ops-panel-heading,.map-checkpoint-heading,.schedule-heading,.alerts-queue-head){background:#15171A!important;color:#F3F4F6!important}
+ .dashboard :is(.button,.button.primary,.button.danger,.tag,.context-help,.help-toggle,.user-pill,.user-profile-button,.compact-role-picker,.patrol-sheet-toggle,.schedule-switch button,.schedule-switch button.active,.patrol-mode-toggle button,.patrol-mode-toggle button.selected,.my-schedule summary,.schedule-row-tools .button,.map-point-list button,.map-point-row,.mobile-nav button,.simulation-roles button,.role-picker-list button,.patrol-evidence-link,.patrol-help-link){
+  border-radius:0!important;box-shadow:none!important;
+ }
+ .dashboard :is(input,select,textarea),.dashboard :is(.schedule-refine input,.schedule-refine select){background:#1D1E20!important;border-color:#444648!important;color:#F3F4F6!important;border-radius:0!important}
+ .dashboard .button:not(.primary):not(.danger),.dashboard .patrol-sheet-toggle,.dashboard .schedule-switch button,
+ .dashboard .patrol-mode-toggle button,.dashboard .ops-map-actions .button,.dashboard .mobile-nav button{
+  background:#25272A!important;color:#F3F4F6!important;border-color:#46484B!important;
+ }
+ .dashboard .button.primary,.entry-screen .button.primary,dialog .button.primary,.tour-next{
+  color:#0C0D0F!important;background:#28B6E8!important;border-color:#28B6E8!important;
+ }
+ .dashboard .button.primary:hover,.entry-screen .button.primary:hover,dialog .button.primary:hover,.tour-next:hover{background:#55C9F5!important}
+ .dashboard .button.danger{background:#57252B!important;border-color:#873941!important;color:#FFE7E9!important}
+ .dashboard :is(.schedule-switch button.active,.patrol-mode-toggle button.selected,.simulation-roles button.selected,.mobile-nav button.active){background:#25272A!important;color:#28B6E8!important;border-color:#45484A!important}
+ .dashboard .app-header .avatar{background:#353638!important;color:#F3F4F6!important}
+ .dashboard .patrol-action-heading,.dashboard .ronda-page .patrol-action-heading{background:#15171A!important}
+ .dashboard .ronda-page .patrol-actions,.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{border-width:0 0 1px!important}
+ .dashboard .ronda-page .patrol-map-panel{border-width:1px!important}
+ .dashboard .ronda-page .patrol-map-heading{background:#15171A!important;border-color:#353638!important}
+ .dashboard .ronda-page .patrol-map-heading button{background:#25272A!important;border-color:#46484B!important;color:#F3F4F6!important}
+ .dashboard .ronda-page .patrol-action-heading{min-height:36px!important;padding:3px 7px!important}
+ .dashboard .ronda-page .patrol-action-body{padding:6px 9px 8px!important}
+ .dashboard .ronda-page .patrol-primary-flow .patrol-stage-intro h2{font-size:14px!important;line-height:1.23}
+ .dashboard .ronda-page .patrol-primary-flow>.button.full{min-height:44px!important;padding:5px 10px!important;font-size:12px!important;margin:3px 0!important}
+ .dashboard .ronda-page .patrol-dwell{padding:2px!important;gap:7px!important}
+ .dashboard .ronda-page .timer-ring{width:42px!important;height:42px!important;flex-basis:42px!important}
+ .dashboard .ronda-page .patrol-sheet-toggle{min-height:44px!important;padding:3px 7px!important;font-size:11px!important}
+ .dashboard .ronda-page .patrol-workspace{gap:5px!important}
+ .dashboard .ronda-page .patrol-map-panel{height:clamp(255px,52dvh,510px)!important}
+ .dashboard .patrol-dwell-tags .requirement{background:#25272A!important;color:#D3D5D7!important;border-color:#47494B!important}
+ .dashboard .patrol-dwell-tags .requirement.ok{background:#1E3932!important;color:#BFEEDC!important}
+ .dashboard .patrol-stage-index,.dashboard .eyebrow,.dashboard .side-caption,.dashboard .patrol-tools-heading span{color:#C5C7CA!important}
+ .dashboard .patrol-help-details summary,.dashboard .my-schedule-label svg{color:#28B6E8!important}
+ .dashboard .map-container,.dashboard .map-command-map,.dashboard .patrol-map-canvas{background:#18191B!important;border-color:#353638!important;border-radius:0!important}
+ .dashboard .map-container .leaflet-control-attribution{background:#15171AD9!important;color:#D0D2D4!important}
+ .dashboard .map-container .leaflet-control-attribution a{color:#28B6E8!important}
+ .dashboard :is(.map-point-number,.map-point-target){background:#25272A!important;color:#F3F4F6!important;border-radius:0!important}
+ .dashboard .ops-metrics{background:transparent!important;border:0!important;border-radius:0!important;border-bottom:1px solid #353638!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ .dashboard .ops-metric{padding:6px 4px!important;border:0!important;border-right:1px solid #353638!important}
+ .dashboard .ops-metric>strong{font-size:17px!important;color:#F3F4F6!important}
+ .dashboard .ops-metric h3{font-size:10px!important;line-height:1.2}
+ .dashboard .ops-metric:last-child{border:0!important}
+ .dashboard .operations-page>.page-title{margin:2px 0 5px!important}
+ .dashboard .ops-map-card{border-width:1px!important}
+ .dashboard .ops-map-card .ops-panel-heading{padding:5px 7px!important}
+ .dashboard .ops-map-corner{border-color:#45484A!important}
+ .dashboard .schedule-workspace{padding:7px!important}
+ .dashboard .schedule-row{border-bottom:1px solid #353638!important;padding:8px 4px!important}
+ .dashboard .report-card,.dashboard .alerts-queue-card{padding:10px!important}
+ .dashboard .schedule-switch button{padding:6px 8px!important;min-height:44px}
+ .dashboard .ops-bottom-grid .card{padding:9px!important}
+ .dashboard .map-point-note{border:0!important;border-top:1px solid #353638!important}
+ .dashboard .team-row,.dashboard .notification-row,.dashboard .event-item,.dashboard .list-row{border-bottom:1px solid #353638!important}
+ .dashboard :is(h1,h2,h3,strong){letter-spacing:-.015em}
+ .dashboard :is(.role-picker-list button,.map-point-row,.list-row,.event-item,.team-row,.schedule-row,.patrol-point-list button){min-height:44px}
+ .dashboard .simulation-rolebar .simulation-roles button{border-radius:0!important}
+ .dashboard .mobile-nav button{background:transparent!important}
+ .dashboard .mobile-nav button.active{color:#28B6E8!important}
+ .dashboard .ops-map-stage .map-container.large{height:clamp(280px,49dvh,500px)!important}
+ .dashboard .map-command-map .map-container.large{height:clamp(300px,51dvh,550px)!important}
+ .dashboard .ops-map-legend,.dashboard .ops-map-note,.dashboard .map-caption{color:#BABDC1!important}
+ .dashboard .footer-app{display:none!important}
+ .entry-screen{background:#0C0D0F!important}
+ .entry-screen :is(.entry-details span,.entry-aside,.entry-panel,.entry-panel h1){border-radius:0!important;box-shadow:none!important}
+ .entry-screen .entry-aside{background:#15171A!important;border-color:#353638!important}
+ .entry-screen .entry-details span{background:#1D1E20!important;border-color:#353638!important}
+ .entry-screen .entry-eyebrow,.entry-screen .entry-panel h1 span{color:#28B6E8!important}
+ dialog,.tour-panel,.profile-chooser .choice,.role-picker-list button,.guide-pan,.consent-compact,.consent-details,
+ dialog :is(button,input,select,textarea,.button,.choice,.section-note,.rules li,.dialog-close){border-radius:0!important;box-shadow:none!important}
+ dialog,.tour-panel{background:#15171A!important;color:#F3F4F6!important;border-color:#45484A!important}
+ dialog :is(.choice,.section-note,.rules li,.guide-pan,.guide-tabs button),.tour-buttons button:not(.tour-next){background:#25272A!important;border-color:#46484B!important;color:#F3F4F6!important}
+ .tour-cutout{border-radius:0!important}
+}
+@media screen and (max-width:900px){
+ .supervision-context{display:grid;gap:5px;padding:7px 0 9px;margin:0 0 7px;border-bottom:1px solid #353638}
+ .supervision-context label{display:flex;align-items:center;gap:6px;color:#D3D5D7;font-size:12px;font-weight:650}
+ .supervision-context label svg{width:16px;height:16px;color:#28B6E8}
+ .supervision-context select{width:100%;height:44px;min-width:0;padding:8px 10px;background:#1D1E20;color:#F3F4F6;border:1px solid #46484B;border-radius:0;appearance:auto}
+ .supervision-context-meta{display:flex;flex-wrap:wrap;gap:4px 12px}
+ .supervision-context-meta strong{font-size:12px;color:#F3F4F6}
+ .supervision-context-meta span{font-size:11px;color:#BABDC1}
+}
+@media screen and (min-width:901px){
+ .supervision-context{display:grid;grid-template-columns:minmax(170px,245px) minmax(230px,1fr);gap:7px 15px;align-items:center;margin:0 0 14px}
+ .supervision-context select{grid-column:1;min-height:42px}
+ .supervision-context-meta{grid-column:2;grid-row:1 / span 2;display:grid;gap:4px}
+}
+.supervision-context{color:#F3F4F6}
+.supervision-context select{background:#1D1E20;color:#F3F4F6;border:1px solid #45484A;border-radius:0}
+.supervision-context-meta strong{color:#F3F4F6}
+.supervision-context-meta span{color:#BFC2C4}
+.brand-partners{display:flex;align-items:center;gap:8px;min-width:0;max-width:100%;height:44px}
+.brand-partners .maxvel-partner{position:relative;display:block;flex:0 0 162px;width:162px;height:35px;overflow:hidden;background:#111}
+.brand-partners .maxvel-brand-fallback{position:absolute;z-index:0;left:0;top:4px;white-space:nowrap;color:#F3F4F6;font-weight:900;font-size:24px;letter-spacing:-1.5px}
+.brand-partners .maxvel-official-source{position:absolute;z-index:1;top:-154px;left:-289px;width:500px!important;height:275px!important;max-width:none!important;object-fit:fill!important;mix-blend-mode:screen}
+.brand-partners .partner-divider{flex:0 0 1px;width:1px;height:27px;background:#686B6E}
+.brand-partners .horizon-partner{display:flex;align-items:center;gap:5px;white-space:nowrap;flex:0 0 auto}
+.brand-partners .horizon-partner svg{width:28px;height:26px;display:block}
+.brand-partners .horizon-partner strong{font-size:16px;letter-spacing:.05em;font-weight:800;color:#E9EEF1}
+.horizon-maxvel-brand .brand-lockup,.horizon-maxvel-brand .brand-compact{display:none!important}
+.horizon-maxvel-brand .brand-partners{display:flex!important}
+@media(max-width:900px){
+ .brand-partners{gap:4px;height:36px}
+ .brand-partners .maxvel-partner{transform:scale(.56);transform-origin:left center;flex-basis:91px;margin-right:-70px}
+ .brand-partners .partner-divider{height:22px}
+ .brand-partners .horizon-partner{gap:2px}
+ .brand-partners .horizon-partner svg{width:19px;height:22px}
+ .brand-partners .horizon-partner strong{font-size:10px;letter-spacing:.025em}
+ .dashboard .app-header .horizon-maxvel-brand{width:146px!important;min-width:146px!important;max-width:146px!important;flex:0 0 146px!important}
+ .dashboard .app-header .header-actions{margin-left:auto}
+ .entry-screen .brand-partners{height:42px}
+ .entry-screen .brand-partners .maxvel-partner{transform:scale(.72);flex-basis:116px;margin-right:-46px}
+ .entry-screen .brand-partners .horizon-partner strong{font-size:13px}
+}
+@media(max-width:350px){
+ .dashboard .app-header .horizon-maxvel-brand{width:135px!important;min-width:135px!important;max-width:135px!important;flex-basis:135px!important}
+ .dashboard .app-header .header-actions{gap:2px!important}
+ .dashboard .app-header .header-actions .help-toggle{display:none!important}
+ .dashboard .ronda-page .patrol-map-panel{height:clamp(235px,48dvh,380px)!important}
+}
+@media(max-width:900px) and (max-height:640px){
+ .dashboard .ronda-page .patrol-map-panel{height:clamp(230px,45dvh,355px)!important}
+}

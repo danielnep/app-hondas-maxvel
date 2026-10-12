@@ -5,7 +5,7 @@ import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
 import {getConsent,saveConsent,LOCATION_REQUIREMENTS} from './consent.js';
 import {createSpotlightTour} from './tutorial.js';
-import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
+import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
 
 const root=document.getElementById('app'),modal=document.getElementById('dialog'),toast=document.getElementById('toast');
 const ICONS={
@@ -46,11 +46,25 @@ const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2
 const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
 const helpButton=(topic,label)=>`<button type="button" class="context-help" data-action="feature-help" data-topic="${topic}" aria-label="O que é ${label}?" title="Entenda: ${label}">?</button>`;
-const brand=()=>`<div class="brand horizon-maxvel-brand" aria-label="Hondas Maxvel, desenvolvido por Horizon"><img class="brand-lockup" src="./assets/horizon-maxvel-lockup.svg" alt="Hondas Maxvel · Tecnologia Horizon" width="390" height="80"><span class="brand-compact" aria-hidden="true"><img class="brand-icon" src="./assets/maxvel-icon.svg" alt="" width="37" height="37"><span class="brand-copy"><span class="maxvel-word">HONDAS <strong>MAXVEL</strong></span><span class="brand-by">por <b>HORIZON</b></span></span></span></div>`;
+const brand=()=>`<div class="brand horizon-maxvel-brand" aria-label="Maxvel e Horizon">
+ <div class="brand-partners">
+  <span class="maxvel-partner" role="img" aria-label="Marca Maxvel: fonte site oficial">
+   <strong class="maxvel-brand-fallback">MAXVEL</strong>
+   <img class="maxvel-official-source" alt="" src="https://maxvelseguranca.com.br/images/banner/01.jpg" loading="eager">
+  </span>
+  <span class="partner-divider" aria-hidden="true"></span>
+  <span class="horizon-partner" aria-label="Horizon Tecnologia">
+   <svg viewBox="0 0 70 48" aria-hidden="true" focusable="false"><path d="M4 39 21 23 36 39 53 11 67 38" fill="none" stroke="#28B6E8" stroke-width="5" stroke-linejoin="miter"/><path d="M4 45H67" stroke="#AFC8D4" stroke-width="2"/></svg>
+   <strong>HORIZON</strong>
+  </span>
+ </div>
+ <img class="brand-lockup" src="./assets/horizon-maxvel-lockup.svg" alt="" width="390" height="80">
+ <span class="brand-compact" aria-hidden="true"><img class="brand-icon" src="./assets/maxvel-icon.svg" alt="" width="37" height="37"><span class="brand-copy"><span class="maxvel-word">HONDAS <strong>MAXVEL</strong></span><span class="brand-by">por <b>HORIZON</b></span></span></span>
+ </div>`;
 const persisted=loadState();
 let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
 let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule();
-let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedProgramId=null,scheduleTab='agenda',scheduleFilter='all',scheduleWatcher='all',scheduleUnit='all',scheduleQuery='',schedulePage=0,pendingProgram=null,pendingEdit=null;
+let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedSupervisedWatcherId='v01',selectedProgramId=null,scheduleTab='agenda',scheduleFilter='all',scheduleWatcher='all',scheduleUnit='all',scheduleQuery='',schedulePage=0,pendingProgram=null,pendingEdit=null;
 let user=null,screen='landing',view='overview',presentation=false,guideStage=0,presentationName='Lucas Ferreira',mode='simulation',session=null;
 let priorSimulation=null;
 let patrolSheetCollapsed=true;
@@ -70,10 +84,45 @@ function render(){destroyMaps();renderNumber++;modal.close?.();document.body.cla
  else root.innerHTML=appShell();
  attachMaps();justRendered=Date.now();
 }
+/** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
+function watchesSession(s,watcher){
+ if(!s||!watcher)return false;
+ if(s.watcherId)return s.watcherId===watcher.id;
+ if(s.programId){
+  const p=programs.find(x=>x.id===s.programId);
+  if(p)return p.watcherId===watcher.id;
+ }
+ return s.name===watcher.name;
+}
+function supervisedContext(){
+ const watcher=watcherById(selectedSupervisedWatcherId)??DEMO_WATCHERS[0];
+ const history=sessionList().filter(s=>watchesSession(s,watcher));
+ const current=history.find(s=>s.status==='active')??history[0]??null;
+ const program=nextProgram(programs,watcher.id,sessions)
+  ??programsForWatcher(programs,watcher.id)[0]??null;
+ const route=current?.route??(program?routeForProgram(program):routeForWatcher(watcher.id));
+ const pointCount=route.points.length;
+ return {watcher,history,current,program,route,pointCount};
+}
+function supervisorWatcherSelector(){
+ const info=supervisedContext(),status=info.current?.status==='active'?'Em ronda':
+  info.current?.status==='completed'?'Última ronda concluída':'Aguardando execução';
+ return `<div class="supervision-context" aria-label="Ronda por colaborador">
+  <label for="supervisor-watcher">${ic('users')} Vigia acompanhado</label>
+  <select id="supervisor-watcher" data-supervisor-watcher aria-label="Selecionar vigia para acompanhar mapa, rota e histórico">
+   ${DEMO_WATCHERS.map(w=>`<option value="${esc(w.id)}" ${w.id===info.watcher.id?'selected':''}>${esc(w.name)} · ${esc(w.unit)}</option>`).join('')}
+  </select>
+  <div class="supervision-context-meta"><strong>${esc(info.route.name)}</strong><span>${status} · ${info.history.length} registro(s) neste navegador · cenário ilustrativo</span></div>
+ </div>`;
+}
 function attachMaps(){
  if(screen==='landing')registerMap('hero-map',DEMO_ROUTE,null,DEMO_ROUTE.base,true);
  if(screen==='presentation'||screen==='dashboard'){
-  if(view==='overview'||view==='rondas')registerMap('ops-map',session?.route??DEMO_ROUTE,session,locationFix??DEMO_ROUTE.base,false);
+  if(view==='overview'||view==='rondas'){
+    const context=supervisedContext();
+    const location=context.current?.lastFix??context.route.base;
+    registerMap('ops-map',context.route,context.current,location,false);
+   }
   if(view==='minha-ronda')registerMap('mobile-map',session?.route??DEMO_ROUTE,session,locationFix??DEMO_ROUTE.base,true);
  }
 }
@@ -160,8 +209,8 @@ function overview(){
   {icon:'checkcircle',name:'Rondas finalizadas',value:finished.length,detail:'Com retorno à base registrado',tone:'green'},
   {icon:'alert',name:'Alertas para análise',value:open.length,detail:`${inc.length} ocorrências no histórico`,tone:open.length?'red':'neutral'}
  ];
- const activeSession=active[0]??all[0],trail=activeSession?.timeline??[];
- return `<div class="operations-page">${pageTitle('Central de operações','Acompanhe rotas, pontos, justificativas e ocorrências no mesmo painel.',btn(ic('print')+' Imprimir relatório','print','small'))}<div class="ops-topline"><div><span class="ops-live-dot"></span><strong>Visão da operação</strong><span>Dados deste ambiente de avaliação</span></div><div class="ops-topline-right">${ic('clock')} <span>${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</span> ${tag('Cenário local','neutral')}</div></div>${all.length===0?`<div class="ops-empty-state"><span>${ic('clock')} Ainda não há execução registrada neste dispositivo. As rondas já estão na agenda.</span>${btn('Consultar agenda '+ic('arrow'),'nav-rondas','small')}</div>`:''}<div class="ops-metrics">${metricRows.map(m=>`<article class="ops-metric tone-${m.tone}"><div class="ops-metric-top"><span class="ops-metric-icon">${ic(m.icon)}</span></div><strong>${String(m.value).padStart(2,'0')}</strong><h3>${m.name}</h3><p>${m.detail}</p></article>`).join('')}</div><div class="ops-workspace"><section class="ops-map-card"><div class="ops-panel-heading"><div><div class="eyebrow">ACOMPANHAMENTO GEOGRÁFICO</div><h2>${ic('map')} Mapa de rondas</h2><p>Traçado ilustrativo sobre cartografia real, quando online</p></div><div class="ops-map-actions">${tag('4 pontos planejados','neutral')}${btn(ic('crosshair')+' Enquadrar','center-maps','small')}</div></div><div class="ops-map-stage"><div id="ops-map" class="map-container large"></div><div class="ops-map-corner"><strong>${ic('shield')} Rota Centro · Perímetro</strong><span>Área de verificação · 25 m</span></div></div><div class="ops-map-legend">${legend()}<span class="ops-map-note">Pontos e trajeto de demonstração</span></div></section><aside class="ops-activity"><div class="ops-panel-heading"><div><div class="eyebrow">FILA DE ATENÇÃO</div><h2>${ic('bell')} Alertas e justificativas</h2><p>Eventos registrados neste navegador</p></div>${tag(`${open.length} pendente(s)`,open.length?'red':'green')}</div><div class="ops-alert-list">${alerts.slice(0,6).map(notificationRow).join('')||`<div class="ops-empty"><span>${ic('shield')}</span><strong>Operação sem alertas pendentes</strong><p>Ao identificar um desvio, ele aparecerá aqui junto com o contexto para análise.</p></div>`}</div><div class="ops-help">${ic('help')} <span>Falhas de GPS não devem ser tratadas automaticamente como irregularidades.</span></div></aside></div><div class="ops-bottom-grid"><section class="card ops-recent"><div class="card-title"><div><div class="eyebrow">REGISTROS RECENTES</div><h2>Histórico de rondas</h2></div>${btn('Ver todas '+ic('arrow'),'nav-rondas','small')}</div>${tablePatrols(all.slice(0,5))}</section><aside class="card ops-progress"><div class="eyebrow">LINHA DO TEMPO</div><h2>Última atividade</h2><p>${activeSession?`Referente a ${esc(activeSession.name)} · ${esc(activeSession.route.name)}`:'Inicie uma ronda para acompanhar os registros.'}</p><div class="ops-timeline">${trail.slice(0,5).map(t=>`<div class="ops-timeline-item"><i></i><div><strong>${esc(t.label)}</strong><small>${time(t.at)}</small></div></div>`).join('')||'<div class="empty">Aguardando início da primeira ronda.</div>'}</div></aside></div><div class="ops-footer-note">${ic('help')} Protótipo operacional: os registros são locais e não chegam a um supervisor real. A implantação requer servidor e autenticação.</div></div>`;
+ const context=supervisedContext(),activeSession=context.current,trail=activeSession?.timeline??[];
+ return `<div class="operations-page">${pageTitle('Central de operações','Acompanhe rotas, pontos, justificativas e ocorrências no mesmo painel.',btn(ic('print')+' Imprimir relatório','print','small'))}<div class="ops-topline"><div><span class="ops-live-dot"></span><strong>Visão da operação</strong><span>Dados deste ambiente de avaliação</span></div><div class="ops-topline-right">${ic('clock')} <span>${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</span> ${tag('Cenário local','neutral')}</div></div>${supervisorWatcherSelector()}${all.length===0?`<div class="ops-empty-state"><span>${ic('clock')} Ainda não há execução registrada neste dispositivo. As rondas já estão na agenda.</span>${btn('Consultar agenda '+ic('arrow'),'nav-rondas','small')}</div>`:''}<div class="ops-metrics">${metricRows.map(m=>`<article class="ops-metric tone-${m.tone}"><div class="ops-metric-top"><span class="ops-metric-icon">${ic(m.icon)}</span></div><strong>${String(m.value).padStart(2,'0')}</strong><h3>${m.name}</h3><p>${m.detail}</p></article>`).join('')}</div><div class="ops-workspace"><section class="ops-map-card"><div class="ops-panel-heading"><div><div class="eyebrow">ACOMPANHAMENTO GEOGRÁFICO</div><h2>${ic('map')} Mapa · ${esc(context.watcher.name)}</h2><p>Traçado ilustrativo sobre cartografia real, quando online</p></div><div class="ops-map-actions">${tag(context.pointCount+' pontos previstos','neutral')}${btn(ic('crosshair')+' Enquadrar','center-maps','small')}</div></div><div class="ops-map-stage"><div id="ops-map" class="map-container large"></div><div class="ops-map-corner"><strong>${ic('shield')} ${esc(context.route.name)}</strong><span>Área de verificação · 25 m</span></div></div><div class="ops-map-legend">${legend()}<span class="ops-map-note">Pontos e trajeto de demonstração</span></div></section><aside class="ops-activity"><div class="ops-panel-heading"><div><div class="eyebrow">FILA DE ATENÇÃO</div><h2>${ic('bell')} Alertas e justificativas</h2><p>Eventos registrados neste navegador</p></div>${tag(`${open.length} pendente(s)`,open.length?'red':'green')}</div><div class="ops-alert-list">${alerts.slice(0,6).map(notificationRow).join('')||`<div class="ops-empty"><span>${ic('shield')}</span><strong>Operação sem alertas pendentes</strong><p>Ao identificar um desvio, ele aparecerá aqui junto com o contexto para análise.</p></div>`}</div><div class="ops-help">${ic('help')} <span>Falhas de GPS não devem ser tratadas automaticamente como irregularidades.</span></div></aside></div><div class="ops-bottom-grid"><section class="card ops-recent"><div class="card-title"><div><div class="eyebrow">REGISTROS RECENTES</div><h2>Histórico de rondas</h2></div>${btn('Ver todas '+ic('arrow'),'nav-rondas','small')}</div>${tablePatrols(context.history.slice(0,5))}</section><aside class="card ops-progress"><div class="eyebrow">LINHA DO TEMPO</div><h2>Última atividade</h2><p>${activeSession?`Referente a ${esc(activeSession.name)} · ${esc(activeSession.route.name)}`:'Inicie uma ronda para acompanhar os registros.'}</p><div class="ops-timeline">${trail.slice(0,5).map(t=>`<div class="ops-timeline-item"><i></i><div><strong>${esc(t.label)}</strong><small>${time(t.at)}</small></div></div>`).join('')||'<div class="empty">Aguardando início da primeira ronda.</div>'}</div></aside></div><div class="ops-footer-note">${ic('help')} Protótipo operacional: os registros são locais e não chegam a um supervisor real. A implantação requer servidor e autenticação.</div></div>`;
 }
 function tablePatrols(rows){return rows.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>Responsável</th><th>Rota</th><th>Progresso</th><th>Situação</th><th>Início</th><th>Detalhes</th></tr></thead><tbody>${rows.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.route.name)}</td><td>${s.index} / ${s.route.points.length} pontos</td><td>${tag(s.status==='completed'?'Concluída':'Em andamento',s.status==='completed'?'green':'orange')}</td><td>${fmt(s.startedAt)}</td><td><button data-action="session-detail" data-id="${esc(s.id)}">Abrir</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma ronda registrada. Experimente a apresentação guiada.</div>'}
 
@@ -205,9 +254,10 @@ function watcherChooser(){
 }
 
 function rondas(){
- const route=session?.route??DEMO_ROUTE,active=session?.status==='active',current=active?session.index:-1;
- const progress=session?session.checkpoints.filter(p=>p.completedAt).length:0;
- return pageTitle('Rondas','Programe, acompanhe e consulte a execução das rondas.',helpButton('schedules','programação de rondas'))+schedulePanel()+(scheduleTab==='mapa'?`<div class="map-command-page"><section class="map-command-panel"><div class="map-command-top"><div><div class="eyebrow">CARTOGRAFIA E LOCALIZAÇÃO</div><h2>${ic('map')} ${esc(route.name)}</h2><p>Ruas reais quando online · pontos ilustrativos</p></div><div class="map-command-actions">${tag(active?'Ronda em andamento':'Rota de referência',active?'green':'neutral')}${btn(ic('crosshair')+' Enquadrar rota','center-maps','small')}</div></div><div class="map-command-map"><div id="ops-map" class="map-container large"></div><div class="map-command-topbadge">${ic('pin')} ${route.points.length} pontos · raio de 25 m</div></div>${legend()}<div class="map-command-disclosure">${ic('help')} <span>O mapa mostra ruas reais, mas a linha entre os pontos é apenas ilustrativa. Não representa um caminho calculado pelas vias. A precisão do GPS pode variar.</span></div></section><aside class="map-checkpoint-panel"><div class="map-checkpoint-heading"><div class="eyebrow">SEQUÊNCIA DE VERIFICAÇÃO</div><h2>Pontos da rota</h2><p>${progress} de ${route.points.length} verificados neste cenário</p></div><div class="map-point-list">${route.points.map((p,i)=>{const done=!!session?.checkpoints[i]?.completedAt,now=active&&current===i;return `<button type="button" class="map-point-row ${done?'is-done':now?'is-current':''}" data-action="focus-route-point" data-index="${i}" aria-label="Localizar ponto ${i+1}: ${esc(p.name)}"><span class="map-point-number">${done?ic('check'):i+1}</span><span class="map-point-info"><strong>${esc(p.name)}</strong><small>${done?'Verificado':now?'Ponto obrigatório atual':'Aguardando sequência'} · 25 m</small></span><span class="map-point-target">${ic('crosshair')}</span></button>`}).join('')}</div><div class="map-point-note">${ic('clock')} Permanência de 30 segundos contínuos dentro do raio, conforme GPS confiável.</div><div class="map-point-note">${ic('shield')} Falhas ou baixa precisão do GPS exigem verificação, não representam desvio automaticamente.</div></aside></div><section class="card map-history" style="margin-top:15px"><div class="card-title"><div><h2>Histórico de rondas</h2><p>Registros guardados somente neste navegador.</p></div>${tag(`${sessions.length} rondas`,'neutral')}</div>${tablePatrols(sessionList())}</section>`:'');
+ const context=supervisedContext(),route=context.route,actual=context.current;
+ const active=actual?.status==='active',current=active?actual.index:-1;
+ const progress=actual?actual.checkpoints.filter(p=>p.completedAt).length:0;
+ return pageTitle('Rondas','Programe, acompanhe e consulte a execução das rondas.',helpButton('schedules','programação de rondas'))+supervisorWatcherSelector()+schedulePanel()+(scheduleTab==='mapa'?`<div class="map-command-page"><section class="map-command-panel"><div class="map-command-top"><div><div class="eyebrow">CARTOGRAFIA E LOCALIZAÇÃO</div><h2>${ic('map')} ${esc(route.name)}</h2><p>Ruas reais quando online · pontos ilustrativos</p></div><div class="map-command-actions">${tag(active?'Ronda em andamento':'Rota de referência',active?'green':'neutral')}${btn(ic('crosshair')+' Enquadrar rota','center-maps','small')}</div></div><div class="map-command-map"><div id="ops-map" class="map-container large"></div><div class="map-command-topbadge">${ic('pin')} ${route.points.length} pontos · raio de 25 m</div></div>${legend()}<div class="map-command-disclosure">${ic('help')} <span>O mapa mostra ruas reais, mas a linha entre os pontos é apenas ilustrativa. Não representa um caminho calculado pelas vias. A precisão do GPS pode variar.</span></div></section><aside class="map-checkpoint-panel"><div class="map-checkpoint-heading"><div class="eyebrow">SEQUÊNCIA DE VERIFICAÇÃO</div><h2>Pontos da rota</h2><p>${progress} de ${route.points.length} verificados neste cenário</p></div><div class="map-point-list">${route.points.map((p,i)=>{const done=!!actual?.checkpoints[i]?.completedAt,now=active&&current===i;return `<button type="button" class="map-point-row ${done?'is-done':now?'is-current':''}" data-action="focus-route-point" data-index="${i}" aria-label="Localizar ponto ${i+1}: ${esc(p.name)}"><span class="map-point-number">${done?ic('check'):i+1}</span><span class="map-point-info"><strong>${esc(p.name)}</strong><small>${done?'Verificado':now?'Ponto obrigatório atual':'Aguardando sequência'} · 25 m</small></span><span class="map-point-target">${ic('crosshair')}</span></button>`}).join('')}</div><div class="map-point-note">${ic('clock')} Permanência de 30 segundos contínuos dentro do raio, conforme GPS confiável.</div><div class="map-point-note">${ic('shield')} Falhas ou baixa precisão do GPS exigem verificação, não representam desvio automaticamente.</div></aside></div><section class="card map-history" style="margin-top:15px"><div class="card-title"><div><h2>Histórico de rondas</h2><p>Registros guardados somente neste navegador.</p></div>${tag(`${context.history.length} rondas`,'neutral')}</div>${tablePatrols(context.history)}</section>`:'');
 }
 function notificationRow(n){const isAlert=n.kind==='deviation';return `<button class="event-item ${!n.seenAt?'unread':''}" data-action="notification-detail" data-id="${esc(n.id)}" data-session="${esc(n.session.id)}"><span class="event-icon ${isAlert?'alert':''}">${ic(isAlert?'alert':'clipboard')}</span><span style="flex:1"><strong>${esc(n.label)}</strong><small>${esc(n.session.name)} · ${esc(n.session.route.name)}</small><p>${n.kind==='deviation'?n.justification?'Justificativa registrada, consultar o evento.':'Aguardando justificativa do colaborador.':'Ocorrência vinculada à ronda.'}</p></span><time>${time(n.at)}</time></button>`}
 let alertFilter='pending';
@@ -528,7 +578,7 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='nav-rondas'){view='rondas';render();return;}
  if(act==='my-records'||act==='records'){if(presentation&&session){detailSession(session.id);return;}view='registros';render();return;}
  if(act==='map-help'){showDialog(`<div class="eyebrow">COMO LER O MAPA</div><h2>Localização e pontos de ronda</h2><div class="map-help-list"><p><strong>Mapa de ruas:</strong> base cartográfica OpenStreetMap, com alternativa esquemática se ficar offline.</p><p><strong>Linha tracejada:</strong> ligação ilustrativa entre pontos. Não é uma rota calculada pelas ruas.</p><p><strong>Linha contínua ciano:</strong> posições observadas enquanto a tela está ativa na simulação.</p><p><strong>Círculo ao redor do ponto:</strong> área de validação de 25 m. É necessário permanecer 30 s seguidos, com localização confiável.</p><p><strong>Marcador vermelho:</strong> ponto de evento de desvio registrado para análise. GPS impreciso, por si só, não implica irregularidade.</p></div>${btn('Entendi','close-dialog','primary full')}`);return;}
- if(act==='focus-route-point'){const idx=Number(el.dataset.index);if(!Number.isInteger(idx)||idx<0||idx>=(session?.route??DEMO_ROUTE).points.length)return;const map=liveMaps.find(m=>m.container?.id==='ops-map');if(!map?.focusPoint(idx))pointDialog(idx);return;}
+ if(act==='focus-route-point'){const idx=Number(el.dataset.index);if(!Number.isInteger(idx)||idx<0||idx>=supervisedContext().route.points.length)return;const map=liveMaps.find(m=>m.container?.id==='ops-map');if(!map?.focusPoint(idx))notify('Abra o mapa com conexão para localizar este ponto.');return;}
  if(act==='filter-alerts'){const filter=el.dataset.filter;if(filter!=='pending'&&filter!=='all')return;alertFilter=filter;render();return;}
  if(act==='toggle-patrol-sheet'){patrolSheetCollapsed=!patrolSheetCollapsed;const workspace=document.querySelector('.patrol-workspace');workspace?.classList.toggle('sheet-collapsed',patrolSheetCollapsed);el.setAttribute('aria-expanded',String(!patrolSheetCollapsed));el.textContent=patrolSheetCollapsed?'Mais opções':'Menos opções';liveMaps.forEach(m=>m.invalidate());return;}
  if(act==='center-maps'){liveMaps.forEach(m=>m.fit());return;}
@@ -538,7 +588,8 @@ if(act==='profile-menu'){profileDialog();return;}
 }
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
 document.addEventListener('change',e=>{
- if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;schedulePage=0;render();}
+ if(e.target.matches('[data-supervisor-watcher]')){const choice=watcherById(e.target.value);if(!choice)return;selectedSupervisedWatcherId=choice.id;render();return;}
+  if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;schedulePage=0;render();}
  if(e.target.matches('[data-schedule-unit]')){scheduleUnit=e.target.value;scheduleWatcher='all';schedulePage=0;render();}
  if(e.target.matches('[data-schedule-watcher]')){scheduleWatcher=e.target.value;schedulePage=0;render();}
  if(e.target.matches('[data-schedule-query]')){scheduleQuery=e.target.value.trim().slice(0,80);schedulePage=0;render();}

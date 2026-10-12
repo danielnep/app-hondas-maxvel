@@ -20,9 +20,42 @@ export const DEMO_ROUTES=Object.freeze([
  {id:'norte',name:'Rota Norte · Verificação',unit:'Unidade Norte'},
  {id:'industrial',name:'Rota Industrial · Setores',unit:'Unidade Industrial'}
 ]);
+/** Rotas por colaborador no cenário. Geometrias distintas, base e corredores consistentes.
+ * Nunca altera sessions.route de execuções já persistidas. Não são locais reais da Maxvel. */
+export function routeForWatcher(watcherId,routeId){
+ const watcher=watcherById(watcherId)??DEMO_WATCHERS[0];
+ const idx=DEMO_WATCHERS.findIndex(w=>w.id===watcher.id);
+ const reference=DEMO_ROUTES.find(r=>r.id===routeId&&r.unit===watcher.unit)
+   ??DEMO_ROUTES.find(r=>r.unit===watcher.unit)??DEMO_ROUTES[0];
+ const group=reference.id==='centro'?0:reference.id==='norte'?1:2;
+ const anchor=[
+  {lat:-20.14030,lng:-44.88400},
+  {lat:-20.13630,lng:-44.88750},
+  {lat:-20.14860,lng:-44.87190}
+ ][group];
+ const variant=idx%4;
+ const base=structuredClone(DEMO_ROUTE);
+ const angle=(variant*33+group*17)*Math.PI/180;
+ const scale=0.92+(idx%3)*0.09;
+ const cos=Math.cos(angle),sin=Math.sin(angle);
+ const latitudeScale=Math.cos(base.base.lat*Math.PI/180);
+ const spread=variant*0.00064,shift=group*0.00014;
+ const center={lat:anchor.lat+spread+shift,lng:anchor.lng+(variant%2)*0.00081+shift};
+ const transform=p=>{
+  const y=(p.lat-DEMO_ROUTE.base.lat)*111320;
+  const x=(p.lng-DEMO_ROUTE.base.lng)*111320*latitudeScale;
+  return {...p,lat:center.lat+(y*cos-x*sin)*scale/111320,
+   lng:center.lng+(x*cos+y*sin)*scale/(111320*latitudeScale)};
+ };
+ return {...base,id:reference.id+'-'+watcher.id,
+  name:reference.name+' · '+watcher.name,
+  unit:watcher.unit+' · cenário fictício',watcherId:watcher.id,
+  base:transform(base.base),
+  points:base.points.map(transform),
+  legs:base.legs.map(leg=>leg.map(transform))};
+}
 export function routeForProgram(program){
- const reference=DEMO_ROUTES.find(r=>r.id===program?.routeId)??DEMO_ROUTES[0];
- return {...structuredClone(DEMO_ROUTE),id:reference.id,name:reference.name,unit:reference.unit+' · cenário fictício'};
+ return routeForWatcher(program?.watcherId,program?.routeId);
 }
 export function demoSchedule(now=Date.now()){
  const today=new Date(now);today.setHours(0,0,0,0);
