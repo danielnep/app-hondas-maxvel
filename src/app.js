@@ -438,7 +438,14 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='confirm-clear'){clearState();sessions=[];programs=demoSchedule();selectedWatcherId='v01';selectedProgramId=null;session=null;stopLocation();movement=null;locationFix=null;render();notify('Dados locais apagados.');return;}
 }
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
-document.addEventListener('change',e=>{if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;render();}});
+document.addEventListener('change',e=>{
+ if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;render();}
+ if(e.target.matches('#program-form [name="watcherId"]')){
+  const chosen=watcherById(e.target.value),route=modal.querySelector('#program-form [name="routeId"]');
+  const matching=DEMO_ROUTES.find(r=>r.unit===chosen?.unit);if(route&&matching)route.value=matching.id;
+  for(const opt of route?.options??[])opt.disabled=!!chosen&&routeById(opt.value)?.unit!==chosen.unit;
+ }
+});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);
  if(e.target.id==='program-form'){
