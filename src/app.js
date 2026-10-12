@@ -127,6 +127,31 @@ function installViewportViews(){
    const next=(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
    tabs[next]?.focus();show(tabs[next].dataset.v4Tab);
   });
+  paginateRows(shell.querySelector('.v4-team-list'),'.v4-team-row','V4Team',uxListSizes());
+  if(window.innerHeight<720){
+   const summary=shell.querySelector('.v4-summary-pane');
+   const metrics=summary?.querySelector('.v4-summary-metrics');
+   const conclusion=summary?.querySelector('.v4-summary-callout');
+   const quick=summary?.querySelector('.v4-summary-quick');
+   if(summary&&metrics&&conclusion){
+    const pager=document.createElement('nav');
+    pager.className='v4-summary-pager';
+    pager.setAttribute('aria-label','Páginas do resumo da Gestão');
+    let index=0;
+    const refresh=()=>{
+     metrics.hidden=index!==0;conclusion.hidden=index!==1;if(quick)quick.hidden=index!==1;
+     pager.innerHTML='<button type="button" '+(index===0?'disabled':'')+' data-v4-summary-back>‹ Voltar</button>'+
+      '<span>Resumo '+(index+1)+' / 2</span>'+
+      '<button type="button" '+(index===1?'disabled':'')+' data-v4-summary-next>Próximo ›</button>';
+    };
+    pager.addEventListener('click',e=>{
+     if(e.target.closest('[data-v4-summary-back]'))index=0;
+     else if(e.target.closest('[data-v4-summary-next]'))index=1;
+     else return;refresh();
+    });
+    summary.append(pager);refresh();
+   }
+  }
   paginateRows(shell.querySelector('.v4-alerts-list'),'.event-item','V4Alerts',uxListSizes());
   paginateRows(shell.querySelector('.v4-history-list'),'.v4-history-row','V4History',uxListSizes());
   paginateRows(shell.querySelector('.v4-insights-list'),'.v4-insight-row','V4Insights',uxListSizes());
@@ -466,7 +491,7 @@ function mySchedule(){
  const current=selected?.id===p.id;return `<button type="button" class="${current?'chosen':''}" data-action="select-program" data-id="${esc(p.id)}"><span><strong>${formatShortDate(p.startAt)}</strong><small>${esc(routeById(p.routeId)?.name||'Rota')} · ${esc(scheduleStatus(p,sessions))}</small></span>${current?ic('checkcircle'):ic('arrow')}</button>`;
  }).join(''):'<div class="empty">Nenhuma ronda futura para este vigia.</div>'}</div><p class="map-caption">Os horários e colaboradores são fictícios. Escolha uma ronda para vinculá-la à execução.</p></div></details>`;
 }
-const schedulePageSize=()=>window.innerWidth<=900?3:16;
+const schedulePageSize=()=>window.innerWidth<=900?Math.max(1,Math.min(3,Math.floor((window.innerHeight-360)/65))):16;
 function schedulePanel(){
  const totals=scheduleTotals(programs,sessions);
  const active=filterPrograms(programs,{status:scheduleFilter,watcherId:scheduleWatcher,unit:scheduleUnit,query:scheduleQuery,sessions});
