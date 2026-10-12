@@ -2,6 +2,7 @@ import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canComplet
 import {PatrolMap} from './map.js';
 import {createRoundWizard} from './wizard.js';
 import {withExampleRondas} from './demo-scenarios.js';
+import {dashboardSnapshot} from './dashboard-insights.js';
 import {EVIDENCE_DIRECTIONS,getPointEvidence,evidenceProgress,simulateCapture,simulateRotation,confirmDemoEvidence} from './evidence.js';
 import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
@@ -75,6 +76,7 @@ function registerMap(id,route,sessionRef=null,position=null,compact=false){const
 
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
 let uxOverviewPanel='mapa', uxDialogPage=0;
+const uxDashboardPane={supervisor:'mapa',gestor:'resumo',admin:'resumo'};
 const uxListSizes=()=>Math.max(2,Math.min(4,Math.floor((window.innerHeight-250)/85)));
 function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
  const rows=[...container.querySelectorAll(selector)].filter(e=>e.closest(selector)===e);
@@ -92,6 +94,32 @@ function installViewportViews(){
  if(window.innerWidth>900||screen==='landing')return;
  const main=document.querySelector('.dashboard .app-content');
  if(!main)return;
+ if(view==='overview'&&main.querySelector('.dashboard-v4')){
+  const shell=main.querySelector('.dashboard-v4'),tabs=[...shell.querySelectorAll('[data-v4-tab]')];
+  const paneMap=new Map([...shell.querySelectorAll('[data-v4-pane]')].map(p=>[p.dataset.v4Pane,p]));
+  const show=key=>{
+   const selected=paneMap.has(key)?key:tabs[0]?.dataset.v4Tab;
+   uxDashboardPane[user.role]=selected;
+   for(const [id,node] of paneMap){node.hidden=id!==selected;node.id='v4-'+id;}
+   for(const bt of tabs){const active=bt.dataset.v4Tab===selected;bt.setAttribute('aria-selected',String(active));bt.tabIndex=active?0:-1;}
+   if(selected==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
+  };
+  shell.querySelector('.v4-dashboard-tabs')?.addEventListener('click',event=>{
+   const bt=event.target.closest('[data-v4-tab]');if(bt)show(bt.dataset.v4Tab);
+  });
+  shell.querySelector('.v4-dashboard-tabs')?.addEventListener('keydown',event=>{
+   if(!['ArrowLeft','ArrowRight'].includes(event.key))return;
+   event.preventDefault();
+   const current=tabs.findIndex(t=>t.getAttribute('aria-selected')==='true');
+   const next=(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+   tabs[next]?.focus();show(tabs[next].dataset.v4Tab);
+  });
+  paginateRows(shell.querySelector('.v4-alerts-list'),'.event-item','V4Alerts',uxListSizes());
+  paginateRows(shell.querySelector('.v4-history-list'),'.v4-history-row','V4History',uxListSizes());
+  paginateRows(shell.querySelector('.v4-insights-list'),'.v4-insight-row','V4Insights',uxListSizes());
+  show(uxDashboardPane[user.role]);
+  return;
+ }
  if(view==='overview'){
   const root=main.querySelector('.operations-page');
   if(root){
@@ -308,7 +336,66 @@ function appShell(){const entries=allNav[user.role],mobileEntries=mobileNavFor(u
  return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Avaliação · dados locais</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Desenvolvido por Horizon</p></div></aside><div class="shell-main"><header class="app-header">${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker"):""}<button class="help-toggle" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header>${simRoleBar()}<main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${viewContent()}</main><nav class="mobile-nav mobile-only" style="--nav-items:${mobileEntries.length}" aria-label="Navegação móvel">${mobileEntries.map(([key,title,ico])=>key==='menu'?`<button data-action="open-mobile-menu">${ic(ico)}<span>${title}</span></button>`:`<button class="${view===key?'active':''}" data-view="${key}">${ic(ico)}<span>${title}</span></button>`).join('')}</nav><footer class="footer-app">Ambiente de avaliação · dados locais · Desenvolvido por Horizon</footer></div></div></div>`}
 function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'registros':return personalRecords();case 'overview':return overview();case 'rondas':return rondas();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
+/** E7/E8: panes estáveis, sem recontar indicadores quando muda apenas a aba. */
+function dashboardV4(){
+ const manager=user.role==='gestor'||user.role==='admin';
+ const context=supervisedContext(),all=sessionList(),alerts=recentNotification();
+ const data=dashboardSnapshot({sessions:all,programs,watchers:DEMO_WATCHERS});
+ const notice='<span class="v4-local-notice">'+ic('shield')+' Dados deste navegador · Cenário fictício</span>';
+ const insights=manager?data.insights:data.insights.filter(i=>['alerts','overdue','returns'].includes(i.id));
+ const insightRows='<div class="v4-insights-list">'+insights.map((item,i)=>
+  '<div class="v4-insight-row '+(item.type==='attention'?'is-attention':'')+'">'+
+   '<div class="v4-insight-numeric"><b>'+esc(item.value)+'</b><small>'+String(i+1).padStart(2,'0')+'</small></div>'+
+   '<div class="v4-insight-copy"><strong>'+esc(item.label)+'</strong><p>'+esc(item.detail)+'</p></div>'+
+   '<button type="button" data-view="'+esc(item.target)+'" aria-label="Ver registros: '+esc(item.label)+'">'+ic('arrow')+'</button></div>').join('')+'</div>';
+ const metric=[['Rondas',data.total,'Registradas'],['Em curso',data.active,'Execuções ativas'],
+  ['Concluídas',data.completed,'Execuções terminadas'],['Atrasadas',data.overdue,'Programações'],
+  ['Alertas',data.pending,'Aguardam análise'],['Ocorrências',data.openIncidents,'Não resolvidas']];
+ const metricNodes='<div class="v4-summary-metrics">'+metric.map(([name,value,description])=>
+  '<div class="v4-summary-metric"><strong>'+esc(value)+'</strong><span>'+esc(name)+'</span><small>'+esc(description)+'</small></div>').join('')+'</div>';
+ const mapPane='<section class="v4-pane v4-map-pane" data-v4-pane="mapa">'+supervisorWatcherSelector()+
+  '<div class="ops-map-card"><div class="ops-panel-heading"><div><h2>'+ic('map')+' '+esc(context.watcher.name)+'</h2><p>'+esc(context.route.name)+'</p></div>'+
+  btn(ic('crosshair')+' Enquadrar','center-maps','small')+'</div>'+
+  '<div class="ops-map-stage"><div id="ops-map" class="map-container large"></div></div>'+
+  '<div class="v4-map-foot"><span>'+context.pointCount+' pontos previstos</span><span>Trajeto ilustrativo · precisão variável</span></div></div></section>';
+ const alertsPane='<section class="v4-pane v4-alerts-pane" data-v4-pane="alertas"><div class="v4-pane-head"><h2>Alertas e justificativas</h2><span>'+data.pending+' pendente(s)</span></div>'+
+  '<div class="v4-alerts-list">'+(alerts.length?alerts.map(notificationRow).join(''):'<div class="v4-empty">Sem avisos registrados neste navegador.</div>')+'</div>'+
+  '<div class="v4-pane-foot">'+btn('Abrir central de alertas '+ic('arrow'),'nav-alerts','small')+'</div></section>';
+ const history=context.history;
+ const historyPane='<section class="v4-pane v4-history-pane" data-v4-pane="historico"><div class="v4-pane-head"><h2>Histórico · '+esc(context.watcher.name)+'</h2><span>'+history.length+' registro(s)</span></div>'+
+  '<div class="v4-history-list">'+(history.length?history.map(s=>
+   '<button type="button" class="v4-history-row" data-action="session-detail" data-id="'+esc(s.id)+'">'+
+   '<span><strong>'+esc(s.route.name)+'</strong><small>'+fmt(s.startedAt)+' · '+esc(s.status==='completed'?'Concluída':'Em andamento')+'</small></span>'+
+   '<b>'+s.index+'/'+s.route.points.length+'</b>'+ic('arrow')+'</button>').join(''):
+   '<p class="v4-empty">Este vigia ainda não possui registros neste navegador.</p>')+'</div>'+
+  '<div class="v4-pane-foot">'+btn('Ver relatório '+ic('arrow'),'nav-reports','small')+'</div></section>';
+ const insightPane='<section class="v4-pane v4-insights-pane" data-v4-pane="insights"><div class="v4-pane-head"><h2>'+ (manager?'Insights da operação':'Pontos de atenção')+'</h2>'+
+   '<span>Baseados nos registros</span></div>'+insightRows+
+   '<p class="v4-ethics-note">Indicadores ilustrativos. Um alerta pede verificação, não representa prova de falha individual.</p></section>';
+ const rosterPane=manager?'<section class="v4-pane v4-team-pane" data-v4-pane="equipe"><div class="v4-pane-head"><h2>Quatro vigias · cenários distintos</h2><span>Selecione para ver rota</span></div>'+
+  '<div class="v4-team-list">'+data.roster.map(w=>
+   '<button type="button" class="v4-team-row" data-v4-watcher="'+esc(w.id)+'">'+
+   '<span class="v4-team-avatar">'+esc(w.name[0])+'</span><span class="v4-team-copy"><strong>'+esc(w.name)+'</strong>'+
+   '<small>'+w.total+' ronda(s) · '+w.completed+' concluída(s)</small></span>'+
+   '<span class="v4-team-status">'+(w.deviations+w.incidents)+' evento(s)</span>'+ic('arrow')+'</button>').join('')+'</div>'+
+   '<p class="v4-ethics-note">Nomes, rotas e ocorrências fictícios. Não é um ranking de desempenho.</p></section>':'';
+ const summaryPane=manager?'<section class="v4-pane v4-summary-pane" data-v4-pane="resumo"><div class="v4-pane-head"><h2>Indicadores da operação</h2><span>'+data.roster.length+' vigias demonstrativos</span></div>'+
+  metricNodes+'<div class="v4-summary-callout"><div><span>Execuções concluídas</span><strong>'+(data.completionRatio===null?'—':data.completionRatio+'%')+'</strong></div>'+
+   '<p>'+esc(data.insights.find(x=>x.id==='completion').detail)+'</p></div>'+
+   '<div class="v4-summary-quick">'+btn('Programar ronda '+ic('arrow'),'program-round','small primary')+
+   btn('Analisar eventos '+ic('arrow'),'nav-alerts','small')+'</div></section>':'';
+ const tabs=(manager?[['resumo','Resumo'],['mapa','Mapa'],['equipe','Equipe'],['insights','Insights'],['alertas','Alertas']]:
+  [['mapa','Mapa'],['alertas','Alertas'],['insights','Insights'],['historico','Histórico']]);
+ const tabHtml='<nav class="v4-dashboard-tabs" role="tablist" aria-label="Seções do painel">'+tabs.map(([key,label])=>
+  '<button type="button" role="tab" data-v4-tab="'+key+'" aria-controls="v4-'+key+'">'+label+'</button>').join('')+'</nav>';
+ return '<div class="operations-page dashboard-v4 '+(manager?'v4-management':'v4-supervision')+'">'+
+  '<header class="v4-dashboard-heading"><div><span class="v4-eyebrow">MAXVEL · '+(manager?'GESTÃO':'SUPERVISÃO')+'</span>'+
+  '<h1>'+(manager?'Dashboard gerencial':'Operação supervisionada')+'</h1></div>'+notice+'</header>'+
+  tabHtml+'<div class="v4-stage">'+summaryPane+mapPane+rosterPane+alertsPane+insightPane+historyPane+'</div></div>';
+}
+
 function overview(){
+ if(['supervisor','gestor','admin'].includes(user?.role))return dashboardV4();
  const all=sessionList(),alerts=recentNotification(),open=alerts.filter(x=>!x.seenAt),inc=recentIncidents(),finished=all.filter(s=>s.status==='completed'),active=all.filter(s=>s.status==='active');
  const schedule= scheduleTotals(programs,sessions),pending=schedule.programada+schedule.atrasada;
  const metricRows=[
@@ -639,6 +726,15 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
   const info=pagePrograms(active,schedulePage,schedulePageSize());
   schedulePage=Math.max(0,Math.min(info.pages-1,info.page+(act==='schedule-next'?1:-1)));
   render();return;
+ }
+ if(act==='nav-reports'){view='relatorios';render();return;}
+ if(act==='nav-alerts'){view='notificacoes';render();return;}
+ if(el.hasAttribute('data-v4-watcher')){
+  if(!['supervisor','gestor','admin'].includes(user?.role))return;
+  const watcher=watcherById(el.dataset.v4Watcher);
+  if(!watcher)return;
+  selectedSupervisedWatcherId=watcher.id;
+  uxDashboardPane[user.role]='mapa';render();return;
  }
  if(act==='open-mobile-menu'){
   const options=allNav[user?.role]??[];
