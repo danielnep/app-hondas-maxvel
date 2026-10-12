@@ -898,6 +898,21 @@ dialog .modal-actions{border-color:#40576A}
  .dashboard .map-container .maxvel-osm-dark-adapted{
   filter:grayscale(1) invert(.92) brightness(.62) contrast(1.05)!important;
  }
+ /* Pinos e localização: azul exclusivamente Horizon, restante neutro. */
+ .dashboard .map-marker{
+  background:#24282C!important;color:#F3F4F6!important;
+  border-color:#C2C5C9!important;box-shadow:0 2px 10px #0006!important;
+ }
+ .dashboard .map-marker-active{
+  background:#55C9F5!important;color:#0C0D0F!important;border-color:#F3F4F6!important;
+ }
+ .dashboard .map-marker-base{background:#303438!important;color:#F3F4F6!important}
+ .dashboard .map-marker-done{background:#287B65!important;color:#F3F4F6!important}
+ .dashboard .map-person-ring{
+  background:rgba(85,201,245,.16)!important;
+  box-shadow:0 0 0 5px rgba(85,201,245,.12)!important;
+ }
+ .dashboard .map-person-dot{background:#55C9F5!important;box-shadow:0 1px 5px #0005!important}
  /* Contextual map tools and attribution remain clickable and readable. */
  .dashboard .map-container,.dashboard .patrol-map-canvas,.dashboard .map-command-map{
   background:#17191B!important;border-color:#303438!important;
