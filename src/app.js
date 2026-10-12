@@ -289,7 +289,7 @@ async function startSession(){const now=Date.now();if(mode==='real'&&!presentati
   try{window.AndroidTracking?.startTracking()}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
   deviceWatch=navigator.geolocation.watchPosition(pos=>{const f={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:Date.now()};locationFix=f;processPosition()},err=>{contextWarning='Sinal GPS indisponível. A permanência será reiniciada até obter localização confiável.';notify(contextWarning)},{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
  }catch{notify('Permita o uso do GPS ou volte à simulação.');return;}
- }else{session=createSession(user?.name??presentationName,DEMO_ROUTE,now,'simulation');locationFix={...session.route.base,accuracy:5,at:now};}
+ }else{const planned=programs.find(p=>p.id===selectedProgramId&&p.status==='scheduled')??nextProgram(programs,selectedWatcherId,sessions,now);const route=planned?routeForProgram(planned):DEMO_ROUTE;session=createSession(user?.name??presentationName,route,now,'simulation');if(planned){session.programId=planned.id;session.watcherId=planned.watcherId;selectedProgramId=planned.id;}locationFix={...session.route.base,accuracy:5,at:now};}
  movement=null;contextWarning='';save();modal.close();render();window.scrollTo({top:0,behavior:'instant'});notify('Ronda iniciada. Siga as orientações do primeiro ponto.');
 }
 function stopLocation(){if(deviceWatch!=null&&navigator.geolocation){navigator.geolocation.clearWatch(deviceWatch);deviceWatch=null;}try{window.AndroidTracking?.stopTracking()}catch{}}
@@ -366,9 +366,46 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  }
  if(act==='sim-role'){
   if(!presentation||!['ronda','supervisor','gestor','admin'].includes(el.dataset.role))return;
-  user={name:presentationName,role:el.dataset.role};
+  const name=el.dataset.role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):({supervisor:'Marina Souza',gestor:'Camila Martins',admin:'Administrador'}[el.dataset.role]);
+  user={name,role:el.dataset.role};
   view=user.role==='ronda'?'minha-ronda':'overview';
   render();window.scrollTo({top:0,behavior:'instant'});return;
+ }
+if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;scheduleTab=el.dataset.tab;render();return;}
+ if(act==='program-round'){if(!['supervisor','gestor','admin'].includes(user?.role))return;programRoundDialog();return;}
+ if(act==='watcher-chooser'){if(user?.role==='ronda')watcherChooser();return;}
+ if(act==='choose-watcher'){
+  if(user?.role!=='ronda'||session?.status==='active'){notify('Finalize a ronda ativa antes de trocar de vigia.');return;}
+  const w=watcherById(el.dataset.id);if(!w)return;
+  selectedWatcherId=w.id;selectedProgramId=null;session=null;user.name=w.name;presentationName=w.name;
+  persist();modal.close();render();return;
+ }
+ if(act==='select-program'){
+  const p=programs.find(p=>p.id===el.dataset.id&&p.watcherId===selectedWatcherId&&p.status!=='cancelled');
+  if(!p||session?.status==='active'){notify('Finalize a ronda em andamento antes de mudar de programação.');return;}
+  selectedProgramId=p.id;session=null;persist();render();return;
+ }
+ if(act==='program-detail'){
+  const p=programs.find(p=>p.id===el.dataset.id);if(!p)return;
+  const w=watcherById(p.watcherId),route=routeById(p.routeId);
+  showDialog(`<div class="eyebrow">RONDA PROGRAMADA</div><h2>${esc(route?.name??'Rota')}</h2><div class="detail-pair"><span>Vigia</span><strong>${esc(w?.name??'')}</strong></div><div class="detail-pair"><span>Unidade</span><strong>${esc(w?.unit??'')}</strong></div><div class="detail-pair"><span>Início previsto</span><strong>${esc(formatShortDate(p.startAt))}</strong></div><div class="detail-pair"><span>Situação</span><strong>${esc(scheduleStatus(p,sessions))}</strong></div><p>${esc(p.notes||'Sem observações.')}</p>${btn('Fechar','close-dialog','primary full')}`);return;
+ }
+ if(act==='program-cancel'){
+  if(!['supervisor','gestor','admin'].includes(user?.role))return;
+  const p=programs.find(p=>p.id===el.dataset.id);if(!p||sessions.some(s=>s.programId===p.id))return;
+  showDialog(`<h2>Cancelar programação?</h2><p>A ronda de ${esc(watcherById(p.watcherId)?.name||'vigia')} prevista para ${esc(formatShortDate(p.startAt))} será marcada como cancelada.</p><div class="modal-actions">${btn('Manter ronda','close-dialog')}${btn('Confirmar cancelamento','program-cancel-confirm','danger',`data-id="${esc(p.id)}"`)}</div>`);return;
+ }
+ if(act==='program-cancel-confirm'){
+  if(!['supervisor','gestor','admin'].includes(user?.role))return;
+  const p=programs.find(p=>p.id===el.dataset.id);if(!p||sessions.some(s=>s.programId===p.id))return;
+  programs=cancelProgram(programs,p.id);persist();render();notify('Programação cancelada neste navegador.');return;
+ }
+ if(act==='program-confirm'){
+  if(!['supervisor','gestor','admin'].includes(user?.role)||!pendingProgram)return;
+  const result=createPrograms(pendingProgram,programs,Date.now());
+  if(!result.ok){notify(result.error);programRoundDialog();return;}
+  programs=[...programs,...result.items];pendingProgram=null;persist();render();
+  notify(result.items.length+' ronda(s) programada(s) neste navegador.');return;
  }
 if(act==='profile-menu'){profileDialog();return;}
  if(act==='login'){loginDialog();return;}
@@ -398,12 +435,25 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='center-maps'){liveMaps.forEach(m=>m.fit());return;}
  if(act==='print'){window.print();return;}
  if(act==='clear-prompt'){showDialog(`<h2>Apagar os dados deste navegador?</h2><p>As rondas, justificativas, ocorrências e notificações locais da demonstração serão apagadas.</p><div class="modal-actions">${btn('Cancelar','close-dialog')}${btn('Apagar dados','confirm-clear','danger')}</div>`);return;}
- if(act==='confirm-clear'){clearState();sessions=[];session=null;stopLocation();movement=null;locationFix=null;render();notify('Dados locais apagados.');return;}
+ if(act==='confirm-clear'){clearState();sessions=[];programs=demoSchedule();selectedWatcherId='v01';selectedProgramId=null;session=null;stopLocation();movement=null;locationFix=null;render();notify('Dados locais apagados.');return;}
 }
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
+document.addEventListener('change',e=>{if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;render();}});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);
- if(e.target.id==='login-form'){const role=String(f.get('role')||'ronda');if(!allNav[role]){notify('Selecione um perfil válido.');return;}const name=role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):({supervisor:'Marina Souza',gestor:'Camila Martins',admin:'Administrador'}[role]);modal.close();beginSimulation(name,false,role);return;}
+ if(e.target.id==='program-form'){
+  if(!['supervisor','gestor','admin'].includes(user?.role))return;
+  const candidate={watcherId:String(f.get('watcherId')||''),routeId:String(f.get('routeId')||''),
+   startAt:new Date(String(f.get('startAt')||'')).getTime(),endAt:new Date(String(f.get('endAt')||'')).getTime(),
+   repeat:String(f.get('repeat')||'once'),notes:String(f.get('notes')||'')};
+  const result=createPrograms(candidate,programs,Date.now());
+  if(!result.ok){const error=modal.querySelector('.program-error');if(error)error.textContent=result.error;return;}
+  pendingProgram=candidate;
+  const w=watcherById(candidate.watcherId),r=routeById(candidate.routeId);
+  showDialog(`<div class="eyebrow">REVISAR AGENDAMENTO</div><h2>Confirmar programação</h2><p>Confira os dados antes de salvar.</p><div class="detail-pair"><span>Responsável</span><strong>${esc(w?.name)}</strong></div><div class="detail-pair"><span>Rota</span><strong>${esc(r?.name)}</strong></div><div class="detail-pair"><span>Início</span><strong>${esc(formatShortDate(candidate.startAt))}</strong></div><div class="detail-pair"><span>Término</span><strong>${esc(formatShortDate(candidate.endAt))}</strong></div><div class="detail-pair"><span>Repetições</span><strong>${result.items.length}</strong></div><div class="modal-actions">${btn('Voltar','program-round')}${btn('Confirmar e salvar','program-confirm','primary')}</div>`);
+  return;
+ }
+if(e.target.id==='login-form'){const role=String(f.get('role')||'ronda');if(!allNav[role]){notify('Selecione um perfil válido.');return;}const name=role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):({supervisor:'Marina Souza',gestor:'Camila Martins',admin:'Administrador'}[role]);modal.close();beginSimulation(name,false,role);return;}
  if(e.target.id==='justification-form'){if(!session)return;const d=latestDeviation();if(!justifyDeviation(session,d?.id,String(f.get('reason')||''))){notify('Informe ao menos 10 caracteres na justificativa.');return;}save();modal.close();render();notify('Justificativa recebida pela supervisão · simulação local.');return;}
  if(e.target.id==='incident-form'){if(!session)return;const i=registerIncident(session,{title:f.get('title'),description:f.get('description'),severity:f.get('severity')});if(!i){notify('Preencha título e descrição com detalhes suficientes.');return;}save();modal.close();render();notify('Ocorrência registrada e exibida na supervisão · simulação local.');return;}
 });
