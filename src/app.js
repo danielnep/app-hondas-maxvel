@@ -447,7 +447,7 @@ function patrolMapClock(){
  if(!session||session.status!=='active'||!currentCheckpoint(session))return '';
  const seconds=Math.floor(session.checkpoints[session.index].dwellMs/1000),required=Math.round(requiredDwellMs(session)/1000);
  const started=session.insideSince!==null,ready=canCompletePoint(session);
- const label=ready?'Tempo concluído':started?'Permanência':'Aguardando ponto';
+ const label=ready?'Tempo concluído':started?'Dentro de 25 m':'Aguardando ponto';
  return `<div class="patrol-map-clock ${ready?'clock-done':started?'clock-running':'clock-waiting'}" aria-live="polite">
   <span class="patrol-clock-label">${ic('clock')} <span data-live="clock-state">${label}</span></span>
   <strong><span data-live="seconds">${seconds}</span><small> / ${required} s</small></strong></div>`;
@@ -557,7 +557,7 @@ function updateLive(result){if(!session||session.status!=='active')return;const 
  for(const el of document.querySelectorAll('[data-live="status"]'))el.innerHTML=result?.reason==='gps-unreliable'?`${ic('crosshair')} Aguardando posição GPS confiável. O tempo foi reiniciado.`:hasBlock(session)?`${ic('alert')} Avanço bloqueado. Justifique e retorne ao ponto.`:session.insideSince!==null?elapsed>=requiredDwellMs(session)/1000?`${ic('checkcircle')} Tempo cumprido. Confirme a conclusão do ponto.`:`${ic('clock')} Permaneça no raio por mais ${Math.max(0,Math.round(requiredDwellMs(session)/1000)-elapsed)} segundos.`:`${ic('pin')} Vá ao ponto ${session.index+1}: ${esc(p?.name??'base')}.`;
  for(const el of document.querySelectorAll('[data-live="req-time"]'))el.classList.toggle('ok',elapsed>=requiredDwellMs(session)/1000);
  for(const el of document.querySelectorAll('[data-live="req-radius"]'))el.classList.toggle('ok',session.insideSince!==null);
- for(const el of document.querySelectorAll('[data-live="clock-state"]'))el.textContent=canCompletePoint(session)?'Tempo concluído':session.insideSince!==null?'Permanência':'Aguardando ponto';
+ for(const el of document.querySelectorAll('[data-live="clock-state"]'))el.textContent=canCompletePoint(session)?'Tempo concluído':session.insideSince!==null?'Dentro de 25 m':'Aguardando ponto';
  for(const el of document.querySelectorAll('.patrol-map-clock'))el.classList.toggle('clock-done',canCompletePoint(session));
  for(const el of document.querySelectorAll('[data-action="complete-point"]')){
   const seconds=Math.round(requiredDwellMs(session)/1000);

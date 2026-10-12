@@ -35,7 +35,8 @@ test('ação da ronda, mapa e progresso são o próprio aplicativo e não mockup
  const end=app.indexOf('const lessonNames=',fn);
  const workspace=app.slice(fn,end);
  assert.match(action,/readyStartPanel\(\)/);
- assert.match(action,/Iniciar ronda|Concluir ponto e seguir/);
+ assert.match(action,/readyStartPanel|Confirmar ponto e seguir/);
+ assert.match(workspace,/patrolMapClock\(\)/);
  assert.ok(workspace.includes('patrolActionContent()'));
  assert.ok(workspace.includes('id="mobile-map"'));
  assert.ok(workspace.includes('patrol-workspace'));
