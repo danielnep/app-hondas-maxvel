@@ -430,7 +430,11 @@ function patrolActionContent(){
  if(blocked&&dev&&!dev.returnedAt)return `<div class="patrol-stage-intro is-alert"><span class="patrol-stage-index">${ic('alert')} DESVIO REGISTRADO</span><h2>Retorne ao ponto</h2><p>Justificativa registrada. Para seguir, volte ao ponto ${s.index+1} e cumpra novamente os 30 segundos.</p></div>${mode==='simulation'?btn('Simular retorno ao ponto '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':''):`<div class="section-note">${ic('crosshair')} Aguarde a confirmação de GPS no local.</div>`}`;
  if(p){
   const secs=Math.floor(s.checkpoints[s.index].dwellMs/1000),required=Math.round(requiredDwellMs(s)/1000),ready=canCompletePoint(s);
-  return `<div class="patrol-stage-intro"><span class="patrol-stage-index">PONTO ${s.index+1} / ${route.points.length}</span><h2>${esc(p.name)}</h2><p>${esc(p.instruction)}</p></div>${mode==='simulation'&&s.insideSince===null&&!ready?btn(movement?'Em deslocamento…':'Deslocar até este ponto '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':''):btn('Concluir ponto e seguir '+ic('arrow'),'complete-point','primary full',ready?'':'disabled')}<div class="patrol-dwell"><div class="timer-ring" data-live="ring" style="--deg:${Math.min(360,secs/required*360)}deg"><span><b data-live="seconds">${secs}</b><small>/ ${required} s</small></span></div><div class="patrol-dwell-info"><strong>Validação por localização ${helpButton('timer','permanência e raio')}</strong><div class="patrol-dwell-tags"><span data-live="req-radius" class="requirement ${s.insideSince!==null?'ok':''}">${ic('crosshair')} Dentro de 25 m</span><span data-live="req-time" class="requirement ${secs>=required?'ok':''}">${ic('clock')} Permanência</span></div><p data-live="status">${s.insideSince!==null?'Permaneça no raio até cumprir os 30 segundos.':'Dirija-se ao ponto indicado no mapa.'}</p></div></div>`;
+  const label=ready?'Tempo concluído · Confirmar ponto e seguir '+ic('arrow'):s.insideSince!==null?`Aguarde ${Math.max(0,required-secs)} s no local`:'Aguardando chegada ao ponto';
+  const action=mode==='simulation'&&s.insideSince===null&&!ready
+   ?btn(movement?'Em deslocamento…':'Ir ao ponto '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':'')
+   :btn(label,'complete-point','primary full',ready?'':'disabled');
+  return `<div class="patrol-stage-intro"><span class="patrol-stage-index">PONTO ${s.index+1} / ${route.points.length}</span><h2>${esc(p.name)}</h2><p>${esc(p.instruction)}</p></div>${action}`;
  }
  return `<div class="patrol-stage-intro"><span class="patrol-stage-index">TODOS OS PONTOS VERIFICADOS</span><h2>Retorne à base</h2><p>A ronda só termina após o retorno ser confirmado pela localização.</p></div>${mode==='simulation'&&!s.returnConfirmed?btn(movement?'Retornando à base…':'Simular retorno à base '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':''):btn('Finalizar ronda '+ic('check'),'finish','primary full',s.returnConfirmed&&!hasBlock(s)?'':'disabled')}`;
 }
@@ -439,13 +443,22 @@ function patrolScenarioControls(){
  const p=currentCheckpoint(session),busy=!!movement;
  return `<div class="patrol-scenario-tools"><div class="patrol-tools-heading"><span>${ic('play')} Comandos do cenário</span><small>Deslocamento animado</small></div><div class="patrol-quick-actions">${btn(p?'Ir ao próximo ponto':'Voltar à base','demo-arrive','',busy?'disabled':'')}${btn('Sair da rota','demo-leave','',busy?'disabled':'')}${btn('Ocorrência','incident-form','')}</div></div>`;
 }
+function patrolMapClock(){
+ if(!session||session.status!=='active'||!currentCheckpoint(session))return '';
+ const seconds=Math.floor(session.checkpoints[session.index].dwellMs/1000),required=Math.round(requiredDwellMs(session)/1000);
+ const started=session.insideSince!==null,ready=canCompletePoint(session);
+ const label=ready?'Tempo concluído':started?'Permanência':'Aguardando ponto';
+ return `<div class="patrol-map-clock ${ready?'clock-done':started?'clock-running':'clock-waiting'}" aria-live="polite">
+  <span class="patrol-clock-label">${ic('clock')} <span data-live="clock-state">${label}</span></span>
+  <strong><span data-live="seconds">${seconds}</span><small> / ${required} s</small></strong></div>`;
+}
 function phoneContent(){
  const s=session,route=s?.route??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
  const state=active?(hasBlock(s)?'Atenção · justificativa':point?`Ponto ${s.index+1} de ${route.points.length}`:'Retorno à base'):s?.status==='completed'?'Ronda concluída':'Ronda preparada';
  return `<div class="patrol-workspace${patrolSheetCollapsed?' sheet-collapsed':''}">
   <div class="patrol-statusline">${phoneTelemetry()}</div>
   <section class="patrol-map-panel" aria-label="Mapa da ronda">
-   <header class="patrol-map-heading"><div><strong>${esc(route.name)} ${helpButton('map','mapa e pontos')}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div><button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
+   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(route.name)} ${helpButton('map','mapa e pontos')}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
    <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div></div>
    <div class="patrol-map-footer"><span>${mode==='real'?'GPS autorizado':'Localização simulada'}</span><span data-live="coords">${locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)}`:'Aguardando início'}</span></div>
   </section>
@@ -539,14 +552,20 @@ function processPosition(){if(!session||session.status!=='active'||screen==='lan
 }
 function updateLive(result){if(!session||session.status!=='active')return;const p=currentCheckpoint(session),elapsed=p?Math.floor(session.checkpoints[session.index].dwellMs/1000):0,c=coach();
  for(const el of document.querySelectorAll('[data-live="seconds"]'))el.textContent=elapsed;
- for(const el of document.querySelectorAll('[data-live="ring"]'))el.style.setProperty('--deg',`${Math.min(360,elapsed/30*360)}deg`);
+ for(const el of document.querySelectorAll('[data-live="ring"]'))el.style.setProperty('--deg',`${Math.min(360,elapsed/(requiredDwellMs(session)/1000)*360)}deg`);
  for(const el of document.querySelectorAll('[data-live="coords"]'))el.textContent=locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)} · precisão ${Math.round(locationFix.accuracy??5)} m`:'Sem leitura válida';
- for(const el of document.querySelectorAll('[data-live="status"]'))el.innerHTML=result?.reason==='gps-unreliable'?`${ic('crosshair')} Aguardando posição GPS confiável. O tempo foi reiniciado.`:hasBlock(session)?`${ic('alert')} Avanço bloqueado. Justifique e retorne ao ponto.`:session.insideSince!==null?elapsed>=30?`${ic('checkcircle')} Tempo cumprido. Confirme a conclusão do ponto.`:`${ic('clock')} Permaneça no raio por mais ${30-elapsed} segundos.`:`${ic('pin')} Vá ao ponto ${session.index+1}: ${esc(p?.name??'base')}.`;
- for(const el of document.querySelectorAll('[data-live="req-time"]'))el.classList.toggle('ok',elapsed>=30);
+ for(const el of document.querySelectorAll('[data-live="status"]'))el.innerHTML=result?.reason==='gps-unreliable'?`${ic('crosshair')} Aguardando posição GPS confiável. O tempo foi reiniciado.`:hasBlock(session)?`${ic('alert')} Avanço bloqueado. Justifique e retorne ao ponto.`:session.insideSince!==null?elapsed>=requiredDwellMs(session)/1000?`${ic('checkcircle')} Tempo cumprido. Confirme a conclusão do ponto.`:`${ic('clock')} Permaneça no raio por mais ${Math.max(0,Math.round(requiredDwellMs(session)/1000)-elapsed)} segundos.`:`${ic('pin')} Vá ao ponto ${session.index+1}: ${esc(p?.name??'base')}.`;
+ for(const el of document.querySelectorAll('[data-live="req-time"]'))el.classList.toggle('ok',elapsed>=requiredDwellMs(session)/1000);
  for(const el of document.querySelectorAll('[data-live="req-radius"]'))el.classList.toggle('ok',session.insideSince!==null);
- for(const el of document.querySelectorAll('[data-action="complete-point"]'))el.disabled=!canCompletePoint(session);
+ for(const el of document.querySelectorAll('[data-live="clock-state"]'))el.textContent=canCompletePoint(session)?'Tempo concluído':session.insideSince!==null?'Permanência':'Aguardando ponto';
+ for(const el of document.querySelectorAll('.patrol-map-clock'))el.classList.toggle('clock-done',canCompletePoint(session));
+ for(const el of document.querySelectorAll('[data-action="complete-point"]')){
+  const seconds=Math.round(requiredDwellMs(session)/1000);
+  el.disabled=!canCompletePoint(session);
+  el.textContent=canCompletePoint(session)?'Tempo concluído · Confirmar ponto e seguir':session.insideSince!==null?'Aguarde '+Math.max(0,seconds-elapsed)+' s no local':'Aguardando chegada ao ponto';
+ }
  for(const el of document.querySelectorAll('[data-action="finish"]'))el.disabled=!session.returnConfirmed||hasBlock(session);
- const replacements={'guide-title':c.title,'guide-desc':c.detail,'coach-title':c.title,'coach-detail':c.detail,'sup-point':p?`${session.index+1} de ${session.route.points.length}`:'Retorno','sup-dwell':p?`${elapsed} / 30 s`:'Pontos concluídos','sup-status':hasBlock(session)?'Bloqueado':movement?'Em trânsito':session.insideSince!==null?'No ponto':'Em percurso'};
+ const replacements={'guide-title':c.title,'guide-desc':c.detail,'coach-title':c.title,'coach-detail':c.detail,'sup-point':p?`${session.index+1} de ${session.route.points.length}`:'Retorno','sup-dwell':p?`${elapsed} / ${Math.round(requiredDwellMs(session)/1000)} s`:'Pontos concluídos','sup-status':hasBlock(session)?'Bloqueado':movement?'Em trânsito':session.insideSince!==null?'No ponto':'Em percurso'};
  for(const [key,value]of Object.entries(replacements))for(const el of document.querySelectorAll(`[data-live="${key}"]`))el.textContent=value;
  for(const el of document.querySelectorAll('[data-live="guide-benefit"]'))el.innerHTML=`<b>O que isso demonstra:</b> ${esc(c.benefit)}`;
 }

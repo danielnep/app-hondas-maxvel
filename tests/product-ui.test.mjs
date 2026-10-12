@@ -54,3 +54,11 @@ test('transparência: aviso e opção de dispensar GPS, sem alegar rastreamento 
  assert.match(app,/Explorar sem localização GPS|demonstração sem GPS/);
  assert.match(app,/O navegador não acompanha sua posição depois de fechado|No navegador, o GPS para ao fechar a página/);
 });
+
+test('cronômetro no topo do mapa e ação aguarda permanência real',()=>{
+ assert.match(app,/function patrolMapClock\(/);
+ assert.match(app,/data-live="clock-state"/);
+ assert.match(app,/Aguardando chegada ao ponto/);
+ assert.match(app,/requiredDwellMs\(session\)/);
+ assert.doesNotMatch(app,/class="timer-ring" data-live="ring"/);
+});
