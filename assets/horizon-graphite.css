@@ -507,3 +507,210 @@ dialog .modal-actions{border-color:#40576A}
 @media(prefers-reduced-motion:reduce){
  .dashboard .ronda-page .patrol-actions{transition:none!important}
 }
+
+
+/* UX R4 · Limpeza visual: um mapa, um estado, uma acao.
+   Overrides especificos posteriores preservam os fluxos dos estilos legados. */
+.dashboard.simulation-mode .simulation-rolebar{display:none!important}
+.dashboard .compact-role-picker{
+ display:inline-flex;align-items:center;gap:5px;min-height:38px;
+ font-size:12px;padding:7px 10px;white-space:nowrap;
+}
+.dashboard .compact-role-picker svg{width:16px;height:16px}
+.role-picker-list{display:grid;gap:7px;margin:12px 0}
+.role-picker-list button{
+ display:flex;align-items:center;gap:12px;text-align:left;min-height:50px;
+ padding:11px 14px;background:#223547;color:#edf6ff;border:1px solid #496175;
+ border-radius:10px;cursor:pointer;
+}
+.role-picker-list button.selected{border-color:#69caff;background:#17476a}
+.role-picker-list button svg{width:20px;height:20px;flex-shrink:0}
+.role-picker-list button strong{font-size:14px}
+.role-picker-list button span{margin-left:auto;color:#8fdafc;font-size:11px}
+.dashboard .ronda-page .patrol-actions{
+ width:min(400px,calc(100% - 16px))!important;
+ max-height:min(70dvh,560px)!important;
+ bottom:8px!important;right:8px!important;
+ display:flex;flex-direction:column;border-radius:14px!important;
+}
+.dashboard .ronda-page .patrol-action-heading{
+ display:flex;align-items:center;justify-content:space-between;
+ min-height:42px!important;padding:6px 9px 6px 12px!important;gap:9px;
+ border-bottom:1px solid #3c5568;
+}
+.dashboard .ronda-page .patrol-action-heading strong{
+ display:inline-flex;align-items:center;gap:7px;min-width:0;flex:1;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ color:#eff7fc;font-size:12px;font-weight:750;
+}
+.dashboard .ronda-page .patrol-action-heading strong svg{width:16px;height:16px}
+.dashboard .ronda-page .patrol-sheet-toggle{
+ position:static!important;top:auto!important;right:auto!important;
+ flex-shrink:0;min-width:94px!important;min-height:35px!important;
+ padding:6px 9px!important;font-size:11px!important;
+}
+.dashboard .ronda-page .patrol-action-body{
+ display:block!important;flex:1;overflow-y:auto;padding:10px 12px!important;
+ max-height:calc(min(70dvh,560px) - 42px)!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+ min-height:0!important;max-height:min(32dvh,225px)!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-heading{min-height:42px!important}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-body{
+ display:block!important;max-height:calc(min(32dvh,225px) - 42px)!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-extra-flow{display:none!important}
+.dashboard .ronda-page .patrol-extra-flow{
+ margin-top:12px;padding-top:10px;border-top:1px solid #354a5e;
+}
+.dashboard .ronda-page .patrol-extra-label{
+ color:#b2c9d9;font-size:11px;font-weight:750;margin-bottom:8px;
+}
+.dashboard .ronda-page .patrol-extra-flow .patrol-scenario-tools{display:block!important}
+.dashboard .ronda-page .patrol-primary-flow>.patrol-stage-intro{margin:0 0 6px;padding:0!important}
+.dashboard .ronda-page .patrol-primary-flow .patrol-stage-intro .patrol-stage-index{
+ font-size:10px;letter-spacing:.04em;margin:0;
+}
+.dashboard .ronda-page .patrol-primary-flow .patrol-stage-intro h2{
+ font-size:16px!important;margin:2px 0 6px!important;line-height:1.25;
+}
+.dashboard .ronda-page .patrol-primary-flow .patrol-stage-intro p{
+ display:none!important;
+}
+.dashboard .ronda-page .patrol-primary-flow .patrol-stage-intro.is-alert p{
+ display:block!important;font-size:12px;line-height:1.4;margin:4px 0!important;
+}
+.dashboard .ronda-page .patrol-primary-flow .patrol-microtext{display:none!important}
+.dashboard .ronda-page .patrol-primary-flow>.button.full{
+ margin:3px 0!important;min-height:48px!important;font-size:14px!important;
+}
+.dashboard .ronda-page .patrol-primary-flow .patrol-dwell{
+ display:flex;align-items:center;gap:8px;margin:6px 0 0!important;
+ padding:5px!important;border:0!important;background:transparent!important;
+}
+.dashboard .ronda-page .patrol-primary-flow .timer-ring{
+ width:48px!important;height:48px!important;flex:0 0 48px!important;
+}
+.dashboard .ronda-page .patrol-primary-flow .timer-ring span b{font-size:16px}
+.dashboard .ronda-page .patrol-primary-flow .patrol-dwell-info>strong{font-size:11px!important}
+.dashboard .ronda-page .patrol-primary-flow .patrol-dwell-info>p{font-size:11px!important}
+.dashboard .ronda-page .patrol-primary-flow .patrol-dwell-tags{font-size:10px}
+.dashboard .ronda-page .patrol-statusline{display:none!important}
+.dashboard .ronda-page .patrol-map-heading{
+ top:8px!important;left:8px!important;right:8px!important;
+ min-height:51px!important;padding:7px 10px!important;
+ border-radius:11px!important;background:rgba(20,34,47,.94)!important;
+}
+.dashboard .ronda-page .patrol-map-heading strong{
+ font-size:13px!important;font-weight:750;line-height:1.3;
+}
+.dashboard .ronda-page .patrol-map-heading small{
+ display:block;font-size:11px!important;line-height:1.3;color:#c0d3e3;
+}
+.dashboard .ronda-page .patrol-map-note{display:none!important}
+.dashboard .ronda-page .patrol-map-footer{
+ position:absolute!important;width:1px!important;height:1px!important;
+ padding:0!important;margin:-1px!important;overflow:hidden!important;
+ clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;
+}
+.dashboard .ronda-page .patrol-map-canvas .leaflet-bottom{bottom:calc(min(32dvh,225px) + 12px)!important}
+.dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-map-canvas .leaflet-bottom{bottom:calc(min(70dvh,560px) + 12px)!important}
+
+/* Painéis administrativos: reduzir repeticao de caixas e mensagens sem ocultar dados. */
+.dashboard .operations-page .ops-topline{min-height:34px;padding:6px 12px!important;margin-bottom:7px!important}
+.dashboard .ops-metric{padding:7px 12px!important}
+.dashboard .ops-metric p{display:none!important}
+.dashboard .ops-metrics{margin:5px 0 10px!important;padding:5px 2px!important}
+.dashboard .ops-panel-heading{padding-block:10px!important}
+.dashboard .ops-panel-heading .eyebrow,.dashboard .ops-panel-heading p{display:none!important}
+.dashboard .page-title .eyebrow{display:none!important}
+.dashboard .alerts-command-page .alert-local-banner{
+ font-size:11px;line-height:1.35;padding:7px 10px!important;
+}
+.dashboard .alerts-queue-head .eyebrow,.dashboard .alerts-queue-head p{display:none!important}
+.dashboard .report-page .report-context-bar{padding:8px 10px!important}
+.dashboard .report-page .card .eyebrow{display:none!important}
+@media(max-width:900px){
+ .dashboard .compact-role-picker{min-width:44px;min-height:44px;padding:9px}
+ .dashboard .compact-role-picker svg{width:18px;height:18px}
+ .dashboard .ronda-page .patrol-actions{
+  left:6px!important;right:6px!important;bottom:6px!important;
+  width:auto!important;max-height:min(68dvh,530px)!important;
+ }
+ .dashboard .ronda-page .patrol-action-body{
+  max-height:calc(min(68dvh,530px) - 42px)!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+  max-height:min(33dvh,215px)!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-body{
+  max-height:calc(min(33dvh,215px) - 42px)!important;
+ }
+ .dashboard .ronda-page .patrol-map-heading{
+  min-height:48px!important;top:6px!important;left:6px!important;right:6px!important;
+ }
+ .dashboard .ronda-page .patrol-map-canvas .leaflet-bottom{bottom:calc(min(33dvh,215px) + 8px)!important}
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-map-canvas .leaflet-bottom{bottom:calc(min(68dvh,530px) + 8px)!important}
+}
+@media(max-width:380px){
+ .dashboard .compact-role-picker{font-size:0;gap:0}
+ .dashboard .ronda-page .patrol-stage-intro h2{font-size:15px!important}
+}
+@media(max-width:900px) and (max-height:640px){
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+  max-height:min(42dvh,200px)!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-body{
+  max-height:calc(min(42dvh,200px) - 42px)!important;
+ }
+}
+
+/* R4 · Evidências de cenário: acesso sob Mais opções, sem fotografias reais. */
+.patrol-evidence-link{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;border:1px solid #54748a;border-radius:9px;padding:9px 11px;background:#1a3950;color:#dceffa;text-align:left;font-weight:730;font-size:12px;cursor:pointer}
+.patrol-evidence-link svg{width:17px;height:17px;flex-shrink:0}
+.evidence-demo-dialog{display:grid;gap:10px}
+.evidence-demo-dialog>p{font-size:13px;line-height:1.55;color:#b7ccda;margin:0}
+.evidence-demo-count{font-size:12px;color:#a7dffb;font-weight:800}
+.evidence-demo-list{display:grid;gap:5px}
+.evidence-demo-row{display:flex;align-items:center;justify-content:space-between;gap:9px;border-bottom:1px solid #3a5062;padding:7px 0}
+.evidence-demo-row>span,.evidence-demo-motion>span{display:grid;gap:3px}
+.evidence-demo-row strong,.evidence-demo-motion strong{font-size:13px;color:#eaf5fb}
+.evidence-demo-row small,.evidence-demo-motion small{font-size:11px;color:#a9c7da}
+.evidence-demo-row>.button,.evidence-demo-motion>.button{min-height:40px;min-width:96px}
+.evidence-demo-motion{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #456377;padding:11px;border-radius:9px}
+.evidence-demo-note{font-size:11px;line-height:1.5;color:#a9bfcf}
+@media(max-width:400px){.evidence-demo-row>.button,.evidence-demo-motion>.button{min-width:83px;padding-inline:8px}}
+
+/* R5 · Tratamento de ocorrências na mesma interface enxuta. */
+.incident-review-dialog{display:grid;gap:10px}
+.incident-review-dialog>p{font-size:13px;line-height:1.45;color:#d1e1ec}
+.incident-review-tags{display:flex;gap:8px;flex-wrap:wrap}
+.incident-review-dialog .detail-pair{padding:6px 0;border-bottom:1px solid #405568}
+.incident-review-dialog form{display:grid;gap:10px;margin:12px 0 6px}
+.incident-review-dialog form .field{display:grid;gap:5px;color:#cce0ef;font-size:12px}
+.incident-review-dialog form :is(input,textarea,select){width:100%;min-height:44px;padding:10px;background:#172c3d;color:#eef7ff;border:1px solid #536b80;border-radius:8px}
+.incident-review-dialog form textarea{min-height:70px;resize:vertical}
+.incident-review-history{margin-top:7px;border-top:1px solid #3b5265;padding-top:10px;font-size:12px}
+.incident-review-history summary{cursor:pointer;min-height:42px;color:#c2e8fc;font-weight:750}
+.incident-review-row{display:grid;gap:3px;padding:9px 0;border-bottom:1px solid #405568}
+.incident-review-row small{color:#a9c0d2}
+.incident-review-row p{margin:0}
+
+/* R5 · Supervisão/gestão mobile: remover cabeçalhos redundantes e priorizar mapa. */
+.dashboard .operations-page>.page-title{margin:4px 0 8px!important}
+.dashboard .operations-page>.page-title p{display:none!important}
+.dashboard .operations-page>.page-title h1{font-size:clamp(21px,3vw,27px)!important;line-height:1.2!important}
+.dashboard .operations-page>.ops-topline{display:none!important}
+.dashboard .operations-page .ops-metrics{margin:3px 0 8px!important}
+.dashboard .ops-map-card .ops-map-actions .tag{display:none!important}
+.dashboard .ops-map-card .ops-panel-heading{padding:10px 11px!important}
+.dashboard .ops-map-card .ops-panel-heading h2{font-size:16px!important}
+@media(max-width:900px){
+ .dashboard .operations-page>.page-title .button{display:none!important}
+ .dashboard .operations-page>.page-title{padding:2px 2px 0!important}
+ .dashboard .operations-page .ops-metric>strong{font-size:23px!important}
+ .dashboard .operations-page .ops-metrics{margin:4px 0 8px!important}
+ .dashboard .ops-map-card .ops-map-actions button{min-height:40px;padding:6px 9px}
+ .dashboard .ops-map-card .ops-map-stage{min-height:270px}
+}
