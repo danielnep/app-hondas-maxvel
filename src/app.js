@@ -57,7 +57,7 @@ let operationalSettings={
  deviationJustification:persisted?.operationalSettings?.deviationJustification!==false,
  evidenceEnabled:persisted?.operationalSettings?.evidenceEnabled!==false
 };
-let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedSupervisedWatcherId='v01',selectedProgramId=null,scheduleTab='agenda',scheduleFilter='all',scheduleWatcher='all',scheduleUnit='all',scheduleQuery='',schedulePage=0,pendingProgram=null,pendingEdit=null;
+let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedSupervisedWatcherId='v01',selectedProgramId=null,scheduleTab='agenda',scheduleFiltersOpen=false,scheduleFilter='all',scheduleWatcher='all',scheduleUnit='all',scheduleQuery='',schedulePage=0,pendingProgram=null,pendingEdit=null;
 let user=null,screen='landing',view='overview',presentation=false,guideStage=0,presentationName='Lucas Ferreira',mode='simulation',session=null;
 let priorSimulation=null;
 let wizardController=null;
@@ -173,6 +173,7 @@ function installViewportViews(){
    paginateRows(nodes.historico,'tbody tr','Historico',3);
    paint();
   }
+  if(scheduleFiltersOpen)main.querySelector('.schedule-refine')?.classList.add('ux-filters-open');
   paginateRows(main,'.schedule-row','Programas',3);
  }
  if(view==='notificacoes')paginateRows(main,'.event-item','Notificacoes',3);
@@ -627,7 +628,7 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
   return;
  }
  if(act==='program-round'){if(!['supervisor','gestor','admin'].includes(user?.role))return;programRoundDialog();return;}
- if(act==='schedule-show-filters'){const ref=document.querySelector('.schedule-refine');if(ref){ref.classList.toggle('ux-filters-open');el.setAttribute('aria-expanded',String(ref.classList.contains('ux-filters-open')));}return;}
+ if(act==='schedule-show-filters'){const ref=document.querySelector('.schedule-refine');scheduleFiltersOpen=!scheduleFiltersOpen;if(ref){ref.classList.toggle('ux-filters-open',scheduleFiltersOpen);el.setAttribute('aria-expanded',String(scheduleFiltersOpen));}return;}
  if(act==='watcher-chooser'){if(user?.role==='ronda')watcherChooser();return;}
  if(act==='choose-watcher'){
   if(user?.role!=='ronda'||session?.status==='active'){notify('Finalize a ronda ativa antes de trocar de vigia.');return;}

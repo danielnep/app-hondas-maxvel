@@ -50,7 +50,10 @@ try{
   await nav('notificacoes').click();
   await sleep(140);
   await check(page,'05-alertas',width);
-  await nav('relatorios').click();
+  if(width<500){
+   await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+   await click(page,'#dialog [data-view="relatorios"]');
+  }else await nav('relatorios').click();
   await sleep(140);
   await check(page,'06-relatorios',width);
   await context.close();
