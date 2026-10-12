@@ -47,6 +47,16 @@ button,input,select,textarea{font:inherit}
 
 .dashboard .ops-topline{background:#1D303F!important;color:var(--ui-text);border:1px solid var(--ui-border);border-radius:12px}
 .dashboard .ops-topline span,.dashboard .ops-topline-right{color:var(--ui-muted)}
+
+/* A central de operações usa superfícies Graphite; somente os tiles do mapa são claros. */
+.dashboard .ops-map-card{background:var(--ui-panel)!important;border:1px solid var(--ui-border)!important;box-shadow:none!important;color:var(--ui-text)}
+.dashboard .ops-map-card :is(h2,h3,strong){color:var(--ui-text)!important}
+.dashboard .ops-map-card .ops-panel-heading p,.dashboard .ops-map-legend,.dashboard .ops-map-note{color:var(--ui-muted)!important}
+.dashboard .ops-map-card .eyebrow{color:#86D5F5}
+.dashboard .ops-map-corner{background:#192C3FEF!important;border:1px solid #47657C!important;box-shadow:0 3px 12px #09172333!important}
+.dashboard .ops-map-corner :is(strong,span){color:#E5F6FF!important}
+.dashboard .ops-map-corner svg{color:#78D8FF}
+
 .dashboard .ops-workspace,.dashboard .map-command-page{color:var(--ui-text)}
 .dashboard .ops-workspace :is(h2,h3,strong),.dashboard .map-command-page :is(h2,h3,strong){color:var(--ui-text)}
 .dashboard .map-command-heading,.dashboard .map-command-top,.dashboard .map-checkpoint-heading{background:var(--ui-panel)!important;color:var(--ui-text)}
