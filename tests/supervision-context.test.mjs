@@ -7,7 +7,7 @@ const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../assets/maxvel-mobile-02.css',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
-test('cada um dos doze vigias tem geometria demonstrativa diferente e consistente',()=>{
+test('os quatro vigias tem geometria demonstrativa diferente e consistente',()=>{
  const coords=DEMO_WATCHERS.map(w=>{
   const route=routeForWatcher(w.id);
   assert.equal(route.watcherId,w.id);
@@ -16,7 +16,7 @@ test('cada um dos doze vigias tem geometria demonstrativa diferente e consistent
   for(const p of routeWaypoints(route))assert.ok(corridorDistance(p,route)<.1);
   return route.base.lat.toFixed(6)+'|'+route.base.lng.toFixed(6)+'|'+route.points[0].lat.toFixed(6);
  });
- assert.equal(new Set(coords).size,12);
+ assert.equal(new Set(coords).size,4);
  const example=demoSchedule().filter(x=>x.watcherId==='v01'||x.watcherId==='v02');
  assert.ok(distanceMeters(routeForProgram(example[0]).base,routeForProgram(example.find(x=>x.watcherId!==example[0].watcherId)).base)>10);
 });
@@ -35,7 +35,8 @@ test('cores retas e identidade oficial das duas marcas aparecem em todos os aces
  assert.match(styles,/border-radius:0!important/);
  assert.match(styles,/#28B6E8/);
  assert.match(styles,/#0C0D0F/);
- assert.match(app,/maxvelseguranca\.com\.br\/images\/banner\/01\.jpg/);
+ assert.doesNotMatch(app,/maxvelseguranca\\.com\\.br\\/images\\/banner\\/01\\.jpg/);
+ assert.match(app,/horizon-logo-transparente\\.webp/);
  assert.match(app,/class="brand-partners"/);
  assert.match(html,/maxvel-mobile-02\.css/);
 });

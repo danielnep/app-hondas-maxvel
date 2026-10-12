@@ -5,9 +5,9 @@ import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,scheduleStatus,programsForWatcher
 
 test('escala exemplo contém múltiplos vigias e vínculos estáveis',()=>{
  const now=new Date(2026,9,12,5,0).getTime(),list=demoSchedule(now);
- assert.equal(DEMO_WATCHERS.length,12);
+ assert.equal(DEMO_WATCHERS.length,4);
  assert.equal(DEMO_ROUTES.length,3);
- assert.equal(list.length,48);
+ assert.equal(list.length,16);
  assert.equal(new Set(list.map(p=>p.id)).size,list.length);
  for(const p of list){
   assert.ok(DEMO_WATCHERS.some(w=>w.id===p.watcherId));
@@ -61,24 +61,24 @@ test('consulta da agenda combina status, unidade, vigia e busca sem acentos',()=
  const team=filterPrograms(all,{watcherId:'v01',unit:'Unidade Centro',sessions:[],now});
  assert.equal(team.length,4);
  assert.ok(team.every(p=>p.watcherId==='v01'));
- const filtered=filterPrograms(all,{unit:'Unidade Industrial',query:'patricia',now});
+ const filtered=filterPrograms(all,{unit:'Unidade Centro',query:'mariana',now});
  assert.equal(filtered.length,4);
- assert.ok(filtered.every(p=>p.watcherId==='v10'));
+ assert.ok(filtered.every(p=>p.watcherId==='v04'));
  const onlyScheduled=filterPrograms(all,{status:'programada',now});
  assert.ok(onlyScheduled.length>0);
  assert.ok(onlyScheduled.every(p=>scheduleStatus(p,[],now)==='programada'));
- const combined=filterPrograms(all,{unit:'Unidade Norte',watcherId:'v09',now});
+ const combined=filterPrograms(all,{unit:'Unidade Norte',watcherId:'v04',now});
  assert.equal(combined.length,0);
- assert.equal(all.length,48,'consulta não modifica os dados de origem');
+ assert.equal(all.length,16,'consulta não modifica os dados de origem');
 });
 test('paginação não oculta registros e limita páginas fora do intervalo',()=>{
  const all=demoSchedule(new Date(2026,9,12,5).getTime());
- const a=pagePrograms(all,0,16),b=pagePrograms(all,1,16),c=pagePrograms(all,2,16);
- assert.equal(a.total,48);assert.equal(a.pages,3);
- assert.equal(a.from,1);assert.equal(a.to,16);
- assert.equal(b.from,17);assert.equal(c.to,48);
- assert.equal(new Set([...a.items,...b.items,...c.items].map(p=>p.id)).size,48);
- assert.equal(pagePrograms(all,100,16).page,2);
+ const a=pagePrograms(all,0,6),b=pagePrograms(all,1,6),c=pagePrograms(all,2,6);
+ assert.equal(a.total,16);assert.equal(a.pages,3);
+ assert.equal(a.from,1);assert.equal(a.to,6);
+ assert.equal(b.from,7);assert.equal(c.to,16);
+ assert.equal(new Set([...a.items,...b.items,...c.items].map(p=>p.id)).size,16);
+ assert.equal(pagePrograms(all,100,6).page,2);
  assert.equal(pagePrograms([],0,16).total,0);
  assert.equal(pagePrograms([],0,16).pages,1);
 });
