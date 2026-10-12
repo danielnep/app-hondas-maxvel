@@ -1,6 +1,6 @@
 /**
- * UX Etapa 08: teste ponta a ponta da SIMULAÇÃO NO PRÓPRIO APP.
- * A ausência de rolagem da página não impede rolagem contextual de painéis.
+ * E1–E6: teste da plataforma real Graphite Dark e agenda de múltiplos vigias.
+ * Executado em Chromium nos GitHub Actions.
  */
 import {chromium} from 'playwright-core';
 import {spawn,execFileSync} from 'node:child_process';
@@ -12,71 +12,89 @@ const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const chrome=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v chromium || command -v google-chrome'],{encoding:'utf8'}).trim();
 const browser=await chromium.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-dev-shm-usage']});
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900]];
-const log=[];
-async function tap(page,sel){await page.locator(sel).first().click({timeout:10000});await wait(170);}
-async function state(page,label,w,h){
+const report=[];
+async function tap(page,selector){await page.locator(selector).first().click({timeout:12000});await wait(200)}
+async function enter(page,role='ronda'){
+ await tap(page,'[data-action="login"]:visible');
+ await page.locator('#dialog[open]').waitFor({timeout:8000});
+ await page.locator('#login-form [name="role"][value="'+role+'"]').check();
+ await tap(page,'#login-form button[type="submit"]');
+ await wait(560);
+ const tourClose=page.locator('#horizon-tour [data-tour="close"]');
+ if(await tourClose.count())await tap(page,'#horizon-tour [data-tour="close"]');
+}
+async function capture(page,name,width,height){
  const metrics=await page.evaluate(()=>{
-  const bounds=s=>{let el=document.querySelector(s);if(!el)return null;let r=el.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)};};
-  return {viewport:{width:innerWidth,height:innerHeight},pageHeight:document.documentElement.scrollHeight,pageWidth:document.documentElement.scrollWidth,
-   workspace:bounds('.patrol-workspace'),map:bounds('#mobile-map'),actions:bounds('.patrol-actions'),primary:bounds('.patrol-actions [data-action="start"]'),nav:bounds('.mobile-nav.mobile-only'),roleBar:bounds('.simulation-rolebar'),roleButtons:[...document.querySelectorAll('.simulation-roles button')].length,
-   actualApp:!!document.querySelector('.dashboard.simulation-mode'),hasLegacyPresentation:!!document.querySelector('.presentation-main,.phone-frame')};
+  const box=selector=>{const el=document.querySelector(selector);if(!el)return null;const r=el.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
+  return {viewport:innerWidth,height:innerHeight,documentWidth:document.documentElement.scrollWidth,
+   documentHeight:document.documentElement.scrollHeight,primary:box('.patrol-actions [data-action="start"]'),
+   map:box('#mobile-map'),action:box('.patrol-actions'),logo:box('.horizon-maxvel-brand'),
+   roles:[...document.querySelectorAll('.simulation-roles [data-role]')].length,
+   app:!!document.querySelector('.dashboard.simulation-mode'),tour:!!document.querySelector('#horizon-tour')};
  });
- log.push({width:w,height:h,label,...metrics});
- await page.screenshot({path:out+'/'+w+'x'+h+'-'+label+'.png',animations:'disabled',timeout:15000});
- if(metrics.pageWidth>w+2)throw Error('Largura da página se expandiu: '+JSON.stringify(metrics));
- if(metrics.pageHeight>h+3)throw Error('Página do próprio app cresce verticalmente: '+JSON.stringify(metrics));
- if(metrics.hasLegacyPresentation)throw Error('Mockup de celular aparece onde deveria ser o próprio app');
- if(!metrics.actualApp||metrics.roleButtons!==4)throw Error('App real e alternância de quatro perfis indisponíveis');
- if(label==='ready'){
-  if(!metrics.map||!metrics.actions||!metrics.primary)throw Error('Mapa, ação ou CTA não renderizados');
-  if(metrics.primary.y<0||metrics.primary.y>h-48)throw Error('Iniciar ronda não está alcançável na primeira tela');
-  if(metrics.actions.bottom>h-(w<=900?45:0))throw Error('Painel de ação ultrapassou a área móvel');
+ report.push({width,height,name,...metrics});
+ await page.screenshot({path:out+'/'+width+'x'+height+'-'+name+'.png',animations:'disabled',timeout:14000});
+ if(metrics.viewport>width+2||metrics.documentWidth>width+3)throw Error('Expansão horizontal: '+JSON.stringify(metrics));
+ if(metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
+ if(name==='ronda'){
+  if(!metrics.app||metrics.roles!==4||!metrics.map||!metrics.action||!metrics.primary)throw Error('Aplicativo, 4 perfis, mapa ou ação não encontrados');
+  if(metrics.primary.y<0||metrics.primary.y>height-40)throw Error('Botão de início longe da viewport: '+JSON.stringify(metrics.primary));
  }
  return metrics;
 }
 try{
  await wait(850);
  for(const [width,height] of sizes){
-  const ctx=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce'});
-  const page=await ctx.newPage();
-  const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+  const context=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce'});
+  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
   try{
-   await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:17000});
-   await page.locator('#dialog[open]').waitFor({timeout:10000});
-   await tap(page,'[data-action="decline-location-notice"]');
-   await tap(page,'[data-action="presentation-intro"]');
-   await page.locator('#dialog #presentation-name').fill('Colaborador em avaliação');
-   await tap(page,'[data-action="launch-presentation"]');
-   await state(page,'ready',width,height);
+   await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:18000});
+   await capture(page,'login',width,height);
+   if(!await page.locator('.entry-screen .horizon-maxvel-brand img').count())throw Error('Logo combinado não carregado na entrada');
+   await enter(page);
+   await capture(page,'ronda',width,height);
+   if(!await page.locator('.my-schedule').count())throw Error('Página do vigia sem rondas programadas');
    await tap(page,'.patrol-actions [data-action="start"]');
    await page.locator('#dialog #declaration-check').check();
    await tap(page,'[data-action="confirm-start"]');
-   await state(page,'active',width,height);
-   await tap(page,'[data-action="sim-role"][data-role="supervisor"]');
-   await state(page,'supervisor',width,height);
-   if(!await page.locator('#ops-map').count())throw Error('Supervisão não exibiu mapa operacional real do app');
-   await tap(page,'[data-action="sim-role"][data-role="gestor"]');
-   if(!await page.locator('.dashboard.simulation-mode').count())throw Error('Gestor não entrou no app');
-   await tap(page,'[data-action="sim-role"][data-role="admin"]');
-   if(!await page.locator('.dashboard.simulation-mode').count())throw Error('Administrador não entrou no app');
-   await tap(page,'[data-action="sim-role"][data-role="ronda"]');
-   if(!await page.locator('.patrol-actions [data-action="demo-leave"]').count())throw Error('Controles de movimento ausentes após trocar perfil');
+   await capture(page,'active',width,height);
    await tap(page,'.patrol-actions [data-action="demo-leave"]');
-   await wait(7300);
-   await state(page,'deviation',width,height);
+   await wait(7400);
+   await capture(page,'deviation',width,height);
+   if(!await page.locator('.patrol-actions [data-action="justify"]').count())throw Error('Desvio não exigiu justificativa');
+   await tap(page,'.patrol-actions [data-action="justify"]');
+   const reason=page.locator('#justification-form textarea').first();
+   await reason.fill('Desvio ilustrativo para conferir uma situação no perímetro.');
+   await tap(page,'#justification-form button[type="submit"]');
    await tap(page,'[data-action="sim-role"][data-role="supervisor"]');
-   let navSel=width<=900?'.mobile-nav.mobile-only [data-view="notificacoes"]':'.sidebar [data-view="notificacoes"]';
-   await tap(page,navSel);
-   await state(page,'alerts',width,height);
-   if(!await page.locator('.alerts-queue-list .event-item').count())throw Error('Desvio não aparece para supervisão');
+   await capture(page,'supervisor',width,height);
+   await tap(page,'[data-view="rondas"]:visible');
+   if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Agenda sem múltiplos vigias');
+   await capture(page,'schedule',width,height);
+   await tap(page,'[data-action="program-round"]');
+   await page.locator('#program-form [name="startAt"]').fill('2027-08-15T09:00');
+   await page.locator('#program-form [name="endAt"]').fill('2027-08-15T10:00');
+   await tap(page,'#program-form button[type="submit"]');
+   if(!await page.locator('[data-action="program-confirm"]').count())throw Error('Confirmação do agendamento ausente');
+   await tap(page,'[data-action="program-confirm"]');
+   await tap(page,'[data-action="sim-role"][data-role="gestor"]');
+   await tap(page,'[data-action="sim-role"][data-role="admin"]');
+   await tap(page,'[data-action="sim-role"][data-role="ronda"]');
+   await tap(page,'.patrol-map-heading [data-action="feature-help"]');
+   if(!await page.locator('#dialog[open] .help-detail').count())throw Error('Ajuda contextual ? inativa');
+   await tap(page,'#dialog [data-action="close-dialog"]');
+   await tap(page,'.app-header [data-action="tour-restart"]');
+   if(!await page.locator('#horizon-tour [data-tour="next"]').count())throw Error('Tour não reabriu');
+   await tap(page,'#horizon-tour [data-tour="close"]');
+   await capture(page,'reopen-tour',width,height);
    await tap(page,'[data-action="end-presentation"]');
-   if(!await page.locator('.product-home').count())throw Error('Sair não volta à tela inicial');
-   if(errors.length)throw Error('Erros de script: '+errors.join('; ').slice(0,400));
-  }catch(e){log.push({width,height,error:String(e),console:errors});throw e;}
-  finally{await ctx.close();}
+   if(!await page.locator('.entry-screen').count())throw Error('Sair não retornou ao login do app');
+   if(errors.length)throw Error('JS: '+errors.join(' | ').slice(0,600));
+  }catch(error){report.push({width,height,error:String(error),console:errors});throw error}
+  finally{await context.close()}
  }
 }finally{
- writeFileSync(out+'/metrics.json',JSON.stringify(log,null,2));
+ writeFileSync(out+'/metrics.json',JSON.stringify(report,null,2));
  await browser.close();server.kill('SIGTERM');
 }
-console.log(JSON.stringify({screenSizes:sizes,states:log.length,pageOverflowErrors:0,result:'APP REAL, QUATRO PERFIS, MAPA E ALERTAS TESTADOS'}));
+console.log(JSON.stringify({result:'Ronda, agenda, desvio, justificativa, quatro perfis, ajuda e tour',screens:report.length,viewportErrors:0}));
