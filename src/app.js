@@ -1,5 +1,6 @@
 import {DWELL_MS,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation} from './domain.js';
 import {PatrolMap} from './map.js';
+import {createRoundWizard} from './wizard.js';
 import {EVIDENCE_DIRECTIONS,getPointEvidence,evidenceProgress,simulateCapture,simulateRotation,confirmDemoEvidence} from './evidence.js';
 import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
@@ -53,6 +54,7 @@ let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule(
 let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedSupervisedWatcherId='v01',selectedProgramId=null,scheduleTab='agenda',scheduleFilter='all',scheduleWatcher='all',scheduleUnit='all',scheduleQuery='',schedulePage=0,pendingProgram=null,pendingEdit=null;
 let user=null,screen='landing',view='overview',presentation=false,guideStage=0,presentationName='Lucas Ferreira',mode='simulation',session=null;
 let priorSimulation=null;
+let wizardController=null;
 let patrolSheetCollapsed=true;
 let nativeTracking=false,locationFix=null,deviceWatch=null,movement=null,liveMaps=[],toastTimer=null,renderNumber=0,justRendered=0,tabFilter='all',contextWarning='';
 const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
@@ -280,11 +282,22 @@ function schedulePanel(){
  }).join('')||'<div class="empty">Não há rondas com este filtro.</div>'}</div><nav class="schedule-pagination" aria-label="Páginas da agenda">${btn('Anterior','schedule-prev','small',paged.page===0?'disabled':'')}<span>Página ${paged.page+1} de ${paged.pages}</span>${btn('Próxima','schedule-next','small',paged.page>=paged.pages-1?'disabled':'')}</nav>`:'<p class="schedule-map-intro">O mapa mostra um cenário de rota ilustrativo, enquanto a lista mantém as programações por vigia.</p>'}</section>`;
 }
 function programRoundDialog(){
- const start=new Date(Date.now()+3600000),end=new Date(Date.now()+7200000);
- const local=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
- showDialog(`<div class="program-dialog"><div class="eyebrow">RONDA · SUPERVISÃO / GESTÃO</div><h2>Programar ronda</h2><p>Defina o vigia, a rota e o horário. Verificaremos conflitos antes de salvar.</p><form id="program-form"><label>Vigia<select name="watcherId" required>${DEMO_WATCHERS.map(w=>`<option value="${w.id}">${esc(w.name)} · ${esc(w.unit)}</option>`).join('')}</select></label><label>Rota<select name="routeId" required>${DEMO_ROUTES.map(r=>`<option value="${r.id}">${esc(r.name)} · ${esc(r.unit)}</option>`).join('')}</select></label><div class="program-date-grid"><label>Data e hora de início<input type="datetime-local" name="startAt" value="${local(start)}" required></label><label>Término previsto<input type="datetime-local" name="endAt" value="${local(end)}" required></label></div><label>Repetir<select name="repeat"><option value="once">Uma vez</option><option value="daily7">Diariamente por 7 dias</option></select></label><label>Observações<textarea name="notes" maxlength="240" rows="2" placeholder="Informação útil para a equipe"></textarea></label><p class="program-error" role="alert" aria-live="polite"></p><button type="submit" class="button primary full">Revisar programação ${ic('arrow')}</button></form><p class="map-caption">Exemplo local. A programação não envia uma ordem para outro celular.</p></div>`,true);
+ if(!['supervisor','gestor','admin'].includes(user?.role))return;
+ wizardController?.destroy?.();
+ wizardController=createRoundWizard({
+  dialog:modal,showDialog,settings:operationalSettings,notify,
+  onMap:(element,route,pick)=>new PatrolMap(element,{route,position:route.base,compact:true,interactive:true,onMapClick:pick}),
+  onSave:candidate=>{
+   const result=createPrograms(candidate,programs,Date.now());
+   if(!result.ok)return result;
+   programs=[...programs,...result.items];
+   selectedSupervisedWatcherId=candidate.watcherId;persist();
+   scheduleTab='agenda';view='rondas';modal.close();render();
+   notify(result.items.length+' ronda(s) programada(s) neste navegador.');
+   return {ok:true};
+  }
+ });
 }
-
 function editProgramDialog(program){
  if(!program||program.status!=='scheduled'||sessions.some(s=>s.programId===program.id))return;
  const local=ms=>{const d=new Date(ms);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
