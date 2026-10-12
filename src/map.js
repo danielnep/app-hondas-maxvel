@@ -34,7 +34,7 @@ export function project(point,route,width=680,height=360){
 export function fallbackSVG(route,session,position){
  const path=routeWaypoints(route).map(x=>{const p=project(x,route);return `${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ');
  const visual=pointsOf(route).slice(0,-1),pos=project(position??route.base,route);
- return `<svg class="fallback-svg" viewBox="0 0 680 360" role="img" aria-label="Esquema alternativo da rota, sem cartografia de ruas" preserveAspectRatio="xMidYMid meet"><defs><pattern id="roadgrid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M 56 0 L 0 0 0 56" fill="none" stroke="#d8e6ee" stroke-width="1"/></pattern></defs><rect width="680" height="360" fill="#ebf5fa"/><rect width="680" height="360" fill="url(#roadgrid)"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="white" stroke-width="22"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#c0d3e0" stroke-width="1" stroke-dasharray="7 6"/><polyline points="${path}" fill="none" stroke="#fff" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#0b8cc3" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=project(p,route),done=i>0&&session?.checkpoints[i-1]?.completedAt,active=i>0&&session?.index===i-1;return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#0e91c8" fill-opacity=".10"/><circle r="17" fill="${done?'#147c68':active?'#117eaf':'#163b50'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}<g transform="translate(${pos.x} ${pos.y})"><circle r="25" fill="#0499d5" fill-opacity=".15"/><circle r="11" fill="#0383bf" stroke="white" stroke-width="5"/></g><rect x="15" y="13" rx="10" width="241" height="31" fill="#fff"/><text x="26" y="33" font-family="system-ui" font-size="12" fill="#274d62">Modo alternativo · mapa esquemático</text></svg>`;
+ return `<svg class="fallback-svg" viewBox="0 0 680 360" role="img" aria-label="Esquema alternativo da rota, sem cartografia de ruas" preserveAspectRatio="xMidYMid meet"><defs><pattern id="roadgrid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M 56 0 L 0 0 0 56" fill="none" stroke="#323639" stroke-width="1"/></pattern></defs><rect width="680" height="360" fill="#17191B"/><rect width="680" height="360" fill="url(#roadgrid)"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#313538" stroke-width="22"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#656B70" stroke-width="1" stroke-dasharray="7 6"/><polyline points="${path}" fill="none" stroke="#0C0D0F" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#55C9F5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=project(p,route),done=i>0&&session?.checkpoints[i-1]?.completedAt,active=i>0&&session?.index===i-1;return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#55C9F5" fill-opacity=".10"/><circle r="17" fill="${done?'#357B68':active?'#55C9F5':'#43484C'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}<g transform="translate(${pos.x} ${pos.y})"><circle r="25" fill="#55C9F5" fill-opacity=".15"/><circle r="11" fill="#55C9F5" stroke="white" stroke-width="5"/></g><rect x="15" y="13" rx="10" width="241" height="31" fill="#1D2023"/><text x="26" y="33" font-family="system-ui" font-size="12" fill="#F3F4F6">Modo alternativo · mapa esquemático</text></svg>`;
 }
 const latlng=p=>[p.lat,p.lng];
 const closePositions=(a,b)=>Math.hypot((a.lat-b.lat)*111320,(a.lng-b.lng)*111320*Math.cos(a.lat*Math.PI/180))<2;
@@ -51,18 +51,37 @@ export class PatrolMap{
   this.leaflet=L;this.container.innerHTML='';
   const m=L.map(this.container,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:true});this.instance=m;
   const credit='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
-  const standard=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,minZoom:3,attribution:credit,crossOrigin:true});
-  const light=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,minZoom:3,subdomains:'abcd',attribution:credit+' &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',crossOrigin:true});
-  standard.addTo(m);
-  L.control.layers({'Ruas e bairros · OpenStreetMap':standard,'Claro · CARTO':light},null,{collapsed:true,position:'topright'}).addTo(m);
-  let tileFailures=0,alternateFailures=0;
-  standard.on('tileerror',()=>{
-   if(this.destroyed||this.instance!==m)return;
-   if(++tileFailures>=5&&m.hasLayer(standard)){m.removeLayer(standard);light.addTo(m);}
+  // Sempre iniciar com cartografia escura; manter alternativas e atribuições.
+  const dark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+   maxZoom:19,minZoom:3,subdomains:'abcd',
+   attribution:credit+' &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',crossOrigin:true
   });
-  light.on('tileerror',()=>{
+  const darkSimple=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',{
+   maxZoom:19,minZoom:3,subdomains:'abcd',
+   attribution:credit+' &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',crossOrigin:true
+  });
+  // Preserva a fonte OpenStreetMap como alternativa quando o serviço de tiles escuros falhar;
+  // sua cartografia é escurecida por CSS, e não é o estilo padrão.
+  const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+   maxZoom:19,minZoom:3,attribution:credit,crossOrigin:true,className:'maxvel-osm-dark-adapted'
+  });
+  dark.addTo(m);
+  L.control.layers({'Grafite · Ruas':dark,'Grafite · Sem rótulos':darkSimple},null,{collapsed:true,position:'topright'}).addTo(m);
+  let darkErrors=0,simpleErrors=0,osmErrors=0;
+  dark.on('tileerror',()=>{
    if(this.destroyed||this.instance!==m)return;
-   if(++alternateFailures>=5){m.remove();this.instance=null;this.showFallback();this.container.setAttribute('data-map-fallback','true');}
+   if(++darkErrors>=5&&m.hasLayer(dark)){m.removeLayer(dark);darkSimple.addTo(m);}
+  });
+  darkSimple.on('tileerror',()=>{
+   if(this.destroyed||this.instance!==m)return;
+   if(++simpleErrors>=5&&m.hasLayer(darkSimple)){m.removeLayer(darkSimple);osm.addTo(m);}
+  });
+  osm.on('tileerror',()=>{
+   if(this.destroyed||this.instance!==m)return;
+   if(++osmErrors>=5&&m.hasLayer(osm)){
+    m.remove();this.instance=null;this.showFallback();
+    this.container.setAttribute('data-map-fallback','true');
+   }
   });
   L.control.zoom({position:'bottomright'}).addTo(m);
   this.refreshGeometry();
@@ -76,12 +95,12 @@ export class PatrolMap{
   this.layers.forEach(layer=>m.removeLayer(layer));this.layers=[];this.pointMarkers=[];
   const add=(layer)=>{layer.addTo(m);this.layers.push(layer);return layer};
   const pts=routeWaypoints(this.route).map(latlng);
-  add(L.polyline(pts,{color:'#f7ffff',weight:13,opacity:.9,lineJoin:'round',interactive:false}));
-  add(L.polyline(pts,{color:'#117fb7',weight:5,opacity:1,dashArray:'11 8',lineJoin:'round',interactive:false}));
+  add(L.polyline(pts,{color:'#0C0D0F',weight:13,opacity:.9,lineJoin:'round',interactive:false}));
+  add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:'11 8',lineJoin:'round',interactive:false}));
   const bases=[this.route.base,...this.route.points];
   bases.forEach((p,i)=>{
    const done=i>0&&this.session?.checkpoints[i-1]?.completedAt;const active=i>0&&this.session?.index===i-1;
-   if(i>0)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#087cad':'#4e9dc5',weight:2,fillColor:active?'#2aa7e1':'#73c8ed',fillOpacity:active?.14:.08,interactive:false}));
+   if(i>0)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#55C9F5':'#73797E',weight:2,fillColor:active?'#55C9F5':'#70767A',fillOpacity:active?.14:.08,interactive:false}));
    const ic=L.divIcon({className:'map-pin-host',html:markerHtml(i===0?'B':done?'✓':i,done?'done':active?'active':i===0?'base':'point'),iconSize:[36,36],iconAnchor:[18,18]});
 const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado';
    const popup=`<div class="maxvel-map-popup"><small>PONTO ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Localização do cenário ilustrativo'}</em></div>`;
@@ -89,12 +108,12 @@ const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado'
   });
   const userIcon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
   this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição simulada do ronda'}));
-  this.traceLayer=add(L.polyline(this.tracePositions.map(latlng),{color:'#00a5de',weight:4,opacity:.9,lineCap:'round',interactive:false}));
+  this.traceLayer=add(L.polyline(this.tracePositions.map(latlng),{color:'#55C9F5',weight:4,opacity:.9,lineCap:'round',interactive:false}));
   for(const d of this.session?.deviations??[]){
    if(!d.position)continue;
    add(L.circleMarker(latlng(d.position),{radius:9,color:'#fff',weight:3,fillColor:'#dc4557',fillOpacity:1}).bindPopup('<b>Desvio registrado</b><br>'+escapeHtml(d.pointName)+'<br><small>'+ (d.justification?'Justificativa recebida':'Justificativa pendente')+'</small>'));
   }
-  this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#098bc6',weight:1,fillColor:'#37b5eb',fillOpacity:.14,interactive:false}));
+  this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillColor:'#55C9F5',fillOpacity:.14,interactive:false}));
  }
  update({session=this.session,position=this.position}={}){
   if(this.destroyed)return;const indexWas=this.session?.index,statusWas=this.session?.status;this.session=session;this.position=position??this.route.base;
