@@ -73,6 +73,8 @@ try{
    await revealDialogControl(page,'#dialog [data-action="confirm-start"]');
    await tap(page,'[data-action="confirm-start"]');
    await capture(page,'active',width,height);
+   if(width<=900&&await page.locator('#dialog').evaluate(el=>!el.open&&getComputedStyle(el).display!=='none'))
+    throw Error('Janela fechada ainda ocupa layout após iniciar ronda');
    await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');
    await tap(page,'.patrol-actions [data-action="point-evidence"]');
    for(const direction of ['front','right','back','left','selfie'])await tap(page,'#dialog [data-action="demo-capture"][data-direction="'+direction+'"]');
