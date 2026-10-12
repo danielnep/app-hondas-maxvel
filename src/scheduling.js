@@ -111,3 +111,16 @@ export function pagePrograms(programs,page=0,pageSize=16){
  const start=current*size;
  return {items:programs.slice(start,start+size),page:current,pages,total,from:total?start+1:0,to:Math.min(total,start+size)};
 }
+
+
+/** Reprogramação local auditável. Não altera o histórico de uma execução existente. */
+export function rescheduleProgram(programs,id,patch,now=Date.now()){
+ const original=programs.find(p=>p.id===id);
+ if(!original||original.status!=='scheduled')return {ok:false,error:'Esta programação não pode ser alterada.',items:programs};
+ const candidate={...original,...patch,id:original.id,status:original.status,createdAt:original.createdAt};
+ const error=validateProgram(candidate,programs.filter(p=>p.id!==id),now);
+ if(error)return {ok:false,error,items:programs};
+ const changes=[...(original.changes??[]),{at:now,previous:{watcherId:original.watcherId,routeId:original.routeId,startAt:original.startAt,endAt:original.endAt,notes:original.notes??''}}];
+ const updated={...candidate,notes:String(candidate.notes??'').slice(0,240),changes,updatedAt:now};
+ return {ok:true,error:null,updated,items:programs.map(p=>p.id===id?updated:p)};
+}
