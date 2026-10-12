@@ -78,7 +78,7 @@ function registerMap(id,route,sessionRef=null,position=null,compact=false){const
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
 let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo';
 const uxDashboardPane={supervisor:'mapa',gestor:'resumo',admin:'resumo'};
-const uxListSizes=()=>Math.max(2,Math.min(4,Math.floor((window.innerHeight-250)/85)));
+const uxListSizes=()=>Math.max(1,Math.min(3,Math.floor((window.innerHeight-385)/82)));
 function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
  if(!container)return;
  const rows=[...container.querySelectorAll(selector)].filter(e=>e.matches(selector));
