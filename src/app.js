@@ -1,6 +1,7 @@
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation} from './domain.js';
 import {PatrolMap} from './map.js';
 import {createRoundWizard} from './wizard.js';
+import {withExampleRondas} from './demo-scenarios.js';
 import {EVIDENCE_DIRECTIONS,getPointEvidence,evidenceProgress,simulateCapture,simulateRotation,confirmDemoEvidence} from './evidence.js';
 import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
@@ -128,6 +129,10 @@ function installViewportViews(){
 }
 
 function render(){destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+ if(presentation&&user&&user.role!=='ronda'){
+  const seeded=withExampleRondas(sessions);
+  if(seeded!==sessions){sessions=seeded;persist();}
+ }
  if(screen==='landing')root.innerHTML=entryScreen();
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
