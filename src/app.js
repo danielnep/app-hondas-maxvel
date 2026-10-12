@@ -72,8 +72,55 @@ const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({..
 function persist(){const ok=saveState({sessions,programs,selectedWatcherId,operationalSettings,activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:session?.status==='active'&&mode==='real'?user:null});if(!ok)notify('Não foi possível gravar no navegador. Confira o espaço disponível.');}
 function save(){if(session){const idx=sessions.findIndex(s=>s.id===session.id);if(idx>=0)sessions[idx]=session;else sessions.unshift(session);}persist()}
 function notify(message){toast.textContent=message;toast.classList.add('toast-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('toast-visible'),4900)}
+const ux06RoleTips={
+ ronda:'Vigia: própria rota, permanência, ocorrências e histórico.',
+ supervisor:'Supervisão: mapas dos vigias, alertas e justificativas.',
+ gestor:'Gestão: indicadores, equipe, relatórios e configurações.',
+ admin:'Administração: todas as áreas e ferramentas de gerenciamento.'
+};
+function notifyRoleView(role){notify('Visão de demonstração: '+ux06RoleTips[role]);}
 function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
 function registerMap(id,route,sessionRef=null,position=null,compact=false){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true}))}
+
+
+/** MAXVEL-06 · details in modal, fixed viewport and scroll only inside a bounded list. */
+function openUX06Overlay(source,title){
+ if(!source||!modal)return;
+ const copy=source.cloneNode(true);
+ copy.classList.add('ux06-dialog-copy');
+ copy.removeAttribute('hidden');copy.removeAttribute('id');
+ copy.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+ copy.querySelectorAll('[hidden]').forEach(el=>el.removeAttribute('hidden'));
+ copy.querySelectorAll('.ux-row-pagination,.ux-report-tabs,.ux-ronda-tabs,.ux06-expand-button').forEach(el=>el.remove());
+ showDialog('<section class="ux06-sheet" aria-label="'+esc(title)+'"><header class="ux06-sheet-header"><div><span class="eyebrow">HONDAS MAXVEL · HORIZON</span><h2>'+esc(title)+'</h2></div><button type="button" data-action="close-dialog" class="ux06-sheet-back">Voltar</button></header><div class="ux06-sheet-content"></div><footer class="ux06-sheet-footer">Registros ilustrativos deste navegador.</footer></section>',true);
+ modal.classList.add('ux06-fullscreen');
+ modal.querySelector('.ux06-sheet-content')?.append(copy);
+ modal.querySelector('.ux06-sheet-back')?.focus();
+}
+function installUX06(){
+ if(window.innerWidth>900||screen==='landing')return;
+ const content=document.querySelector('.dashboard .app-content');
+ if(!content)return;
+ const sections=[
+  ['.v4-insights-pane','Análise e insights'],['.v4-alerts-pane','Alertas da operação'],
+  ['.v4-history-pane','Histórico de rondas'],['.v4-team-pane','Equipe e registros'],
+  ['.ux-report-stage [data-ux-report="analise"]','Análise operacional'],
+  ['.ux-report-stage [data-ux-report="eventos"]','Eventos registrados'],
+  ['.ux-report-stage [data-ux-report="historico"]','Histórico de rondas'],
+  ['.ux-ronda-stage [data-ux-subpage="pontos"]','Pontos de verificação'],
+  ['.ux-ronda-stage [data-ux-subpage="historico"]','Histórico do vigia']
+ ];
+ for(const [selector,title] of sections){
+  const el=content.querySelector(selector);if(!el)continue;
+  const head=el.querySelector('.v4-pane-head,.card-title,.map-checkpoint-heading');
+  const button=document.createElement('button');
+  button.type='button';button.className='ux06-expand-button';
+  button.setAttribute('aria-label','Ampliar '+title);
+  button.textContent='Ampliar';
+  if(head)head.append(button);else el.prepend(button);
+  button.addEventListener('click',event=>{event.stopPropagation();openUX06Overlay(el,title);});
+ }
+}
 
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
 let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo',uxRondaPane='mapa';
@@ -316,7 +363,7 @@ function render(){destroyMaps();renderNumber++;modal.close?.();document.body.cla
  if(screen==='landing')root.innerHTML=entryScreen();
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
- installViewportViews();attachMaps();justRendered=Date.now();
+ installViewportViews();installUX06();attachMaps();justRendered=Date.now();
 }
 /** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
 function watchesSession(s,watcher){
@@ -391,6 +438,7 @@ function beginSimulation(name,autoStart=false,startRole='ronda'){
  if(session)save();
  render();window.scrollTo({top:0,behavior:'instant'});
  if(!tour.hasSeen())setTimeout(()=>tour.open(),350);
+ notifyRoleView(startRole);
 }
 function endSimulation(){
  if(!presentation)return;
@@ -453,7 +501,7 @@ function dashboardV4(){
   '<div class="v4-summary-metric"><strong>'+esc(value)+'</strong><span>'+esc(name)+'</span><small>'+esc(description)+'</small></div>').join('')+'</div>';
  const mapPane='<section class="v4-pane v4-map-pane" data-v4-pane="mapa">'+supervisorWatcherSelector()+
   '<div class="ops-map-card"><div class="ops-panel-heading"><div><h2>'+ic('map')+' '+esc(context.watcher.name)+'</h2><p>'+esc(context.route.name)+'</p></div>'+
-  btn(ic('crosshair')+' Enquadrar','center-maps','small')+'</div>'+
+  '<button type="button" class="ux06-map-fit" data-action="center-maps" aria-label="Enquadrar rota" title="Enquadrar rota">'+ic('crosshair')+'</button></div>'+
   '<div class="ops-map-stage"><div id="ops-map" class="map-container large"></div></div>'+
   '<div class="v4-map-foot"><span>'+context.pointCount+' pontos previstos</span><span>Trajeto ilustrativo · precisão variável</span></div></div></section>';
  const alertsPane='<section class="v4-pane v4-alerts-pane" data-v4-pane="alertas"><div class="v4-pane-head"><h2>Alertas e justificativas</h2><span>'+data.pending+' pendente(s)</span></div>'+
@@ -652,8 +700,8 @@ function phoneContent(){
  return `<div class="patrol-workspace${patrolSheetCollapsed?' sheet-collapsed':''}">
   <div class="patrol-statusline">${phoneTelemetry()}</div>
   <section class="patrol-map-panel" aria-label="Mapa da ronda">
-   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(route.name)} ${helpButton('map','mapa e pontos')}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
-   <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div></div>
+   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(route.name)}</strong><small>${esc(state)} · ${s?Math.floor(progress)+'%':'4 pontos previstos'} · ${mode==='simulation'?'Demonstração':'GPS do aparelho'}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
+   <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div><button type="button" class="ux06-map-help" data-action="feature-help" data-topic="map" aria-label="Ajuda sobre mapa">${ic("help")}</button></div>
    <div class="patrol-map-footer"><span>${mode==='real'?'GPS autorizado':'Localização simulada'}</span><span data-live="coords">${locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)}`:'Aguardando início'}</span></div>
   </section>
   <section class="patrol-actions" aria-label="Ação principal da ronda">
@@ -825,7 +873,7 @@ if(act==='sim-role'){
   const name=el.dataset.role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):({supervisor:'Marina Souza',gestor:'Camila Martins',admin:'Administrador'}[el.dataset.role]);
   user={name,role:el.dataset.role};
   view=user.role==='ronda'?'minha-ronda':'overview';
-  render();window.scrollTo({top:0,behavior:'instant'});return;
+  render();notifyRoleView(user.role);window.scrollTo({top:0,behavior:'instant'});return;
  }
 if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;scheduleTab=el.dataset.tab;render();return;}
  if(act==='schedule-prev'||act==='schedule-next'){
@@ -990,7 +1038,13 @@ if(act==='profile-menu'){profileDialog();return;}
   return;
  }
  if(act==='filter-alerts'){const filter=el.dataset.filter;if(filter!=='pending'&&filter!=='all')return;alertFilter=filter;render();return;}
- if(act==='toggle-patrol-sheet'){patrolSheetCollapsed=!patrolSheetCollapsed;render();return;}
+ if(act==='toggle-patrol-sheet'){
+  if(window.innerWidth<=900){
+   const tools=document.querySelector('.patrol-extra-flow');
+   if(tools){openUX06Overlay(tools,'Ferramentas e instruções da ronda');return;}
+  }
+  patrolSheetCollapsed=!patrolSheetCollapsed;render();return;
+ }
  if(act==='center-maps'){liveMaps.forEach(m=>m.fit());return;}
  if(act==='print'){window.print();return;}
  if(act==='clear-prompt'){showDialog(`<h2>Apagar os dados deste navegador?</h2><p>As rondas, justificativas, ocorrências e notificações locais da demonstração serão apagadas.</p><div class="modal-actions">${btn('Cancelar','close-dialog')}${btn('Apagar dados','confirm-clear','danger')}</div>`);return;}
