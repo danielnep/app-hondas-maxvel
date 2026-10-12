@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DEMO_ROUTE,createSession} from '../src/domain.js';
-import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,scheduleStatus,programsForWatcher,nextProgram,validateProgram,createPrograms,cancelProgram,routeForProgram,filterPrograms,pagePrograms} from '../src/scheduling.js';
+import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,scheduleStatus,programsForWatcher,nextProgram,validateProgram,createPrograms,cancelProgram,routeForProgram,filterPrograms,pagePrograms,rescheduleProgram} from '../src/scheduling.js';
 
 test('escala exemplo contém múltiplos vigias e vínculos estáveis',()=>{
  const now=new Date(2026,9,12,5,0).getTime(),list=demoSchedule(now);
@@ -81,4 +81,26 @@ test('paginação não oculta registros e limita páginas fora do intervalo',()=
  assert.equal(pagePrograms(all,100,16).page,2);
  assert.equal(pagePrograms([],0,16).total,0);
  assert.equal(pagePrograms([],0,16).pages,1);
+});
+
+
+test('reprogramação guarda dados anteriores e recusa colisão entre escalas',()=>{
+ const now=Date.now();
+ const created=createPrograms({watcherId:'v03',routeId:'centro',startAt:now+4*3600000,endAt:now+5*3600000},[],now);
+ assert.equal(created.ok,true);
+ const old=created.items[0];
+ const moved=rescheduleProgram(created.items,old.id,{startAt:now+6*3600000,endAt:now+7*3600000,notes:'Rota remarcada'},now);
+ assert.equal(moved.ok,true);
+ assert.equal(moved.items[0].id,old.id);
+ assert.equal(moved.items[0].startAt,now+6*3600000);
+ assert.equal(moved.items[0].changes.length,1);
+ assert.equal(moved.items[0].changes[0].previous.startAt,old.startAt);
+ assert.equal(old.startAt,now+4*3600000,'a entrada original não pode ser alterada');
+ const collision=createPrograms({watcherId:'v03',routeId:'centro',startAt:now+8*3600000,endAt:now+9*3600000},moved.items,now).items;
+ const invalid=rescheduleProgram([...moved.items,...collision],old.id,{startAt:now+8*3600000,endAt:now+9*3600000},now);
+ assert.equal(invalid.ok,false);
+ assert.match(invalid.error,/outra ronda/);
+ assert.equal(invalid.items[0].startAt,moved.items[0].startAt);
+ const cancelled=cancelProgram(moved.items,old.id);
+ assert.equal(rescheduleProgram(cancelled,old.id,{startAt:now+5*3600000},now).ok,false);
 });
