@@ -84,8 +84,20 @@ try{
    scenario.steps.push('consent');
    await assess(page,width,'01-consent');
    await clickAction(page,'decline-location-notice');
-   await assess(page,width,'02-landing');
+   const landingMetrics=await assess(page,width,'02-landing');
    scenario.steps.push('landing');
+   if(width<500){
+     if(landingMetrics.viewport.w>width+1||landingMetrics.scrollWidth>width+1)
+       throw new Error('Viewport aumentou além do dispositivo: '+JSON.stringify({actual:landingMetrics.viewport.w,scroll:landingMetrics.scrollWidth,width}));
+     const loginHit=await page.evaluate(()=>{
+       const btn=document.querySelector('.topnav [data-action="login"]');
+       if(!btn)return {error:'CTA não encontrado'};
+       const r=btn.getBoundingClientRect();
+       const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+       return {hit:!!top&&(top===btn||btn.contains(top)),name:top?.tagName||'',className:String(top?.className||'').slice(0,80)};
+     });
+     if(!loginHit.hit)throw new Error('Logo cobre botão de entrada: '+JSON.stringify(loginHit));
+   }
    await enterProfile(page,'ronda');
    await assess(page,width,'03-ronda-before');
    if(width<=900){
@@ -150,9 +162,11 @@ try{
    await wait(200);
    scenario.steps.push('map and alert filtering');
    await clickAction(page,'launch-scenario');
-   const titleContrast=await page.locator('.presentation-title h1').evaluate(el=>getComputedStyle(el).color);
-   const titleChannels=titleContrast.match(/\d+(?:\.\d+)?/g)?.slice(0,3).map(Number)??[];
-   if(titleChannels.length!==3||titleChannels.some(v=>v<205))throw new Error('Título da apresentação tem contraste insuficiente: '+titleContrast);
+   const isRealApp=await page.locator('.dashboard.simulation-mode .simulation-rolebar').count();
+   const roleCount=await page.locator('.dashboard.simulation-mode .simulation-roles button').count();
+   if(isRealApp!==1||roleCount!==4)throw new Error('Simulação não abriu o próprio app com quatro perfis');
+   const logoLoaded=await page.locator('.dashboard .app-header .brand-lockup').evaluate(img=>img.complete&&img.naturalWidth>0);
+   if(!logoLoaded)throw new Error('Lockup da Horizon não carregou dentro do app');
    await assess(page,width,'10-integrated');
    scenario.steps.push('integrated');
   }catch(err){fatal++;scenario.error=String(err).slice(0,1000);}
