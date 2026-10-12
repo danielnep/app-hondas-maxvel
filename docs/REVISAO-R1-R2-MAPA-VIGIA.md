@@ -14,7 +14,7 @@ Quatro pontos obrigatórios, raio 25 m, permanência contínua 30 segundos, corr
 O mapa usa cartografia OpenStreetMap (e alternativa CARTO) com Leaflet. Os vértices adicionais são **desenho ilustrativo fictício**, não navegação gerada por ruas, nem roteiro operacional validado. Serviço comunitário de tiles não constitui licença/SLA ilimitada para produção.
 
 ## O que continua pendente, sem falsificar entrega
-1. Verificação por câmera (frente, trás, esquerda, direita), selfie, orientação/giroscópio e declaração individual por ponto, conforme PDF de proposta posterior.
+1. **Decisão mais recente (12/10/2026): sem fotografias nem selfies.** A exigência do PDF anterior para capturas e giro relacionado a fotos foi cancelada. A verificação de ponto se mantém pelo fluxo GPS, permanência, sequência e confirmação operacional.
 2. Servidor, login real, permissões multiempresa, entrega remota de alertas, armazenamento seguro e sincronização offline/online.
 3. Testes funcionais automatizados desta revisão, auditoria visual em aparelhos pequenos e grandes, testes físicos de sensores/GPS/Android.
 
