@@ -4,7 +4,7 @@ import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
 import {getConsent,saveConsent,LOCATION_REQUIREMENTS} from './consent.js';
 import {createSpotlightTour} from './tutorial.js';
-import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms} from './scheduling.js';
+import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
 
 const root=document.getElementById('app'),modal=document.getElementById('dialog'),toast=document.getElementById('toast');
 const ICONS={
@@ -49,7 +49,7 @@ const brand=()=>`<div class="brand horizon-maxvel-brand" aria-label="Hondas Maxv
 const persisted=loadState();
 let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
 let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule();
-let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedProgramId=null,scheduleTab='agenda',scheduleFilter='all',scheduleWatcher='all',scheduleUnit='all',scheduleQuery='',schedulePage=0,pendingProgram=null;
+let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedProgramId=null,scheduleTab='agenda',scheduleFilter='all',scheduleWatcher='all',scheduleUnit='all',scheduleQuery='',schedulePage=0,pendingProgram=null,pendingEdit=null;
 let user=null,screen='landing',view='overview',presentation=false,guideStage=0,presentationName='Lucas Ferreira',mode='simulation',session=null;
 let priorSimulation=null;
 let nativeTracking=false,locationFix=null,deviceWatch=null,movement=null,liveMaps=[],toastTimer=null,renderNumber=0,justRendered=0,tabFilter='all',contextWarning='';
@@ -182,7 +182,7 @@ function schedulePanel(){
  <div class="schedule-switch"><button type="button" data-action="schedule-tab" data-tab="agenda" aria-pressed="${scheduleTab==='agenda'}" class="${scheduleTab==='agenda'?'active':''}">${ic('list')} Agenda de rondas</button><button type="button" data-action="schedule-tab" data-tab="mapa" aria-pressed="${scheduleTab==='mapa'}" class="${scheduleTab==='mapa'?'active':''}">${ic('map')} Mapa da operação</button></div>
  ${scheduleTab==='agenda'?`<div class="schedule-toolbar"><span>${ic('list')} Escalas registradas</span><label>Filtrar <select data-schedule-filter aria-label="Filtrar rondas programadas">${[['all','Todas'],['programada','Programadas'],['em andamento','Em andamento'],['atrasada','Atrasadas'],['concluída','Concluídas'],['cancelada','Canceladas']].map(([k,label])=>`<option value="${k}" ${scheduleFilter===k?'selected':''}>${label}</option>`).join('')}</select></label></div><div class="schedule-refine"><label>Buscar ronda<input type="search" data-schedule-query aria-label="Buscar vigia, rota ou unidade" placeholder="Vigia, rota ou unidade" value="${esc(scheduleQuery)}"></label><label>Unidade<select data-schedule-unit aria-label="Filtrar por unidade"><option value="all">Todas as unidades</option>${[...new Set(DEMO_WATCHERS.map(w=>w.unit))].map(unit=>`<option value="${esc(unit)}" ${scheduleUnit===unit?'selected':''}>${esc(unit)}</option>`).join('')}</select></label><label>Vigia<select data-schedule-watcher aria-label="Filtrar por vigia"><option value="all">Todos os vigias</option>${DEMO_WATCHERS.filter(w=>scheduleUnit==='all'||w.unit===scheduleUnit).map(w=>`<option value="${w.id}" ${scheduleWatcher===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select></label></div><div class="schedule-list-count" role="status" aria-live="polite">${paged.total===0?'Nenhum resultado':`Mostrando ${paged.from}–${paged.to} de ${paged.total} rondas`}</div><div class="schedule-list" role="region" aria-label="Lista de rondas programadas" tabindex="0">${rows.map(p=>{
  const w=watcherById(p.watcherId),route=routeById(p.routeId),state=scheduleStatus(p,sessions);
- return `<article class="schedule-row"><div class="schedule-row-time"><strong>${formatShortDate(p.startAt)}</strong><small>Até ${new Date(p.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div><div class="schedule-row-person"><strong>${esc(w?.name??'Vigia')}</strong><small>${esc(route?.name??'Rota')} · ${esc(w?.unit??'')}</small></div><span class="schedule-state" data-status="${state}">${esc(state)}</span><div class="schedule-row-tools">${btn('Detalhes','program-detail','small',`data-id="${esc(p.id)}"`)}${state==='programada'||state==='atrasada'?btn('Cancelar','program-cancel','small',`data-id="${esc(p.id)}"`):''}</div></article>`;
+ return `<article class="schedule-row"><div class="schedule-row-time"><strong>${formatShortDate(p.startAt)}</strong><small>Até ${new Date(p.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div><div class="schedule-row-person"><strong>${esc(w?.name??'Vigia')}</strong><small>${esc(route?.name??'Rota')} · ${esc(w?.unit??'')}</small></div><span class="schedule-state" data-status="${state}">${esc(state)}</span><div class="schedule-row-tools">${btn('Detalhes','program-detail','small',`data-id="${esc(p.id)}"`)}${state==='programada'||state==='atrasada'?`${btn('Reprogramar','program-edit','small',`data-id="${esc(p.id)}"`)}${btn('Cancelar','program-cancel','small',`data-id="${esc(p.id)}"`)}`:''}</div></article>`;
  }).join('')||'<div class="empty">Não há rondas com este filtro.</div>'}</div><nav class="schedule-pagination" aria-label="Páginas da agenda">${btn('Anterior','schedule-prev','small',paged.page===0?'disabled':'')}<span>Página ${paged.page+1} de ${paged.pages}</span>${btn('Próxima','schedule-next','small',paged.page>=paged.pages-1?'disabled':'')}</nav>`:'<p class="schedule-map-intro">O mapa mostra um cenário de rota ilustrativo, enquanto a lista mantém as programações por vigia.</p>'}</section>`;
 }
 function programRoundDialog(){
@@ -190,6 +190,13 @@ function programRoundDialog(){
  const local=d=>new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
  showDialog(`<div class="program-dialog"><div class="eyebrow">RONDA · SUPERVISÃO / GESTÃO</div><h2>Programar ronda</h2><p>Defina o vigia, a rota e o horário. Verificaremos conflitos antes de salvar.</p><form id="program-form"><label>Vigia<select name="watcherId" required>${DEMO_WATCHERS.map(w=>`<option value="${w.id}">${esc(w.name)} · ${esc(w.unit)}</option>`).join('')}</select></label><label>Rota<select name="routeId" required>${DEMO_ROUTES.map(r=>`<option value="${r.id}">${esc(r.name)} · ${esc(r.unit)}</option>`).join('')}</select></label><div class="program-date-grid"><label>Data e hora de início<input type="datetime-local" name="startAt" value="${local(start)}" required></label><label>Término previsto<input type="datetime-local" name="endAt" value="${local(end)}" required></label></div><label>Repetir<select name="repeat"><option value="once">Uma vez</option><option value="daily7">Diariamente por 7 dias</option></select></label><label>Observações<textarea name="notes" maxlength="240" rows="2" placeholder="Informação útil para a equipe"></textarea></label><p class="program-error" role="alert" aria-live="polite"></p><button type="submit" class="button primary full">Revisar programação ${ic('arrow')}</button></form><p class="map-caption">Exemplo local. A programação não envia uma ordem para outro celular.</p></div>`,true);
 }
+
+function editProgramDialog(program){
+ if(!program||program.status!=='scheduled'||sessions.some(s=>s.programId===program.id))return;
+ const local=ms=>{const d=new Date(ms);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
+ showDialog(`<div class="program-dialog"><div class="eyebrow">AGENDA · ALTERAÇÃO LOCAL</div><h2>Reprogramar ronda</h2><p>Atualize o responsável ou o horário. O histórico da alteração será preservado neste navegador.</p><form id="program-edit-form" data-id="${esc(program.id)}"><label>Vigia<select name="watcherId" required>${DEMO_WATCHERS.map(w=>`<option value="${w.id}" ${w.id===program.watcherId?'selected':''}>${esc(w.name)} · ${esc(w.unit)}</option>`).join('')}</select></label><label>Rota<select name="routeId" required>${DEMO_ROUTES.map(r=>`<option value="${r.id}" ${r.id===program.routeId?'selected':''} ${watcherById(program.watcherId)?.unit!==r.unit?'disabled':''}>${esc(r.name)} · ${esc(r.unit)}</option>`).join('')}</select></label><div class="program-date-grid"><label>Início previsto<input type="datetime-local" name="startAt" value="${local(program.startAt)}" required></label><label>Término previsto<input type="datetime-local" name="endAt" value="${local(program.endAt)}" required></label></div><label>Observações<textarea name="notes" maxlength="240" rows="2">${esc(program.notes??'')}</textarea></label><p class="program-error" role="alert" aria-live="polite"></p><button type="submit" class="button primary full">Revisar alteração ${ic('arrow')}</button></form><p class="map-caption">A programação pode ser alterada antes de iniciar a execução; não há envio remoto.</p></div>`,true);
+}
+
 function watcherChooser(){
  showDialog(`<div class="eyebrow">PERFIL DO VIGIA · AVALIAÇÃO</div><h2>Selecionar colaborador</h2><p>Explore as rondas de diferentes vigias fictícios. Uma implantação real exige login individual e permissões.</p><div class="watcher-grid">${DEMO_WATCHERS.map(w=>`<button type="button" data-action="choose-watcher" data-id="${w.id}" class="${selectedWatcherId===w.id?'active':''}"><span class="avatar">${esc(w.name.slice(0,1))}</span><span><strong>${esc(w.name)}</strong><small>${esc(w.unit)} · ${programsForWatcher(programs,w.id).length} escalas</small></span></button>`).join('')}</div>`,true);
 }
@@ -390,6 +397,19 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
   if(!p||session?.status==='active'){notify('Finalize a ronda em andamento antes de mudar de programação.');return;}
   selectedProgramId=p.id;session=null;persist();render();return;
  }
+ if(act==='program-edit'){
+  if(!['supervisor','gestor','admin'].includes(user?.role))return;
+  const program=programs.find(p=>p.id===el.dataset.id);
+  if(!program||sessions.some(s=>s.programId===program.id))return;
+  editProgramDialog(program);return;
+ }
+ if(act==='program-edit-confirm'){
+  if(!['supervisor','gestor','admin'].includes(user?.role)||!pendingEdit)return;
+  if(sessions.some(s=>s.programId===pendingEdit.id)){pendingEdit=null;notify('Esta ronda já foi iniciada e não pode ser reprogramada.');return;}
+  const result=rescheduleProgram(programs,pendingEdit.id,pendingEdit.changes,Date.now());
+  if(!result.ok){notify(result.error);return;}
+  programs=result.items;pendingEdit=null;persist();render();notify('Ronda reprogramada neste navegador, com histórico da alteração.');return;
+ }
  if(act==='program-detail'){
   const p=programs.find(p=>p.id===el.dataset.id);if(!p)return;
   const w=watcherById(p.watcherId),route=routeById(p.routeId);
@@ -448,14 +468,24 @@ document.addEventListener('change',e=>{
  if(e.target.matches('[data-schedule-unit]')){scheduleUnit=e.target.value;scheduleWatcher='all';schedulePage=0;render();}
  if(e.target.matches('[data-schedule-watcher]')){scheduleWatcher=e.target.value;schedulePage=0;render();}
  if(e.target.matches('[data-schedule-query]')){scheduleQuery=e.target.value.trim().slice(0,80);schedulePage=0;render();}
- if(e.target.matches('#program-form [name="watcherId"]')){
-  const chosen=watcherById(e.target.value),route=modal.querySelector('#program-form [name="routeId"]');
+ if(e.target.matches('#program-form [name="watcherId"], #program-edit-form [name="watcherId"]')){
+  const chosen=watcherById(e.target.value),route=modal.querySelector('#program-form [name="routeId"], #program-edit-form [name="routeId"]');
   const matching=DEMO_ROUTES.find(r=>r.unit===chosen?.unit);if(route&&matching)route.value=matching.id;
   for(const opt of route?.options??[])opt.disabled=!!chosen&&routeById(opt.value)?.unit!==chosen.unit;
  }
 });
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);
+ if(e.target.id==='program-edit-form'){
+  if(!['supervisor','gestor','admin'].includes(user?.role))return;
+  const id=e.target.dataset.id,changes={watcherId:String(f.get('watcherId')||''),routeId:String(f.get('routeId')||''),startAt:new Date(String(f.get('startAt')||'')).getTime(),endAt:new Date(String(f.get('endAt')||'')).getTime(),notes:String(f.get('notes')||'')};
+  const result=rescheduleProgram(programs,id,changes,Date.now());
+  if(!result.ok){const error=modal.querySelector('.program-error');if(error)error.textContent=result.error;return;}
+  pendingEdit={id,changes};
+  const watcher=watcherById(changes.watcherId),route=routeById(changes.routeId);
+  showDialog(`<div class="eyebrow">CONFIRMAÇÃO</div><h2>Salvar nova programação?</h2><p><b>${esc(watcher?.name??'')}</b> · ${esc(route?.name??'')}</p><div class="detail-pair"><span>Início</span><strong>${esc(formatShortDate(changes.startAt))}</strong></div><div class="detail-pair"><span>Término</span><strong>${esc(formatShortDate(changes.endAt))}</strong></div><p>Os dados anteriores ficarão no histórico local desta programação.</p><div class="modal-actions">${btn('Voltar','close-dialog')}${btn('Confirmar alteração','program-edit-confirm','primary')}</div>`);
+  return;
+ }
  if(e.target.id==='program-form'){
   if(!['supervisor','gestor','admin'].includes(user?.role))return;
   const candidate={watcherId:String(f.get('watcherId')||''),routeId:String(f.get('routeId')||''),
