@@ -13,11 +13,29 @@ export const DEMO_ROUTE = Object.freeze({
     {id:'p2',name:'Corredor lateral',instruction:'Observe a passagem lateral e registre qualquer irregularidade.',lat:-20.14052,lng:-44.88338,radius:RADIUS_METERS},
     {id:'p3',name:'Estacionamento',instruction:'Verifique circulação, iluminação e condições do espaço.',lat:-20.14088,lng:-44.88370,radius:RADIUS_METERS},
     {id:'p4',name:'Acesso dos fundos',instruction:'Confira o acesso posterior antes de regressar à base.',lat:-20.14067,lng:-44.88406,radius:RADIUS_METERS}
+  ],
+  // Cada perna conecta dois pontos obrigatórios, com vértices de corredor intermediários.
+  // Percurso inteiramente fictício; estes vértices NÃO são roteamento calculado pelas ruas.
+  legs: [
+    [{lat:-20.14024,lng:-44.88395},{lat:-20.14023,lng:-44.88379}],
+    [{lat:-20.14018,lng:-44.88355},{lat:-20.14031,lng:-44.88351},{lat:-20.14043,lng:-44.88350}],
+    [{lat:-20.14061,lng:-44.88337},{lat:-20.14072,lng:-44.88347},{lat:-20.14079,lng:-44.88358}],
+    [{lat:-20.14092,lng:-44.88380},{lat:-20.14086,lng:-44.88393},{lat:-20.14075,lng:-44.88397}],
+    [{lat:-20.14055,lng:-44.88414},{lat:-20.14042,lng:-44.88411}]
   ]
 });
 
 const clone = x => JSON.parse(JSON.stringify(x));
-export const routeWaypoints = route => [route.base,...route.points,route.base];
+export function routeLeg(route,legIndex){
+ const points=[route.base,...route.points,route.base];
+ if(!Number.isInteger(legIndex)||legIndex<0||legIndex>=points.length-1)return [];
+ return [points[legIndex],...(route.legs?.[legIndex]??[]),points[legIndex+1]];
+}
+export function routeWaypoints(route){
+ const all=[route.base];
+ for(let i=0;i<=route.points.length;i++)all.push(...routeLeg(route,i).slice(1));
+ return all;
+}
 export const distanceMeters=(a,b)=>{
   if(!a||!b)return Infinity;
   const r=Math.PI/180,lat1=a.lat*r,lat2=b.lat*r,dlat=(b.lat-a.lat)*r,dlng=(b.lng-a.lng)*r;
@@ -127,5 +145,6 @@ export function offsetRouteNear(lat,lng){
   route.name='Rota de teste · GPS do aparelho';route.unit='Área de teste · pontos ilustrativos';
   route.base.lat+=dy;route.base.lng+=dx;
   route.points.forEach(p=>{p.lat+=dy;p.lng+=dx;});
+  route.legs?.forEach(leg=>leg.forEach(p=>{p.lat+=dy;p.lng+=dx;}));
   return route;
 }
