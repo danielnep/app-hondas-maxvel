@@ -236,7 +236,7 @@
 /* Sheet blocks background and only sheet contents scroll. Safe on very short phones. */
 dialog.ux06-fullscreen[open]{position:fixed!important;display:flex!important;flex-direction:column!important;
  top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;
- width:calc(100vw - 18px)!important;max-width:600px!important;
+ width:calc(100vw - 18px)!important;max-width:min(96vw,740px)!important;
  height:calc(100dvh - 28px)!important;min-height:0!important;max-height:calc(100dvh - 28px)!important;
  margin:0!important;padding:0!important;overflow:hidden!important;background:#292f33!important;
  color:#f3f7f8!important;border:1px solid #64737c!important;border-radius:3px!important;box-shadow:0 28px 75px rgba(0,0,0,.55)!important;
