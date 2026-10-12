@@ -46,15 +46,18 @@ try{
    await page.locator('#dialog #declaration-check').check();
    await click(page,'[data-action="confirm-start"]');
    await state(page,width,height,'05-ronda-ativa');
-   await click(page,'[data-action="sim-role"][data-role="supervisor"]');
+   await click(page,'[data-action="sim-role-picker"]');
+   await click(page,'#dialog [data-action="sim-role"][data-role="supervisor"]');
    await state(page,width,height,'06-supervisao');
    await click(page,'[data-view="rondas"]:visible');
    await state(page,width,height,'07-agenda');
    await click(page,'[data-action="schedule-tab"][data-tab="mapa"]');
    await state(page,width,height,'08-mapa');
-   await click(page,'[data-action="sim-role"][data-role="gestor"]');
+   await click(page,'[data-action="sim-role-picker"]');
+   await click(page,'#dialog [data-action="sim-role"][data-role="gestor"]');
    await state(page,width,height,'09-gestao');
-   await click(page,'[data-action="sim-role"][data-role="admin"]');
+   await click(page,'[data-action="sim-role-picker"]');
+   await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await state(page,width,height,'10-admin');
    if(errors.length)throw Error('Erros JS: '+errors.join('; '));
   }catch(e){fatal++;metrics.push({width,height,error:String(e),consoleErrors:errors});}
