@@ -287,3 +287,20 @@ dialog.ux06-fullscreen:not([open]),dialog.ux06-fullscreen.ux-dialog-paging:not([
  .dashboard .ronda-page .patrol-map-heading-copy>strong{font-size:10px!important}
  .ux06-sheet-header{padding-left:10px;padding-right:44px}
 }
+
+/* Historical mobile navigation reserved 67px under .app-content. Real flex nav replaces it. */
+@media(max-width:900px){
+ .dashboard .shell-main>main.app-content,.dashboard .shell-main>.app-content{
+   margin:0!important;margin-bottom:0!important;margin-top:0!important;min-height:0!important;
+   flex:1 1 0%!important;align-self:stretch!important;box-sizing:border-box!important;
+ }
+ .dashboard .shell-main>.mobile-nav.mobile-only{
+   margin:0!important;margin-top:0!important;margin-bottom:0!important;
+   position:relative!important;bottom:auto!important;
+ }
+ .dashboard .app-content:has(.map-command-page)>.map-command-page,
+ .dashboard .app-content:has(.dashboard-v4)>.dashboard-v4,
+ .dashboard .app-content.ronda-page>.patrol-workspace{
+   flex:1 1 0%!important;min-height:0!important;margin-bottom:0!important;
+ }
+}
