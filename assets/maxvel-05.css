@@ -192,3 +192,36 @@ h1,h2,h3,h4,.dashboard .page-title h1,.dashboard .v4-dashboard-heading h1,
  grid-template-rows:minmax(90px,1fr)!important}
  .dashboard .v4-stage > .v4-pane[hidden]{display:none!important}
 }
+/* MAXVEL-05: settings are previews; editing happens in a focusable modal with Save and Close. */
+.dashboard .hx05-settings-list{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;min-width:0;
+ background:#292d31;border:1px solid #525b61;padding:8px;gap:3px;overflow:hidden}
+.dashboard .hx05-list-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px;
+ border-bottom:1px solid #596167;padding:4px 6px}
+.dashboard .hx05-list-heading strong{font-size:14px;color:#eff4f5}
+.dashboard .hx05-list-heading span{font-size:10px;color:#b3c1c7}
+.dashboard .hx05-setting-row{display:flex;align-items:center;gap:9px;min-height:75px;flex:0 0 auto;
+ padding:9px 6px;border-bottom:1px solid #535c60;background:#2c3236}
+.dashboard .hx05-setting-copy{display:flex;min-width:0;flex:1 1 auto;flex-direction:column;gap:3px}
+.dashboard .hx05-setting-copy strong{font-size:13px;color:#edf2f4}
+.dashboard .hx05-setting-copy small{font-size:11px;color:#4fc3e9}
+.dashboard .hx05-setting-copy>span{font-size:10px;line-height:1.35;color:#c5cfd4}
+.dashboard .hx05-settings-note{margin:6px 4px;font-size:11px;color:#bcc7cd;line-height:1.4}
+.dashboard .settings-data{background:#2a2f32;border-top:1px solid #596267}
+.dashboard .hx05-settings-modal{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dashboard .hx05-settings-modal h2{font-family:"Rajdhani","Exo 2",sans-serif!important;font-size:27px!important;line-height:1.1}
+.dashboard .hx05-settings-modal p{font-size:12px!important;line-height:1.5;color:#d5dee3}
+.dashboard .hx05-settings-modal>label{font-size:12px;color:#d5dee2}
+.dashboard .hx05-settings-modal input[type=number]{height:43px;max-width:140px;padding:8px;
+ background:#30373a;color:#fff;border:1px solid #768087;border-radius:2px}
+.dashboard .hx05-settings-modal .hx05-checkbox-row{display:flex;align-items:center;gap:12px;padding:14px 6px;
+ border:1px solid #566167;background:#2d3538}
+.dashboard .hx05-settings-modal input[type=checkbox]{width:20px;height:20px;accent-color:#42bce5}
+@media(max-width:900px){
+ .dashboard .app-content:has(.hx05-settings-list)>.page-title{min-height:40px!important;flex:0 0 40px!important}
+ .dashboard .app-content:has(.hx05-settings-list) .hx05-settings-list{flex:1 1 auto!important;min-height:0!important}
+ .dashboard .app-content:has(.hx05-settings-list)>.settings-data{flex:0 0 52px!important;min-height:52px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:5px!important}
+ .dashboard .app-content:has(.hx05-settings-list)>.settings-data span{font-size:10px;line-height:1.2;color:#cbd3d6}
+ .dashboard .app-content:has(.hx05-settings-list)>.settings-data button{font-size:10px!important;min-height:34px!important;max-height:34px!important;padding:4px 6px!important}
+}
+@media(max-width:360px){.dashboard .hx05-setting-row{min-height:68px}.dashboard .hx05-setting-copy>span{font-size:9px}}
