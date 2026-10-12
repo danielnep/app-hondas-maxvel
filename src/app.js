@@ -342,7 +342,8 @@ function installViewportViews(){
     nav.querySelectorAll('button').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.uxReportTab===id)));
    };
    nav.addEventListener('click',e=>{const bt=e.target.closest('[data-ux-report-tab]');if(bt){uxReportPage=bt.dataset.uxReportTab;renderTab(uxReportPage);}});
-   report.prepend(nav,stage);
+   const title=report.querySelector('.page-title');
+   if(title)title.after(nav,stage);else report.prepend(nav,stage);
    paginateRows(elements.eventos,'.event-item','ReportEvents',uxListSizes());
    paginateRows(elements.historico,'tbody tr','ReportHistory',uxListSizes());
    renderTab(uxReportPage);
