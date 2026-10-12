@@ -66,6 +66,6 @@ test('cronômetro no topo do mapa e ação aguarda permanência real',()=>{
 test('produto Ronda Pró tem identidade preservada e nomes consistentes',()=>{
  assert.match(app,/Ronda Pró/);
  assert.match(app,/ronda-pro-wordmark/);
- assert.match(app,/horizon-logo-transparente\\.webp/);
+ assert.match(app,/horizon-logo-transparente\.webp/);
  assert.doesNotMatch(app,/Hondas Maxvel/);
 });
