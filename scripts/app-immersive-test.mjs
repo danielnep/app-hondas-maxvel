@@ -81,9 +81,9 @@ try{
    await tap(page,'#dialog [data-action="demo-rotation"]');
    await tap(page,'#dialog [data-action="demo-evidence-confirm"]');
    await tap(page,'.patrol-actions [data-action="incident-form"]');
-   await page.locator('#incident-form [name="title"]').fill('Luz de acesso apagada');
-   await page.locator('#incident-form [name="description"]').fill('Iluminação do portão em desacordo no cenário de demonstração.');
-   await page.locator('#incident-form [name="truth"]').check();
+   await (await revealDialogControl(page,'#incident-form [name="title"]')).fill('Luz de acesso apagada');
+   await (await revealDialogControl(page,'#incident-form [name="description"]')).fill('Iluminação do portão em desacordo no cenário de demonstração.');
+   await (await revealDialogControl(page,'#incident-form [name="truth"]')).check();
    await tap(page,'#incident-form button[type="submit"]');
    await tap(page,'.patrol-actions [data-action="demo-leave"]');
    await wait(7400);
@@ -91,6 +91,7 @@ try{
    if(!await page.locator('.patrol-actions [data-action="justify"]').count())throw Error('Desvio não exigiu justificativa');
    await tap(page,'.patrol-actions [data-action="justify"]');
    const reason=page.locator('#justification-form textarea').first();
+   await revealDialogControl(page,'#justification-form textarea');
    await reason.fill('Desvio ilustrativo para conferir uma situação no perímetro.');
    await tap(page,'#justification-form button[type="submit"]');
    await tap(page,'[data-action="sim-role-picker"]');
@@ -99,9 +100,9 @@ try{
    await tap(page,'[data-view="notificacoes"]:visible');
    await tap(page,'[data-action="open-incidents"]');
    await tap(page,'.list-row[data-action="incident-detail"]');
-   await page.locator('#incident-review-form [name="status"]').selectOption('Em análise');
-   await page.locator('#incident-review-form [name="assignee"]').fill('Equipe de manutenção');
-   await page.locator('#incident-review-form [name="note"]').fill('Encaminhado para conferência da iluminação.');
+   await (await revealDialogControl(page,'#incident-review-form [name="status"]')).selectOption('Em análise');
+   await (await revealDialogControl(page,'#incident-review-form [name="assignee"]')).fill('Equipe de manutenção');
+   await (await revealDialogControl(page,'#incident-review-form [name="note"]')).fill('Encaminhado para conferência da iluminação.');
    await tap(page,'[data-action="incident-review"]');
    await tap(page,'[data-action="nav-alerts"]');
    await tap(page,'[data-view="rondas"]:visible');
