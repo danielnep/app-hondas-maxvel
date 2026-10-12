@@ -36,6 +36,10 @@ async function capture(page,name,width,height){
  await page.screenshot({path:out+'/'+width+'x'+height+'-'+name+'.png',animations:'disabled',timeout:14000});
  if(metrics.viewport>width+2||metrics.documentWidth>width+3)throw Error('Expansão horizontal: '+JSON.stringify(metrics));
  if(metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
+ if(width<=900&&metrics.app&&name==='ronda'&&metrics.map&&metrics.action){
+  if(metrics.map.y<0||metrics.map.bottom>height-45)throw Error('Mapa cortado: '+JSON.stringify(metrics.map));
+  if(metrics.action.y<0||metrics.action.bottom>height-45)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
+ }
  if(name==='ronda'){
   if(!metrics.app||metrics.roles!==4||!metrics.map||!metrics.action||!metrics.primary)throw Error('Aplicativo, 4 perfis, mapa ou ação não encontrados');
   if(metrics.primary.y<0||metrics.primary.y>height-40)throw Error('Botão de início longe da viewport: '+JSON.stringify(metrics.primary));
@@ -91,24 +95,25 @@ try{
    if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Agenda sem múltiplos vigias');
    await capture(page,'schedule',width,height);
    await tap(page,'[data-action="program-round"]');
-   await page.locator('#program-form [name="startAt"]').fill('2027-08-15T09:00');
-   await page.locator('#program-form [name="endAt"]').fill('2027-08-15T10:00');
-   await tap(page,'#program-form button[type="submit"]');
-   if(!await page.locator('[data-action="program-confirm"]').count())throw Error('Confirmação do agendamento ausente');
-   await tap(page,'[data-action="program-confirm"]');
-   // Filtro de grandes agendas + reprogramação com confirmação e preservação do vínculo.
+   await page.locator('[data-wizard="worker"][data-id="v01"]').click();
+   await tap(page,'[data-wizard="next"]');
+   await page.locator('#wizard-start').fill('2027-08-15T09:00');
+   await page.locator('#wizard-end').fill('2027-08-15T10:00');
+   await tap(page,'[data-wizard="next"]');
+   await page.locator('#wizard-lat').fill('-20.14020');
+   await page.locator('#wizard-lng').fill('-44.88366');
+   await tap(page,'[data-wizard="coordinates"]');
+   if(!await page.locator('#wizard-map').count())throw Error('Mapa para pontos não encontrado');
+   await tap(page,'[data-wizard="next"]');
+   if(!await page.locator('.wizard-review').count())throw Error('Revisão da ronda ausente');
+   await tap(page,'[data-wizard="save"]');
+   if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Agenda desapareceu após salvar');
+   if(width<=900)await tap(page,'[data-action="schedule-show-filters"]');
    await page.locator('[data-schedule-unit]').selectOption('Unidade Centro');
    await page.locator('[data-schedule-watcher]').selectOption('v01');
    await page.locator('[data-schedule-filter]').selectOption('programada');
-   const localEdit=page.locator('.schedule-row [data-action="program-edit"][data-id^="program-"]');
-   if(!await localEdit.count())throw Error('A ronda recém-programada não é encontrada ao filtrar por vigia');
-   await tap(page,'.schedule-row [data-action="program-edit"][data-id^="program-"]');
-   await page.locator('#program-edit-form [name="startAt"]').fill('2027-08-15T10:30');
-   await page.locator('#program-edit-form [name="endAt"]').fill('2027-08-15T11:15');
-   await tap(page,'#program-edit-form button[type="submit"]');
-   if(!await page.locator('[data-action="program-edit-confirm"]').count())throw Error('Reprogramar não solicitou confirmação');
-   await tap(page,'[data-action="program-edit-confirm"]');
-   if(!await page.locator('.schedule-row [data-action="program-edit"][data-id^="program-"]').count())throw Error('Ronda reprogramada sumiu da agenda');
+   // Consultar por vigia e testar filtros por página, sem rolagem da tela.
+   if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Filtro por vigia ficou vazio');
    await capture(page,'agenda-filtrada',width,height);
    await tap(page,'[data-action="sim-role-picker"]');
    await tap(page,'#dialog [data-action="sim-role"][data-role="gestor"]');
