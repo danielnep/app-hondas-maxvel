@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DEMO_ROUTE,createSession} from '../src/domain.js';
@@ -103,4 +104,16 @@ test('reprogramação guarda dados anteriores e recusa colisão entre escalas',(
  assert.equal(invalid.items[0].startAt,moved.items[0].startAt);
  const cancelled=cancelProgram(moved.items,old.id);
  assert.equal(rescheduleProgram(cancelled,old.id,{startAt:now+5*3600000},now).ok,false);
+});
+
+test('setas da escala móvel usam o mesmo tamanho de página da lista',()=>{
+ const source=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+ assert.match(source,/const schedulePageSize=\(\)=>window\.innerWidth<=900\?3:16;/);
+ assert.equal((source.match(/pagePrograms\(active,schedulePage,schedulePageSize\(\)\)/g)||[]).length,2);
+ const rows=demoSchedule(new Date(2026,9,12,5).getTime());
+ const first=pagePrograms(rows,0,3),second=pagePrograms(rows,1,3);
+ assert.equal(first.items.length,3);
+ assert.equal(second.from,4);
+ assert.equal(second.page,1);
+ assert.notDeepEqual(first.items.map(x=>x.id),second.items.map(x=>x.id));
 });

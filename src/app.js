@@ -333,10 +333,11 @@ function mySchedule(){
  const current=selected?.id===p.id;return `<button type="button" class="${current?'chosen':''}" data-action="select-program" data-id="${esc(p.id)}"><span><strong>${formatShortDate(p.startAt)}</strong><small>${esc(routeById(p.routeId)?.name||'Rota')} · ${esc(scheduleStatus(p,sessions))}</small></span>${current?ic('checkcircle'):ic('arrow')}</button>`;
  }).join(''):'<div class="empty">Nenhuma ronda futura para este vigia.</div>'}</div><p class="map-caption">Os horários e colaboradores são fictícios. Escolha uma ronda para vinculá-la à execução.</p></div></details>`;
 }
+const schedulePageSize=()=>window.innerWidth<=900?3:16;
 function schedulePanel(){
  const totals=scheduleTotals(programs,sessions);
  const active=filterPrograms(programs,{status:scheduleFilter,watcherId:scheduleWatcher,unit:scheduleUnit,query:scheduleQuery,sessions});
- const paged=pagePrograms(active,schedulePage,window.innerWidth<=900?3:16),rows=paged.items;
+ const paged=pagePrograms(active,schedulePage,schedulePageSize()),rows=paged.items;
  return `<section class="schedule-workspace"><header class="schedule-heading"><div><div class="eyebrow">PLANEJAMENTO DE RONDAS ${helpButton('schedules','agendamento')}</div><h2>Escalas e programação</h2><p>${programs.length} rondas de ${DEMO_WATCHERS.length} vigias · somente neste navegador</p></div>${btn(ic('clock')+' Programar ronda','program-round','primary')}</header>
  ${window.innerWidth<=900?btn('Filtros','schedule-show-filters','small'):''}<div class="schedule-stats">${[['programada','Programadas'],['em andamento','Em andamento'],['atrasada','Atrasadas'],['concluída','Concluídas']].map(([key,label])=>`<div><strong>${totals[key]||0}</strong><span>${label}</span></div>`).join('')}</div>
  <div class="schedule-switch"><button type="button" data-action="schedule-tab" data-tab="agenda" aria-pressed="${scheduleTab==='agenda'}" class="${scheduleTab==='agenda'?'active':''}">${ic('list')} Agenda de rondas</button><button type="button" data-action="schedule-tab" data-tab="mapa" aria-pressed="${scheduleTab==='mapa'}" class="${scheduleTab==='mapa'?'active':''}">${ic('map')} Mapa da operação</button></div>
@@ -616,7 +617,7 @@ if(act==='sim-role'){
 if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;scheduleTab=el.dataset.tab;render();return;}
  if(act==='schedule-prev'||act==='schedule-next'){
   const active=filterPrograms(programs,{status:scheduleFilter,watcherId:scheduleWatcher,unit:scheduleUnit,query:scheduleQuery,sessions});
-  const info=pagePrograms(active,schedulePage,16);
+  const info=pagePrograms(active,schedulePage,schedulePageSize());
   schedulePage=Math.max(0,Math.min(info.pages-1,info.page+(act==='schedule-next'?1:-1)));
   render();return;
  }
