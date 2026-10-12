@@ -580,15 +580,24 @@ function reports(){
  return `<div class="report-page">${pageTitle('Relatório operacional','Registros e indicadores gerados exclusivamente a partir dos dados deste ambiente.',btn(ic('print')+' Imprimir / PDF','print',''))}<div class="report-context-bar"><span>${ic('clock')} ${esc(range)}</span>${tag('Dados locais, sem servidor','neutral')}</div>${kpiCards()}<div class="report-insights-grid"><section class="card report-breakdown"><div class="eyebrow">ANÁLISE DOS REGISTROS</div><h2>Visão da execução</h2><p>Percentuais calculados sobre as rondas e eventos registrados neste navegador.</p><div class="report-progress-list">${ratios.map(item=>{const pct=item.total?Math.round(item.n/item.total*100):0;return `<div class="report-progress-row"><div class="report-progress-label"><strong>${item.label}</strong><span>${item.n} de ${item.total} <b>${pct}%</b></span></div><div class="report-progress-track" role="progressbar" aria-label="${item.label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i class="${item.color}" style="width:${pct}%"></i></div></div>`}).join('')}</div><div class="report-safety-note">${ic('shield')} <span>Indicadores de demonstração. Sem homologação do GPS ou sincronização com equipe real.</span></div></section><section class="card report-events"><div class="card-title"><div><div class="eyebrow">ATIVIDADE DOCUMENTADA</div><h2>Eventos recentes</h2></div>${tag(`${notices.length} avisos`,'neutral')}</div><div class="report-events-list">${notices.slice(0,5).map(notificationRow).join('')||`<div class="reports-empty">${ic('clipboard')}<strong>Nenhum evento registrado</strong><p>Desvios e ocorrências aparecerão aqui com horário e contexto.</p></div>`}</div></section></div><section class="card report-roster"><div class="card-title"><div><div class="eyebrow">HISTÓRICO</div><h2>Rondas registradas</h2></div>${tag(`${all.length} rondas`,'neutral')}</div>${tablePatrols(all)}</section><div class="report-note">${ic('help')} <span>Use “Imprimir / PDF” para salvar uma cópia local. O navegador realiza a impressão; nenhum documento é enviado automaticamente.</span></div></div>`;
 }
 function settings(){
- if(!['gestor','admin'].includes(user?.role))return pageTitle('Sem permissão','Configurações operacionais reservadas à Gerência.');
+ if(!['gestor','admin'].includes(user?.role))return pageTitle('Sem permissão','Regras disponíveis somente para Gerência e Administração.');
+ const options=[
+  {id:'dwellSeconds',title:'Tempo de permanência',value:operationalSettings.dwellSeconds+' segundos',
+   info:'Defina de 5 a 120 segundos em cada ponto.'},
+  {id:'deviationJustification',title:'Justificativa de desvio',value:operationalSettings.deviationJustification?'Obrigatória':'Desativada',
+   info:'Solicita explicação antes de liberar o avanço quando houver desvio.'},
+  {id:'evidenceEnabled',title:'Verificação ilustrativa',value:operationalSettings.evidenceEnabled?'Ativada':'Desativada',
+   info:'Exibe as etapas demonstrativas de conferência no ponto.'}
+ ];
  return pageTitle('Configurações','Regras para novas rondas.',helpButton('privacy','configurações e privacidade'))+
- '<form id="operational-settings" class="operational-settings"><div class="eyebrow">REGRAS DE RONDA · GERÊNCIA</div>'+
- '<label>Permanência por ponto (5 a 120 segundos)<input type="number" name="dwellSeconds" required min="5" max="120" value="'+operationalSettings.dwellSeconds+'"></label>'+
- '<label class="settings-toggle"><input type="checkbox" name="deviationJustification" '+(operationalSettings.deviationJustification?'checked':'')+'> Exigir justificativa depois de um desvio</label>'+
- '<label class="settings-toggle"><input type="checkbox" name="evidenceEnabled" '+(operationalSettings.evidenceEnabled?'checked':'')+'> Habilitar verificação ilustrativa por ponto</label>'+
- '<p>Essas opções valem para novas rondas. Execuções já iniciadas conservam suas regras.</p>'+
- '<button type="submit" class="button primary">Salvar regras operacionais</button></form>'+
- '<div class="settings-data"><span>Dados deste navegador</span>'+btn('Apagar registros locais','clear-prompt','small danger')+'</div>';
+  '<section class="hx05-settings-list" aria-label="Regras configuráveis">'+
+  '<div class="hx05-list-heading"><strong>Regras de operação</strong><span>Gerência e Administração</span></div>'+
+  options.map(o=>'<div class="hx05-setting-row"><span class="hx05-setting-copy"><strong>'+esc(o.title)+'</strong>'+
+   '<small>'+esc(o.value)+'</small><span>'+esc(o.info)+'</span></span>'+
+   '<button type="button" class="hx05-open-button" data-action="open-operational-setting" data-setting="'+o.id+'">Abrir</button></div>').join('')+
+  '<p class="hx05-settings-note">As mudanças só serão aplicadas às rondas iniciadas depois de salvar.</p></section>'+
+  '<div class="settings-data"><span>Dados de demonstração armazenados neste navegador</span>'+
+   btn('Apagar registros locais','clear-prompt','small danger')+'</div>';
 }
 function personalRecords(){const mine=sessionList().filter(s=>s.name===user.name);return pageTitle('Meus registros','Consulte suas rondas, horários e justificativas.',helpButton('reports','histórico'))+`<div class="card">${tablePatrols(mine)}</div>`}
 function legend(){return `<div class="map-legend maxvel-map-legend" aria-label="Legenda operacional do mapa"><span><i class="legend-dot base"></i>Base</span><span><i class="legend-dot"></i>Ponto planejado</span><span><i class="legend-dot done"></i>Concluído</span><span><i class="legend-dot radius"></i>Raio de 25 m</span><span><i class="legend-line planned"></i>Traçado ilustrativo</span><span><i class="legend-line traced"></i>Posição percorrida</span></div>`}
@@ -935,6 +944,25 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='nav-rondas'){view='rondas';render();return;}
  if(act==='my-records'||act==='records'){if(presentation&&session){detailSession(session.id);return;}view='registros';render();return;}
  if(act==='map-help'){showDialog(`<div class="eyebrow">COMO LER O MAPA</div><h2>Localização e pontos de ronda</h2><div class="map-help-list"><p><strong>Mapa de ruas:</strong> base cartográfica OpenStreetMap, com alternativa esquemática se ficar offline.</p><p><strong>Linha tracejada:</strong> ligação ilustrativa entre pontos. Não é uma rota calculada pelas ruas.</p><p><strong>Linha contínua ciano:</strong> posições observadas enquanto a tela está ativa na simulação.</p><p><strong>Círculo ao redor do ponto:</strong> área de validação de 25 m. É necessário permanecer 30 s seguidos, com localização confiável.</p><p><strong>Marcador vermelho:</strong> ponto de evento de desvio registrado para análise. GPS impreciso, por si só, não implica irregularidade.</p></div>${btn('Entendi','close-dialog','primary full')}`);return;}
+ if(act==='open-operational-setting'){
+  if(!['gestor','admin'].includes(user?.role))return;
+  const key=el.dataset.setting;
+  const specs={
+   dwellSeconds:['Tempo de permanência','Defina o tempo necessário para validar cada ponto.','Permanência por ponto'],
+   deviationJustification:['Justificativa de desvio','Exigir uma explicação antes de liberar o avanço após um desvio.','Exigir justificativa'],
+   evidenceEnabled:['Verificação ilustrativa','Mostrar as etapas ilustrativas de evidência durante a simulação.','Habilitar verificação']
+  };
+  const info=specs[key];if(!info)return;
+  const field=key==='dwellSeconds'
+   ?'<label for="hx05-settings-value">Segundos (5–120)</label><input id="hx05-settings-value" name="value" type="number" min="5" max="120" step="1" required value="'+operationalSettings.dwellSeconds+'">'
+   :'<label class="hx05-checkbox-row"><input type="checkbox" name="value" '+(operationalSettings[key]?'checked':'')+'><span>'+esc(info[2])+'</span></label>';
+  showDialog('<form id="hx05-settings-form" class="hx05-settings-modal" data-setting="'+key+'">'+
+   '<span class="eyebrow">CONFIGURAÇÃO · GERÊNCIA</span><h2>'+esc(info[0])+'</h2>'+
+   '<p>'+esc(info[1])+'</p>'+field+
+   '<div class="hx05-modal-footer"><button type="button" class="button small" data-action="close-dialog">Fechar</button>'+
+   '<button type="submit" class="button primary small">Salvar</button></div></form>');
+  return;
+ }
  if(act==='open-route-point'){
   const idx=Number(el.dataset.index),context=supervisedContext(),point=context.route.points[idx];
   if(!Number.isInteger(idx)||!point)return;
@@ -995,6 +1023,19 @@ document.addEventListener('submit',e=>{
 });
 
 modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormData(e.target);
+ if(e.target.id==='hx05-settings-form'){
+  if(!['gestor','admin'].includes(user?.role))return;
+  const key=e.target.dataset.setting;
+  if(!['dwellSeconds','deviationJustification','evidenceEnabled'].includes(key))return;
+  const raw=key==='dwellSeconds'?Number(f.get('value')):f.has('value');
+  if(key==='dwellSeconds'&&(!Number.isInteger(raw)||raw<5||raw>120)){
+   notify('Escolha um tempo entre 5 e 120 segundos.');return;
+  }
+  operationalSettings={...operationalSettings,[key]:raw};
+  persist();modal.close();render();
+  notify('Configuração salva para as próximas rondas.');return;
+ }
+
 
  if(e.target.id==='program-edit-form'){
   if(!['supervisor','gestor','admin'].includes(user?.role))return;
