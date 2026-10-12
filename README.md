@@ -8,12 +8,12 @@ Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interf
 
 - **Tutorial opcional por destaque:** cortina fosca translúcida, avanço por **Entendi · continuar**, fechamento livre e comando **Rever tutorial** no topo e menu lateral. Botões discretos `?` abrem ajuda por função.
 - **Graphite Dark:** grafite e cinza-escuro predominantes, azul Horizon nas ações, branco reservado principalmente ao texto; o mapa conserva cartografia legível.
-- **12 vigias fictícios e 48 programações iniciais:** agenda organizada por atribuição, data e unidade, com filtros e estados. Vigia vê suas rondas na página operacional.
-- **Supervisão, Gestão e Administração:** em **Rondas → Programar ronda**, selecionar vigia, rota e horário, revisar conflitos, confirmar criação, recorrência semanal diária opcional e cancelamento.
+- **12 vigias fictícios e 48 programações iniciais:** agenda organizada por atribuição, data e unidade, com busca, filtros combinados, paginação e estados. Vigia vê suas rondas na página operacional.
+- **Supervisão, Gestão e Administração:** em **Rondas → Programar ronda**, selecionar vigia, rota e horário, validar conflitos, confirmar criação, recorrência diária por até 7 dias, cancelamento e **reprogramação com histórico local de mudanças**.
 - **Programação diferente da execução:** cada execução pode ter `programId` e `watcherId`; a conclusão depende do motor existente de localização e permanência, não de um simples agendamento.
 - **Fluxos testáveis:** tela de entrada, navegação por quatro perfis, mapa, ponto, desvio, justificativa, alerta e ajuda contextual. Os resultados de auditoria são acompanhados no GitHub Actions.
 
-[Estudos de UI/UX](docs/PESQUISA-APROFUNDADA-UI-UX-DARK-CARDS-TUTORIAL.md) · [Tarefa da implementação](https://github.com/danielnep/app-hondas-maxvel/issues/21) · [Rondas programadas](https://github.com/danielnep/app-hondas-maxvel/issues/20).
+[Estudos de UI/UX](docs/PESQUISA-APROFUNDADA-UI-UX-DARK-CARDS-TUTORIAL.md) · [Execução Graphite Dark E1–E6](docs/EXECUCAO-GRAPHITE-DARK-E1-E6.md) · [Reformulação pelos manuais E0–E10](docs/REFORMULACAO-MANUAIS-E0-E10.md) · [Tarefa atual](https://github.com/danielnep/app-hondas-maxvel/issues/22).
 
 **Limites da versão de avaliação:** tudo é armazenado **localmente neste navegador**. Alternar perfis sem senha é recurso de apresentação, não autenticação de produção. Não há avisos sincronizados entre aparelhos, permissões reais de colaboradores nem monitoramento remoto. GPS real requer consentimento e piloto específico. As rotas dos exemplos são fictícias.
 
@@ -23,7 +23,7 @@ A interface desta versão foi **reestruturada no código**, não produzida apena
 
 - Entrada de produto com identidade **Hondas Maxvel · Horizon**, iconografia própria e mapa de ruas reais.
 - Painel de operações com quatro métricas calculadas, mapa ampliado, alertas, tabela de rondas e linha do tempo.
-- Entrada direta para um **cenário interativo**, especialmente quando a supervisão ainda não tem dados no navegador.
+- Entrada no **próprio aplicativo**, com escolha de perfil e dados ilustrativos identificados, sem apresentação comercial paralela.
 - Tela de ronda móvel com estado, próximo ponto, progresso, mapa amplo, círculos de 25 m e orientação contextual.
 - Central de supervisão com sequência visual dos quatro pontos, indicadores de permanência, mapa e alertas.
 - Escolha de mapa OpenStreetMap / CARTO claro, trilha percorrida e alertas geolocalizados; alternativa esquemática quando a cartografia online falhar.
@@ -94,7 +94,7 @@ Abra a pasta `android/` no **Android Studio**. O build incorpora os mesmos arqui
 
 ## Estado de qualidade
 
-Os testes unitários podem ser executados por `npm test`. A verificação visual no navegador automático foi tentada, mas o navegador do ambiente bloqueou páginas locais; validar visualmente antes de apresentar. **O projeto Android ainda não foi compilado neste ambiente nem validado em aparelho.** Dados e permissões são locais e demonstrativos, sem servidor operacional e sem notificações reais para supervisores.
+Os testes unitários podem ser executados por `npm test`. Os fluxos de navegador automatizado, auditorias de acessibilidade e responsividade e compilação Android debug são executados nos [workflows do GitHub Actions](https://github.com/danielnep/app-hondas-maxvel/actions). **O APK debug não equivale a teste físico do GPS, TalkBack nem homologação para produção.** Dados e permissões são locais e demonstrativos, sem servidor operacional e sem notificações reais para supervisores.
 
 ## Implantação operacional ainda não entregue
 
