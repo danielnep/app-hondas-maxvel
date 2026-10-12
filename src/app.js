@@ -118,6 +118,34 @@ function installViewportViews(){
   }
  }
 
+
+ if(view==='minha-ronda'&&!patrolSheetCollapsed){
+  const extra=main.querySelector('.patrol-extra-flow');
+  if(extra){
+   const nav=document.createElement('nav');nav.className='ux-patrol-tabs';
+   nav.setAttribute('aria-label','Ferramentas da ronda');
+   const groups={
+    sim:extra.querySelector('.patrol-scenario-tools'),
+    agenda:extra.querySelector('.my-schedule'),
+    instrucoes:extra.querySelector('.patrol-help-details')
+   };
+   const stage=document.createElement('div');stage.className='ux-patrol-stage';
+   const options=[['sim','Simulação'],['agenda','Agenda'],['instrucoes','Instruções']];
+   for(const [key] of options){if(groups[key]){groups[key].dataset.uxToolsPane=key;stage.append(groups[key]);}}
+   const visible=options.filter(([k])=>!!groups[k]);
+   let current=visible.length?visible[0][0]:'agenda';
+   const paint=()=>{
+    visible.forEach(([k])=>groups[k].hidden=k!==current);
+    [...nav.querySelectorAll('button')].forEach(b=>b.setAttribute('aria-selected',String(b.dataset.uxToolsTab===current)));
+   };
+   nav.innerHTML=visible.map(([key,label])=>'<button type="button" data-ux-tools-tab="'+key+'">'+label+'</button>').join('');
+   nav.addEventListener('click',e=>{const b=e.target.closest('[data-ux-tools-tab]');if(b){current=b.dataset.uxToolsTab;paint();}});
+   extra.prepend(nav,stage);
+   paginateRows(groups.agenda,'.my-schedule-list button','MyPrograms',3);
+   paginateRows(groups.instrucoes,'.patrol-point-list button','HelpPoints',3);
+   paint();
+  }
+ }
  if(view==='rondas'){
   const workspace=main.querySelector('.schedule-workspace');
   const switcher=workspace?.querySelector('.schedule-switch');

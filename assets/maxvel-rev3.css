@@ -249,3 +249,34 @@
  .dashboard .schedule-workspace .schedule-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)!important;gap:4px!important;min-height:58px!important}
  .dashboard .schedule-workspace .schedule-pagination{flex:0 0 34px!important;min-height:34px!important}
 }
+
+@media(max-width:900px){
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-extra-flow{
+  display:flex!important;flex-direction:column!important;flex:1 1 auto!important;min-height:0!important;height:100%!important;overflow:hidden!important;padding:0!important
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-extra-label{display:none!important}
+ .ux-patrol-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;flex:0 0 37px!important;min-height:37px!important;padding:3px}
+ .ux-patrol-tabs button{background:#24272A;border:1px solid #45484B;color:#D5D7DA;font-size:11px;padding:3px}
+ .ux-patrol-tabs button[aria-selected="true"]{color:#28B6E8;border-bottom:2px solid #28B6E8}
+ .ux-patrol-stage{display:flex!important;flex-direction:column!important;min-height:0!important;flex:1 1 auto!important;overflow:hidden!important;padding:2px}
+ .ux-patrol-stage>[data-ux-tools-pane]{width:100%!important;min-height:0!important;max-height:none!important;overflow:hidden!important;flex:1 1 auto!important;margin:0!important}
+ .ux-patrol-stage>[hidden]{display:none!important}
+ .ux-patrol-stage .my-schedule{display:block!important}
+ .ux-patrol-stage .my-schedule summary{height:42px!important;padding:4px 8px!important}
+ .ux-patrol-stage .my-schedule[open]{display:flex!important;flex-direction:column!important}
+ .ux-patrol-stage .my-schedule-inner{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important;padding:4px!important}
+ .ux-patrol-stage .my-schedule-list{display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}
+ .ux-patrol-stage .my-schedule-list button{min-height:42px!important;max-height:42px!important;padding:4px!important}
+ .ux-patrol-stage .my-schedule .map-caption{display:none!important}
+ .ux-patrol-stage .patrol-help-details{display:block!important}
+ .ux-patrol-stage .patrol-help-details[open]{display:flex!important;flex-direction:column!important;height:100%!important}
+ .ux-patrol-stage .patrol-help-details summary{min-height:38px!important;padding:5px!important}
+ .ux-patrol-stage .patrol-help-details .guide-inline{padding:4px!important;margin:3px 0!important}
+ .ux-patrol-stage .patrol-help-details .guide-inline p{font-size:10px!important;line-height:1.3!important}
+ .ux-patrol-stage .patrol-point-list{min-height:0!important;overflow:hidden!important}
+ .ux-patrol-stage .patrol-point-list button{min-height:36px!important;max-height:36px!important}
+ .ux-patrol-stage .patrol-scenario-tools{display:block!important}
+ .ux-patrol-stage .patrol-scenario-tools .patrol-tools-heading{display:flex!important;gap:7px!important;font-size:11px!important}
+ .ux-patrol-stage .patrol-scenario-tools .patrol-quick-actions{display:grid!important;gap:5px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .ux-patrol-stage .patrol-scenario-tools .patrol-quick-actions button{min-height:42px!important;max-height:42px!important;font-size:11px!important}
+}
