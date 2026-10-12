@@ -2,6 +2,21 @@
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Horizon (branco, azul celeste e azul-prateado), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
+## Plataforma Graphite Dark · outubro de 2026
+
+**Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o lockup **Hondas Maxvel × Horizon**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
+
+- **Tutorial opcional por destaque:** cortina fosca translúcida, avanço por **Entendi · continuar**, fechamento livre e comando **Rever tutorial** no topo e menu lateral. Botões discretos `?` abrem ajuda por função.
+- **Graphite Dark:** grafite e cinza-escuro predominantes, azul Horizon nas ações, branco reservado principalmente ao texto; o mapa conserva cartografia legível.
+- **12 vigias fictícios e 48 programações iniciais:** agenda organizada por atribuição, data e unidade, com filtros e estados. Vigia vê suas rondas na página operacional.
+- **Supervisão, Gestão e Administração:** em **Rondas → Programar ronda**, selecionar vigia, rota e horário, revisar conflitos, confirmar criação, recorrência semanal diária opcional e cancelamento.
+- **Programação diferente da execução:** cada execução pode ter `programId` e `watcherId`; a conclusão depende do motor existente de localização e permanência, não de um simples agendamento.
+- **Fluxos testáveis:** tela de entrada, navegação por quatro perfis, mapa, ponto, desvio, justificativa, alerta e ajuda contextual. Os resultados de auditoria são acompanhados no GitHub Actions.
+
+[Estudos de UI/UX](docs/PESQUISA-APROFUNDADA-UI-UX-DARK-CARDS-TUTORIAL.md) · [Tarefa da implementação](https://github.com/danielnep/app-hondas-maxvel/issues/21) · [Rondas programadas](https://github.com/danielnep/app-hondas-maxvel/issues/20).
+
+**Limites da versão de avaliação:** tudo é armazenado **localmente neste navegador**. Alternar perfis sem senha é recurso de apresentação, não autenticação de produção. Não há avisos sincronizados entre aparelhos, permissões reais de colaboradores nem monitoramento remoto. GPS real requer consentimento e piloto específico. As rotas dos exemplos são fictícias.
+
 ## Experiência de produto · versão atual
 
 A interface desta versão foi **reestruturada no código**, não produzida apenas como imagem:
