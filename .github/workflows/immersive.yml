@@ -7,6 +7,9 @@ on:
       - 'scripts/app-immersive-test.mjs'
       - 'src/app.js'
       - 'assets/horizon-operacional.css'
+      - 'assets/horizon-graphite.css'
+      - 'src/tutorial.js'
+      - 'src/scheduling.js'
       - 'index.html'
       - '.github/workflows/immersive.yml'
 
