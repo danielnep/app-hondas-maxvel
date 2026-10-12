@@ -19,6 +19,10 @@ async function state(page,width,height,name){
  });
  metrics.push({width,height,name,...data});
  await page.screenshot({path:out+'/'+width+'-'+name+'.png',animations:'disabled',timeout:14000});
+ if(width<=900&&name==='ronda'&&data.cta&&data.map&&data.nav){
+   if(data.map.bottom>data.cta.y+2||data.cta.bottom>data.nav.y+2||data.cta.h<25)
+    throw Error('Mapa ou ação de iniciar ronda sobrepostos/cortados: '+JSON.stringify(data));
+ }
  if(data.actualWidth>width+2||data.documentWidth>width+3)throw Error('Overflow horizontal em '+width+' '+name+': '+JSON.stringify(data));
  if(data.documentHeight>height+4)throw Error('Overflow vertical global em '+width+' '+name+': '+JSON.stringify(data));
  if(name==='ronda'&&(!data.cta||!data.map||data.cta.y<0||data.cta.y>height-40))throw Error('Ação principal não visível em '+width+': '+JSON.stringify(data));

@@ -303,3 +303,14 @@
  .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-actions{max-height:none!important}
 }
 @media(max-width:360px){.dashboard .ronda-page .patrol-map-clock{min-width:71px;max-width:87px;padding:3px}}
+
+/* Keep preparation and completion controls entirely visible while map remains dominant. */
+@media (max-width:900px){
+ .dashboard .ronda-page .patrol-actions:has(.patrol-mode-toggle),
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions:has(.patrol-mode-toggle){max-height:min(162px,33dvh)!important}
+ .dashboard .ronda-page .patrol-actions:has([data-action="new-session"]),
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions:has([data-action="new-session"]){max-height:min(155px,31dvh)!important}
+ .dashboard .ronda-page .patrol-primary-flow .patrol-mode-toggle{min-height:34px!important;max-height:34px!important}
+ .dashboard .ronda-page .patrol-action-body .patrol-primary-flow{display:flex!important;flex-direction:column!important;gap:3px!important;min-height:0!important}
+ .dashboard .ronda-page .patrol-actions:not(:has(.patrol-mode-toggle)) .patrol-action-body .patrol-primary-flow{gap:2px!important}
+}
