@@ -6,8 +6,10 @@ const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
 const map=readFileSync(new URL('../src/map.js',import.meta.url),'utf8');
 const css=readFileSync(new URL('../assets/horizon-operacional.css',import.meta.url),'utf8');
 
-test('supervisão tem destino mobile Mapa de verdade e visão cartográfica prioritária',()=>{
- assert.match(app,/\['rondas','Mapa','map'\]/);
+test('supervisão tem destino Rondas com agenda principal e aba de mapa operacional',()=>{
+ assert.match(app,/\['rondas','Rondas','map'\]/);
+ assert.match(app,/scheduleTab==='mapa'/);
+ assert.match(app,/data-action="schedule-tab"/);
  const begin=app.indexOf('function rondas(){'),end=app.indexOf('\nfunction ',begin+1),section=app.slice(begin,end);
  assert.ok(begin>0&&end>begin);
  assert.ok(section.indexOf('id="ops-map"')>=0);
