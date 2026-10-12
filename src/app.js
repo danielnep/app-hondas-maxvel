@@ -46,21 +46,7 @@ const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2
 const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
 const helpButton=(topic,label)=>`<button type="button" class="context-help" data-action="feature-help" data-topic="${topic}" aria-label="O que é ${label}?" title="Entenda: ${label}">?</button>`;
-const brand=()=>`<div class="brand horizon-maxvel-brand" aria-label="Maxvel e Horizon">
- <div class="brand-partners">
-  <span class="maxvel-partner" role="img" aria-label="Marca Maxvel: fonte site oficial">
-   <strong class="maxvel-brand-fallback">MAXVEL</strong>
-   <img class="maxvel-official-source" alt="" src="https://maxvelseguranca.com.br/images/banner/01.jpg" loading="eager">
-  </span>
-  <span class="partner-divider" aria-hidden="true"></span>
-  <span class="horizon-partner" aria-label="Horizon Tecnologia">
-   <svg viewBox="0 0 70 48" aria-hidden="true" focusable="false"><path d="M4 39 21 23 36 39 53 11 67 38" fill="none" stroke="#28B6E8" stroke-width="5" stroke-linejoin="miter"/><path d="M4 45H67" stroke="#AFC8D4" stroke-width="2"/></svg>
-   <strong>HORIZON</strong>
-  </span>
- </div>
- <img class="brand-lockup" src="./assets/horizon-maxvel-lockup.svg" alt="" width="390" height="80">
- <span class="brand-compact" aria-hidden="true"><img class="brand-icon" src="./assets/maxvel-icon.svg" alt="" width="37" height="37"><span class="brand-copy"><span class="maxvel-word">HONDAS <strong>MAXVEL</strong></span><span class="brand-by">por <b>HORIZON</b></span></span></span>
- </div>`;
+const brand=()=>'<div class="brand horizon-maxvel-brand" aria-label="Maxvel e Horizon"><div class="brand-partners"><span class="maxvel-partner" aria-label="Maxvel"><strong class="maxvel-wordmark">MAXVEL</strong></span><span class="partner-divider" aria-hidden="true"></span><span class="horizon-partner" aria-label="Horizon"><img class="horizon-real-logo" src="./assets/horizon-logo-transparente.webp" alt="Horizon"></span></div></div>';
 const persisted=loadState();
 let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
 let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule();
@@ -78,11 +64,67 @@ function save(){if(session){const idx=sessions.findIndex(s=>s.id===session.id);i
 function notify(message){toast.textContent=message;toast.classList.add('toast-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('toast-visible'),4900)}
 function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
 function registerMap(id,route,sessionRef=null,position=null,compact=false){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true}))}
+
+/** UX viewport: no document scroll, panels and list page controls remain reachable. */
+let uxOverviewPanel='mapa', uxDialogPage=0;
+const uxListSizes=()=>Math.max(2,Math.min(4,Math.floor((window.innerHeight-250)/85)));
+function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
+ const rows=[...container.querySelectorAll(selector)].filter(e=>e.closest(selector)===e);
+ if(rows.length<=pageSize)return;
+ const dataKey='uxPage'+groupKey;let page=Math.max(0,Math.min(Math.ceil(rows.length/pageSize)-1,Number(container.dataset[dataKey]||0)));
+ const bar=document.createElement('nav');bar.className='ux-row-pagination';bar.setAttribute('aria-label','Páginas da lista');
+ const paint=()=>{
+  rows.forEach((row,i)=>row.hidden=i<page*pageSize||i>=(page+1)*pageSize);
+  bar.innerHTML='<button type="button" data-ux-page="prev" aria-label="Página anterior" '+(page===0?'disabled':'')+'>‹</button><span>Página '+(page+1)+' / '+Math.ceil(rows.length/pageSize)+'</span><button type="button" data-ux-page="next" aria-label="Próxima página" '+(page===Math.ceil(rows.length/pageSize)-1?'disabled':'')+'>›</button>';
+ };
+ bar.addEventListener('click',e=>{const bt=e.target.closest('[data-ux-page]');if(!bt)return;page=Math.max(0,Math.min(Math.ceil(rows.length/pageSize)-1,page+(bt.dataset.uxPage==='next'?1:-1)));container.dataset[dataKey]=String(page);paint();});
+ container.append(bar);paint();
+}
+function installViewportViews(){
+ if(window.innerWidth>900||screen==='landing')return;
+ const main=document.querySelector('.dashboard .app-content');
+ if(!main)return;
+ if(view==='overview'){
+  const root=main.querySelector('.operations-page');
+  if(root){
+   const tabs=[['mapa','Mapa'],['alertas','Alertas'],['historico','Histórico'],['indicadores','Resumo']];
+   const nav=document.createElement('nav');nav.className='ux-operations-tabs';
+   nav.setAttribute('aria-label','Áreas da operação');
+   const nodes={mapa:root.querySelector('.ops-map-card'),alertas:root.querySelector('.ops-activity'),
+    historico:root.querySelector('.ops-recent'),indicadores:root.querySelector('.ops-metrics')};
+   const surface=document.createElement('div');surface.className='ux-operations-surface';
+   for(const [key] of tabs){if(nodes[key]){nodes[key].dataset.uxPane=key;surface.append(nodes[key]);}}
+   const selected=()=>tabs.some(x=>x[0]===uxOverviewPanel)?uxOverviewPanel:'mapa';
+   const paint=()=>{
+    for(const [key] of tabs){if(nodes[key])nodes[key].hidden=selected()!==key;}
+    [...nav.querySelectorAll('button')].forEach(b=>{b.setAttribute('aria-selected',String(b.dataset.uxTab===selected()));});
+    if(selected()==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
+   };
+   nav.innerHTML=tabs.map(([k,label])=>'<button type="button" role="tab" data-ux-tab="'+k+'">'+label+'</button>').join('');
+   nav.addEventListener('click',e=>{const b=e.target.closest('[data-ux-tab]');if(b){uxOverviewPanel=b.dataset.uxTab;paint();}});
+   const selector=root.querySelector('.supervision-context');
+   if(selector)selector.after(nav,surface);else root.prepend(nav,surface);
+   paginateRows(nodes.alertas,'.event-item','Alerts',3);
+   paginateRows(nodes.historico,'tbody tr','Patrols',3);
+   paint();
+  }
+ }
+ if(view==='rondas'){
+  paginateRows(main,'.schedule-row','Programas',3);
+  paginateRows(main,'.map-point-row','Pontos',4);
+  paginateRows(main,'.map-history tbody tr','Historico',3);
+ }
+ if(view==='notificacoes')paginateRows(main,'.event-item','Notificacoes',3);
+ if(view==='ocorrencias')paginateRows(main,'.list-row','Ocorrencias',3);
+ if(view==='registros'||view==='relatorios')paginateRows(main,'tbody tr','Relatorio',3);
+ if(view==='equipe')paginateRows(main,'.team-row','Equipe',4);
+}
+
 function render(){destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(screen==='landing')root.innerHTML=entryScreen();
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
- attachMaps();justRendered=Date.now();
+ installViewportViews();attachMaps();justRendered=Date.now();
 }
 /** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
 function watchesSession(s,watcher){
@@ -127,7 +169,7 @@ function attachMaps(){
  }
 }
 function entryScreen(){
- return `<div class="entry-screen product-home"><header class="entry-topnav topnav">${brand()}<nav class="nav-actions">${btn('Entrar '+ic('arrow'),'login','primary small')}</nav></header><main id="main" class="entry-main"><section class="entry-panel"><div class="entry-identity">${brand()}</div><div class="entry-eyebrow">${ic('shield')} CENTRAL OPERACIONAL</div><h1>Rondas sob controle.<span> Da operação à supervisão.</span></h1><p>Rotas, equipes, horários e ocorrências em uma plataforma. Conheça as funções no próprio aplicativo.</p><div class="entry-actions">${btn('Entrar no sistema '+ic('arrow'),'login','primary full')}<span>${ic('checkcircle')} Acesso de avaliação sem senha</span></div><div class="entry-details"><span>Mapa e pontos</span><span>Rondas programadas</span><span>Equipe e supervisão</span></div></section><aside class="entry-aside"><div class="entry-aside-head"><span class="ops-live-dot"></span> VISÃO OPERACIONAL</div><div class="entry-aside-mark">${ic('map')}</div><div class="entry-aside-stat"><small>Trabalho em campo</small><strong>Ronda · 4 pontos</strong><span>Raio de 25 m · Permanência de 30 s</span></div><div class="entry-aside-footer">Estrutura real da plataforma · registros locais na avaliação</div></aside></main><footer class="entry-footer">Tecnologia Horizon <span>·</span> Hondas Maxvel ${btn('Privacidade','privacy','small')}</footer></div>`;
+ return `<div class="entry-screen product-home"><header class="entry-topnav topnav">${brand()}<nav class="nav-actions">${btn('Entrar '+ic('arrow'),'login','primary small')}</nav></header><main id="main" class="entry-main"><section class="entry-panel"><div class="entry-eyebrow">${ic('shield')} CENTRAL OPERACIONAL</div><h1>Rondas sob controle.<span> Da operação à supervisão.</span></h1><p>Rotas, equipes, horários e ocorrências em uma plataforma. Conheça as funções no próprio aplicativo.</p><div class="entry-actions">${btn('Entrar no sistema '+ic('arrow'),'login','primary full')}<span>${ic('checkcircle')} Acesso de avaliação sem senha</span></div><div class="entry-details"><span>Mapa e pontos</span><span>Rondas programadas</span><span>Equipe e supervisão</span></div></section><aside class="entry-aside"><div class="entry-aside-head"><span class="ops-live-dot"></span> VISÃO OPERACIONAL</div><div class="entry-aside-mark">${ic('map')}</div><div class="entry-aside-stat"><small>Trabalho em campo</small><strong>Ronda · 4 pontos</strong><span>Raio de 25 m · Permanência de 30 s</span></div><div class="entry-aside-footer">Estrutura real da plataforma · registros locais na avaliação</div></aside></main><footer class="entry-footer">Tecnologia Horizon <span>·</span> Hondas Maxvel ${btn('Privacidade','privacy','small')}</footer></div>`;
 }
 
 function landing(){
@@ -366,7 +408,7 @@ function profileDialog(){
  showDialog(`<div class="profile-modal"><div class="profile-heading"><span class="avatar">${esc(user.name.charAt(0).toUpperCase())}</span><div><div class="eyebrow">ACESSO ATUAL</div><div class="profile-name">${esc(user.name)}</div><div class="profile-meta">${esc(roleName[user.role])} · Ambiente de avaliação</div></div></div><div class="profile-actions">${btn(ic('help')+' Rever tutorial','tour-restart','full')}${btn('Guia completo','guide','full')}${btn(ic('shield')+' Privacidade e dados','privacy','full')}${btn(ic('logout')+' Sair deste perfil','logout','full')}</div><p class="map-caption">Os dados desta avaliação ficam neste navegador. O acesso de produção exigirá autenticação.</p></div>`,false);
 }
 function loginDialog(){
- showDialog(`<div class="profile-chooser"><img class="chooser-lockup" src="./assets/horizon-maxvel-lockup.svg" alt="Hondas Maxvel · Tecnologia Horizon"><div class="eyebrow">ACESSO À PLATAFORMA</div><h2>Como deseja acessar?</h2><p>Escolha uma área para conhecer suas funcionalidades. Não é necessário senha nesta versão de avaliação.</p><form id="login-form"><div class="choice-row">${[['ronda','Vigia / Ronda','Minhas rondas e pontos'],['supervisor','Supervisão','Acompanhamento e programação'],['gestor','Gestão','Indicadores e escalas'],['admin','Administração','Todas as ferramentas']].map(([role,title,desc])=>`<label class="choice"><input type="radio" name="role" value="${role}" ${role==='ronda'?'checked':''}><span><strong>${title}</strong><small>${desc}</small></span></label>`).join('')}</div><button type="submit" class="button primary full">Entrar ${ic('arrow')}</button></form><small>Dados fictícios e locais. A operação real exige autenticação segura.</small></div>`,true);
+ showDialog(`<div class="profile-chooser"><div class="eyebrow">ACESSO À PLATAFORMA</div><h2>Como deseja acessar?</h2><p>Escolha uma área para conhecer suas funcionalidades. Não é necessário senha nesta versão de avaliação.</p><form id="login-form"><div class="choice-row">${[['ronda','Vigia / Ronda','Minhas rondas e pontos'],['supervisor','Supervisão','Acompanhamento e programação'],['gestor','Gestão','Indicadores e escalas'],['admin','Administração','Todas as ferramentas']].map(([role,title,desc])=>`<label class="choice"><input type="radio" name="role" value="${role}" ${role==='ronda'?'checked':''}><span><strong>${title}</strong><small>${desc}</small></span></label>`).join('')}</div><button type="submit" class="button primary full">Entrar ${ic('arrow')}</button></form><small>Dados fictícios e locais. A operação real exige autenticação segura.</small></div>`,true);
 }
 function startDialog(){const real=mode==='real'&&!presentation;showDialog(`<div class="eyebrow">ORIENTAÇÕES OBRIGATÓRIAS</div><h2>Antes de iniciar a ronda</h2><ol class="rules"><li><div><strong>Siga a ordem dos pontos</strong><p>O próximo ponto é liberado somente depois do anterior.</p></div></li><li><div><strong>Entre na área delimitada</strong><p>A validação exige localização dentro do raio de 25 metros, com precisão suficiente.</p></div></li><li><div><strong>Permaneça 30 segundos contínuos</strong><p>Se sair ou perder o sinal confiável, a contagem reinicia para garantir o registro.</p></div></li><li><div><strong>Informe desvios e ocorrências</strong><p>Uma saída da rota bloqueia o avanço e pede justificativa. O supervisor recebe o contexto somente nesta simulação.</p></div></li><li><div><strong>Finalize na base</strong><p>Após os pontos, volte à base. Falhas técnicas devem ser analisadas por pessoas.</p></div></li></ol><div class="section-note">${ic('help')}<span>${real?'O aparelho pedirá permissão de localização; a versão nativa Android pode manter um serviço visível em segundo plano durante a ronda. No navegador, o GPS para ao fechar a página.':'O marcador se deslocará sobre um mapa de ruas reais; trajetos e alertas serão simulados. Os 30 segundos serão reais.'}</span></div><label class="check-label"><input type="checkbox" id="declaration-check">Li as orientações e compreendi o funcionamento da ronda.</label>${btn('Confirmar e iniciar '+ic('arrow'),'confirm-start','primary full','disabled')}`,true)}
 function incidentDialog(){if(!session||session.status!=='active'){notify('Inicie uma ronda antes de registrar ocorrência.');return;}showDialog(`<div class="eyebrow">REGISTRO VINCULADO À RONDA</div><h2>Registrar ocorrência</h2><p style="font-size:12px;margin-bottom:15px">Descreva o que foi observado. A notificação será mostrada localmente na supervisão.</p><form id="incident-form"><label class="field">Título<input name="title" required minlength="3" maxlength="100" placeholder="O que aconteceu?"></label><label class="field">Descrição<textarea name="description" required minlength="10" maxlength="1400" placeholder="Informe o que você observou e o contexto."></textarea></label><label class="field">Prioridade<select name="severity"><option>Baixa</option><option selected>Média</option><option>Alta</option></select></label><label class="check-label"><input name="truth" type="checkbox" required>Confirmo que o relato corresponde ao que observei nesta simulação.</label><button type="submit" class="button primary full">Registrar ocorrência ${ic('arrow')}</button></form>`)}
@@ -580,7 +622,7 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='map-help'){showDialog(`<div class="eyebrow">COMO LER O MAPA</div><h2>Localização e pontos de ronda</h2><div class="map-help-list"><p><strong>Mapa de ruas:</strong> base cartográfica OpenStreetMap, com alternativa esquemática se ficar offline.</p><p><strong>Linha tracejada:</strong> ligação ilustrativa entre pontos. Não é uma rota calculada pelas ruas.</p><p><strong>Linha contínua ciano:</strong> posições observadas enquanto a tela está ativa na simulação.</p><p><strong>Círculo ao redor do ponto:</strong> área de validação de 25 m. É necessário permanecer 30 s seguidos, com localização confiável.</p><p><strong>Marcador vermelho:</strong> ponto de evento de desvio registrado para análise. GPS impreciso, por si só, não implica irregularidade.</p></div>${btn('Entendi','close-dialog','primary full')}`);return;}
  if(act==='focus-route-point'){const idx=Number(el.dataset.index);if(!Number.isInteger(idx)||idx<0||idx>=supervisedContext().route.points.length)return;const map=liveMaps.find(m=>m.container?.id==='ops-map');if(!map?.focusPoint(idx))notify('Abra o mapa com conexão para localizar este ponto.');return;}
  if(act==='filter-alerts'){const filter=el.dataset.filter;if(filter!=='pending'&&filter!=='all')return;alertFilter=filter;render();return;}
- if(act==='toggle-patrol-sheet'){patrolSheetCollapsed=!patrolSheetCollapsed;const workspace=document.querySelector('.patrol-workspace');workspace?.classList.toggle('sheet-collapsed',patrolSheetCollapsed);el.setAttribute('aria-expanded',String(!patrolSheetCollapsed));el.textContent=patrolSheetCollapsed?'Mais opções':'Menos opções';liveMaps.forEach(m=>m.invalidate());return;}
+ if(act==='toggle-patrol-sheet'){patrolSheetCollapsed=!patrolSheetCollapsed;render();return;}
  if(act==='center-maps'){liveMaps.forEach(m=>m.fit());return;}
  if(act==='print'){window.print();return;}
  if(act==='clear-prompt'){showDialog(`<h2>Apagar os dados deste navegador?</h2><p>As rondas, justificativas, ocorrências e notificações locais da demonstração serão apagadas.</p><div class="modal-actions">${btn('Cancelar','close-dialog')}${btn('Apagar dados','confirm-clear','danger')}</div>`);return;}
