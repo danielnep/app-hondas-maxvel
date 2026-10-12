@@ -55,6 +55,14 @@ try{
    await state(page,width,height,'06-supervisao');
    await click(page,'[data-view="rondas"]:visible');
    await state(page,width,height,'07-agenda');
+   if(width<=900){
+    const rows=page.locator('.schedule-list .schedule-row');
+    const first=await rows.first().innerText();
+    await page.locator('[data-action="schedule-next"]:visible').first().click({timeout:8000});
+    const changed=await page.locator('.schedule-list .schedule-row').first().innerText();
+    if(first===changed)throw Error('Seta de próxima página não mudou a escala exibida');
+    await page.locator('[data-action="schedule-prev"]:visible').first().click({timeout:8000});
+   }
    await click(page,'[data-action="schedule-tab"][data-tab="mapa"]');
    await state(page,width,height,'08-mapa');
    await click(page,'[data-action="sim-role-picker"]');
