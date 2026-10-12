@@ -106,7 +106,8 @@ try{
    if(!await page.locator('#horizon-tour [data-tour="next"]').count())throw Error('Tour não reabriu');
    await tap(page,'#horizon-tour [data-tour="close"]');
    await capture(page,'reopen-tour',width,height);
-   await tap(page,'[data-action="end-presentation"]');
+   await tap(page,'.app-header [data-action="profile-menu"]');
+   await tap(page,'#dialog [data-action="logout"]');
    if(!await page.locator('.entry-screen').count())throw Error('Sair não retornou ao login do app');
    if(errors.length)throw Error('JS: '+errors.join(' | ').slice(0,600));
   }catch(error){report.push({width,height,error:String(error),console:errors});throw error}
