@@ -5,15 +5,7 @@ export const DEMO_WATCHERS=Object.freeze([
  {id:'v01',name:'Lucas Ferreira',unit:'Unidade Centro'},
  {id:'v02',name:'Ana Beatriz',unit:'Unidade Centro'},
  {id:'v03',name:'Rafael Costa',unit:'Unidade Centro'},
- {id:'v04',name:'Mariana Alves',unit:'Unidade Centro'},
- {id:'v05',name:'Paulo Henrique',unit:'Unidade Norte'},
- {id:'v06',name:'Camila Rocha',unit:'Unidade Norte'},
- {id:'v07',name:'André Martins',unit:'Unidade Norte'},
- {id:'v08',name:'Fernanda Lima',unit:'Unidade Norte'},
- {id:'v09',name:'Bruno Souza',unit:'Unidade Industrial'},
- {id:'v10',name:'Patrícia Gomes',unit:'Unidade Industrial'},
- {id:'v11',name:'Diego Oliveira',unit:'Unidade Industrial'},
- {id:'v12',name:'Letícia Santos',unit:'Unidade Industrial'}
+ {id:'v04',name:'Mariana Alves',unit:'Unidade Centro'}
 ]);
 export const DEMO_ROUTES=Object.freeze([
  {id:'centro',name:'Rota Centro · Perímetro',unit:'Unidade Centro'},
@@ -55,7 +47,19 @@ export function routeForWatcher(watcherId,routeId){
   legs:base.legs.map(leg=>leg.map(transform))};
 }
 export function routeForProgram(program){
- return routeForWatcher(program?.watcherId,program?.routeId);
+ const generated=routeForWatcher(program?.watcherId,program?.routeId);
+ const custom=program?.customRoute;
+ if(!custom||!Array.isArray(custom.points)||!custom.points.length)return generated;
+ const valid=custom.points.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&
+ Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180).slice(0,8);
+ if(!valid.length)return generated;
+ const pts=valid.map((p,i)=>({id:'custom-'+(i+1),name:String(p.name||'Ponto '+(i+1)).slice(0,70),
+  instruction:'Permanecer no local durante a verificação.',lat:p.lat,lng:p.lng,radius:25}));
+ const base={...generated.base,lat:pts[0].lat-.00025,lng:pts[0].lng-.00025};
+ const nodes=[base,...pts,base];
+ const legs=nodes.slice(0,-1).map((p,i)=>[{lat:(p.lat+nodes[i+1].lat)/2,lng:(p.lng+nodes[i+1].lng)/2}]);
+ return {...generated,id:'personalizada-'+(program.id||program.watcherId),name:'Ronda personalizada · '+(watcherById(program.watcherId)?.name||'Vigia'),
+  base,points:pts,legs,rules:{...(custom.rules||{})}};
 }
 export function demoSchedule(now=Date.now()){
  const today=new Date(now);today.setHours(0,0,0,0);
@@ -108,7 +112,8 @@ export function createPrograms(candidate,existing,now=Date.now()){
   const row={id:'program-'+now+'-'+i+'-'+Math.random().toString(36).slice(2,8),
     watcherId:candidate.watcherId,routeId:candidate.routeId,
     startAt:start.getTime(),endAt:end.getTime(),notes:String(candidate.notes??'').slice(0,240),
-    status:'scheduled',createdAt:now};
+    status:'scheduled',createdAt:now,customRoute:candidate.customRoute
+      ?JSON.parse(JSON.stringify(candidate.customRoute)):undefined};
   const error=validateProgram(row,list,now);
   if(error)return {ok:false,error,items:[]};
   list.push(row);created.push(row);
