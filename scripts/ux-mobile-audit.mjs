@@ -61,6 +61,8 @@ try{
    await revealDialogControl(page,'#dialog [data-action="confirm-start"]');
    await click(page,'[data-action="confirm-start"]');
    await state(page,width,height,'05-ronda-ativa');
+   if(width<=900&&await page.locator('#dialog').evaluate(el=>!el.open&&getComputedStyle(el).display!=='none'))
+    throw Error('Diálogo fechado está ocupando altura fora da tela');
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="supervisor"]');
    await state(page,width,height,'06-supervisao');
