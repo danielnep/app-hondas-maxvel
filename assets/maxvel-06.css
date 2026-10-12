@@ -304,3 +304,9 @@ dialog.ux06-fullscreen:not([open]),dialog.ux06-fullscreen.ux-dialog-paging:not([
    flex:1 1 0%!important;min-height:0!important;margin-bottom:0!important;
  }
 }
+
+/* More-specific legacy simulation rule placed alerts at 128px; override deliberately. */
+.simulation-running #toast,.dashboard.simulation-running #toast{
+ top:calc(env(safe-area-inset-top,0px) + 15px)!important;bottom:auto!important;
+ left:50%!important;right:auto!important;transform:translateX(-50%)!important;
+}
