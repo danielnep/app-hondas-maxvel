@@ -66,7 +66,8 @@ try{
    const reason=page.locator('#justification-form textarea').first();
    await reason.fill('Desvio ilustrativo para conferir uma situação no perímetro.');
    await tap(page,'#justification-form button[type="submit"]');
-   await tap(page,'[data-action="sim-role"][data-role="supervisor"]');
+   await tap(page,'[data-action="sim-role-picker"]');
+   await tap(page,'#dialog [data-action="sim-role"][data-role="supervisor"]');
    await capture(page,'supervisor',width,height);
    await tap(page,'[data-view="rondas"]:visible');
    if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Agenda sem múltiplos vigias');
@@ -91,9 +92,12 @@ try{
    await tap(page,'[data-action="program-edit-confirm"]');
    if(!await page.locator('.schedule-row [data-action="program-edit"][data-id^="program-"]').count())throw Error('Ronda reprogramada sumiu da agenda');
    await capture(page,'agenda-filtrada',width,height);
-   await tap(page,'[data-action="sim-role"][data-role="gestor"]');
-   await tap(page,'[data-action="sim-role"][data-role="admin"]');
-   await tap(page,'[data-action="sim-role"][data-role="ronda"]');
+   await tap(page,'[data-action="sim-role-picker"]');
+   await tap(page,'#dialog [data-action="sim-role"][data-role="gestor"]');
+   await tap(page,'[data-action="sim-role-picker"]');
+   await tap(page,'#dialog [data-action="sim-role"][data-role="admin"]');
+   await tap(page,'[data-action="sim-role-picker"]');
+   await tap(page,'#dialog [data-action="sim-role"][data-role="ronda"]');
    await tap(page,'.patrol-map-heading [data-action="feature-help"]');
    if(!await page.locator('#dialog[open] .help-detail').count())throw Error('Ajuda contextual ? inativa');
    await tap(page,'#dialog [data-action="close-dialog"]');
