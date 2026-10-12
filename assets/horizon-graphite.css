@@ -308,3 +308,11 @@ dialog .modal-actions{border-color:#40576A}
  .entry-screen .entry-details{display:none}
  .entry-screen .entry-panel h1{font-size:29px}
 }
+
+
+.simulation-roles .role-short{display:none}
+@media(max-width:540px){
+ .simulation-roles .role-long{display:none}
+ .simulation-roles .role-short{display:inline;font-size:10px;letter-spacing:0}
+ .dashboard .simulation-roles button{flex-direction:column;gap:2px;min-width:0}
+}
