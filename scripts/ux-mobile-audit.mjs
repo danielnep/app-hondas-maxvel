@@ -21,6 +21,20 @@ async function revealDialogControl(page,selector){
  }
  throw Error('Paginação excessiva no diálogo: '+selector);
 }
+async function checkInteractiveBounds(page,label){
+ const overflow=await page.evaluate(()=>{
+  const main=document.querySelector('.dashboard .app-content');if(!main)return [];
+  const bound=main.getBoundingClientRect();
+  return [...main.querySelectorAll('button,input,select,textarea')]
+   .filter(el=>{
+    if(el.closest('[hidden]')||!el.getClientRects().length)return false;
+    const style=getComputedStyle(el),box=el.getBoundingClientRect();
+    return style.visibility!=='hidden'&&style.display!=='none'&&(box.top<bound.top-4||box.bottom>bound.bottom+4);
+   }).slice(0,6).map(el=>({element:el.outerHTML.slice(0,115),y:Math.round(el.getBoundingClientRect().y),
+     bottom:Math.round(el.getBoundingClientRect().bottom)}));
+ });
+ if(overflow.length)throw Error('Ações cortadas em '+label+': '+JSON.stringify(overflow));
+}
 async function state(page,width,height,name){
  const data=await page.evaluate(()=>{
   const box=sel=>{const e=document.querySelector(sel);if(!e)return null;const r=e.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
@@ -101,10 +115,33 @@ try{
    if(!await page.locator('.v4-insights-pane:not([hidden]) .v4-insight-row').count())
     throw Error('Insights da Gestão não acessíveis por aba');
    await state(page,width,height,'09b-insights-gestao');
+   if(width<=900)await checkInteractiveBounds(page,'gestão / insights');
+   await click(page,'[data-v4-tab="resumo"]');
+   if(width<=900)await checkInteractiveBounds(page,'gestão / resumo');
+
 
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await state(page,width,height,'10-admin');
+   if(width<=900){
+    await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+    await click(page,'#dialog [data-view="relatorios"]');
+    await state(page,width,height,'11-relatorios');
+    await checkInteractiveBounds(page,'relatório / resumo');
+    for(const tab of ['analise','eventos','historico']){
+     await click(page,'[data-ux-report-tab="'+tab+'"]');
+     await checkInteractiveBounds(page,'relatório / '+tab);
+    }
+    await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+    await click(page,'#dialog [data-view="equipe"]');
+    await state(page,width,height,'12-equipe');
+    await checkInteractiveBounds(page,'equipe');
+    await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+    await click(page,'#dialog [data-view="configuracoes"]');
+    await state(page,width,height,'13-configuracoes');
+    await checkInteractiveBounds(page,'configurações');
+   }
+
    if(errors.length)throw Error('Erros JS: '+errors.join('; '));
   }catch(e){fatal++;metrics.push({width,height,error:String(e),consoleErrors:errors});}
   finally{await context.close()}
