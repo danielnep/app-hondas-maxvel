@@ -1,4 +1,11 @@
 # PROTOCOLO VISUAL APRIMORADO · HONDAS MAXVEL
+
+> **ATUALIZAÇÃO OBRIGATÓRIA DE DIREÇÃO · 11/10/2026**
+>
+> O usuário corrigiu o briefing: **DARK É PREDOMINANTE. BRANCO É MINORIA.** O tema oficial em planejamento é Horizon Graphite Dark, baseado em cinza-escuro/grafite com azul Horizon e textos de alto contraste. Desconsiderar qualquer leitura anterior deste documento que sugira predominância de superfícies brancas ou uma interface majoritariamente azul-marinho. Preto puro, cartões brancos em massa e neon decorativo não são a solução. **A paleta está em estudo e NÃO foi aplicada ao aplicativo nesta etapa.**
+>
+> **ETAPA P00 (PESQUISA) CONCLUÍDA:** [fontes externas, análise do CSS atual, matriz de contraste e critérios](PESQUISA-VISUAL-DARK-2026.md). Toda implementação futura só avança após estudo próprio da fase, execução, evidências e aprovação. O primeiro impedimento é a regressão responsiva do lockup em 430px e a auditoria desatualizada.
+
 **Padrão Horizon | Versão 2.1 | 11/10/2026**
 
 ## 1. Missão
@@ -16,9 +23,9 @@ Reaproveitar o **método de análise, rigor de dados, minimalismo executivo, int
 7. Uma tarefa por vez: **investigar → planejar → implementar → medir → validar → documentar → fechar**. A próxima só começa quando a anterior cumprir os critérios e evidências no GitHub.
 
 ## 2. Direção visual desejada
-**Horizon Operacional Premium:** superfícies azul-marinho estruturais; painéis de leitura gelo/branco; azul elétrico para ação; ciano reservado ao mapa e aos estados de localização. Bordas discretas, tipografia legível, sombras cuidadosas, movimentos funcionais e espaçamento disciplinado.
+**Horizon Graphite Dark:** superfícies grafite/cinza-escuro dominantes; painéis escuros em tons distintos; textos claros; azul Horizon para ações e ciano apenas em GPS/mapa. Branco/gelo em minoria, não como fundo dominante. Bordas discretas, tipografia legível, sombras cuidadosas, movimentos funcionais e espaçamento disciplinado.
 
-**Papel da identidade:** Maxvel é o produto. Horizon aparece em lockup de cabeçalho, entrada e assinatura técnica institucional, com proporção correta em telas compactas. O ícone isolado é apropriado para favicon e launcher; o lockup horizontal é apropriado para interfaces largas, com variante compacta estreita. Criar versão claro/escuro/monocromática se necessário, sem tratar o lockup gerado anteriormente como logo corporativo oficialmente aprovado sem validação do cliente.
+**Papel da identidade:** o lockup deve ser testado no fundo grafite, nunca ampliar a largura da viewport nem cobrir botões. Maxvel é o produto. Horizon aparece em lockup de cabeçalho, entrada e assinatura técnica institucional, com proporção correta em telas compactas. O ícone isolado é apropriado para favicon e launcher; o lockup horizontal é apropriado para interfaces largas, com variante compacta estreita. Criar versão claro/escuro/monocromática se necessário, sem tratar o lockup gerado anteriormente como logo corporativo oficialmente aprovado sem validação do cliente.
 
 **Camadas de conteúdo**
 - Nível 1: situação atual + próxima ação disponível; botão principal acessível.
@@ -72,7 +79,7 @@ A execução **[Auditoria UI UX mobile #38184896604](https://github.com/danielne
 | **V07** | Supervisão, Gestão, Administração e desktop | Quatro perfis, alertas sincronizados localmente, métricas reais do cenário, layout adaptativo |
 | **V08** | Auditoria final, evidências visuais e documentação | Playwright, contraste/axe, capturas antes/depois, Android debug e limitações operacionais explícitas |
 
-**Porta comum de aprovação:** cada issue deve conter (a) o problema, (b) arquivos e alterações concretas, (c) casos de teste e capturas, (d) resultados das ferramentas, (e) limitações e (f) link ao commit. Somente então marcar concluída e começar a próxima.
+**Porta comum de aprovação:** é obrigatória pesquisa das melhores práticas do componente a implementar, além do estudo P00. Cada issue deve conter (a) o problema, (b) arquivos e alterações concretas, (c) casos de teste e capturas, (d) resultados das ferramentas, (e) limitações e (f) link ao commit. Somente então marcar concluída e começar a próxima.
 
 ## 8. Fontes de referência do próprio projeto
 - `docs/PESQUISA-UX-MOBILE-2026.md`
