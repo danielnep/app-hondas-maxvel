@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
-<title id="title">Hondas Maxvel</title><desc id="desc">Marco de localização com bússola sobre horizonte azul.</desc>
+<title id="title">Ronda Pró</title><desc id="desc">Marco de localização com bússola sobre horizonte azul.</desc>
 <defs>
  <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".52" stop-color="#e6f6ff"/><stop offset="1" stop-color="#a7dbfb"/></linearGradient>
  <linearGradient id="pin" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#51d4f8"/><stop offset=".48" stop-color="#0786e5"/><stop offset="1" stop-color="#0751a6"/></linearGradient>

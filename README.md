@@ -1,6 +1,6 @@
-# App Hondas Maxvel · desenvolvido por Horizon
+# Ronda Pró · desenvolvido por Horizon para Maxvel
 
-Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Horizon (branco, azul celeste e azul-prateado), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
+Aplicativo **Ronda Pró**, uma demonstração profissional de **acompanhamento de rondas** criada pela Horizon para Maxvel. O projeto conserva o nome técnico anterior do repositório para manter os links e integrações. Interface mobile-first com identidade Horizon (branco, azul celeste e azul-prateado), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
 ## Revisão de clareza operacional · 12/10/2026
 
@@ -14,7 +14,7 @@ A função R4 de verificação de ponto apresenta **cinco etapas simuladas** (fr
 
 ## Plataforma Graphite Dark · outubro de 2026
 
-**Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o lockup **Hondas Maxvel × Horizon**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
+**Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o lockup **Ronda Pró · Maxvel × Horizon**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
 
 - **Tutorial opcional por destaque:** cortina fosca translúcida, avanço por **Entendi · continuar**, fechamento livre e comando **Rever tutorial** no topo e menu lateral. Botões discretos `?` abrem ajuda por função.
 - **Graphite Dark:** grafite e cinza-escuro predominantes, azul Horizon nas ações, branco reservado principalmente ao texto; o mapa conserva cartografia legível.
@@ -31,7 +31,7 @@ A função R4 de verificação de ponto apresenta **cinco etapas simuladas** (fr
 
 A interface desta versão foi **reestruturada no código**, não produzida apenas como imagem:
 
-- Entrada de produto com identidade **Hondas Maxvel · Horizon**, iconografia própria e mapa de ruas reais.
+- Entrada de produto com identidade **Ronda Pró · Maxvel × Horizon**, iconografia própria e mapa de ruas reais.
 - Painel de operações com quatro métricas calculadas, mapa ampliado, alertas, tabela de rondas e linha do tempo.
 - Entrada no **próprio aplicativo**, com escolha de perfil e dados ilustrativos identificados, sem apresentação comercial paralela.
 - Tela de ronda móvel com estado, próximo ponto, progresso, mapa amplo, círculos de 25 m e orientação contextual.
