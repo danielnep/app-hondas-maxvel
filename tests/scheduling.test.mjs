@@ -32,6 +32,7 @@ test('impede choque de horário do mesmo vigia, permite outro vigia',()=>{
  assert.equal(made.ok,true);
  assert.match(validateProgram(p,made.items,now),/outra ronda/);
  assert.equal(validateProgram({...p,watcherId:'v02'},made.items,now),null);
+ assert.match(validateProgram({...p,routeId:'norte'},[],now),/unidade/);
  assert.equal(validateProgram({...p,startAt:now-120000},[],now),'Escolha um horário atual ou futuro.');
 });
 test('recorrência é validada de maneira atômica e cancelamento preserva histórico',()=>{
