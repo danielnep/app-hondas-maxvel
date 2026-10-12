@@ -1040,3 +1040,18 @@ dialog p{color:var(--hx-muted)}
 }
 
 .sim-onboarding .onboarding-lockup{display:block;width:min(100%,300px);height:auto;aspect-ratio:780/160;object-fit:contain;object-position:left;background:#102E4B;border-radius:13px;padding:7px 11px;margin:0 0 13px}
+
+
+/* V01: corrigir flex intrinsic sizing do lockup; não cobrir o botão de entrada. */
+@media(max-width:900px){
+ .product-home .topnav{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;width:100%;max-width:100%;min-width:0;gap:8px;}
+ .product-home .topnav .horizon-maxvel-brand{flex:1 1 0;min-width:0;width:0;max-width:none;overflow:hidden;pointer-events:none;}
+ .product-home .topnav .horizon-maxvel-brand .brand-lockup{display:block;max-width:100%;width:100%;min-width:0;height:auto;object-fit:contain;}
+ .product-home .topnav .nav-actions{display:flex;position:relative;z-index:2;flex:0 0 auto;min-width:0;gap:6px;}
+ .product-home .topnav .nav-actions .button{white-space:nowrap;min-height:44px;min-width:44px;}
+}
+@media(max-width:390px){
+ .product-home .topnav .horizon-maxvel-brand .brand-lockup{display:none;}
+ .product-home .topnav .horizon-maxvel-brand .brand-compact{display:flex;min-width:0;overflow:hidden;}
+ .product-home .topnav .horizon-maxvel-brand .brand-compact .brand-copy{min-width:0;white-space:nowrap;}
+}
