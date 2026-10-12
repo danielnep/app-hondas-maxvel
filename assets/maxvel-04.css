@@ -140,3 +140,6 @@
  .dashboard .ux-report-summary .kpi strong{font-size:20px!important}
  .dashboard .ux-report-summary .kpi em{font-size:9px!important}
 }
+
+/* Fechar um dialog remove completamente sua caixa, inclusive após paginação. */
+dialog.ux-dialog-paging:not([open]){display:none!important}
