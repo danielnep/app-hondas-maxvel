@@ -77,6 +77,20 @@ try{
    await tap(page,'#program-form button[type="submit"]');
    if(!await page.locator('[data-action="program-confirm"]').count())throw Error('Confirmação do agendamento ausente');
    await tap(page,'[data-action="program-confirm"]');
+   // Filtro de grandes agendas + reprogramação com confirmação e preservação do vínculo.
+   await page.locator('[data-schedule-unit]').selectOption('Unidade Centro');
+   await page.locator('[data-schedule-watcher]').selectOption('v01');
+   await page.locator('[data-schedule-filter]').selectOption('programada');
+   const localEdit=page.locator('.schedule-row [data-action="program-edit"][data-id^="program-"]');
+   if(!await localEdit.count())throw Error('A ronda recém-programada não é encontrada ao filtrar por vigia');
+   await tap(page,'.schedule-row [data-action="program-edit"][data-id^="program-"]');
+   await page.locator('#program-edit-form [name="startAt"]').fill('2027-08-15T10:30');
+   await page.locator('#program-edit-form [name="endAt"]').fill('2027-08-15T11:15');
+   await tap(page,'#program-edit-form button[type="submit"]');
+   if(!await page.locator('[data-action="program-edit-confirm"]').count())throw Error('Reprogramar não solicitou confirmação');
+   await tap(page,'[data-action="program-edit-confirm"]');
+   if(!await page.locator('.schedule-row [data-action="program-edit"][data-id^="program-"]').count())throw Error('Ronda reprogramada sumiu da agenda');
+   await capture(page,'agenda-filtrada',width,height);
    await tap(page,'[data-action="sim-role"][data-role="gestor"]');
    await tap(page,'[data-action="sim-role"][data-role="admin"]');
    await tap(page,'[data-action="sim-role"][data-role="ronda"]');
