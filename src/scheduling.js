@@ -60,6 +60,7 @@ export function validateProgram(candidate,programs,now=Date.now()){
  const startAt=Number(candidate.startAt),endAt=Number(candidate.endAt);
  if(!watcherById(watcherId))return 'Selecione um vigia válido.';
  if(!routeById(routeId))return 'Selecione uma rota válida.';
+ if(watcherById(watcherId).unit!==routeById(routeId).unit)return 'Escolha uma rota pertencente à unidade do vigia.';
  if(!Number.isFinite(startAt)||!Number.isFinite(endAt)||endAt<=startAt||endAt-startAt>12*3600000)return 'Informe início e término válidos (até 12 horas).';
  if(startAt<now-60000)return 'Escolha um horário atual ou futuro.';
  if(programs.some(p=>p.status!=='cancelled'&&p.watcherId===watcherId&&startAt<p.endAt&&endAt>p.startAt))
