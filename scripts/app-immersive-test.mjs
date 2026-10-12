@@ -76,16 +76,19 @@ try{
    if(width<=900&&await page.locator('#dialog').evaluate(el=>!el.open&&getComputedStyle(el).display!=='none'))
     throw Error('Janela fechada ainda ocupa layout após iniciar ronda');
    await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');
-   await tap(page,'.patrol-actions [data-action="point-evidence"]');
+   if(width<=900)await tap(page,'#dialog [data-action="point-evidence"]');
+   else await tap(page,'.patrol-actions [data-action="point-evidence"]');
    for(const direction of ['front','right','back','left','selfie'])await tap(page,'#dialog [data-action="demo-capture"][data-direction="'+direction+'"]');
    await tap(page,'#dialog [data-action="demo-rotation"]');
    await tap(page,'#dialog [data-action="demo-evidence-confirm"]');
-   await tap(page,'.patrol-actions [data-action="incident-form"]');
+   if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="incident-form"]');}
+   else await tap(page,'.patrol-actions [data-action="incident-form"]');
    await (await revealDialogControl(page,'#incident-form [name="title"]')).fill('Luz de acesso apagada');
    await (await revealDialogControl(page,'#incident-form [name="description"]')).fill('Iluminação do portão em desacordo no cenário de demonstração.');
    await (await revealDialogControl(page,'#incident-form [name="truth"]')).check();
    await tap(page,'#incident-form button[type="submit"]');
-   await tap(page,'.patrol-actions [data-action="demo-leave"]');
+   if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="demo-leave"]');}
+   else await tap(page,'.patrol-actions [data-action="demo-leave"]');
    await wait(7400);
    await capture(page,'deviation',width,height);
    if(!await page.locator('.patrol-actions [data-action="justify"]').count())throw Error('Desvio não exigiu justificativa');
@@ -135,7 +138,7 @@ try{
    await tap(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await tap(page,'[data-action="sim-role-picker"]');
    await tap(page,'#dialog [data-action="sim-role"][data-role="ronda"]');
-   await tap(page,'.patrol-map-heading [data-action="feature-help"]');
+   await tap(page,width<=900?'.patrol-map-canvas [data-action="feature-help"]':'.patrol-map-heading [data-action="feature-help"]');
    if(!await page.locator('#dialog[open] .help-detail').count())throw Error('Ajuda contextual ? inativa');
    await tap(page,'#dialog [data-action="close-dialog"]');
    await tap(page,'.app-header [data-action="tour-restart"]');
