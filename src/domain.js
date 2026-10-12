@@ -53,7 +53,8 @@ export function distanceToSegment(p,a,b){
 export const corridorDistance=(fix,route)=>Math.min(...routeWaypoints(route).slice(1).map((point,i)=>distanceToSegment(fix,routeWaypoints(route)[i],point)));
 export const accurateFix=(fix,now)=>!!fix&&Number.isFinite(fix.lat)&&Number.isFinite(fix.lng)&&Number.isFinite(fix.accuracy)&&fix.accuracy>=0&&fix.accuracy<=MAX_ACCURACY_METERS&&Number.isFinite(fix.at)&&fix.at<=now&&now-fix.at<=MAX_FIX_AGE_MS;
 export const currentCheckpoint=session=>session?.route.points[session.index]??null;
-export const hasBlock=session=>session.deviations.some(d=>!d.justification||!d.returnedAt);
+export const requiredDwellMs=session=>Math.min(120000,Math.max(5000,Number(session?.route?.rules?.dwellMs)||DWELL_MS));
+export const hasBlock=session=>session?.route?.rules?.blockOnDeviation===false?false:session.deviations.some(d=>!d.justification||!d.returnedAt);
 export const progressPercent=session=>Math.round(session.index/session.route.points.length*100);
 const id=()=>globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -81,7 +82,7 @@ export function updateLocation(s,fix,now=Date.now()){
   if(outside){
     s.insideSince=null;
     if(point)s.checkpoints[s.index].dwellMs=0;
-    if(!hasBlock(s)&&!s.deviations.some(d=>!d.returnedAt)){
+    if(s.route.rules?.logDeviations!==false&&!hasBlock(s)&&!s.deviations.some(d=>!d.returnedAt)){
       const d={id:id(),at:now,pointId:point?.id??s.route.base.id,pointName:point?.name??s.route.base.name,
        reason:'Saída do corredor da rota',distance:Math.round(corridorDistance(fix,s.route)),position:{lat:fix.lat,lng:fix.lng},
        justification:'',justifiedAt:null,returnedAt:null};
@@ -102,12 +103,12 @@ export function updateLocation(s,fix,now=Date.now()){
   const inside=distanceMeters(fix,point)<=point.radius;
   if(!inside){s.insideSince=null;s.checkpoints[s.index].dwellMs=0;return {valid:true,inside:false,outside:false};}
   if(s.insideSince===null)s.insideSince=now;
-  s.checkpoints[s.index].dwellMs=Math.max(0,Math.min(DWELL_MS,now-s.insideSince));
+  s.checkpoints[s.index].dwellMs=Math.max(0,Math.min(requiredDwellMs(s),now-s.insideSince));
   return {valid:true,inside:true,outside:false};
 }
 export function canCompletePoint(s){
   return s.status==='active'&&!!currentCheckpoint(s)&&s.insideSince!==null&&
-    s.checkpoints[s.index].dwellMs>=DWELL_MS&&!hasBlock(s);
+    s.checkpoints[s.index].dwellMs>=requiredDwellMs(s)&&!hasBlock(s);
 }
 export function completePoint(s,now=Date.now()){
   if(!canCompletePoint(s))return false;
