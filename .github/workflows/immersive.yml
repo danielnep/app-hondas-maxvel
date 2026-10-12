@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, maxvel-06-ux-mobile]
     paths:
       - 'scripts/app-immersive-test.mjs'
       - 'src/app.js'
