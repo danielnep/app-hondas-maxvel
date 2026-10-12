@@ -39,6 +39,12 @@ button,input,select,textarea{font:inherit}
 .dashboard .card strong,.dashboard .card h2,.dashboard .card h3,.dashboard .operations-page h1,.dashboard .operations-page h2,.dashboard .report-page h1,.dashboard .report-page h2,.dashboard .page-title h1{color:var(--ui-text)}
 .dashboard .card p,.dashboard .page-title p,.dashboard .card small,.dashboard .operations-page small,.dashboard .report-page small{color:var(--ui-muted)}
 .dashboard .section-note,.dashboard .empty,.dashboard .ops-scenario-banner,.dashboard .map-command-disclosure,.dashboard .map-point-note{background:var(--ui-panel-2);color:var(--ui-muted);border-color:var(--ui-border)}
+.dashboard .ops-empty-state{display:flex;justify-content:space-between;align-items:center;gap:13px;padding:11px 15px;margin:8px 0 15px;background:#1C2A37;border-left:3px solid #398FC8;border-radius:9px;color:var(--ui-muted);font-size:12px}
+.dashboard .ops-empty-state>span{display:flex;align-items:center;gap:9px;line-height:1.5}
+.dashboard .ops-empty-state svg{width:17px;height:17px;flex-shrink:0;color:#85D9F7}
+.dashboard .ops-empty-state .button{flex-shrink:0;min-height:43px}
+@media(max-width:600px){.dashboard .ops-empty-state{align-items:stretch;flex-direction:column}.dashboard .ops-empty-state .button{width:100%}}
+
 .dashboard .ops-topline{background:#1D303F!important;color:var(--ui-text);border:1px solid var(--ui-border);border-radius:12px}
 .dashboard .ops-topline span,.dashboard .ops-topline-right{color:var(--ui-muted)}
 .dashboard .ops-workspace,.dashboard .map-command-page{color:var(--ui-text)}
