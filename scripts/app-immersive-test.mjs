@@ -23,6 +23,16 @@ async function enter(page,role='ronda'){
  const tourClose=page.locator('#horizon-tour [data-tour="close"]');
  if(await tourClose.count())await tap(page,'#horizon-tour [data-tour="close"]');
 }
+async function revealDialogControl(page,selector){
+ for(let step=0;step<10;step++){
+  const control=page.locator(selector).first();
+  if(await control.isVisible())return control;
+  const next=page.locator('#dialog [data-dialog-page="next"]:visible:not(:disabled)').first();
+  if(!await next.count())throw Error('Campo inacessível no diálogo: '+selector);
+  await next.click({timeout:4000});
+ }
+ throw Error('Paginação excessiva no diálogo: '+selector);
+}
 async function capture(page,name,width,height){
  const metrics=await page.evaluate(()=>{
   const box=selector=>{const el=document.querySelector(selector);if(!el)return null;const r=el.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
@@ -59,7 +69,8 @@ try{
    await capture(page,'ronda',width,height);
    if(!await page.locator('.my-schedule').count())throw Error('Página do vigia sem rondas programadas');
    await tap(page,'.patrol-actions [data-action="start"]');
-   await page.locator('#dialog #declaration-check').check();
+   await (await revealDialogControl(page,'#dialog #declaration-check')).check();
+   await revealDialogControl(page,'#dialog [data-action="confirm-start"]');
    await tap(page,'[data-action="confirm-start"]');
    await capture(page,'active',width,height);
    await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');

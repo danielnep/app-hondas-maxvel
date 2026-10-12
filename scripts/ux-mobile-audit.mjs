@@ -11,6 +11,16 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900],[1920,1080]];
 const metrics=[];let fatal=0;
 async function click(page,selector){await page.locator(selector).first().click({timeout:10000});await wait(130)}
+async function revealDialogControl(page,selector){
+ for(let step=0;step<10;step++){
+  const control=page.locator(selector).first();
+  if(await control.isVisible())return control;
+  const next=page.locator('#dialog [data-dialog-page="next"]:visible:not(:disabled)').first();
+  if(!await next.count())throw Error('Campo inacessível no diálogo: '+selector);
+  await next.click({timeout:4000});
+ }
+ throw Error('Paginação excessiva no diálogo: '+selector);
+}
 async function state(page,width,height,name){
  const data=await page.evaluate(()=>{
   const box=sel=>{const e=document.querySelector(sel);if(!e)return null;const r=e.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
@@ -47,7 +57,8 @@ try{
    }
    await state(page,width,height,'04-ronda');
    await click(page,'.patrol-actions [data-action="start"]');
-   await page.locator('#dialog #declaration-check').check();
+   await (await revealDialogControl(page,'#dialog #declaration-check')).check();
+   await revealDialogControl(page,'#dialog [data-action="confirm-start"]');
    await click(page,'[data-action="confirm-start"]');
    await state(page,width,height,'05-ronda-ativa');
    await click(page,'[data-action="sim-role-picker"]');
