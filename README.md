@@ -2,6 +2,10 @@
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Horizon (branco, azul celeste e azul-prateado), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
+## Decisão de escopo · 12/10/2026
+
+**Não haverá captura de fotografias nem selfies no aplicativo.** A validação dos pontos permanece baseada em GPS, precisão, geocerca de 25 m, permanência contínua de 30 segundos, sequência e justificativas de exceção. A exigência de quatro fotos, selfie e giro do telefone presente em uma proposta anterior foi **cancelada** pelo cliente e não será implementada. A simulação continua identificada como ilustrativa.
+
 ## Plataforma Graphite Dark · outubro de 2026
 
 **Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o lockup **Hondas Maxvel × Horizon**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
