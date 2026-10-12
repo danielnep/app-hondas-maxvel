@@ -23,7 +23,8 @@ test('mapa não confunde linha de cenário com trajeto roteado por ruas',()=>{
  assert.match(app,/a linha entre os pontos é apenas ilustrativa/);
  assert.match(app,/Traçado ilustrativo/);
  assert.match(app,/Posição percorrida/);
- assert.match(map,/STRAIGHT SEGMENTS/);
+ assert.match(map,/INTERMEDIATE WAYPOINTS/);
+ assert.match(map,/routeWaypoints\(this\.route\)/);
  assert.match(map,/OpenStreetMap contributors/);
  assert.match(map,/focusPoint\(index\)/);
  assert.match(map,/this\.pointMarkers\[index\+1\]/);
