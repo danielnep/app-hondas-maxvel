@@ -681,3 +681,18 @@ dialog .modal-actions{border-color:#40576A}
 .evidence-demo-motion{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #456377;padding:11px;border-radius:9px}
 .evidence-demo-note{font-size:11px;line-height:1.5;color:#a9bfcf}
 @media(max-width:400px){.evidence-demo-row>.button,.evidence-demo-motion>.button{min-width:83px;padding-inline:8px}}
+
+/* R5 · Tratamento de ocorrências na mesma interface enxuta. */
+.incident-review-dialog{display:grid;gap:10px}
+.incident-review-dialog>p{font-size:13px;line-height:1.45;color:#d1e1ec}
+.incident-review-tags{display:flex;gap:8px;flex-wrap:wrap}
+.incident-review-dialog .detail-pair{padding:6px 0;border-bottom:1px solid #405568}
+.incident-review-dialog form{display:grid;gap:10px;margin:12px 0 6px}
+.incident-review-dialog form .field{display:grid;gap:5px;color:#cce0ef;font-size:12px}
+.incident-review-dialog form :is(input,textarea,select){width:100%;min-height:44px;padding:10px;background:#172c3d;color:#eef7ff;border:1px solid #536b80;border-radius:8px}
+.incident-review-dialog form textarea{min-height:70px;resize:vertical}
+.incident-review-history{margin-top:7px;border-top:1px solid #3b5265;padding-top:10px;font-size:12px}
+.incident-review-history summary{cursor:pointer;min-height:42px;color:#c2e8fc;font-weight:750}
+.incident-review-row{display:grid;gap:3px;padding:9px 0;border-bottom:1px solid #405568}
+.incident-review-row small{color:#a9c0d2}
+.incident-review-row p{margin:0}
