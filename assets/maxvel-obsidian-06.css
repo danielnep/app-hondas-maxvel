@@ -222,7 +222,7 @@ p,small{color:var(--mx-secondary)}
   max-height:39px!important;padding:8px!important;border:0!important}
  .dashboard .header-actions .compact-role-picker{width:auto!important;min-width:39px!important}
  .dashboard .header-actions .compact-role-picker .icon-svg{width:19px!important;height:19px!important}
- .dashboard .header-actions .help-toggle{display:none!important}
+ .dashboard .header-actions .help-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important}
  .dashboard .header-actions .user-pill{width:38px!important;min-width:38px!important;border:0!important;padding:2px!important}
  .dashboard .app-content{flex:1 1 auto!important;display:block!important;height:auto!important;min-height:0!important;
   max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;
@@ -301,3 +301,10 @@ dialog :is(p,small){color:var(--mx-secondary)!important}
 dialog button.primary{background:var(--mx-red-hover)!important;color:#fff!important;border-color:transparent!important}
 dialog .field input,dialog .field textarea,dialog .field select{background:var(--mx-bg)!important;color:var(--mx-text)!important;border:1px solid var(--mx-line)!important}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* Visibilidade semântica: não mostrar registros fora da página selecionada. */
+.dashboard .app-content .report-roster .data-table tbody tr[hidden],
+.dashboard .app-content .v4-stage>.v4-pane[hidden],
+.dashboard .app-content .ux-report-stage>[hidden],
+.dashboard .app-content .ux-paged-list>[hidden],
+.dashboard .app-content .v4-stage .v4-summary-pane [hidden]{display:none!important}
