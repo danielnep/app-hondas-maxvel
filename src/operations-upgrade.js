@@ -144,8 +144,7 @@ export function createOperationsUpgrade(api){
  }
  function adminQuick(){
   return '<div class="ops-admin-actions">'+
-   '<button type="button" class="button primary" data-ops="export">⬇ Exportar relatório completo</button>'+
-   '<button type="button" class="button" data-ops="view-client">👁 Ver como cliente</button></div>';
+   '<button type="button" class="button primary" data-ops="export">⬇ Exportar relatório completo</button></div>';
  }
  function qrSetting(){
   const active=state().verificationMode??'gps';
@@ -177,7 +176,7 @@ export function createOperationsUpgrade(api){
     main.querySelector('.patrol-extra-flow')?.insertAdjacentHTML('afterbegin',statusBanner());
    }
   }
-  if(['supervisor','gestor','admin'].includes(user?.role)){
+  if(user?.role==='admin'){
    if(view==='overview'){
     main.querySelector('.v4-dashboard-heading')?.insertAdjacentHTML('beforeend',user.role==='admin'?adminQuick():'<button type="button" class="button" data-ops="export">⬇ Exportar relatório</button>');
    }
@@ -191,7 +190,7 @@ export function createOperationsUpgrade(api){
    }
    if(view==='configuracoes')main.insertAdjacentHTML('beforeend',qrSetting());
   }
-  if(user?.role==='cliente'&&view==='cliente')main.insertAdjacentHTML('afterbegin','');
+  
  }
  function mediaFields(){
   return '<details class="ops-media-fields"><summary>Evidências contextuais (opcionais): foto, áudio ou vídeo</summary>'+
@@ -318,13 +317,13 @@ export function createOperationsUpgrade(api){
   }
   if(cmd==='panic-now'){await panic();return;}
   if(cmd==='incident-quick'){api.incidentDialog();return;}
-  if(cmd==='export'){exportDialog();return;}
+  if(cmd==='export'){if(current().user?.role!=='admin')return;exportDialog();return;}
   if(cmd==='save-map'){await saveMap();return;}
   if(cmd==='scan-qr'){await scanQR();return;}
   if(cmd==='qr-camera'){await cameraQR();return;}
   if(cmd==='qr-manual'){acceptQR(document.querySelector('#ops-qr-code')?.value);return;}
   if(cmd==='save-qr-setting'){
-   if(!['admin','gestor'].includes(current().user?.role))return;
+   if(current().user?.role!=='admin')return;
    const selected=document.getElementById('ops-mode')?.value;
    if(!['gps','qr','gps+qr'].includes(selected))return;
    state().verificationMode=selected;api.persist();api.render();api.notify('Regra de QR/GPS salva para as próximas rondas.');return;
@@ -336,10 +335,10 @@ export function createOperationsUpgrade(api){
    const anchor=document.createElement('a');anchor.href=url;anchor.download=item.name||'evidencia';anchor.click();
    setTimeout(()=>URL.revokeObjectURL(url),5000);return;
   }
-  if(cmd==='view-client'){api.showClient();return;}
+  
  },true);
  document.addEventListener('submit',e=>{
-  if(e.target.id!=='ops-export-form')return;e.preventDefault();e.stopPropagation();
+  if(e.target.id!=='ops-export-form')return;e.preventDefault();e.stopPropagation();if(current().user?.role!=='admin')return;
   const form=e.target,selected=[...form.querySelectorAll('[name="sections"]:checked')].map(x=>x.value);
   if(!selected.length){api.notify('Selecione ao menos uma seção.');return;}
   const report=buildReportData(current(),selected,events);
