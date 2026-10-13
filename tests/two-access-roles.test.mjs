@@ -23,7 +23,7 @@ test('as três áreas de acesso são vigia, monitoramento e administrativo',()=>
  assert.doesNotMatch(chooser,/\['(supervisor|gestor|cliente)'/);
  const picker=range(app,"if(act==='sim-role-picker'){","if(act==='schedule-tab')");
  assert.doesNotMatch(picker,/\['(supervisor|gestor|cliente)'/);
- assert.match(picker,/\['ronda','Operação de Ronda'/);
+ assert.match(picker,/\['ronda','Vigia'/);
  assert.match(picker,/\['operador','Monitoramento'/);
  assert.match(picker,/\['admin','Administração'/);
 });
