@@ -9,9 +9,11 @@ import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
 import {getConsent,saveConsent,LOCATION_REQUIREMENTS} from './consent.js';
 import {createSpotlightTour} from './tutorial.js';
+import {createUiMotion} from './ui-motion.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
 
 const root=document.getElementById('app'),modal=document.getElementById('dialog'),toast=document.getElementById('toast');
+const uiMotion=createUiMotion({root,modal});
 const ICONS={
  compass:'<circle cx="12" cy="12" r="9"/><path d="m16.2 7.8-2.4 6-6 2.4 2.4-6z"/>',
  map:'<path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2z"/><path d="M9 3v16M15 5v16"/>',
@@ -50,7 +52,7 @@ const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2
 const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
 const helpButton=(topic,label)=>`<button type="button" class="context-help" data-action="feature-help" data-topic="${topic}" aria-label="O que é ${label}?" title="Entenda: ${label}">?</button>`;
-const brand=()=>'<div class="brand maxvel-only-brand" aria-label="Grupo Maxvel"><img class="maxvel-real-logo" src="./assets/maxvel-logo.webp" width="585" height="183" alt="Maxvel"><span class="ronda-pro-wordmark">Rondas <b>Pro</b></span></div>';
+const brand=()=>'<div class="brand maxvel-only-brand" aria-label="Grupo Maxvel"><span class="brand-product"><span class="ronda-pro-wordmark">Rondas <b>Pro</b></span></span><span class="brand-divider" aria-hidden="true"></span><span class="brand-partner"><span class="brand-group">GRUPO</span><img class="maxvel-real-logo" src="./assets/maxvel-logo.webp" width="585" height="183" alt="Maxvel"></span></div>';
 const persisted=loadState();
 let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
 let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule();
@@ -340,7 +342,7 @@ function render(){destroyMaps();renderNumber++;modal.close?.();document.body.cla
  if(screen==='landing')root.innerHTML=entryScreen();
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
- installViewportViews();installUX06();attachMaps();justRendered=Date.now();
+ installViewportViews();installUX06();attachMaps();uiMotion.enterView();justRendered=Date.now();
 }
 /** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
 function watchesSession(s,watcher){

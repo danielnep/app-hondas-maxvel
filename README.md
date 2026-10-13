@@ -14,6 +14,12 @@ Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pelo Railway
 
 A identidade pública é exclusivamente **Grupo Maxvel**. A versão 07 suaviza o preto absoluto em grafite intermediário e torna topo, rodapé móvel, listas e indicadores mais compactos sem alterar o domínio, GPS, permanência e simulações. O repositório mantém camadas técnicas antigas por compatibilidade, mas o aplicativo apresenta somente Maxvel. **Ainda não há chatbot integrado neste aplicativo**: nenhum recurso de Copiloto ou de planilhas foi migrado de outro projeto.
 
+## Revisão 10 · referência Horizon e movimento
+
+Referência visual: [Horizon — Como trabalhamos](https://horizonsolucoes.com/#metodo), inspecionada em 13/10/2026. Exo 2 no corpo e Rajdhani nos títulos e na marca; base preto/branco, azul mais nítido, violeta profundo e vermelho Maxvel nos avisos. As superfícies substituem as bordas repetidas.
+
+O topo distribui **Rondas Pro | Grupo + logo original Maxvel** em duas regiões alinhadas ao centro. Entradas usam fade e deslocamento, painéis têm elasticidade, botões respondem ao toque, e os indicadores pulsam suavemente. No celular, arrastar o título de uma janela para baixo acompanha o dedo; o painel volta elasticamente ou fecha após um arrasto maior. Todos os botões de fechar continuam disponíveis. A preferência de movimento reduzido desativa as animações. O módulo `src/ui-motion.js` não altera GPS, tempo de permanência, dados ou regras da ronda.
+
 ## Revisão 09 · preto, celeste e cantos suaves
 
 A revisão visual de 13/10/2026 substitui os controles totalmente retos e os detalhes vermelhos da interface por cantos discretos (6 px nos controles, 8 px nos painéis e 10 px nos diálogos). O fundo é preto; cabeçalho, campos e superfícies usam cinzas muito escuros. Azul celeste luminoso identifica ações, foco e seleção; o roxo aparece de forma sutil no degradê das ações principais e no nome Pro. A imagem original da Maxvel permanece intacta. Mapas, menus, perfis e regras da ronda mantêm seu comportamento.

@@ -155,6 +155,27 @@ try{
    await tap(page,'#dialog [data-action="sim-role"][data-role="ronda"]');
    await tap(page,width<=900?'.patrol-map-canvas [data-action="feature-help"]':'.patrol-map-heading [data-action="feature-help"]');
    if(!await page.locator('#dialog[open] .help-detail').count())throw Error('Ajuda contextual ? inativa');
+   if(width<=900){
+    await wait(650);
+    const title=await page.locator('#dialog h2').boundingBox();
+    const x=title.x+title.width/2,y=title.y+title.height/2;
+    await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x,y+55,{steps:7});
+    const dragged=await page.locator('#dialog').evaluate(el=>{const value=getComputedStyle(el).transform;return value==='none'?0:new DOMMatrixReadOnly(value).m42;});
+    if(dragged<15||dragged>55)throw Error('Janela não acompanha o arrasto: '+dragged);
+    await page.mouse.up();await wait(500);
+    if(!await page.locator('#dialog').evaluate(el=>el.open))throw Error('Arrasto curto fechou a janela');
+    const reset=await page.locator('#dialog').evaluate(el=>{const value=getComputedStyle(el).transform;return value==='none'?0:new DOMMatrixReadOnly(value).m42;});
+    if(Math.abs(reset)>1)throw Error('Janela não voltou após o arrasto: '+reset);
+    const second=await page.locator('#dialog h2').boundingBox();
+    await page.mouse.move(second.x+second.width/2,second.y+second.height/2);await page.mouse.down();
+    await page.mouse.move(second.x+second.width/2,second.y+second.height/2+140,{steps:9});await page.mouse.up();
+    if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Arrasto longo não fechou a janela');
+    await tap(page,width<=900?'.patrol-map-canvas [data-action="feature-help"]':'.patrol-map-heading [data-action="feature-help"]');
+    await page.emulateMedia({reducedMotion:'reduce'});
+    const reduced=await page.locator('.ronda-pro-wordmark b:visible').first().evaluate(el=>getComputedStyle(el).animationName);
+    if(reduced!=='none')throw Error('Preferência de movimento reduzido ignorada: '+reduced);
+    await page.emulateMedia({reducedMotion:'no-preference'});
+   }
    await tap(page,'#dialog [data-action="close-dialog"]');
    await tap(page,'.app-header [data-action="tour-restart"]');
    if(!await page.locator('#horizon-tour [data-tour="next"]').count())throw Error('Tour não reabriu');

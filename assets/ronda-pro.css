@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');
 500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
 :root{font-size:14px;line-height:1.5}
 *{box-sizing:border-box}
@@ -2771,12 +2771,12 @@ dialog.ux06-fullscreen:not([open]),dialog.ux06-fullscreen.ux-dialog-paging:not([
 @media (max-width:360px){.ux06-sheet-header{padding-left:10px;padding-right:44px}}
 /* Identidade única do Rondas Pro: preto, celeste e violeta discreto. Geometria dos mapas é independente dos controles. */
 :root {
- --mx-bg:#000000; --mx-surface:#0e1117; --mx-raised:#171b23; --mx-hover:#222733;
- --mx-line:#3e4959; --mx-text:#f1f5fb; --mx-secondary:#c3cbd7; --mx-muted:#a4afbf;
- --mx-accent:#62d8ff; --mx-accent-hover:#8be3ff; --mx-violet:#ad9bff;
- --mx-accent-wash:#101d29; --mx-action-ink:#071019;
- --mx-action-fill:linear-gradient(115deg,#62d8ff 0%,#8acbff 58%,#ad9bff 100%);
- --mx-action-hover:linear-gradient(115deg,#8be3ff 0%,#a5d8ff 58%,#bdadff 100%);
+ --mx-bg:#050505; --mx-surface:#0d0d0e; --mx-raised:#161618; --mx-hover:#222225;
+ --mx-line:#2b2b30; --mx-text:#f4f4f4; --mx-secondary:#ccccd0; --mx-muted:#a8a8b0;
+ --mx-accent:#39aaff; --mx-accent-hover:#69c3ff; --mx-violet:#986aff;
+ --mx-accent-wash:#0c1d31; --mx-action-ink:#ffffff;
+ --mx-action-fill:linear-gradient(115deg,#0769c8 0%,#2255cf 60%,#653bc5 100%);
+ --mx-action-hover:linear-gradient(115deg,#0672ce 0%,#2b5bd4 60%,#7042cb 100%);
  --mx-radius-control:6px; --mx-radius-panel:8px; --mx-radius-dialog:10px;
  --mx-red:#e52a40; --mx-red-hover:#c51b31; --mx-safe:#67d5ad; --mx-alert:#ffc16b;
  --ui-bg:var(--mx-bg); --ui-panel:var(--mx-surface); --ui-panel-2:var(--mx-raised);
@@ -2796,8 +2796,8 @@ dialog.ux06-fullscreen:not([open]),dialog.ux06-fullscreen.ux-dialog-paging:not([
  color-scheme:dark;
 }
 html,body,#app,.dashboard,.entry-screen { background:var(--mx-bg)!important; color:var(--mx-text)!important; }
-body,button,input,select,textarea { font-family:'Barlow',system-ui,Arial,sans-serif!important; }
-h1,h2,h3,h4 { font-family:'Barlow',system-ui,Arial,sans-serif!important; color:var(--mx-text)!important; line-height:1.25; }
+body,button,input,select,textarea { font-family:"Exo 2","Segoe UI",Arial,sans-serif!important; }
+h1,h2,h3,h4 { font-family:"Rajdhani","Exo 2","Segoe UI",sans-serif!important; color:var(--mx-text)!important; line-height:1.25; }
 h1 { font-size:clamp(24px,3vw,34px); letter-spacing:-.025em; }
 h2 { font-size:20px; letter-spacing:-.015em; }
 h3 { font-size:16px; }
@@ -2826,8 +2826,8 @@ button { background:transparent; color:inherit; border-color:var(--mx-line); }
 :is(button,a,input,select,textarea):focus-visible { outline:2px solid var(--mx-accent)!important; outline-offset:2px!important; }
 .brand.maxvel-only-brand { display:flex!important; align-items:center!important; gap:12px!important; width:auto!important; min-width:0!important; max-width:none!important; white-space:nowrap; }
 .maxvel-real-logo { display:block; width:110px; height:auto; object-fit:contain; flex:none; }
-.ronda-pro-wordmark { font:600 25px/1 'Barlow Condensed','Barlow',sans-serif; letter-spacing:.01em; color:var(--mx-text); white-space:nowrap; }
-.ronda-pro-wordmark b { font-weight:800; color:var(--mx-accent); background:var(--mx-action-fill); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.ronda-pro-wordmark { font:700 25px/1 "Rajdhani","Exo 2",sans-serif; letter-spacing:.01em; color:var(--mx-text); white-space:nowrap; }
+.ronda-pro-wordmark b { font-weight:700; color:var(--mx-accent); }
 .sidebar>.brand { gap:8px!important; padding:8px 4px 16px!important; }
 .sidebar .maxvel-real-logo { width:88px; }
 .sidebar .ronda-pro-wordmark { font-size:21px; white-space:nowrap!important; }
@@ -2874,12 +2874,12 @@ button { background:transparent; color:inherit; border-color:var(--mx-line); }
 .dashboard .app-content .map-container { background:var(--mx-surface)!important; }
 .dashboard .app-content .maxvel-osm-dark-adapted { filter:grayscale(1) invert(1) brightness(.82) contrast(.85); }
 .map-marker,.map-person-ring,.map-person-dot,.ops-live-dot { border-radius:50%!important; }
-.leaflet-container { font-family:'Barlow',system-ui,sans-serif!important; }
+.leaflet-container { font-family:"Exo 2","Segoe UI",Arial,sans-serif!important; }
 .leaflet-bar a,.leaflet-control-layers { background:var(--mx-raised)!important; color:var(--mx-text)!important; border-color:var(--mx-line)!important; }
 .leaflet-popup-content-wrapper,.leaflet-popup-tip { background:var(--mx-surface)!important; color:var(--mx-text)!important; }
 .leaflet-popup-content p { color:var(--mx-secondary)!important; }
 .leaflet-container a.leaflet-popup-close-button { color:var(--mx-text)!important; }
-.leaflet-control-attribution { background:#0e1117e8!important; color:var(--mx-secondary)!important; font-size:10px!important; }
+.leaflet-control-attribution { background:#0d0d0ee8!important; color:var(--mx-secondary)!important; font-size:10px!important; }
 .leaflet-control-attribution a { color:var(--mx-secondary)!important; }
 .maxvel-map-popup,.maxvel-map-popup :is(strong,small,span,em) { color:var(--mx-text)!important; }
 dialog { background:var(--mx-surface)!important; color:var(--mx-text)!important; border-color:var(--mx-line)!important; box-shadow:none!important; }
@@ -2934,7 +2934,7 @@ body.simulation-running #toast { top:auto!important; bottom:max(12px,env(safe-ar
 .dashboard .app-header,.dashboard .sidebar { background:var(--mx-surface)!important; }
 .dashboard .app-menu-button { background:var(--mx-raised)!important; color:var(--mx-accent)!important; }
 .dashboard .app-content :is(input,select,textarea):focus-visible { border-color:var(--mx-accent)!important; }
-.entry-screen .entry-aside { background:linear-gradient(145deg,#0e1117 60%,#151122)!important; }
+.entry-screen .entry-aside { background:linear-gradient(145deg,#0d0d0e 60%,#101019)!important; }
 .entry-screen .entry-aside-mark svg,.entry-screen .entry-details span::before { color:var(--mx-accent)!important; }
 .patrol-map-clock strong,.patrol-statusline svg,.patrol-map-heading>button svg,.ux06-map-fit svg { color:var(--mx-accent)!important; }
 .patrol-map-heading,.ux06-sheet-header { border-bottom-color:#354356!important; }
@@ -2987,4 +2987,108 @@ body.simulation-running #toast { top:auto!important; bottom:max(12px,env(safe-ar
  .dashboard .app-content .report-page>.page-title { display:flex!important; flex-direction:column!important; align-items:flex-start!important; width:100%!important; min-width:0!important; height:auto!important; min-height:0!important; max-height:none!important; gap:10px!important; }
  .dashboard .app-content .report-page>.page-title>div { min-width:0!important; width:100%!important; }
  .dashboard .app-content .report-page>.page-title>.button { position:static!important; flex:none!important; width:auto!important; max-width:100%!important; min-height:44px!important; height:auto!important; padding:10px 14px!important; font-size:14px!important; align-self:flex-start!important; }
+}
+
+/* Horizon reference: Exo 2 + Rajdhani, black/white surfaces and living blue accents. */
+:root { --rp-spring:cubic-bezier(.18,1.15,.32,1); --rp-soft:cubic-bezier(.22,1,.36,1); }
+.brand.maxvel-only-brand { display:grid!important; grid-template-columns:minmax(0,1fr) 2px minmax(0,1fr); align-items:center!important; justify-items:center; gap:10px!important; width:220px!important; max-width:100%!important; min-width:0!important; }
+.brand-product,.brand-partner { display:flex; align-items:center; justify-content:center; min-width:0; width:100%; }
+.brand-partner { flex-direction:column; gap:3px; }
+.brand-group { font:500 8px/1 "Exo 2",sans-serif; letter-spacing:.22em; color:var(--mx-secondary); }
+.brand-divider { width:2px; height:36px; background:linear-gradient(180deg,#f4f4f480,#f4f4f4,#f4f4f480); border-radius:2px; }
+.brand .maxvel-real-logo { display:block; width:82px!important; max-width:100%!important; height:auto!important; object-fit:contain; }
+.brand .ronda-pro-wordmark { font-family:"Rajdhani","Exo 2",sans-serif!important; font-size:24px!important; line-height:1!important; letter-spacing:-.02em; white-space:nowrap; }
+.sidebar>.brand { padding:6px 0 18px!important; width:100%!important; gap:8px!important; }
+.sidebar .brand .ronda-pro-wordmark { font-size:22px!important; }
+.sidebar .brand .maxvel-real-logo { width:75px!important; }
+.entry-screen .brand { width:260px!important; }
+.entry-screen .brand .ronda-pro-wordmark { font-size:30px!important; }
+.entry-screen .brand .maxvel-real-logo { width:96px!important; }
+
+/* Surfaces replace repeated outlines. Focus and meaningful map geometry stay visible. */
+:is(.button,.help-toggle,.user-pill,.context-help,.app-menu-button,.ux06-expand-button,.ux06-sheet-back,.choice,.role-picker-list button,.ux-access-menu button) { border:0!important; }
+:is(input,select,textarea) { border:0!important; background:var(--mx-raised)!important; box-shadow:none!important; }
+:is(input,select,textarea):focus-visible { outline:2px solid var(--mx-accent)!important; outline-offset:2px!important; }
+.dashboard :is(.app-header,.sidebar,.side-bottom,.page-title,.v4-dashboard-heading,.v4-pane-head,.v4-pane-foot,.supervision-context,.supervision-context-meta,.ops-panel-heading,.v4-map-foot,.patrol-map-heading,.patrol-statusline,.patrol-map-note,.patrol-map-clock,.patrol-actions,.mobile-operational-strip,.mobile-tracking-meta,.map-command-top) { border:0!important; }
+.dashboard .app-content :is(.card,.ops-card,.ops-map-card,.report-card,.map-command-panel,.map-checkpoint-panel,.map-history,.alerts-queue-card,.schedule-workspace,.v4-summary-callout,.kpi,.v4-summary-metric,.guide-inline,.requirement,.tag,.count,.micro-disclaimer) { border:0!important; }
+.dashboard .app-content :is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.hx05-list-row,.team-row,.schedule-row) { border:0!important; background:var(--mx-surface)!important; border-radius:8px!important; }
+.dashboard .app-content :is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.team-row,.schedule-row)+:is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.team-row,.schedule-row) { margin-top:5px; }
+.dashboard .data-table :is(th,td) { border:0!important; }
+.dashboard .data-table tbody tr:nth-child(even) { background:var(--mx-surface)!important; }
+.dashboard .app-content :is(.tabs,.ux-report-tabs,.ux-ronda-tabs,.v4-dashboard-tabs) { border:0!important; gap:4px!important; padding:4px!important; background:var(--mx-surface)!important; border-radius:10px!important; }
+.dashboard .app-content :is(.tabs,.ux-report-tabs,.ux-ronda-tabs,.v4-dashboard-tabs) button { border:0!important; border-radius:7px!important; }
+.dashboard .app-content :is(.tabs,.ux-report-tabs,.ux-ronda-tabs,.v4-dashboard-tabs) button:is(.active,[aria-selected=true]) { color:var(--mx-text)!important; background:#0d4f8d!important; box-shadow:0 4px 16px #0077ff18; }
+.entry-screen :is(.entry-topnav,.entry-aside,.entry-aside-stat,.entry-aside-mark,.entry-aside-footer,.entry-details span) { border:0!important; }
+.entry-screen .entry-details span { background:var(--mx-surface); border-radius:6px; }
+dialog,#toast,.horizon-tour .tour-panel,dialog :is(.detail-pair,.guide-pan,.consent-details,.choice,.role-picker-list button,.ux-access-menu button,.ux06-sheet-header,.ux06-sheet-footer) { border:0!important; }
+dialog,#toast,.horizon-tour .tour-panel { box-shadow:0 18px 60px #0008!important; }
+.button.danger { color:#fff!important; background:var(--mx-red-hover)!important; }
+.tag.red,.is-attention .tag { color:#ff697d!important; }
+.tag.orange { color:var(--mx-alert)!important; }
+.button.primary :is(svg,span,strong,b) { color:#fff!important; }
+.ronda-pro-wordmark b { color:var(--mx-accent)!important; }
+.entry-screen .entry-panel h1 { font-weight:500; }
+.entry-screen .entry-panel h1 span { color:var(--mx-accent)!important; }
+.leaflet-bar,.leaflet-bar a { border:0!important; }
+.entry-screen .entry-aside-mark svg { filter:drop-shadow(0 0 16px #39aaff30); }
+
+@media(max-width:900px) {
+ .dashboard .app-header { padding:8px 10px!important; gap:6px!important; min-height:66px!important; }
+ .dashboard .app-header .brand.maxvel-only-brand { display:grid!important; flex:1 1 0%!important; width:auto!important; max-width:280px!important; gap:7px!important; margin-inline:auto; }
+ .dashboard .app-header .brand .ronda-pro-wordmark { font-size:clamp(19px,5.6vw,24px)!important; }
+ .dashboard .app-header .brand .maxvel-real-logo { width:clamp(64px,19vw,82px)!important; }
+ .dashboard .app-header .brand-divider { height:34px; }
+ .dashboard .app-header .header-actions { margin-left:0!important; flex:0 0 44px!important; }
+ .dashboard .app-menu-button { flex:0 0 44px; }
+ .dashboard .header-actions .user-pill { background:transparent!important; }
+ .dashboard .header-actions .avatar { border:0!important; }
+ .dashboard .app-content { scrollbar-width:none; }
+ .dashboard .app-content::-webkit-scrollbar { width:0; }
+ .entry-screen .brand { width:min(244px,calc(100vw - 115px))!important; gap:8px!important; }
+ .entry-screen .brand .ronda-pro-wordmark { font-size:clamp(22px,6vw,28px)!important; }
+ .entry-screen .brand .maxvel-real-logo { width:80px!important; }
+ .entry-screen .entry-topnav { gap:8px; }
+ dialog h2,.ux06-sheet-header { touch-action:none; cursor:grab; }
+ dialog::before { content:""; display:block; width:28px; height:3px; margin:0 auto 10px; background:#9c9ca650; border-radius:3px; }
+}
+@media(min-width:1800px) {
+ .sidebar .brand .ronda-pro-wordmark { font-size:25px!important; }
+ .sidebar .brand .maxvel-real-logo { width:88px!important; }
+}
+
+/* Entrance, spring, slide, press, drag and pulse use separate, small transforms. */
+@keyframes rp-reveal { from { opacity:0; translate:0 12px; } to { opacity:1; translate:0 0; } }
+@keyframes rp-sheet-enter { from { opacity:0; scale:.965; translate:0 20px; } 70% { opacity:1; scale:1.006; translate:0 -2px; } to { opacity:1; scale:1; translate:0 0; } }
+@keyframes rp-drawer-enter { from { opacity:0; translate:-20px 0; } to { opacity:1; translate:0 0; } }
+@keyframes rp-pulse { 0%,100% { scale:1; box-shadow:0 0 0 0 #39aaff00; } 50% { scale:1.08; box-shadow:0 0 0 5px #39aaff18; } }
+@keyframes rp-color-pulse { 0%,100% { filter:drop-shadow(0 0 0 #39aaff00); } 50% { filter:drop-shadow(0 0 5px #39aaff55); } }
+@keyframes rp-arrow { 0%,100% { translate:0 0; } 50% { translate:2px 0; } }
+.rp-enter { animation:rp-reveal 480ms var(--rp-soft) var(--rp-stagger,0ms) both!important; }
+.dashboard .v4-stage>.v4-pane:not([hidden]),.dashboard [data-ux-subpage]:not([hidden]) { animation:rp-reveal 360ms var(--rp-soft) both!important; }
+:is(button,.button,.side-link,input,select,textarea,.choice,.entry-aside,.v4-summary-metric,.schedule-row,.list-row,.event-item) { transition:background-color 220ms,color 220ms,box-shadow 220ms,opacity 220ms,scale 260ms var(--rp-spring),translate 320ms var(--rp-spring)!important; }
+:is(button,.button,.side-link):active:not(:disabled) { scale:.96; }
+:is(button,.button) svg { transition:color 220ms,translate 320ms var(--rp-spring),rotate 320ms var(--rp-spring); }
+@media(hover:hover) {
+ .button:hover:not(:disabled),.help-toggle:hover,.context-help:hover { translate:0 -2px; }
+ .side-link:hover svg,.button:hover:not(:disabled) svg { translate:2px 0; }
+ .user-pill:hover .icon-svg { rotate:18deg; }
+ .entry-aside:hover { translate:0 -4px; }
+}
+dialog[open] { animation:rp-sheet-enter 420ms var(--rp-spring) both!important; transition:transform 340ms var(--rp-spring)!important; }
+dialog[open]:has(.ux-access-menu) { animation:rp-drawer-enter 360ms var(--rp-spring) both!important; }
+dialog[open]::backdrop { animation:rp-reveal 260ms ease both!important; }
+dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)!important; transition:none!important; cursor:grabbing; }
+.ops-live-dot,.simulation-signal { background:var(--mx-accent)!important; animation:rp-pulse 2.8s ease-in-out infinite; }
+.ronda-pro-wordmark b,.patrol-map-clock strong { animation:rp-color-pulse 3.6s ease-in-out infinite; }
+.button.primary svg { animation:rp-arrow 2.8s ease-in-out infinite; }
+.mobile-mini-meter>span,.progress-bar>span,.report-progress-track i { transition:width 420ms var(--rp-soft)!important; background:var(--mx-action-fill)!important; }
+#toast { transition:opacity 220ms,transform 380ms var(--rp-spring)!important; }
+.horizon-tour .tour-panel { animation:rp-sheet-enter 380ms var(--rp-spring) both!important; }
+.horizon-tour .tour-cutout { transition:top 300ms var(--rp-soft),left 300ms var(--rp-soft),width 300ms var(--rp-soft),height 300ms var(--rp-soft)!important; }
+@media(prefers-reduced-motion:reduce) {
+ *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; scale:1!important; translate:0 0!important; rotate:0deg!important; }
+}
+@media print {
+ *,*::before,*::after { animation:none!important; transition:none!important; scale:1!important; translate:0 0!important; filter:none!important; }
+ .brand-divider { background:#111!important; }
 }

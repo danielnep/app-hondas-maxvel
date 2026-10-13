@@ -11,7 +11,7 @@ test('UI carrega a última camada de identidade Maxvel',()=>{
  assert.match(html,/<title>Rondas Pro · Grupo Maxvel/);
  assert.doesNotMatch(html,/(?:alt|content|title)="[^"]*Horizon/);
  assert.match(css,/--mx-red:#e52a40/);
- assert.match(css,/--mx-bg:#000000/);
+ assert.match(css,/--mx-bg:#050505/);
 });
 test('marca pública no aplicativo não contém Horizon',()=>{
  assert.match(app,/aria-label="Grupo Maxvel"/);

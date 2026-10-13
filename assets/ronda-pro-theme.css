@@ -1,11 +1,11 @@
 /* Identidade única do Rondas Pro: preto, celeste e violeta discreto. Geometria dos mapas é independente dos controles. */
 :root {
- --mx-bg:#000000; --mx-surface:#0e1117; --mx-raised:#171b23; --mx-hover:#222733;
- --mx-line:#3e4959; --mx-text:#f1f5fb; --mx-secondary:#c3cbd7; --mx-muted:#a4afbf;
- --mx-accent:#62d8ff; --mx-accent-hover:#8be3ff; --mx-violet:#ad9bff;
- --mx-accent-wash:#101d29; --mx-action-ink:#071019;
- --mx-action-fill:linear-gradient(115deg,#62d8ff 0%,#8acbff 58%,#ad9bff 100%);
- --mx-action-hover:linear-gradient(115deg,#8be3ff 0%,#a5d8ff 58%,#bdadff 100%);
+ --mx-bg:#050505; --mx-surface:#0d0d0e; --mx-raised:#161618; --mx-hover:#222225;
+ --mx-line:#2b2b30; --mx-text:#f4f4f4; --mx-secondary:#ccccd0; --mx-muted:#a8a8b0;
+ --mx-accent:#39aaff; --mx-accent-hover:#69c3ff; --mx-violet:#986aff;
+ --mx-accent-wash:#0c1d31; --mx-action-ink:#ffffff;
+ --mx-action-fill:linear-gradient(115deg,#0769c8 0%,#2255cf 60%,#653bc5 100%);
+ --mx-action-hover:linear-gradient(115deg,#0672ce 0%,#2b5bd4 60%,#7042cb 100%);
  --mx-radius-control:6px; --mx-radius-panel:8px; --mx-radius-dialog:10px;
  --mx-red:#e52a40; --mx-red-hover:#c51b31; --mx-safe:#67d5ad; --mx-alert:#ffc16b;
  --ui-bg:var(--mx-bg); --ui-panel:var(--mx-surface); --ui-panel-2:var(--mx-raised);
@@ -25,8 +25,8 @@
  color-scheme:dark;
 }
 html,body,#app,.dashboard,.entry-screen { background:var(--mx-bg)!important; color:var(--mx-text)!important; }
-body,button,input,select,textarea { font-family:'Barlow',system-ui,Arial,sans-serif!important; }
-h1,h2,h3,h4 { font-family:'Barlow',system-ui,Arial,sans-serif!important; color:var(--mx-text)!important; line-height:1.25; }
+body,button,input,select,textarea { font-family:"Exo 2","Segoe UI",Arial,sans-serif!important; }
+h1,h2,h3,h4 { font-family:"Rajdhani","Exo 2","Segoe UI",sans-serif!important; color:var(--mx-text)!important; line-height:1.25; }
 h1 { font-size:clamp(24px,3vw,34px); letter-spacing:-.025em; }
 h2 { font-size:20px; letter-spacing:-.015em; }
 h3 { font-size:16px; }
@@ -55,8 +55,8 @@ button { background:transparent; color:inherit; border-color:var(--mx-line); }
 :is(button,a,input,select,textarea):focus-visible { outline:2px solid var(--mx-accent)!important; outline-offset:2px!important; }
 .brand.maxvel-only-brand { display:flex!important; align-items:center!important; gap:12px!important; width:auto!important; min-width:0!important; max-width:none!important; white-space:nowrap; }
 .maxvel-real-logo { display:block; width:110px; height:auto; object-fit:contain; flex:none; }
-.ronda-pro-wordmark { font:600 25px/1 'Barlow Condensed','Barlow',sans-serif; letter-spacing:.01em; color:var(--mx-text); white-space:nowrap; }
-.ronda-pro-wordmark b { font-weight:800; color:var(--mx-accent); background:var(--mx-action-fill); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.ronda-pro-wordmark { font:700 25px/1 "Rajdhani","Exo 2",sans-serif; letter-spacing:.01em; color:var(--mx-text); white-space:nowrap; }
+.ronda-pro-wordmark b { font-weight:700; color:var(--mx-accent); }
 .sidebar>.brand { gap:8px!important; padding:8px 4px 16px!important; }
 .sidebar .maxvel-real-logo { width:88px; }
 .sidebar .ronda-pro-wordmark { font-size:21px; white-space:nowrap!important; }
@@ -103,12 +103,12 @@ button { background:transparent; color:inherit; border-color:var(--mx-line); }
 .dashboard .app-content .map-container { background:var(--mx-surface)!important; }
 .dashboard .app-content .maxvel-osm-dark-adapted { filter:grayscale(1) invert(1) brightness(.82) contrast(.85); }
 .map-marker,.map-person-ring,.map-person-dot,.ops-live-dot { border-radius:50%!important; }
-.leaflet-container { font-family:'Barlow',system-ui,sans-serif!important; }
+.leaflet-container { font-family:"Exo 2","Segoe UI",Arial,sans-serif!important; }
 .leaflet-bar a,.leaflet-control-layers { background:var(--mx-raised)!important; color:var(--mx-text)!important; border-color:var(--mx-line)!important; }
 .leaflet-popup-content-wrapper,.leaflet-popup-tip { background:var(--mx-surface)!important; color:var(--mx-text)!important; }
 .leaflet-popup-content p { color:var(--mx-secondary)!important; }
 .leaflet-container a.leaflet-popup-close-button { color:var(--mx-text)!important; }
-.leaflet-control-attribution { background:#0e1117e8!important; color:var(--mx-secondary)!important; font-size:10px!important; }
+.leaflet-control-attribution { background:#0d0d0ee8!important; color:var(--mx-secondary)!important; font-size:10px!important; }
 .leaflet-control-attribution a { color:var(--mx-secondary)!important; }
 .maxvel-map-popup,.maxvel-map-popup :is(strong,small,span,em) { color:var(--mx-text)!important; }
 dialog { background:var(--mx-surface)!important; color:var(--mx-text)!important; border-color:var(--mx-line)!important; box-shadow:none!important; }
@@ -163,7 +163,7 @@ body.simulation-running #toast { top:auto!important; bottom:max(12px,env(safe-ar
 .dashboard .app-header,.dashboard .sidebar { background:var(--mx-surface)!important; }
 .dashboard .app-menu-button { background:var(--mx-raised)!important; color:var(--mx-accent)!important; }
 .dashboard .app-content :is(input,select,textarea):focus-visible { border-color:var(--mx-accent)!important; }
-.entry-screen .entry-aside { background:linear-gradient(145deg,#0e1117 60%,#151122)!important; }
+.entry-screen .entry-aside { background:linear-gradient(145deg,#0d0d0e 60%,#101019)!important; }
 .entry-screen .entry-aside-mark svg,.entry-screen .entry-details span::before { color:var(--mx-accent)!important; }
 .patrol-map-clock strong,.patrol-statusline svg,.patrol-map-heading>button svg,.ux06-map-fit svg { color:var(--mx-accent)!important; }
 .patrol-map-heading,.ux06-sheet-header { border-bottom-color:#354356!important; }

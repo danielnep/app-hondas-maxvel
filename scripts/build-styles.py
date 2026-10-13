@@ -91,10 +91,11 @@ def structure(text, only=None):
     return '\n'.join(output)
 
 
-font = "@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700;800&display=swap');\n"
+font = "@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');\n"
 compiled = font + '\n'.join(structure((ROOT / source).read_text()) for source in SOURCES)
 compiled += '\n' + structure((ROOT / 'assets/maxvel-06.css').read_text(), only='ux06')
 compiled += '\n' + (ROOT / 'assets/ronda-pro-theme.css').read_text()
 compiled += '\n' + (ROOT / 'assets/ronda-pro-layout.css').read_text()
+compiled += '\n' + (ROOT / 'assets/ronda-pro-motion.css').read_text()
 (ROOT / 'assets/ronda-pro.css').write_text(compiled)
 print('Compiled one stylesheet:', len(compiled), 'characters')

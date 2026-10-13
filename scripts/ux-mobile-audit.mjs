@@ -47,6 +47,15 @@ async function checkInteractiveBounds(page,label){
  if(overflow.length)throw Error('Ações cortadas em '+label+': '+JSON.stringify(overflow));
 }
 async function state(page,width,height,name){
+ await page.evaluate(()=>document.fonts.ready);
+ const branding=await page.locator('.brand.maxvel-only-brand:visible').evaluateAll(nodes=>nodes.map(node=>{
+  const box=element=>{const r=element.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,centerY:r.top+r.height/2};};
+  return {outer:box(node),product:box(node.querySelector('.ronda-pro-wordmark')),divider:box(node.querySelector('.brand-divider')),partner:box(node.querySelector('.brand-partner')),image:box(node.querySelector('img'))};
+ }));
+ for(const brand of branding){
+  if(brand.product.right>brand.divider.left-3||brand.image.left<brand.divider.right+3||brand.product.left<brand.outer.left-1||brand.image.right>brand.outer.right+1||Math.abs(brand.partner.centerY-brand.product.centerY)>3)
+   throw Error('Marca amontoada ou cortada em '+width+' '+name+': '+JSON.stringify(brand));
+ }
  const data=await page.evaluate(()=>{
   const box=sel=>{const e=document.querySelector(sel);if(!e)return null;const r=e.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
   return {actualWidth:innerWidth,actualHeight:innerHeight,documentWidth:document.documentElement.scrollWidth,documentHeight:document.documentElement.scrollHeight,

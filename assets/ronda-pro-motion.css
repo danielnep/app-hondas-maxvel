@@ -1,0 +1,103 @@
+/* Horizon reference: Exo 2 + Rajdhani, black/white surfaces and living blue accents. */
+:root { --rp-spring:cubic-bezier(.18,1.15,.32,1); --rp-soft:cubic-bezier(.22,1,.36,1); }
+.brand.maxvel-only-brand { display:grid!important; grid-template-columns:minmax(0,1fr) 2px minmax(0,1fr); align-items:center!important; justify-items:center; gap:10px!important; width:220px!important; max-width:100%!important; min-width:0!important; }
+.brand-product,.brand-partner { display:flex; align-items:center; justify-content:center; min-width:0; width:100%; }
+.brand-partner { flex-direction:column; gap:3px; }
+.brand-group { font:500 8px/1 "Exo 2",sans-serif; letter-spacing:.22em; color:var(--mx-secondary); }
+.brand-divider { width:2px; height:36px; background:linear-gradient(180deg,#f4f4f480,#f4f4f4,#f4f4f480); border-radius:2px; }
+.brand .maxvel-real-logo { display:block; width:82px!important; max-width:100%!important; height:auto!important; object-fit:contain; }
+.brand .ronda-pro-wordmark { font-family:"Rajdhani","Exo 2",sans-serif!important; font-size:24px!important; line-height:1!important; letter-spacing:-.02em; white-space:nowrap; }
+.sidebar>.brand { padding:6px 0 18px!important; width:100%!important; gap:8px!important; }
+.sidebar .brand .ronda-pro-wordmark { font-size:22px!important; }
+.sidebar .brand .maxvel-real-logo { width:75px!important; }
+.entry-screen .brand { width:260px!important; }
+.entry-screen .brand .ronda-pro-wordmark { font-size:30px!important; }
+.entry-screen .brand .maxvel-real-logo { width:96px!important; }
+
+/* Surfaces replace repeated outlines. Focus and meaningful map geometry stay visible. */
+:is(.button,.help-toggle,.user-pill,.context-help,.app-menu-button,.ux06-expand-button,.ux06-sheet-back,.choice,.role-picker-list button,.ux-access-menu button) { border:0!important; }
+:is(input,select,textarea) { border:0!important; background:var(--mx-raised)!important; box-shadow:none!important; }
+:is(input,select,textarea):focus-visible { outline:2px solid var(--mx-accent)!important; outline-offset:2px!important; }
+.dashboard :is(.app-header,.sidebar,.side-bottom,.page-title,.v4-dashboard-heading,.v4-pane-head,.v4-pane-foot,.supervision-context,.supervision-context-meta,.ops-panel-heading,.v4-map-foot,.patrol-map-heading,.patrol-statusline,.patrol-map-note,.patrol-map-clock,.patrol-actions,.mobile-operational-strip,.mobile-tracking-meta,.map-command-top) { border:0!important; }
+.dashboard .app-content :is(.card,.ops-card,.ops-map-card,.report-card,.map-command-panel,.map-checkpoint-panel,.map-history,.alerts-queue-card,.schedule-workspace,.v4-summary-callout,.kpi,.v4-summary-metric,.guide-inline,.requirement,.tag,.count,.micro-disclaimer) { border:0!important; }
+.dashboard .app-content :is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.hx05-list-row,.team-row,.schedule-row) { border:0!important; background:var(--mx-surface)!important; border-radius:8px!important; }
+.dashboard .app-content :is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.team-row,.schedule-row)+:is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.team-row,.schedule-row) { margin-top:5px; }
+.dashboard .data-table :is(th,td) { border:0!important; }
+.dashboard .data-table tbody tr:nth-child(even) { background:var(--mx-surface)!important; }
+.dashboard .app-content :is(.tabs,.ux-report-tabs,.ux-ronda-tabs,.v4-dashboard-tabs) { border:0!important; gap:4px!important; padding:4px!important; background:var(--mx-surface)!important; border-radius:10px!important; }
+.dashboard .app-content :is(.tabs,.ux-report-tabs,.ux-ronda-tabs,.v4-dashboard-tabs) button { border:0!important; border-radius:7px!important; }
+.dashboard .app-content :is(.tabs,.ux-report-tabs,.ux-ronda-tabs,.v4-dashboard-tabs) button:is(.active,[aria-selected=true]) { color:var(--mx-text)!important; background:#0d4f8d!important; box-shadow:0 4px 16px #0077ff18; }
+.entry-screen :is(.entry-topnav,.entry-aside,.entry-aside-stat,.entry-aside-mark,.entry-aside-footer,.entry-details span) { border:0!important; }
+.entry-screen .entry-details span { background:var(--mx-surface); border-radius:6px; }
+dialog,#toast,.horizon-tour .tour-panel,dialog :is(.detail-pair,.guide-pan,.consent-details,.choice,.role-picker-list button,.ux-access-menu button,.ux06-sheet-header,.ux06-sheet-footer) { border:0!important; }
+dialog,#toast,.horizon-tour .tour-panel { box-shadow:0 18px 60px #0008!important; }
+.button.danger { color:#fff!important; background:var(--mx-red-hover)!important; }
+.tag.red,.is-attention .tag { color:#ff697d!important; }
+.tag.orange { color:var(--mx-alert)!important; }
+.button.primary :is(svg,span,strong,b) { color:#fff!important; }
+.ronda-pro-wordmark b { color:var(--mx-accent)!important; }
+.entry-screen .entry-panel h1 { font-weight:500; }
+.entry-screen .entry-panel h1 span { color:var(--mx-accent)!important; }
+.leaflet-bar,.leaflet-bar a { border:0!important; }
+.entry-screen .entry-aside-mark svg { filter:drop-shadow(0 0 16px #39aaff30); }
+
+@media(max-width:900px) {
+ .dashboard .app-header { padding:8px 10px!important; gap:6px!important; min-height:66px!important; }
+ .dashboard .app-header .brand.maxvel-only-brand { display:grid!important; flex:1 1 0%!important; width:auto!important; max-width:280px!important; gap:7px!important; margin-inline:auto; }
+ .dashboard .app-header .brand .ronda-pro-wordmark { font-size:clamp(19px,5.6vw,24px)!important; }
+ .dashboard .app-header .brand .maxvel-real-logo { width:clamp(64px,19vw,82px)!important; }
+ .dashboard .app-header .brand-divider { height:34px; }
+ .dashboard .app-header .header-actions { margin-left:0!important; flex:0 0 44px!important; }
+ .dashboard .app-menu-button { flex:0 0 44px; }
+ .dashboard .header-actions .user-pill { background:transparent!important; }
+ .dashboard .header-actions .avatar { border:0!important; }
+ .dashboard .app-content { scrollbar-width:none; }
+ .dashboard .app-content::-webkit-scrollbar { width:0; }
+ .entry-screen .brand { width:min(244px,calc(100vw - 115px))!important; gap:8px!important; }
+ .entry-screen .brand .ronda-pro-wordmark { font-size:clamp(22px,6vw,28px)!important; }
+ .entry-screen .brand .maxvel-real-logo { width:80px!important; }
+ .entry-screen .entry-topnav { gap:8px; }
+ dialog h2,.ux06-sheet-header { touch-action:none; cursor:grab; }
+ dialog::before { content:""; display:block; width:28px; height:3px; margin:0 auto 10px; background:#9c9ca650; border-radius:3px; }
+}
+@media(min-width:1800px) {
+ .sidebar .brand .ronda-pro-wordmark { font-size:25px!important; }
+ .sidebar .brand .maxvel-real-logo { width:88px!important; }
+}
+
+/* Entrance, spring, slide, press, drag and pulse use separate, small transforms. */
+@keyframes rp-reveal { from { opacity:0; translate:0 12px; } to { opacity:1; translate:0 0; } }
+@keyframes rp-sheet-enter { from { opacity:0; scale:.965; translate:0 20px; } 70% { opacity:1; scale:1.006; translate:0 -2px; } to { opacity:1; scale:1; translate:0 0; } }
+@keyframes rp-drawer-enter { from { opacity:0; translate:-20px 0; } to { opacity:1; translate:0 0; } }
+@keyframes rp-pulse { 0%,100% { scale:1; box-shadow:0 0 0 0 #39aaff00; } 50% { scale:1.08; box-shadow:0 0 0 5px #39aaff18; } }
+@keyframes rp-color-pulse { 0%,100% { filter:drop-shadow(0 0 0 #39aaff00); } 50% { filter:drop-shadow(0 0 5px #39aaff55); } }
+@keyframes rp-arrow { 0%,100% { translate:0 0; } 50% { translate:2px 0; } }
+.rp-enter { animation:rp-reveal 480ms var(--rp-soft) var(--rp-stagger,0ms) both!important; }
+.dashboard .v4-stage>.v4-pane:not([hidden]),.dashboard [data-ux-subpage]:not([hidden]) { animation:rp-reveal 360ms var(--rp-soft) both!important; }
+:is(button,.button,.side-link,input,select,textarea,.choice,.entry-aside,.v4-summary-metric,.schedule-row,.list-row,.event-item) { transition:background-color 220ms,color 220ms,box-shadow 220ms,opacity 220ms,scale 260ms var(--rp-spring),translate 320ms var(--rp-spring)!important; }
+:is(button,.button,.side-link):active:not(:disabled) { scale:.96; }
+:is(button,.button) svg { transition:color 220ms,translate 320ms var(--rp-spring),rotate 320ms var(--rp-spring); }
+@media(hover:hover) {
+ .button:hover:not(:disabled),.help-toggle:hover,.context-help:hover { translate:0 -2px; }
+ .side-link:hover svg,.button:hover:not(:disabled) svg { translate:2px 0; }
+ .user-pill:hover .icon-svg { rotate:18deg; }
+ .entry-aside:hover { translate:0 -4px; }
+}
+dialog[open] { animation:rp-sheet-enter 420ms var(--rp-spring) both!important; transition:transform 340ms var(--rp-spring)!important; }
+dialog[open]:has(.ux-access-menu) { animation:rp-drawer-enter 360ms var(--rp-spring) both!important; }
+dialog[open]::backdrop { animation:rp-reveal 260ms ease both!important; }
+dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)!important; transition:none!important; cursor:grabbing; }
+.ops-live-dot,.simulation-signal { background:var(--mx-accent)!important; animation:rp-pulse 2.8s ease-in-out infinite; }
+.ronda-pro-wordmark b,.patrol-map-clock strong { animation:rp-color-pulse 3.6s ease-in-out infinite; }
+.button.primary svg { animation:rp-arrow 2.8s ease-in-out infinite; }
+.mobile-mini-meter>span,.progress-bar>span,.report-progress-track i { transition:width 420ms var(--rp-soft)!important; background:var(--mx-action-fill)!important; }
+#toast { transition:opacity 220ms,transform 380ms var(--rp-spring)!important; }
+.horizon-tour .tour-panel { animation:rp-sheet-enter 380ms var(--rp-spring) both!important; }
+.horizon-tour .tour-cutout { transition:top 300ms var(--rp-soft),left 300ms var(--rp-soft),width 300ms var(--rp-soft),height 300ms var(--rp-soft)!important; }
+@media(prefers-reduced-motion:reduce) {
+ *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; scale:1!important; translate:0 0!important; rotate:0deg!important; }
+}
+@media print {
+ *,*::before,*::after { animation:none!important; transition:none!important; scale:1!important; translate:0 0!important; filter:none!important; }
+ .brand-divider { background:#111!important; }
+}
