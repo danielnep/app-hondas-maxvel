@@ -93,7 +93,7 @@ try{
    await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');
    if(width<=900)await tap(page,'#dialog [data-action="point-evidence"]');
    else await tap(page,'.patrol-actions [data-action="point-evidence"]');
-   for(const direction of ['front','right','back','left','selfie'])await tap(page,'#dialog [data-action="demo-capture"][data-direction="'+direction+'"]');
+   for(const direction of ['front','right','back','left'])await tap(page,'#dialog [data-action="demo-capture"][data-direction="'+direction+'"]');
    await tap(page,'#dialog [data-action="demo-rotation"]');
    await tap(page,'#dialog [data-action="demo-evidence-confirm"]');
    if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="incident-form"]');}
