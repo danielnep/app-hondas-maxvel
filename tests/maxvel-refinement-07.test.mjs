@@ -35,7 +35,7 @@ test('rota, sessão, GPS e alertas seguem no aplicativo original',()=>{
   assert.doesNotMatch(js,/GUIA INTERATIVO · HORIZON/);
 });
 test('identidade pública não descreve outro produto',()=>{
-  assert.match(html,/<title>Ronda Pró · Grupo Maxvel/);
+  assert.match(html,/<title>Ronda Pro · Grupo Maxvel/);
   assert.doesNotMatch(html,/<title>[^<]*Michelle/);
   assert.doesNotMatch(metadata,/Protótipo Horizon \+ Maxvel/);
   assert.doesNotMatch(js,/(?:chatbot|copiloto|POWER_BI_MICHELLE_IA)/i);

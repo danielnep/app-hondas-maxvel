@@ -8,7 +8,7 @@ const css=readFileSync(new URL('../assets/maxvel-obsidian-06.css',import.meta.ur
 
 test('UI carrega a última camada de identidade Maxvel',()=>{
  assert.match(html,/maxvel-obsidian-06\.css/);
- assert.match(html,/<title>Ronda Pró · Grupo Maxvel/);
+ assert.match(html,/<title>Ronda Pro · Grupo Maxvel/);
  assert.doesNotMatch(html,/(?:alt|content|title)="[^"]*Horizon/);
  assert.match(css,/--mx-red:#f01832/);
  assert.match(css,/--mx-bg:#09090b/);

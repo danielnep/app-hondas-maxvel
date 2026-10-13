@@ -1,6 +1,12 @@
-# Ronda Pró · Grupo Maxvel
+# Ronda Pro · Grupo Maxvel
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Grupo Maxvel (grafite, vermelho e prata), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
+
+## Implantação do Ronda Pro no Railway
+
+Hospedagem configurada para usar a branch `main` deste repositório. A preparação parte da última atualização integrada, commit `0b508e5ff7184b0450a4da74405b9b57a9964f6f` (PR #29), com as funcionalidades existentes preservadas.
+
+Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pelo Railway, publica somente os arquivos da interface e oferece `/health`. Esta hospedagem mantém a versão de avaliação; o servidor HTTP não implementa autenticação, banco nem sincronização de rondas entre aparelhos. Os registros locais continuam vinculados ao domínio de cada navegador; mudar de domínio não transfere esse armazenamento.
 
 ## Refinamento visual · 13/10/2026
 
