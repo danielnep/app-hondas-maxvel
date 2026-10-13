@@ -101,7 +101,8 @@ try{
    await (await revealDialogControl(page,'#incident-form [name="title"]')).fill('Luz de acesso apagada');
    await (await revealDialogControl(page,'#incident-form [name="description"]')).fill('Iluminação do portão em desacordo no cenário de demonstração.');
    await (await revealDialogControl(page,'#incident-form [name="truth"]')).check();
-   await tap(page,'#incident-form button[type="submit"]');
+   await revealDialogControl(page,'#incident-form button[type="submit"]');
+    await tap(page,'#incident-form button[type="submit"]');
    if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="demo-leave"]');}
    else await tap(page,'.patrol-actions [data-action="demo-leave"]');
    await wait(7400);
