@@ -37,10 +37,11 @@ function initialize(){
   'CREATE INDEX IF NOT EXISTS idx_messages_event ON messages(event_id,created_at)',
   'CREATE TABLE IF NOT EXISTS media(id TEXT PRIMARY KEY,event_id TEXT NOT NULL,author_id TEXT NOT NULL,mimetype TEXT NOT NULL,filename TEXT NOT NULL,captured_at INTEGER NOT NULL,latitude REAL,longitude REAL,battery REAL,created_at INTEGER NOT NULL,FOREIGN KEY(event_id) REFERENCES events(id))',
   'CREATE TABLE IF NOT EXISTS templates(id TEXT PRIMARY KEY,title TEXT NOT NULL,trigger TEXT NOT NULL,priority TEXT NOT NULL,enabled INTEGER NOT NULL,cooldown_min INTEGER NOT NULL,recipients TEXT NOT NULL DEFAULT "[]",subject TEXT NOT NULL DEFAULT "",message TEXT NOT NULL DEFAULT "")',
-  'CREATE TABLE IF NOT EXISTS recipients(email TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1)',
+  'CREATE TABLE IF NOT EXISTS recipients(email TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1,group_name TEXT NOT NULL DEFAULT "operations")',
   'CREATE TABLE IF NOT EXISTS email_jobs(event_id TEXT PRIMARY KEY,status TEXT NOT NULL,last_error TEXT,at INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,action TEXT NOT NULL,subject_id TEXT,at INTEGER NOT NULL)'
  ];for(const statement of ddl)db.exec(statement);
+ if(!db.prepare("PRAGMA table_info(recipients)").all().some(x=>x.name==='group_name'))db.exec('ALTER TABLE recipients ADD COLUMN group_name TEXT NOT NULL DEFAULT "operations"');
  if(!db.prepare("SELECT id FROM users WHERE role='master' LIMIT 1").get()){
   const salt=randomBytes(16).toString('hex');
   db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)')
@@ -48,6 +49,9 @@ function initialize(){
  }
  const insert=db.prepare('INSERT OR IGNORE INTO templates(id,title,trigger,priority,enabled,cooldown_min) VALUES(?,?,?,?,?,?)');
  for(const row of presets)insert.run(...row);
+ const defaultGroups={incident:['supervisor'],irregularity:['supervisor'],support:['operations','supervisor'],gps_unreliable:['operations'],gps_disabled:['operations'],patrol_interrupted:['supervisor'],patrol_late:['supervisor'],checkpoint_pending:['supervisor'],patrol_completed:['supervisor']};
+ const seedRecipients=db.prepare("UPDATE templates SET recipients=? WHERE id=? AND recipients='[]'");
+ for(const [k,v] of Object.entries(defaultGroups))seedRecipients.run(JSON.stringify(v),k);
  return db;
 }
 export function createOperationalApi(){
@@ -60,7 +64,8 @@ export function createOperationalApi(){
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
  const visible=(u,e)=>u.role!=='ronda'||e.user_id===u.id;
  async function notifyEmail(record,template){
-  const emails=db.prepare('SELECT email FROM recipients WHERE enabled=1').all().map(x=>x.email);
+  const targetGroups=serialize(template.recipients)||[];
+  const emails=db.prepare('SELECT email,group_name FROM recipients WHERE enabled=1').all().filter(x=>!targetGroups.length||targetGroups.includes(x.group_name)).map(x=>x.email);
   let status='unconfigured',error=null;
   if(emails.length&&process.env.RESEND_API_KEY&&process.env.RONDA_PRO_EMAIL_FROM){
    try{
@@ -152,9 +157,9 @@ export function createOperationalApi(){
    }
    if(p==='/api/recipients'&&m==='GET'&&manager(a)){resp(res,200,{recipients:db.prepare('SELECT * FROM recipients').all()});return true;}
    if(p==='/api/recipients'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},email=clean(d.email).toLowerCase();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){resp(res,422,{error:'E-mail inválido'});return true;}
-    db.prepare('INSERT INTO recipients(email,enabled) VALUES(?,?) ON CONFLICT(email) DO UPDATE SET enabled=excluded.enabled').run(email,d.enabled===false?0:1);
+    const d=serialize((await body(req)).toString())||{},email=clean(d.email).toLowerCase(),group=clean(d.groupName)||'operations';
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!['supervisor','operations','management','master'].includes(group)){resp(res,422,{error:'E-mail ou grupo inválido'});return true;}
+    db.prepare('INSERT INTO recipients(email,enabled,group_name) VALUES(?,?,?) ON CONFLICT(email) DO UPDATE SET enabled=excluded.enabled,group_name=excluded.group_name').run(email,d.enabled===false?0:1,group);
     audit(a,'recipient.save',email);resp(res,200,{ok:true});return true;
    }
    if(p==='/api/dashboard'&&m==='GET'&&reviewer(a)){
