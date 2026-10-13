@@ -86,7 +86,7 @@ export function updateLocation(s,fix,now=Date.now()){
   if(outside){
     const e=s.gpsOutsideEvidence;
     // Exigir no mínimo três amostras espaçadas; não confundir oscilação com desvio.
-    s.gpsOutsideEvidence=(!e||now-e.lastAt>30000)?{count:1,firstAt:now,lastAt:now}:{count:e.count+(now-e.lastAt>=2500?1:0),firstAt:e.firstAt,lastAt:now};
+    s.gpsOutsideEvidence=(!e||now-e.lastAt>30000)?{count:1,firstAt:now,lastAt:now}:{count:e.count+(now-e.lastAt>=2500?1:0),firstAt:e.firstAt,lastAt:now-e.lastAt>=2500?now:e.lastAt};
     if(s.gpsOutsideEvidence.count<3||now-s.gpsOutsideEvidence.firstAt<7000){
       s.insideSince=null;if(point)s.checkpoints[s.index].dwellMs=0;
       return {valid:true,inside:false,outside:false,suspected:true,reason:'confirming-gps'};
