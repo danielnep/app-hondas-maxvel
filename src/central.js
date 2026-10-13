@@ -9,7 +9,7 @@ const roles={ronda:'Vigia',operador:'Equipe interna',admin:'Administrador',maste
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
- if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}throw new Error(msg)}
+ if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
  return res.headers.get('content-type')?.includes('application/json')?res.json():res.blob();
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
@@ -36,7 +36,7 @@ async function load(){
   if(review()){dashboard=responses[3];users=responses[4].users||[];emailJobs=responses[5].jobs||[];mySummary=null;}
   else {mySummary=responses[3];dashboard=null;users=[];emailJobs=[];}
   render();
- }catch(err){sessionStorage.removeItem('rondaspro_api_token');token='';loginView(err.message)}
+ }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Avisar equipe','✉']],
@@ -292,5 +292,8 @@ document.addEventListener('submit',async e=>{
   }
  }catch(err){flash(err.message)}
 });
-exit.addEventListener('click',async()=>{try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');loginView()});
+// A central do operador acompanha o servidor sem depender de recarregar a página.
+// Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
+setInterval(()=>{if(account?.role==='operador'&&page==='monitor'&&!document.hidden)void load();},30000);
+exit.addEventListener('click',async()=>{try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
