@@ -50,13 +50,13 @@ Leia [critérios e estudo de produto/UI/UX 2.0](docs/PRODUTO-UX-V2.md).
 
 ## Reformulação profissional mobile-first · outubro de 2026
 
-**Etapa 01 concluída:** pesquisa atual de UI/UX, acessibilidade, experiência mobile e diagnóstico visual de cores e ergonomia. Os problemas levantados, critérios de contraste, proposta preliminar de paleta Horizon Operacional e roadmap de sete etapas estão documentados em [Pesquisa UX Mobile 2026](docs/PESQUISA-UX-MOBILE-2026.md).
+**Etapa 01 concluída:** pesquisa atual de UI/UX, acessibilidade, experiência mobile e diagnóstico visual de cores e ergonomia. Os problemas levantados, critérios de contraste, proposta preliminar de paleta anterior (substituída pela identidade Maxvel) e roadmap de sete etapas estão documentados em [Pesquisa UX Mobile 2026](docs/PESQUISA-UX-MOBILE-2026.md).
 
-**Etapas 02 a 08 implementadas:** auditoria mobile, sistema visual Horizon Operacional, reconstrução da interface, mapa/supervisão, refinamento desktop, testes de qualidade e [simulação dentro do próprio aplicativo](docs/SIMULACAO-APP-ETAPA-08.md). A homologação de produção continua separada.
+**Etapas 02 a 08 implementadas:** auditoria mobile, sistema visual anterior, posteriormente substituído pelo padrão Maxvel, reconstrução da interface, mapa/supervisão, refinamento desktop, testes de qualidade e [simulação dentro do próprio aplicativo](docs/SIMULACAO-APP-ETAPA-08.md). A homologação de produção continua separada.
 
 ## Evolução UI/UX operacional
 
-O aplicativo foi reformulado com foco **mobile-first** e identidade visual Horizon Operacional: navegação acessível por perfil, aviso de localização compacto, ação primária de iniciar ronda em destaque, contraste reforçado e mapa cartográfico detalhado. A supervisão agora inclui um destino **Mapa** com seleção de pontos e uma fila de alertas filtrável entre **Pendentes** e **Todos**.
+O aplicativo foi reformulado com foco **mobile-first** e identidade operacional Maxvel: navegação acessível por perfil, aviso de localização compacto, ação primária de iniciar ronda em destaque, contraste reforçado e mapa cartográfico detalhado. A supervisão agora inclui um destino **Mapa** com seleção de pontos e uma fila de alertas filtrável entre **Pendentes** e **Todos**.
 
 O mapa usa cartografia OpenStreetMap quando disponível; a linha entre os pontos de demonstração é **ilustrativa**, não um trajeto validado pelas ruas. A simulação é **o próprio aplicativo**, sem uma apresentação paralela: o comprador alterna entre Ronda, Supervisão, Gestão e Administração na mesma janela. Eventos permanecem **locais e ilustrativos**, não remotos.
 
