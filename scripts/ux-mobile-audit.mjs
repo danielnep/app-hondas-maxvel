@@ -11,6 +11,11 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900],[1920,1080]];
 const metrics=[];let fatal=0;
 async function click(page,selector){
+ if(selector.startsWith('[data-view=')){
+  if(!selector.includes(':visible'))selector+=':visible';
+  if(!await page.locator(selector).count())await page.locator('[data-action="open-mobile-menu"]').click();
+ }
+
  if(selector==='[data-action="sim-role-picker"]'){
   if(!await page.locator(selector+':visible').count())await page.locator('[data-action="profile-menu"]').click();
   selector+=':visible';
