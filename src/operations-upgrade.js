@@ -173,7 +173,6 @@ export function createOperationsUpgrade(api){
    dashboard.insertAdjacentHTML('beforeend',panicButton());
    if(view==='minha-ronda'){
     main.querySelector('.patrol-action-body')?.insertAdjacentHTML('beforeend',gpsQrRow());
-    main.querySelector('.patrol-extra-flow')?.insertAdjacentHTML('afterbegin',statusBanner());
    }
   }
   if(user?.role==='admin'){
