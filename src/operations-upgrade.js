@@ -176,9 +176,6 @@ export function createOperationsUpgrade(api){
    }
   }
   if(user?.role==='admin'){
-   if(view==='overview'){
-    main.querySelector('.v4-dashboard-heading')?.insertAdjacentHTML('beforeend',user.role==='admin'?adminQuick():'<button type="button" class="button" data-ops="export">⬇ Exportar relatório</button>');
-   }
    if(view==='relatorios'){
     main.querySelector('.report-page')?.insertAdjacentHTML('afterbegin',adminQuick()+reportSmart());
    }
