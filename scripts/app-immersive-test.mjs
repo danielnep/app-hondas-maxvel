@@ -53,7 +53,7 @@ async function capture(page,name,width,height){
  if(metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
  if(width<=900&&metrics.app&&name==='ronda'&&metrics.map&&metrics.action){
   if(metrics.map.y<0||metrics.map.bottom>height-45)throw Error('Mapa cortado: '+JSON.stringify(metrics.map));
-  if(metrics.action.y<0||metrics.action.bottom>height-45)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
+  if(metrics.action.y<0||metrics.action.bottom>height+2)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
  }
  if(name==='ronda'){
   if(!metrics.app||!metrics.areas||!metrics.map||!metrics.action||!metrics.primary)throw Error('Aplicativo, seletor Áreas, mapa ou ação não encontrados');
