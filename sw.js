@@ -1,7 +1,7 @@
 /* Cache da interface para a demonstração Web/PWA. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v1';
+const CACHE='rondas-pro-interface-v2';
 const CORE=[
  './','./index.html',
  './assets/ronda-pro.css','./assets/ronda-pro-upgrade.css',
