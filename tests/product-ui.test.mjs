@@ -9,8 +9,9 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 test('aplicativo usa identidade Maxvel própria nos acessos web e Android',()=>{
  assert.ok(existsSync(new URL('../assets/maxvel-icon.svg',import.meta.url)));
  assert.match(html,/rel="icon"[^>]+maxvel-icon\.svg/);
- assert.match(app,/class="brand-partners"/);
- assert.match(app,/horizon-logo-transparente\.webp/);
+ assert.match(app,/class="brand maxvel-only-brand"/);
+ assert.doesNotMatch(app,/Horizon|horizon/);
+ assert.match(app,/aria-label="Grupo Maxvel"/);
  const gradle=readFileSync(new URL('../android\/app\/build.gradle',import.meta.url),'utf8');
  assert.match(gradle,/assets\/\*\*/);
 });
