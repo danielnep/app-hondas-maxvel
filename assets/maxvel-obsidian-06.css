@@ -340,3 +340,86 @@ dialog .sim-onboarding .maxvel-only-brand{margin-bottom:18px}
  .dashboard .app-content :is(.card,.report-card,.table-wrap){border:1px solid #ccc!important}
  .dashboard .app-content .report-page .button{display:none!important}
 }
+
+
+/* MAXVEL MOTION 01 | inspiração: Apple HIG Motion (feedback breve e preciso) e WWDC23 Spring.
+   Durações curtas + continuidade espacial, sem pulo elástico/bounce.
+   Somente compositor: opacity/transform; sem bloquear a interação. */
+:root{
+  --mx-motion-fast:130ms;
+  --mx-motion-medium:200ms;
+  --mx-motion-sheet:280ms;
+  --mx-motion-smooth:cubic-bezier(.22,1,.36,1);
+  --mx-motion-press:cubic-bezier(.2,.8,.2,1);
+}
+@keyframes mx-content-enter{
+  from{opacity:.82;transform:translate3d(0,5px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes mx-panel-enter{
+  from{opacity:.75;transform:translate3d(0,7px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes mx-drawer-in{
+  from{opacity:.9;transform:translate3d(-12px,0,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes mx-dialog-in{
+  from{opacity:.75;transform:translate3d(0,8px,0) scale(.99)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+.dashboard .app-content>.page-title,
+.dashboard .app-content>.operations-page:not(.dashboard-v4),
+.dashboard .app-content>.report-page{
+  animation:mx-content-enter var(--mx-motion-medium) var(--mx-motion-smooth) both;
+}
+.dashboard .app-content .v4-stage>.v4-pane:not([hidden]),
+.dashboard .app-content .ux-report-stage>[data-ux-report]:not([hidden]),
+.dashboard .app-content .ux-ronda-stage>[data-ux-subpage]:not([hidden]){
+  animation:mx-panel-enter var(--mx-motion-medium) var(--mx-motion-smooth) both;
+}
+.dashboard .sidebar .side-link,
+.dashboard .header-actions>button,
+.dashboard .mobile-nav button,
+.dashboard .app-content :is(.button,.ux-row-pagination button,.hx05-open-button,.v4-pane-foot button),
+dialog :is(button,input,select,textarea){
+  transition:background-color var(--mx-motion-fast) ease-out,
+   color var(--mx-motion-fast) ease-out,border-color var(--mx-motion-fast) ease-out,
+   opacity var(--mx-motion-fast) ease-out,transform var(--mx-motion-fast) var(--mx-motion-press)!important;
+}
+.dashboard .app-content :is(.ux-report-tabs,.v4-dashboard-tabs,.ux-ronda-tabs) button{
+  transition:color var(--mx-motion-fast) ease-out,
+  border-color var(--mx-motion-medium) var(--mx-motion-smooth),
+  background-color var(--mx-motion-fast) ease-out!important;
+}
+.dashboard .header-actions>button:active,
+.dashboard .mobile-nav button:active,
+.dashboard .app-content :is(.button,.ux-row-pagination button,.hx05-open-button):active,
+dialog button:active{
+  transform:scale(.98)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  .dashboard .sidebar .side-link:hover,
+  .dashboard .app-content :is(.v4-history-row,.v4-team-row):hover{
+    transform:translate3d(2px,0,0)!important;
+  }
+}
+dialog[open]:has(.ux-access-menu){animation:mx-drawer-in var(--mx-motion-sheet) var(--mx-motion-smooth) both}
+dialog[open]:not(:has(.ux-access-menu)){
+  animation:mx-dialog-in var(--mx-motion-medium) var(--mx-motion-smooth) both;
+}
+dialog[open]::backdrop{animation:mx-backdrop-in var(--mx-motion-medium) ease-out both}
+@keyframes mx-backdrop-in{from{opacity:0}to{opacity:1}}
+/* Acessibilidade: não inventar substituições animadas quando o sistema pediu reduzir movimento. */
+@media(prefers-reduced-motion:reduce){
+  :root{--mx-motion-fast:0ms;--mx-motion-medium:0ms;--mx-motion-sheet:0ms}
+  .dashboard .app-content>.page-title,
+  .dashboard .app-content>.operations-page,
+  .dashboard .app-content>.report-page,
+  .dashboard .app-content .v4-stage>.v4-pane,
+  .dashboard .app-content .ux-report-stage>[data-ux-report],
+  .dashboard .app-content .ux-ronda-stage>[data-ux-subpage],
+  dialog[open],dialog[open]::backdrop{
+    animation:none!important;transition:none!important;transform:none!important;
+  }
+}
