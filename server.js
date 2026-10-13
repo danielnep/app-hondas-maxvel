@@ -2,6 +2,7 @@ import {createServer} from 'node:http';
 import {readFile, stat} from 'node:fs/promises';
 import {dirname, extname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createOperationalApi} from './server/operational-api.js';
 
 const publicRoot = dirname(fileURLToPath(import.meta.url));
 const contentTypes = {
@@ -33,6 +34,7 @@ function publicFile(requestUrl) {
 }
 
 export function createAppServer() {
+  const operationalApi=createOperationalApi();
   return createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -42,6 +44,7 @@ export function createAppServer() {
       response.writeHead(status, {'Content-Type': type, 'Content-Length': Buffer.byteLength(body)});
       response.end(request.method === 'HEAD' ? undefined : body);
     };
+    if (request.url?.startsWith('/api/')) {await operationalApi(request,response);return;}
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.setHeader('Allow', 'GET, HEAD');
       send(405, 'Método não permitido.');
