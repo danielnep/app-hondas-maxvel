@@ -151,6 +151,21 @@ export function createOperationsUpgrade(api){
    }
   }finally{inSync=false;}
  }
+ async function recordNativeFixes(rows,sessionId){
+  if(!sessionId||!Array.isArray(rows))return;
+  const known=new Set(events.filter(e=>e.kind==='gps').map(e=>e.id));
+  let queued=0;
+  for(const row of rows.slice(0,3000)){
+   if(!Number.isFinite(row.at)||!Number.isFinite(row.lat)||!Number.isFinite(row.lng)||!Number.isFinite(row.accuracy))continue;
+   const eid='native-'+sessionId+'-'+row.at;
+   if(known.has(eid))continue;
+   await persistEvent({id:eid,at:row.at,kind:'gps',status:'pending',payload:{
+    mode:'real',sessionId,position:{lat:row.lat,lng:row.lng,accuracy:row.accuracy},
+    battery:Number.isFinite(row.battery)?row.battery:null,source:'android-background'}});
+   known.add(eid);queued++;
+  }
+  if(queued)api.notify(queued+' posições nativas encaminhadas para a fila de sincronização.');
+ }
  async function recordIncident(incident){
   const c=current(),session=c.session;
   if(session?.mode!=='real')return;
@@ -438,7 +453,7 @@ export function createOperationsUpgrade(api){
  load();
  setInterval(()=>{autoReport().catch(console.warn);sampleBattery().catch(console.warn);syncPending().catch(console.warn);},60000);
  sampleBattery().catch(console.warn);
- return {decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
+ return {decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordNativeFixes,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
   '<details class="ops-guide-details"><summary>Recursos operacionais adicionais e modo offline</summary><p><b>GPS contínuo:</b> acompanhe a ronda durante o serviço. No Android o serviço nativo pode registrar posições em segundo plano, sujeito às permissões do sistema.</p>'+
   '<p><b>Sequência e validação:</b> 25 m, 30 segundos e QR opcional; Administração configura GPS, QR ou ambos.</p>'+
   '<p><b>Sem conexão:</b> coordenadas ficam no SQLite do Android; registros e evidências ficam no IndexedDB do dispositivo. Envio ao servidor exige integração posterior.</p>'+
