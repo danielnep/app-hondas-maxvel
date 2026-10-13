@@ -1,6 +1,6 @@
 import {DatabaseSync} from 'node:sqlite';
-import {mkdirSync} from 'node:fs';
-import {dirname,resolve} from 'node:path';
+import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
+import {dirname,resolve,join} from 'node:path';
 import {randomBytes,scryptSync,timingSafeEqual,createHash,randomUUID} from 'node:crypto';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
@@ -35,6 +35,7 @@ function initialize(){
   'CREATE INDEX IF NOT EXISTS idx_event_user ON events(user_id,occurred_at)',
   'CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY,event_id TEXT NOT NULL,author_id TEXT NOT NULL,audience TEXT NOT NULL,body TEXT NOT NULL,created_at INTEGER NOT NULL,FOREIGN KEY(event_id) REFERENCES events(id),FOREIGN KEY(author_id) REFERENCES users(id))',
   'CREATE INDEX IF NOT EXISTS idx_messages_event ON messages(event_id,created_at)',
+  'CREATE TABLE IF NOT EXISTS media(id TEXT PRIMARY KEY,event_id TEXT NOT NULL,author_id TEXT NOT NULL,mimetype TEXT NOT NULL,filename TEXT NOT NULL,captured_at INTEGER NOT NULL,latitude REAL,longitude REAL,battery REAL,created_at INTEGER NOT NULL,FOREIGN KEY(event_id) REFERENCES events(id))',
   'CREATE TABLE IF NOT EXISTS templates(id TEXT PRIMARY KEY,title TEXT NOT NULL,trigger TEXT NOT NULL,priority TEXT NOT NULL,enabled INTEGER NOT NULL,cooldown_min INTEGER NOT NULL,recipients TEXT NOT NULL DEFAULT "[]",subject TEXT NOT NULL DEFAULT "",message TEXT NOT NULL DEFAULT "")',
   'CREATE TABLE IF NOT EXISTS recipients(email TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1)',
   'CREATE TABLE IF NOT EXISTS email_jobs(event_id TEXT PRIMARY KEY,status TEXT NOT NULL,last_error TEXT,at INTEGER NOT NULL)',
@@ -158,6 +159,40 @@ export function createOperationalApi(){
    }
    if(p==='/api/dashboard'&&m==='GET'&&reviewer(a)){
     resp(res,200,{source:'sqlite',metrics:db.prepare('SELECT kind,COUNT(*) count FROM events GROUP BY kind').all(),team:db.prepare("SELECT u.id,u.name,u.description,COUNT(e.id) events,SUM(CASE WHEN e.kind='panic' THEN 1 ELSE 0 END) panics FROM users u LEFT JOIN events e ON e.user_id=u.id WHERE u.role='ronda' GROUP BY u.id").all(),updatedAt:now()});return true;
+   }
+   if(p==='/api/media'&&m==='POST'){
+    const eid=clean(req.headers['x-ronda-event-id']),ev=event(eid);
+    if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
+    const mime=clean(req.headers['content-type']).split(';')[0];
+    const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm'];
+    if(!types.includes(mime)){resp(res,415,{error:'Formato não autorizado'});return true;}
+    const bytes=await body(req,25*1024*1024);
+    const magic=bytes.subarray(0,12);
+    const correct=(mime==='image/jpeg'&&magic[0]===255&&magic[1]===216)
+      ||(mime==='image/png'&&magic.subarray(1,4).toString()==='PNG')
+      ||(mime==='image/webp'&&magic.subarray(8,12).toString()==='WEBP')
+      ||(mime==='video/mp4'&&magic.subarray(4,8).toString()==='ftyp')
+      ||(mime==='video/webm'&&magic.subarray(0,4).equals(Buffer.from([26,69,223,163])));
+    if(!correct){resp(res,415,{error:'Conteúdo do arquivo incompatível'});return true;}
+    const mediaId=id(),folder=resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media');
+    mkdirSync(folder,{recursive:true});writeFileSync(join(folder,mediaId),bytes,{flag:'wx',mode:0o600});
+    const captured=Number(req.headers['x-captured-at']);
+    db.prepare('INSERT INTO media(id,event_id,author_id,mimetype,filename,captured_at,latitude,longitude,battery,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)')
+     .run(mediaId,eid,a.id,mime,mediaId,Number.isFinite(captured)&&captured>0?captured:now(),ev.lat,ev.lng,ev.battery,now());
+    audit(a,'media.upload',eid);resp(res,201,{id:mediaId});return true;
+   }
+   const mediaPath=p.match(/^\/api\/media\/([0-9a-f-]+)$/i);
+   if(mediaPath&&m==='GET'){
+    const item=db.prepare('SELECT * FROM media WHERE id=?').get(mediaPath[1]),ev=item&&event(item.event_id);
+    if(!ev||!visible(a,ev)){resp(res,404,{error:'Mídia não encontrada'});return true;}
+    const bytes=readFileSync(join(resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media'),item.filename));
+    res.writeHead(200,{'Content-Type':item.mimetype,'Content-Disposition':'inline','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+    res.end(bytes);return true;
+   }
+   if(p==='/api/events/media'&&m==='GET'){
+    const eid=clean(u.searchParams.get('eventId')),ev=event(eid);
+    if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
+    resp(res,200,{media:db.prepare('SELECT id,mimetype,captured_at,latitude,longitude,battery FROM media WHERE event_id=? ORDER BY created_at').all(eid)});return true;
    }
    if(p==='/api/export'&&m==='GET'&&manager(a)){
     const events=db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT 50000').all(),messages=db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id ORDER BY m.created_at DESC LIMIT 50000').all();
