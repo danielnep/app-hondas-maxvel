@@ -472,13 +472,13 @@ export function createOperationsUpgrade(api){
  load();
  setInterval(()=>{autoReport().catch(console.warn);sampleBattery().catch(console.warn);syncPending().catch(console.warn);},60000);
  sampleBattery().catch(console.warn);
- return {decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordGpsIssue,gpsQualityRecovered,recordNativeFixes,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
+ return {allEvents:()=>[...events],decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordGpsIssue,gpsQualityRecovered,recordNativeFixes,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
   '<details class="ops-guide-details"><summary>Recursos operacionais adicionais e modo offline</summary><p><b>GPS contínuo:</b> acompanhe a ronda durante o serviço. No Android o serviço nativo pode registrar posições em segundo plano, sujeito às permissões do sistema.</p>'+
   '<p><b>Sequência e validação:</b> 25 m, 30 segundos e QR opcional; Administração configura GPS, QR ou ambos.</p>'+
-  '<p><b>Sem conexão:</b> coordenadas ficam no SQLite do Android; registros e evidências ficam no IndexedDB do dispositivo. Envio ao servidor exige integração posterior.</p>'+
+  '<p><b>Sem conexão:</b> coordenadas ficam no SQLite do Android; registros e evidências ficam no IndexedDB do dispositivo. Envio ao servidor ocorre somente com login autenticado, servidor configurado e conexão disponível.</p>'+
   '<p><b>Salvar mapa:</b> mantém os pontos e o esquema da rota disponíveis sem internet; ruas reais exigem mapa offline específico.</p>'+
   '<p><b>Botão de pânico:</b> alerta prioritário no histórico da demonstração e opção de abrir o discador 190.</p>'+
   '<p><b>Gestão e cliente:</b> acompanham progresso e histórico deste cenário; alertas remotos precisam de backend.</p>'+
-  '<p><b>Ocorrências:</b> anexar foto, áudio ou vídeo pelo aparelho. <b>Relatórios:</b> geração automática local e exportação por seções em HTML, CSV ou JSON.</p></details>'
+  '<p><b>Ocorrências:</b> anexar foto, áudio ou vídeo pelo aparelho. <b>Relatórios:</b> geração automática local e exportação por seções em XLSX com dashboard, HTML, CSV ou JSON.</p></details>'
  };
 }
