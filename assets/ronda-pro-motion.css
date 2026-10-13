@@ -96,6 +96,7 @@ dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)
 .button.primary svg { animation:rp-arrow 2.8s ease-in-out infinite; }
 .mobile-mini-meter>span,.progress-bar>span,.report-progress-track i { transition:width 420ms var(--rp-soft)!important; background:var(--mx-action-fill)!important; }
 #toast { transition:opacity 220ms,transform 380ms var(--rp-spring)!important; }
+#toast:not(.toast-visible) { transform:translate(-50%,8px)!important; pointer-events:none; }
 .horizon-tour .tour-panel { animation:rp-sheet-enter 380ms var(--rp-spring) both!important; }
 .horizon-tour .tour-cutout { transition:top 300ms var(--rp-soft),left 300ms var(--rp-soft),width 300ms var(--rp-soft),height 300ms var(--rp-soft)!important; }
 @media(prefers-reduced-motion:reduce) {
