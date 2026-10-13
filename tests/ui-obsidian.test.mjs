@@ -8,7 +8,7 @@ const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8'
 
 test('UI carrega a última camada de identidade Maxvel',()=>{
  assert.match(html,/ronda-pro\.css/);
- assert.match(html,/<title>Ronda Pró · Grupo Maxvel/);
+ assert.match(html,/<title>Rondas Pro · Grupo Maxvel/);
  assert.doesNotMatch(html,/(?:alt|content|title)="[^"]*Horizon/);
  assert.match(css,/--mx-red:#e52a40/);
  assert.match(css,/--mx-bg:#15171a/);

@@ -39,7 +39,7 @@ test('servidor de implantação entrega o app e impede acesso ao repositório', 
     assert.ok(Number(head.headers['content-length']) > 0);
     const health = await get('/health');
     assert.equal(health.status, 200);
-    assert.deepEqual(JSON.parse(health.body), {status: 'ok', app: 'Ronda Pro'});
+    assert.deepEqual(JSON.parse(health.body), {status: 'ok', app: 'Rondas Pro'});
   });
   await t.test('arquivos internos, travessia e caminhos inválidos ficam inacessíveis', async () => {
     for (const path of ['/.git/config', '/.env', '/package.json', '/server.js', '/docs/R6-BACKEND-CONTRATOS-E-DEPENDENCIAS.md', '/android/app/build.gradle', '/src/../server.js', '/src/%2e%2e/server.js', '/src/%2eenv', '/src/%2e%2e%5cserver.js', '/src/%00', '/src/%ZZ', '/src/missing.js', '/assets/']) {

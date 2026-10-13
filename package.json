@@ -1,9 +1,9 @@
 {
-  "name": "ronda-pro",
+  "name": "rondas-pro",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Ronda Pro do Grupo Maxvel: rondas operacionais, mapa, rotas e base Android",
+  "description": "Rondas Pro do Grupo Maxvel: rondas operacionais, mapa, rotas e base Android",
   "scripts": {
     "start": "node server.js",
     "check": "node --check server.js && node --check src/app.js && node --check src/map.js && node --check src/domain.js && node --check src/simulation.js && node --check src/storage.js && node --check src/consent.js && node --check src/tutorial.js && node --check src/scheduling.js && node --check src/evidence.js",

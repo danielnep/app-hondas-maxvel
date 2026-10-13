@@ -1,10 +1,12 @@
-# Ronda Pró · Grupo Maxvel
+# Rondas Pro · Grupo Maxvel
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Grupo Maxvel (grafite, vermelho e prata), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
-## Implantação do Ronda Pro no Railway
+## Implantação do Rondas Pro no Railway
 
-Hospedagem configurada para usar a branch `main` deste repositório. A preparação parte da última atualização integrada, commit `0b508e5ff7184b0450a4da74405b9b57a9964f6f` (PR #29), com as funcionalidades existentes preservadas.
+Aplicação preparada para usar a branch `main` deste repositório, incluindo as correções integradas da PR #30. Nome do projeto: **App Rondas Pro**. Nome do serviço: `rondas-pro`. A criação do serviço e a publicação precisam ser confirmadas no Railway; esta preparação não significa que já exista uma implantação ativa.
+
+Configuração do serviço: runtime **Node.js 24**, comando de início `npm start`, healthcheck `/health` e domínio público HTTPS gerado pelo Railway. O ambiente usa a `PORT` definida pela plataforma e não requer chave de API para a cartografia OpenStreetMap.
 
 Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pelo Railway, publica somente os arquivos da interface e oferece `/health`. Esta hospedagem mantém a versão de avaliação; o servidor HTTP não implementa autenticação, banco nem sincronização de rondas entre aparelhos. Os registros locais continuam vinculados ao domínio de cada navegador; mudar de domínio não transfere esse armazenamento.
 
@@ -14,7 +16,7 @@ A identidade pública é exclusivamente **Grupo Maxvel**. A versão 07 suaviza o
 
 ## Revisão 08 · marca real e consistência visual
 
-A interface utiliza a imagem original fornecida da Maxvel ao lado do nome **Ronda Pró**. A navegação móvel foi transferida para o menu no cabeçalho, sem barra inferior. Painéis, botões, campos e janelas têm cantos retos; apenas as geocercas e os marcadores geográficos mantêm círculos. Um único CSS compilado (`assets/ronda-pro.css`) preserva a estrutura dos componentes e aplica uma paleta grafite/vermelho. Execute `python3 scripts/build-styles.py` ao alterar a estrutura, o tema ou o layout.
+A interface utiliza a imagem original fornecida da Maxvel ao lado do nome **Rondas Pro**. A navegação móvel foi transferida para o menu no cabeçalho, sem barra inferior. Painéis, botões, campos e janelas têm cantos retos; apenas as geocercas e os marcadores geográficos mantêm círculos. Um único CSS compilado (`assets/ronda-pro.css`) preserva a estrutura dos componentes e aplica uma paleta grafite/vermelho. Execute `python3 scripts/build-styles.py` ao alterar a estrutura, o tema ou o layout.
 
 O mapa começa com OpenStreetMap e aplica a aparência escura aos tiles. A fonte anterior podia devolver uma imagem HTTP 200 contendo “API KEY REQUIRED”, sem disparar `tileerror`. Falhas reais de carregamento mantêm a rota esquemática identificada.
 

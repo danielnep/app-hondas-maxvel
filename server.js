@@ -47,7 +47,7 @@ export function createAppServer() {
       return;
     }
     if (request.url.split('?')[0] === '/health') {
-      send(200, JSON.stringify({status: 'ok', app: 'Ronda Pro'}), 'application/json; charset=utf-8');
+      send(200, JSON.stringify({status: 'ok', app: 'Rondas Pro'}), 'application/json; charset=utf-8');
       return;
     }
     const relativeFile = publicFile(request.url);
@@ -74,7 +74,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const port = Number(process.env.PORT || 8000);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT inválida.');
   const server = createAppServer();
-  server.listen(port, '0.0.0.0', () => console.log(`Ronda Pro disponível na porta ${port}`));
+  server.listen(port, '0.0.0.0', () => console.log(`Rondas Pro disponível na porta ${port}`));
   server.on('error', error => { console.error(error.message); process.exitCode = 1; });
   const shutdown = () => {
     server.close(() => process.exit(0));

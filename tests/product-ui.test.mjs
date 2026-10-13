@@ -64,8 +64,8 @@ test('cronômetro no topo do mapa e ação aguarda permanência real',()=>{
  assert.doesNotMatch(app,/class="timer-ring" data-live="ring"/);
 });
 
-test('produto Ronda Pró tem identidade preservada e nomes consistentes',()=>{
- assert.match(app,/Ronda Pró/);
+test('produto Rondas Pro tem identidade preservada e nomes consistentes',()=>{
+ assert.match(app,/Rondas Pro/);
  assert.match(app,/ronda-pro-wordmark/);
  assert.match(app,/maxvel-logo\.webp/);
  assert.doesNotMatch(app,/Hondas Maxvel/);

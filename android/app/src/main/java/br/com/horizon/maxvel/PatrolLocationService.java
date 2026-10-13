@@ -55,7 +55,7 @@ public class PatrolLocationService extends Service implements LocationListener {
         PendingIntent stop=PendingIntent.getService(this,1,stopIntent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification n=new Notification.Builder(this,CHANNEL)
           .setSmallIcon(br.com.horizon.maxvel.R.drawable.ic_maxvel)
-          .setContentTitle("Ronda Pró · ronda ativa")
+          .setContentTitle("Rondas Pro · ronda ativa")
           .setContentText("Localização em uso durante a ronda. Toque para abrir.")
           .setContentIntent(open)
           .setOngoing(true)
