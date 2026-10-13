@@ -4,7 +4,7 @@ const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
 const id=x=>escape(x);
 const friendly={panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término'};
-let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,templates=[],selected=null,messages=[],media=[],recentMediaUrls=[];
+let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
 const roles={ronda:'Vigia',operador:'Equipe interna',admin:'Administrador',master:'Master'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 async function api(path,{method='GET',data,headers={},raw}={}){
@@ -27,10 +27,10 @@ async function load(){
  try{
   account=(await api('/me')).user;roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
   const requested=[api('/events?limit=500'),api('/templates')];
-  if(review()){requested.push(api('/dashboard'),api('/users'));}
+  if(review()){requested.push(api('/dashboard'),api('/users'),api('/email-jobs'));}
   const responses=await Promise.all(requested);
   events=responses[0].events||[];templates=responses[1].templates||[];
-  if(review()){dashboard=responses[2];users=responses[3].users||[];}
+  if(review()){dashboard=responses[2];users=responses[3].users||[];emailJobs=responses[4].jobs||[];}
   render();
  }catch(err){sessionStorage.removeItem('rondaspro_api_token');token='';loginView(err.message)}
 }
@@ -79,7 +79,14 @@ function personView(pid){
 }
 function alertView(){
  const form=privileged()?'<form id="save-template" class="surface"><h2>Editar ou criar alerta</h2><div class="grid"><label>Identificador<input name="id" id="template-id" required pattern="[A-Za-z0-9_-]{3,70}"></label><label>Título<input name="title" id="template-title" required></label><label>Tipo<select name="trigger" id="template-trigger"><option value="manual">Manual</option><option value="automatic">Automático</option></select></label><label>Prioridade<select name="priority" id="template-priority"><option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option></select></label><label>Intervalo entre envios (min)<input name="cooldownMin" id="template-cooldown" type="number" min="0" max="10080" value="20" required></label><label>Assunto do e-mail<input name="subject" id="template-subject"></label></div><label><input name="enabled" type="checkbox" checked style="width:auto"> Modelo habilitado</label><label>Grupos de destinatários (marque um ou mais)</label><div class="row">'+[['supervisor','Supervisão'],['operations','Equipe interna'],['management','Gestão'],['master','Master']].map(([v,l])=>'<label><input type="checkbox" name="recipients" value="'+v+'" style="width:auto"> '+l+'</label>').join('')+'</div><label>Texto de acompanhamento<textarea name="message" id="template-message"></textarea></label><button class="primary">Salvar modelo</button></form><form id="recipient-form" class="surface"><h2>Destinatários de alertas</h2><div class="row"><label style="flex:1">E-mail<input type="email" name="email" required></label><label>Grupo<select name="groupName"><option value="supervisor">Supervisão</option><option value="operations">Equipe interna</option><option value="management">Gestão</option><option value="master">Master</option></select></label><button class="primary">Adicionar / ativar</button></div><p class="muted">O provedor de e-mail precisa estar configurado no servidor. Aceitação não garante leitura.</p></form>':'';
- return '<section class="stack"><h1>Alertas configuráveis</h1><section class="surface"><h2>Modelos predefinidos e personalizados</h2><div class="list">'+templates.map(t=>'<button class="list-item" data-template="'+id(t.id)+'"><span><b>'+escape(t.title)+'</b><small>'+escape(t.trigger)+' · '+escape(t.priority)+' · '+Number(t.cooldown_min)+' min</small></span><span class="pill">'+(t.enabled?'Ativo':'Desativado')+'</span></button>').join('')+'</div></section>'+form+'</section>';
+ return '<section class="stack"><h1>Alertas configuráveis</h1><section class="surface"><h2>Modelos predefinidos e personalizados</h2><div class="list">'+templates.map(t=>'<button class="list-item" data-template="'+id(t.id)+'"><span><b>'+escape(t.title)+'</b><small>'+escape(t.trigger)+' · '+escape(t.priority)+' · '+Number(t.cooldown_min)+' min</small></span><span class="pill">'+(t.enabled?'Ativo':'Desativado')+'</span></button>').join('')+'</div></section><section class="surface"><h2>Histórico de entrega de e-mails</h2><p class="muted">Aceito pelo provedor não significa que a mensagem foi lida.</p>'+emailHistory()+'</section>'+form+'</section>';
+}
+function emailHistory(){
+ if(!emailJobs.length)return '<p class="empty">Nenhum e-mail solicitado neste banco.</p>';
+ return '<div class="list">'+emailJobs.slice(0,60).map(job=>
+  '<div class="list-item"><span><b>'+escape(job.description||job.kind)+'</b><small>'+fmt(job.at)+' · '+escape(job.event_id.slice(0,12))+'</small>'+
+  (job.last_error?'<small class="flag">'+escape(job.last_error)+'</small>':'')+'</span><span class="row"><span class="pill">'+escape(job.status)+'</span>'+
+  (privileged()&&job.status!=='accepted'?'<button data-retry-email="'+escape(job.event_id)+'">Reenviar</button>':'')+'</span></div>').join('')+'</div>';
 }
 function sendView(){
  return '<section class="stack"><h1>Alerta por e-mail</h1><form id="send-alert" class="surface"><p class="muted">Função separada do botão de pânico. O registro é salvo antes de tentar a notificação.</p><label>Modelo<select name="templateId">'+templates.filter(t=>t.enabled&&t.trigger==='manual').map(t=>'<option value="'+id(t.id)+'">'+escape(t.title)+'</option>').join('')+'</select></label><label>Descrição<textarea name="description" required minlength="10" maxlength="2000"></textarea></label><button class="primary">Registrar alerta</button></form></section>';
@@ -150,6 +157,7 @@ document.addEventListener('click',async e=>{
    document.querySelector('#save-template').scrollIntoView({behavior:'smooth'});return;
   }
   if(target.hasAttribute('data-refresh')){await load();flash('Registros atualizados');return;}
+  if(target.dataset.retryEmail){await api('/email-jobs/retry',{method:'POST',data:{eventId:target.dataset.retryEmail}});flash('Nova tentativa registrada.');await load();return;}
   if(target.id==='print-chat'){window.print();return;}
   if(target.id==='download-xlsx'){await downloadXlsx();flash('Exportação gerada.');return;}
  }catch(err){flash(err.message)}
