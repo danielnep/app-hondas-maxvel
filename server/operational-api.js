@@ -149,9 +149,14 @@ export function createOperationalApi(){
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
       .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details);
     audit(a,'event.create',eid);
-    if(d.kind==='alert'){
-     const template=db.prepare('SELECT * FROM templates WHERE id=? AND enabled=1').get(clean(d.details?.templateId));
-     if(template)void notifyEmail(event(eid),template);
+    if(['alert','gps_issue','patrol_end'].includes(d.kind)){
+     const key=d.kind==='alert'?clean(d.details?.templateId):d.kind==='gps_issue'?'gps_unreliable':'patrol_completed';
+     const template=db.prepare('SELECT * FROM templates WHERE id=? AND enabled=1').get(key);
+     if(template){
+      const recent=db.prepare("SELECT e.occurred_at FROM email_jobs j JOIN events e ON e.id=j.event_id WHERE e.user_id=? AND e.id<>? AND (e.kind='alert' OR e.kind='gps_issue' OR e.kind='patrol_end') AND json_extract(e.details,'$.templateId')=? ORDER BY e.occurred_at DESC LIMIT 1")
+        .get(a.id,eid,key);
+      if(!recent||now()-recent.occurred_at>=template.cooldown_min*60000)void notifyEmail(event(eid),template);
+     }
     }
     resp(res,201,{id:eid,stored:true});return true;
    }
@@ -194,6 +199,19 @@ export function createOperationalApi(){
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!['supervisor','operations','management','master'].includes(group)){resp(res,422,{error:'E-mail ou grupo inválido'});return true;}
     db.prepare('INSERT INTO recipients(email,enabled,group_name) VALUES(?,?,?) ON CONFLICT(email) DO UPDATE SET enabled=excluded.enabled,group_name=excluded.group_name').run(email,d.enabled===false?0:1,group);
     audit(a,'recipient.save',email);resp(res,200,{ok:true});return true;
+   }
+   if(p==='/api/email-jobs'&&m==='GET'&&reviewer(a)){
+    const jobs=db.prepare('SELECT j.event_id,j.status,j.last_error,j.at,e.user_id,e.kind,e.description FROM email_jobs j JOIN events e ON e.id=j.event_id ORDER BY j.at DESC LIMIT 300').all();
+    resp(res,200,{jobs});return true;
+   }
+   if(p==='/api/email-jobs/retry'&&m==='POST'&&manager(a)){
+    const d=serialize((await body(req)).toString())||{},ev=event(clean(d.eventId));
+    if(!ev){resp(res,404,{error:'Alerta não encontrado'});return true;}
+    const detail=serialize(ev.details)||{},templateId=ev.kind==='alert'?detail.templateId:ev.kind==='gps_issue'?'gps_unreliable':ev.kind==='patrol_end'?'patrol_completed':null;
+    const template=templateId&&db.prepare('SELECT * FROM templates WHERE id=? AND enabled=1').get(templateId);
+    if(!template){resp(res,422,{error:'Modelo não habilitado ou evento não notificável'});return true;}
+    await notifyEmail(ev,template);
+    audit(a,'email.retry',ev.id);resp(res,200,{status:db.prepare('SELECT status FROM email_jobs WHERE event_id=?').get(ev.id)?.status});return true;
    }
    if(p==='/api/dashboard'&&m==='GET'&&reviewer(a)){
     const rounds=aggregateOperationalRounds(db.prepare('SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ORDER BY occurred_at').all());
