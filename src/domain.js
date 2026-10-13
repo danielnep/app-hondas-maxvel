@@ -1,4 +1,5 @@
 /** Regras de rondas independentes da interface. Valores e posições são ilustrativos. */
+import {assessGps} from './field-intelligence.js';
 export const DWELL_MS = 30_000;
 export const RADIUS_METERS = 25;
 export const CORRIDOR_METERS = 30;
@@ -60,7 +61,7 @@ const id=()=>globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().t
 
 export function createSession(name='Colaborador de demonstração',route=DEMO_ROUTE,now=Date.now(),mode='simulation'){
   return {id:id(),name:name.trim().slice(0,60),route:clone(route),mode,startedAt:now,finishedAt:null,
-   status:'active',index:0,insideSince:null,lastFix:null,returnConfirmed:false,
+   status:'active',index:0,insideSince:null,lastFix:null,gpsOutsideEvidence:null,returnConfirmed:false,
    checkpoints:route.points.map(p=>({id:p.id,completedAt:null,dwellMs:0})),
    deviations:[],incidents:[],notifications:[],timeline:[{id:id(),kind:'start',at:now,label:'Ronda iniciada'}]};
 }
@@ -71,6 +72,7 @@ function alert(session,kind,label,now,more={}){session.notifications.unshift({id
 export function updateLocation(s,fix,now=Date.now()){
   if(s.status!=='active')return {valid:false,reason:'inactive'};
   if(!accurateFix(fix,now)){
+    s.gpsOutsideEvidence=null;
     s.insideSince=null;
     if(currentCheckpoint(s))s.checkpoints[s.index].dwellMs=0;
     return {valid:false,reason:'gps-unreliable'};
@@ -78,13 +80,24 @@ export function updateLocation(s,fix,now=Date.now()){
   // Amostras antigas ou grandes lacunas não comprovam permanência contínua.
   if(s.lastFix?.at&&now-s.lastFix.at>MAX_FIX_AGE_MS){s.insideSince=null;const prior=currentCheckpoint(s);if(prior)s.checkpoints[s.index].dwellMs=0;}
   s.lastFix={lat:fix.lat,lng:fix.lng,accuracy:fix.accuracy,at:now};
-  const point=currentCheckpoint(s),outside=corridorDistance(fix,s.route)>CORRIDOR_METERS;
+  const point=currentCheckpoint(s),corridorM=corridorDistance(fix,s.route);
+  const quality=assessGps(fix,{now,corridorDistanceM:corridorM,corridorWidthM:CORRIDOR_METERS});
+  const outside=quality.deviation==='suspected';
+  if(outside){
+    const e=s.gpsOutsideEvidence;
+    // Exigir no mínimo três amostras espaçadas; não confundir oscilação com desvio.
+    s.gpsOutsideEvidence=(!e||now-e.lastAt>30000)?{count:1,firstAt:now,lastAt:now}:{count:e.count+(now-e.lastAt>=2500?1:0),firstAt:e.firstAt,lastAt:now};
+    if(s.gpsOutsideEvidence.count<3||now-s.gpsOutsideEvidence.firstAt<7000){
+      s.insideSince=null;if(point)s.checkpoints[s.index].dwellMs=0;
+      return {valid:true,inside:false,outside:false,suspected:true,reason:'confirming-gps'};
+    }
+  } else s.gpsOutsideEvidence=null;
   if(outside){
     s.insideSince=null;
     if(point)s.checkpoints[s.index].dwellMs=0;
     if(s.route.rules?.logDeviations!==false&&!hasBlock(s)&&!s.deviations.some(d=>!d.returnedAt)){
       const d={id:id(),at:now,pointId:point?.id??s.route.base.id,pointName:point?.name??s.route.base.name,
-       reason:'Saída do corredor da rota',distance:Math.round(corridorDistance(fix,s.route)),position:{lat:fix.lat,lng:fix.lng},
+       reason:'Saída do corredor confirmada por amostras GPS',distance:Math.round(corridorM),position:{lat:fix.lat,lng:fix.lng},
        justification:'',justifiedAt:null,returnedAt:null};
       s.deviations.push(d);note(s,'deviation',`Desvio identificado: ${d.pointName}`,now,{deviationId:d.id});
       alert(s,'deviation','Desvio de rota: justificativa solicitada',now,{deviationId:d.id});
