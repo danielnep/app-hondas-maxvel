@@ -37,3 +37,13 @@ test('menu lateral mobile e ronda map-first mantidos',()=>{
  assert.match(css,/\.dashboard \.app-content\.ronda-page/);
  assert.match(app,/session-detail/);
 });
+
+test('transições breves e consistentes respeitam redução de movimento',()=>{
+ assert.match(css,/--mx-motion-fast:130ms/);
+ assert.match(css,/--mx-motion-medium:200ms/);
+ assert.match(css,/--mx-motion-smooth:cubic-bezier/);
+ assert.match(css,/@keyframes mx-drawer-in/);
+ assert.match(css,/@keyframes mx-panel-enter/);
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.match(css,/animation:none!important;transition:none!important;transform:none!important/);
+});
