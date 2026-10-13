@@ -826,6 +826,7 @@ function syncNativeHistory(){
    const sample={lat,lng,accuracy,at};updateLocation(session,sample,at);
    session.lastNativeSyncAt=at;locationFix=sample;
   }
+  void ops.recordNativeFixes(rows,session.id).catch(console.warn);
   save();render();notify('Posições registradas no Android foram recuperadas para a ronda.');
  }catch(err){console.warn('Histórico nativo indisponível',err)}
 }
