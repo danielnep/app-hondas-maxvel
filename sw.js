@@ -1,12 +1,12 @@
 /* Cache da interface para a demonstração Web/PWA. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v4';
+const CACHE='rondas-pro-interface-v5';
 const CORE=[
  './','./index.html','./manifest.webmanifest',
  './assets/ronda-pro.css','./assets/ronda-pro-upgrade.css',
  './assets/maxvel-logo.webp',
- './src/app.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/central.js','./central.html','./assets/central.css',
+ './src/app.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./central.html','./assets/central.css','./assets/checkpoint-curtain.css',
  './src/domain.js','./src/map.js','./src/wizard.js',
  './src/demo-scenarios.js','./src/dashboard-insights.js',
  './src/dialog-pagination.js','./src/evidence.js',
