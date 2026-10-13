@@ -7,7 +7,7 @@ const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'
 export function createCheckpointCurtain(api){
  let key=null,root=null,torchStream=null,torchTrack=null;
  const closeTorch=()=>{torchStream?.getTracks().forEach(t=>t.stop());torchStream=null;torchTrack=null};
- function close(){root?.remove();root=null;key=null;closeTorch()}
+ function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;closeTorch()}
  const status=()=>{
   if(!root)return;
   const s=api.get().session,point=s&&currentCheckpoint(s);
@@ -24,7 +24,7 @@ export function createCheckpointCurtain(api){
   const state=api.get(),s=state.session,p=s&&currentCheckpoint(s);
   if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||s.mode!=='real'||!p||s.insideSince==null){status();return}
   const next=s.id+':'+s.index;if(root&&key===next){status();return}
-  close();key=next;root=document.createElement('section');
+  close();key=next;document.body.classList.add('checkpoint-arrived');root=document.createElement('section');
   root.className='checkpoint-curtain';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
   root.setAttribute('aria-label','Conferência obrigatória do ponto de ronda');
   root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel">'+
