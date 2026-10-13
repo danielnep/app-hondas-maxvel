@@ -291,7 +291,6 @@ function installViewportViews(){
    paint();
   }
   if(scheduleFiltersOpen)main.querySelector('.schedule-refine')?.classList.add('ux-filters-open');
-  paginateRows(main,'.schedule-row','Programas',3);
  }
 
  if(view==='relatorios'){

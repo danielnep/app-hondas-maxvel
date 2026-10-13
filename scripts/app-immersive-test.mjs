@@ -14,6 +14,11 @@ const browser=await chromium.launch({headless:true,executablePath:chrome,args:['
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900]];
 const report=[];
 async function tap(page,selector){
+ if(selector==='.app-header [data-action="tour-restart"]'&&!await page.locator(selector+':visible').count()){
+  await page.locator('[data-action="profile-menu"]').click();
+  selector='#dialog [data-action="tour-restart"]';
+ }
+
  if(selector.startsWith('[data-view=')){
   if(!selector.includes(':visible'))selector+=':visible';
   if(!await page.locator(selector).count())await page.locator('[data-action="open-mobile-menu"]').click();
