@@ -130,7 +130,13 @@ async function loadMedia(eventId){
    visual.src=url;if(visual.tagName==='VIDEO')visual.controls=true;visual.alt='Evidência do evento';
    const label=document.createElement('figcaption');
    label.textContent=fmt(media.captured_at)+' · '+(media.battery==null?'Bateria não informada':media.battery+'%');
-   element.append(visual,label);host.append(element);
+   element.append(visual,label);
+   if(Number.isFinite(media.latitude)&&Number.isFinite(media.longitude)){
+    const map=document.createElement('a');map.target='_blank';map.rel='noopener noreferrer';
+    map.href='https://www.openstreetmap.org/?mlat='+encodeURIComponent(media.latitude)+'&mlon='+encodeURIComponent(media.longitude)+'#map=18/'+encodeURIComponent(media.latitude)+'/'+encodeURIComponent(media.longitude);
+    map.textContent='Ver local da evidência no mapa ↗';element.append(map);
+   }
+   host.append(element);
   }
  }catch(e){flash(e.message)}
 }
