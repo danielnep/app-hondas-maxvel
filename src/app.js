@@ -13,6 +13,7 @@ import {createUiMotion} from './ui-motion.js?v=2';
 import {createOperationsUpgrade} from './operations-upgrade.js';
 import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
+import {summarizePatrol} from './field-intelligence.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
 
 const installManager=createInstallManager();
@@ -464,18 +465,32 @@ function pageTitle(title,sub,extra=''){return `<div class="page-title"><div><div
 function appShell(){const entries=allNav[user.role];let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
  return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Avaliação · dados locais</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><a class="foot-link" href="/central.html">Central operacional segura</a><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker desktop-only"):""}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${viewContent()}</main><footer class="footer-app">Ambiente de avaliação · dados locais · Grupo Maxvel</footer></div></div></div>`}
 function myPatrolHistory(){
- const name=user?.name||'',mine=sessionList().filter(x=>x.name===name);
- const totalKm=mine.reduce((acc,x)=>acc+(x.distanceKm||0),0);
- const item=x=>'<details class="ops-added-section" style="margin-bottom:12px"><summary style="cursor:pointer;font-weight:700;padding:12px 0">'+esc(x.route?.name||'Ronda')+' · '+new Date(x.startedAt).toLocaleString('pt-BR')+' · '+(x.status==='completed'?'Concluída':'Em andamento')+'</summary>'+
- '<div class="team-list" style="padding:10px 0"><div class="team-row"><strong>Pontos concluídos</strong><span>'+(x.checkpoints||[]).filter(c=>c.completedAt).length+'/'+(x.route?.points?.length||0)+'</span></div>'+
- '<div class="team-row"><strong>Tempo em trajeto</strong><span>'+Math.max(0,Math.round(((x.finishedAt||Date.now())-x.startedAt)/60000))+' min</span></div>'+
- '<div class="team-row"><strong>Ocorrências</strong><span>'+(x.incidents||[]).length+'</span></div>'+
- '<div class="team-row"><strong>Acionamentos/alertas</strong><span>'+(x.notifications||[]).length+'</span></div></div>'+
- '<h3>Registro detalhado</h3><div class="team-list">'+(x.timeline||[]).slice(0,70).map(e=>'<div class="team-row"><div><strong>'+esc(e.label||e.kind||'Registro')+'</strong><small>'+new Date(e.at).toLocaleString('pt-BR')+'</small></div></div>').join('')+'</div></details>';
- return pageTitle('Meu histórico','Veja somente suas rondas, horários, pontos, alertas e ocorrências deste dispositivo.')+
- '<section class="schedule-workspace"><div class="schedule-heading"><div><div class="eyebrow">REGISTROS DO VIGIA</div><h2>'+mine.length+' ronda(s) registradas</h2><p>Os detalhes são exibidos somente quando você abre uma ronda.</p></div></div>'+
+ const name=user?.name||'',mine=sessionList().filter(x=>x.name===name),events=ops.allEvents();
+ const item=x=>{
+  const stat=summarizePatrol(x,events),records=events.filter(e=>e.payload?.sessionId===x.id),
+   observations=(x.checkpoints||[]).filter(p=>p.observation),
+   incidents=(x.incidents||[]),panic=records.filter(e=>e.kind==='panic').length;
+  return '<details class="ops-added-section" style="margin-bottom:12px"><summary style="cursor:pointer;font-weight:700;padding:12px 0">'+
+   esc(x.route?.name||'Ronda')+' · '+new Date(x.startedAt).toLocaleString('pt-BR')+
+   ' · '+(x.status==='completed'?'Concluída':'Em andamento')+'</summary>'+
+   '<div class="team-list" style="padding:10px 0">'+
+   [['Distância GPS estimada',stat.km.toFixed(2)+' km'],['Tempo em trajeto',stat.minutes+' min'],
+   ['Pontos concluídos',(x.checkpoints||[]).filter(p=>p.completedAt).length+'/'+(x.route?.points?.length||0)],
+   ['Ocorrências',incidents.length],['Alertas e notificações',(x.notifications||[]).length],['Pânico',panic],
+   ['Leituras GPS',stat.gpsSamples+' ('+stat.gpsIgnored+' descartadas)']].map(([k,v])=>
+   '<div class="team-row"><strong>'+esc(k)+'</strong><span>'+esc(String(v))+'</span></div>').join('')+'</div>'+
+   (observations.length?'<h3>Observações nos pontos</h3><div class="team-list">'+observations.map(p=>'<div class="team-row"><div><strong>'+esc(p.pointName||p.name||'Ponto registrado')+'</strong><p>'+esc(p.observation)+'</p><small>'+new Date(p.observedAt||p.completedAt).toLocaleString('pt-BR')+'</small></div></div>').join('')+'</div>':'')+
+   (incidents.length?'<h3>Ocorrências e fotos</h3><div class="team-list">'+incidents.map(i=>
+   '<div class="team-row"><div><strong>'+esc(i.title||'Ocorrência')+'</strong><p>'+esc(i.description||'')+'</p><small>'+new Date(i.at).toLocaleString('pt-BR')+'</small>'+
+   (i.media||[]).map(m=>'<button type="button" class="ops-mini-action" data-ops="open-media" data-media-id="'+esc(m.id)+'">📷 '+esc(m.name||'Evidência')+' · '+new Date(m.takenAt||m.at).toLocaleString('pt-BR')+'</button>').join('')+'</div></div>').join('')+'</div>':'')+
+   '<h3>Cronologia detalhada</h3><div class="team-list">'+(x.timeline||[]).slice(0,120).map(e=>
+   '<div class="team-row"><div><strong>'+esc(e.label||e.kind||'Registro')+'</strong><small>'+new Date(e.at).toLocaleString('pt-BR')+'</small></div></div>').join('')+'</div></details>';
+ };
+ return pageTitle('Meu histórico','Consulte apenas suas rondas, quilômetros, horários, observações, fotos, alertas e pânico.')+
+ '<section class="schedule-workspace"><div class="schedule-heading"><div><div class="eyebrow">HISTÓRICO INDIVIDUAL</div><h2>'+mine.length+' ronda(s) registradas</h2><p>Resumo primeiro; abra uma execução para ver todos os registros.</p></div></div>'+
  (mine.length?mine.slice(0,50).map(item).join(''):'<p>Nenhuma ronda registrada neste aparelho.</p>')+
- '<p class="map-caption">Dados de demonstração locais. O histórico remoto, incluindo evidências e respostas, é consultado na central autenticada.</p><a class="button" href="/central.html">Consultar meus registros no servidor</a></section>';
+ '<p class="map-caption">Dados deste dispositivo. Para mensagens da equipe e histórico central sincronizado, utilize seu acesso autenticado.</p>'+
+ '<a class="button" href="/central.html">Ver histórico completo e respostas da equipe</a></section>';
 }
 function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'overview':return overview();case 'rondas':return rondas();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
