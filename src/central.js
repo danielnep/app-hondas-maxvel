@@ -92,7 +92,7 @@ function sendView(){
  return '<section class="stack"><h1>Alerta por e-mail</h1><form id="send-alert" class="surface"><p class="muted">Função separada do botão de pânico. O registro é salvo antes de tentar a notificação.</p><label>Modelo<select name="templateId">'+templates.filter(t=>t.enabled&&t.trigger==='manual').map(t=>'<option value="'+id(t.id)+'">'+escape(t.title)+'</option>').join('')+'</select></label><label>Descrição<textarea name="description" required minlength="10" maxlength="2000"></textarea></label><button class="primary">Registrar alerta</button></form></section>';
 }
 function exportView(){
- return '<div class="stack"><h1>Relatório inteligente</h1><div class="cards">'+[['Rondas',events.filter(e=>e.kind==='patrol_start').length],['Pânicos',events.filter(e=>e.kind==='panic').length],['Ocorrências',events.filter(e=>e.kind==='incident').length],['Registros GPS',events.filter(e=>e.kind==='gps').length]].map(([x,y])=>'<div class="metric"><strong>'+y+'</strong><span>'+x+'</span></div>').join('')+'</div><section class="surface"><h2>Exportar Excel completo</h2><p>O XLSX inclui uma primeira aba Dashboard formatada, seguida de abas com eventos e conversas. Os dados dependem dos registros efetivamente sincronizados.</p><button class="primary" id="download-xlsx">Baixar XLSX com abas</button></section><section class="surface"><h2>Impressão e PDF</h2><p>Abra uma ocorrência e escolha Imprimir conversa / PDF para exportar a cronologia com horário de cada mensagem.</p></section></div>';
+ return '<div class="stack"><h1>Relatório inteligente</h1><div class="cards">'+[['Rondas',events.filter(e=>e.kind==='patrol_start').length],['Pânicos',events.filter(e=>e.kind==='panic').length],['Ocorrências',events.filter(e=>e.kind==='incident').length],['Registros GPS',events.filter(e=>e.kind==='gps').length]].map(([x,y])=>'<div class="metric"><strong>'+y+'</strong><span>'+x+'</span></div>').join('')+'</div><section class="surface"><h2>Exportar Excel completo</h2><p>O XLSX inclui uma primeira aba Dashboard formatada, seguida de abas com eventos e conversas. Os dados dependem dos registros efetivamente sincronizados.</p><div class="row"><button class="primary" id="download-xlsx">Baixar XLSX com abas</button><button id="download-json">Exportar JSON</button><button id="download-csv">Conversas CSV</button></div></section><section class="surface"><h2>Conversas em PDF</h2><p>Histórico com remetente, data e hora de cada mensagem. O navegador permite salvar como PDF.</p><button id="print-all-chats">Imprimir todas as conversas / PDF</button></section></div>';
 }
 function eventView(e){
  const coordinates=Number.isFinite(e.lat)&&Number.isFinite(e.lng),coords=coordinates?e.lat.toFixed(6)+', '+e.lng.toFixed(6):'Localização indisponível';
@@ -140,6 +140,27 @@ async function downloadXlsx(){
  const file=createXlsxReport(report),url=URL.createObjectURL(file),anchor=document.createElement('a');
  anchor.href=url;anchor.download='rondas-pro-completo-'+new Date().toISOString().slice(0,10)+'.xlsx';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
+function downloadFile(blob,name){
+ const link=document.createElement('a'),url=URL.createObjectURL(blob);
+ link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+function toCsv(rows){
+ const lines=[['evento','autor','visibilidade','mensagem','data_hora'],...rows.map(m=>[m.event_id,m.author,m.audience,m.body,new Date(m.created_at).toISOString()])];
+ return '\ufeff'+lines.map(row=>row.map(x=>{
+  let v=String(x??'');if(/^[=+\-@]/.test(v))v="'"+v;
+  return '"'+v.replaceAll('"','""')+'"';
+ }).join(';')).join('\r\n');
+}
+async function printAllConversations(){
+ const popup=window.open('','_blank');
+ if(!popup)throw new Error('Permita a nova janela de impressão no navegador.');
+ const d=await api('/export'),grouped=new Map();
+ for(const m of (d.messages||[]).sort((a,b)=>a.created_at-b.created_at)){const arr=grouped.get(m.event_id)||[];arr.push(m);grouped.set(m.event_id,arr);}
+ const content=[...grouped].map(([eid,rows])=>'<section><h2>Ocorrência '+escape(eid)+'</h2>'+rows.map(m=>
+  '<div class="bubble"><p>'+escape(m.body).replaceAll('\n','<br>')+'</p><small>'+escape(m.author)+' · '+(m.audience==='system'?'Nota interna':'Mensagem geral')+' · '+fmt(m.created_at)+'</small></div>').join('')+'</section>').join('');
+ popup.document.open();popup.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Conversas Rondas Pro</title><style>body{font:14px/1.5 system-ui;color:#233341;margin:18mm}h1{color:#146585}section{border-top:1px solid #ccd8e2;padding-top:12px;margin:20px 0}.bubble{padding:10px 12px;break-inside:avoid;border:1px solid #c9d8e2;border-radius:8px;margin:8px 0}.bubble p{margin:0 0 8px}.bubble small{display:block;font-size:10px;color:#687c8a}</style></head><body><h1>Rondas Pro | Conversas operacionais</h1><p>Gerado '+escape(fmt(Date.now()))+'. Documento restrito a pessoal autorizado.</p>'+(content||'<p>Sem mensagens.</p>')+'</body></html>');
+ popup.document.close();popup.focus();popup.print();
+}
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
@@ -160,6 +181,9 @@ document.addEventListener('click',async e=>{
   if(target.dataset.retryEmail){await api('/email-jobs/retry',{method:'POST',data:{eventId:target.dataset.retryEmail}});flash('Nova tentativa registrada.');await load();return;}
   if(target.id==='print-chat'){window.print();return;}
   if(target.id==='download-xlsx'){await downloadXlsx();flash('Exportação gerada.');return;}
+  if(target.id==='download-json'){const d=await api('/export');downloadFile(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}),'rondas-pro-exportacao.json');return;}
+  if(target.id==='download-csv'){const d=await api('/export');downloadFile(new Blob([toCsv(d.messages||[])],{type:'text/csv;charset=utf-8'}),'rondas-pro-conversas.csv');return;}
+  if(target.id==='print-all-chats'){await printAllConversations();return;}
  }catch(err){flash(err.message)}
 });
 document.addEventListener('submit',async e=>{
