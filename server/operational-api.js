@@ -139,7 +139,9 @@ export function createOperationalApi(){
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
    if(p==='/api/events'&&m==='POST'){
-    const d=serialize((await body(req)).toString())||{},position=d.position??null,battery=d.battery??null,details=JSON.stringify(d.details??{});
+    const d=serialize((await body(req)).toString())||{},position=d.position??null,battery=d.battery??null,
+    templateKey=d.kind==='gps_issue'?'gps_unreliable':d.kind==='patrol_end'?'patrol_completed':null,
+    details=JSON.stringify({...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
     if(!['panic','gps','battery','checkpoint','incident','alert','patrol_start','patrol_end','media','gps_issue','route_deviation'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
     }
