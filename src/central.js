@@ -48,7 +48,18 @@ function dashboardView(){
  return '<section class="stack"><div class="toolbar"><div><h1>Visão geral</h1><p class="muted">Indicadores originados do banco operacional autenticado, sem misturar simulações.</p></div><button data-refresh>Atualizar</button></div>'+
  kpis()+'<section class="surface"><h2>Colaboradores e evidências</h2>'+
  (dashboard?.team?.length?'<div class="list">'+dashboard.team.map(w=>'<button class="list-item" data-person="'+id(w.id)+'"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Sem descrição')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' pânicos</span></button>').join('')+'</div>':'<p class="empty">Nenhum colaborador com registros no banco.</p>')+
- '</section><section class="surface"><h2>Últimos acontecimentos</h2>'+eventList(events.slice(0,12))+'</section></section>';
+ '</section><section class="surface"><h2>Indicadores das rondas</h2><p class="muted">Distância GPS estimada, duração e alertas por execução. Falhas de GPS não são julgamentos sobre colaboradores.</p>'+roundTable(dashboard?.rounds||[])+'</section><section class="surface"><h2>Últimos acontecimentos</h2>'+eventList(events.slice(0,12))+'</section></section>';
+}
+function roundTable(rows){
+ if(!rows.length)return '<div class="empty">Ainda não há rondas reais sincronizadas.</div>';
+ return '<div class="list">'+rows.slice(0,30).map(r=>{
+  const worker=users.find(w=>w.id===r.userId)?.name||'Colaborador';
+  return '<div class="list-item"><span><b>'+escape(worker)+' · '+escape(r.id.slice(0,16))+'</b>'+
+   '<small>'+fmt(r.start)+' · '+escape(r.status.replaceAll('_',' '))+'</small>'+
+   '<small>GPS: '+r.gpsSamples+' amostras · '+r.rejectedGps+' descartadas</small></span>'+
+   '<span style="text-align:right"><b>'+r.km.toFixed(2)+' km</b><small>'+(r.minutes??'—')+' min · '+r.checkpoints+' pontos</small>'+
+   '<small>'+r.panics+' pânicos · '+r.alerts+' alertas · bateria '+(r.lastBattery??'—')+'%</small></span></div>';
+ }).join('')+'</div>';
 }
 function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
@@ -118,7 +129,7 @@ async function loadMedia(eventId){
 }
 async function downloadXlsx(){
  const d=await api('/export');
- const report={source:'SQLite operacional',at:d.at,events:d.events,mensagens:d.messages};
+ const report={source:'SQLite operacional',at:d.at,resumo:{rondas:d.rondas?.length||0,alertas:d.events.filter(e=>e.kind==='alert').length,panicos:d.events.filter(e=>e.kind==='panic').length},rondas:d.rondas,events:d.events,mensagens:d.messages};
  const file=createXlsxReport(report),url=URL.createObjectURL(file),anchor=document.createElement('a');
  anchor.href=url;anchor.download='rondas-pro-completo-'+new Date().toISOString().slice(0,10)+'.xlsx';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
