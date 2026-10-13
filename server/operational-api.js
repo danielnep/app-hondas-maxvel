@@ -252,8 +252,14 @@ export function createOperationalApi(){
     const mediaId=id(),folder=resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media');
     mkdirSync(folder,{recursive:true});writeFileSync(join(folder,mediaId),bytes,{flag:'wx',mode:0o600});
     const captured=Number(req.headers['x-captured-at']);
+    const geoLat=Number(req.headers['x-media-lat']),geoLng=Number(req.headers['x-media-lng']);
+    const batteryRaw=req.headers['x-media-battery'],battery=Number(batteryRaw);
+    const hasGeo=req.headers['x-media-lat']!==undefined&&req.headers['x-media-lng']!==undefined
+      &&Number.isFinite(geoLat)&&Number.isFinite(geoLng)&&Math.abs(geoLat)<=90&&Math.abs(geoLng)<=180;
+    const hasBattery=batteryRaw!==undefined&&Number.isFinite(battery)&&battery>=0&&battery<=100;
     db.prepare('INSERT INTO media(id,event_id,author_id,mimetype,filename,captured_at,latitude,longitude,battery,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)')
-     .run(mediaId,eid,a.id,mime,mediaId,Number.isFinite(captured)&&captured>0?captured:now(),ev.lat,ev.lng,ev.battery,now());
+     .run(mediaId,eid,a.id,mime,mediaId,Number.isFinite(captured)&&captured>0?captured:now(),
+       hasGeo?geoLat:null,hasGeo?geoLng:null,hasBattery?battery:null,now());
     audit(a,'media.upload',eid);resp(res,201,{id:mediaId});return true;
    }
    const mediaPath=p.match(/^\/api\/media\/([0-9a-f-]+)$/i);
