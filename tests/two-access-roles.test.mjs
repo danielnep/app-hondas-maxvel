@@ -10,25 +10,31 @@ const range=(source,start,end)=>{
  return source.slice(a,b);
 };
 
-test('apenas Administração e Operação de Ronda são opções de login',()=>{
+test('as três áreas de acesso são vigia, monitoramento e administrativo',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
  assert.match(nav,/ronda:/);
  assert.match(nav,/admin:/);
+ assert.match(nav,/operador:/);
  for(const oldRole of ['supervisor','gestor','cliente'])assert.doesNotMatch(nav,new RegExp(oldRole+':'));
  const chooser=range(app,'function loginDialog(){','function startDialog(){');
- assert.match(chooser,/\['ronda','Operação de Ronda'/);
- assert.match(chooser,/\['admin','Administração'/);
+ assert.match(chooser,/\['ronda','Vigia'/);
+ assert.match(chooser,/\['operador','Central de Monitoramento'/);
+ assert.match(chooser,/\['admin','Administrativo'/);
  assert.doesNotMatch(chooser,/\['(supervisor|gestor|cliente)'/);
  const picker=range(app,"if(act==='sim-role-picker'){","if(act==='schedule-tab')");
  assert.doesNotMatch(picker,/\['(supervisor|gestor|cliente)'/);
  assert.match(picker,/\['ronda','Operação de Ronda'/);
+ assert.match(picker,/\['operador','Monitoramento'/);
  assert.match(picker,/\['admin','Administração'/);
 });
 
-test('vigia somente executa ronda e não recebe relatório ou painel azul',()=>{
+test('vigia executa ronda e consulta o próprio histórico, sem acessar relatórios administrativos',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
- assert.match(nav,/ronda:\[\['minha-ronda','Minha ronda','compass'\]\]/);
+ assert.match(nav,/ronda:\[\['minha-ronda','Minha ronda','compass'\],\['historico','Meu histórico','clipboard'\]\]/);
  assert.doesNotMatch(nav,/ronda:\[\['relatorios'/);
+ assert.match(app,/function myPatrolHistory\(\)/);
+ assert.match(app,/sessionList\(\)\.filter\(x=>x.name===name\)/);
+ assert.match(nav,/operador:\[\['overview','Monitoramento','map'\]/);
  const panel=range(extra,'function decorate(){','function mediaFields(){');
  const vigia=range(panel,"if(user?.role==='ronda'){","if(user?.role==='admin'){");
  assert.doesNotMatch(vigia,/reportSmart|adminQuick|statusBanner|relatorios|view-client/);
