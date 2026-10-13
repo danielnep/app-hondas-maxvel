@@ -749,7 +749,27 @@ async function startSession(){const now=Date.now();if(mode==='real'&&!presentati
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode};
  session=createSession(user?.name??presentationName,route,now,'real');session.evidenceEnabled=operationalSettings.evidenceEnabled;locationFix=f;
   try{window.AndroidTracking?.startTracking()}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
-  deviceWatch=navigator.geolocation.watchPosition(pos=>{const f={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:Date.now()};locationFix=f;processPosition()},err=>{contextWarning='Sinal GPS indisponível. A permanência será reiniciada até obter localização confiável.';notify(contextWarning)},{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
+  deviceWatch=navigator.geolocation.watchPosition(pos=>{
+   const f={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:Date.now()};
+   locationFix=f;
+   if(session?.gpsLossNotified){
+    session.gpsLossNotified=false;
+    session.timeline.unshift({id:'gps-restored-'+Date.now(),kind:'gps-restored',at:Date.now(),label:'Sinal de localização retomado'});
+    save();
+   }
+   processPosition();
+  },err=>{
+   contextWarning='Sinal GPS indisponível. A validação da ronda fica suspensa até recuperar localização confiável.';
+   if(session?.status==='active'&&!session.gpsLossNotified){
+    session.gpsLossNotified=true;
+    const at=Date.now();
+    session.notifications.unshift({id:'gps-lost-'+at,kind:'gps-lost',at,seenAt:null,sessionId:session.id,
+     label:'Localização indisponível: ronda aguardando GPS'});
+    session.timeline.unshift({id:'gps-unavailable-'+at,kind:'gps-unavailable',at,label:'GPS indisponível durante a ronda'});
+    save();
+   }
+   notify(contextWarning);
+  },{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
  }catch{notify('Permita o uso do GPS ou volte à simulação.');return;}
  }else{const planned=programs.find(p=>p.id===selectedProgramId&&p.status==='scheduled')??nextProgram(programs,selectedWatcherId,sessions,now);const route=planned?routeForProgram(planned):routeForWatcher(selectedWatcherId);
  route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
