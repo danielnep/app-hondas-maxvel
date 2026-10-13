@@ -2,7 +2,9 @@
 
 ## Ampliação demonstrativa · GPS, QR, pânico, offline e relatórios (13/10/2026)
 
-Uma ramificação de trabalho acrescenta ao Rondas Pro: botão de pânico sempre acessível ao vigia, alerta local com vigia e horário, acesso ao discador 190 mediante confirmação, escolha administrativa **GPS / QR / GPS + QR**, registro de ocorrências com foto, áudio e vídeo, armazenamento offline em **IndexedDB** e rotas/esquemas disponíveis localmente, visão demonstrativa do cliente, **relatório inteligente** e exportação configurável **HTML, CSV, JSON**, inclusive no painel inicial do administrador.
+**Acessos atuais:** somente **Administração** (todas as funções gerenciais e relatórios) e **Operação de Ronda** (execução e registros, sem telas ou atalhos de relatório).
+
+Uma ramificação de trabalho acrescenta ao Rondas Pro: botão de pânico sempre acessível ao vigia, alerta local com vigia e horário, acesso ao discador 190 mediante confirmação, escolha administrativa **GPS / QR / GPS + QR**, registro de ocorrências com foto, áudio e vídeo, armazenamento offline em **IndexedDB** e rotas/esquemas disponíveis localmente, **relatório inteligente** e exportação configurável **HTML, CSV, JSON**, exclusivamente na página **Relatórios** da Administração.
 
 A identidade Maxvel e as regras antigas de GPS (raio 25 m, permanência 30 s, sequência) são preservadas quando o modo configurado é GPS. O Android já tinha SQLite/serviço de localização nativo; a Web usa cache das páginas após primeira conexão. **A demonstração não envia notificações ou dados entre aparelhos, não possui servidor multiusuário e não faz sincronização remota real.** Os registros offline ficam em fila local aguardando integração. Salvar o mapa significa salvar geometria/esquema SVG, não cartografia de ruas offline. O GPS em segundo plano e os recursos multimídia variam conforme permissões e dispositivo.
 
@@ -45,7 +47,7 @@ Referências de fluxo e telas consultadas: [TrackTik](https://play.google.com/st
 
 A experiência do vigia foi simplificada para **mapa em tela inteira + estado e próxima ação**. Agenda, ferramentas de simulação, instruções e registros permanecem em **Mais opções**, com navegação persistente para Ocorrências e Histórico. Em demonstração, o antigo seletor horizontal com quatro perfis foi substituído por **Áreas** no cabeçalho; a escolha continua disponível sem sacrificar o mapa.
 
-Supervisão e Gestão apresentam menos faixas explicativas repetidas e acesso mais rápido ao mapa. O painel móvel de Alertas inclui acesso à lista de ocorrências. Supervisão/Gestão/Administração podem demonstrar atribuição, revisão, resolução e histórico de providências **apenas neste navegador**.
+A Administração concentra supervisão, gestão e acesso ao mapa. O painel móvel de Alertas inclui acesso à lista de ocorrências. A Administração pode demonstrar atribuição, revisão, resolução e histórico de providências **apenas neste navegador**.
 
 A função R4 de verificação de ponto apresenta **cinco etapas simuladas** (frente, direita, trás, esquerda e selfie) e **giro simulado**, sem acessar câmera ou sensor nem criar imagens. É uma apresentação do fluxo, não comprovação real. O ponto continua usando as regras existentes de GPS/25 m/30 s; conclusão não passa a exigir falsas evidências. Câmera e sensor reais, upload privado, validação servidor e notificação entre aparelhos continuam na implantação pendente.
 
@@ -53,12 +55,12 @@ A função R4 de verificação de ponto apresenta **cinco etapas simuladas** (fr
 
 ## Plataforma Graphite Dark · outubro de 2026
 
-**Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o marca exclusiva **Grupo Maxvel**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
+**Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o marca exclusiva **Grupo Maxvel**. Clique em **Entrar**, escolha **Operação de Ronda** ou **Administração** e acesse as telas funcionais da avaliação sem senha.
 
 - **Tutorial opcional por destaque:** cortina fosca translúcida, avanço por **Entendi · continuar**, fechamento livre e comando **Rever tutorial** no topo e menu lateral. Botões discretos `?` abrem ajuda por função.
 - **Graphite Dark:** grafite e cinza-escuro predominantes, vermelho Maxvel nas ações, branco reservado principalmente ao texto; o mapa conserva cartografia legível.
 - **12 vigias fictícios e 48 programações iniciais:** agenda organizada por atribuição, data e unidade, com busca, filtros combinados, paginação e estados. Vigia vê suas rondas na página operacional.
-- **Supervisão, Gestão e Administração:** em **Rondas → Programar ronda**, selecionar vigia, rota e horário, validar conflitos, confirmar criação, recorrência diária por até 7 dias, cancelamento e **reprogramação com histórico local de mudanças**.
+- **Administração:** em **Rondas → Programar ronda**, selecionar vigia, rota e horário, validar conflitos, confirmar criação, recorrência diária por até 7 dias, cancelamento e **reprogramação com histórico local de mudanças**.
 - **Programação diferente da execução:** cada execução pode ter `programId` e `watcherId`; a conclusão depende do motor existente de localização e permanência, não de um simples agendamento.
 - **Fluxos testáveis:** tela de entrada, navegação por quatro perfis, mapa, ponto, desvio, justificativa, alerta e ajuda contextual. Os resultados de auditoria são acompanhados no GitHub Actions.
 
@@ -93,7 +95,7 @@ Leia [critérios e estudo de produto/UI/UX 2.0](docs/PRODUTO-UX-V2.md).
 
 O aplicativo foi reformulado com foco **mobile-first** e identidade operacional Maxvel: navegação acessível por perfil, aviso de localização compacto, ação primária de iniciar ronda em destaque, contraste reforçado e mapa cartográfico detalhado. A supervisão agora inclui um destino **Mapa** com seleção de pontos e uma fila de alertas filtrável entre **Pendentes** e **Todos**.
 
-O mapa usa cartografia OpenStreetMap quando disponível; a linha entre os pontos de demonstração é **ilustrativa**, não um trajeto validado pelas ruas. A simulação é **o próprio aplicativo**, sem uma apresentação paralela: o comprador alterna entre Ronda, Supervisão, Gestão e Administração na mesma janela. Eventos permanecem **locais e ilustrativos**, não remotos.
+O mapa usa cartografia OpenStreetMap quando disponível; a linha entre os pontos de demonstração é **ilustrativa**, não um trajeto validado pelas ruas. A simulação é **o próprio aplicativo**, sem uma apresentação paralela: o comprador alterna apenas entre Operação de Ronda e Administração na mesma janela. Eventos permanecem **locais e ilustrativos**, não remotos.
 
 Documentos de execução:
 - [Pesquisa e diagnóstico mobile](docs/PESQUISA-UX-MOBILE-2026.md)
@@ -110,10 +112,10 @@ A demonstração não substitui validação em dispositivos reais, autenticaçã
 - **Primeira abertura:** aviso claro de uso de localização durante a ronda, inclusive segundo plano no Android nativo. Botão **“Li e aceito · Continuar”** só ativa com marcação de ciência. Permissão do sistema é pedida separadamente.
 - **Experiência de ronda:** 4 pontos em sequência, raio de **25 m**, **30 segundos contínuos** com sinal confiável, retorno obrigatório à base.
 - **Desvios:** bloqueio de avanço, solicitação de justificativa, retorno ao ponto e repetição da permanência; ocorrência vinculada ao contexto.
-- **Simulação no aplicativo:** o mesmo sistema exibe o perfil Ronda, Supervisão, Gestão e Administração, com alertas e recebimentos simulados **somente neste navegador**. Sem segundo mockup vertical.
+- **Simulação no aplicativo:** o mesmo sistema exibe os dois acessos: Operação de Ronda e Administração, com alertas e recebimentos simulados **somente neste navegador**. Sem segundo mockup vertical.
 - **Cartografia:** mapa real OpenStreetMap/Leaflet com trajetos ilustrativos, pinos, áreas de 25 m e posição animada, com mapa esquemático alternativo offline. Os trechos desenhados são linhas ilustrativas, não uma rota de navegação nas vias.
 - **Android nativo (fonte + APK debug):** o projeto Android Studio com serviço de localização, notificação persistente e ação de parar compilou no GitHub Actions. **Ainda exige teste físico e validação das permissões/segundo plano**, e não substitui um sistema de produção.
-- **UI/UX:** ajuda contextual a todo instante, etapas didáticas, área do ronda otimizada para uso móvel, painel para supervisão/gestão. Sem gamificação.
+- **UI/UX:** ajuda contextual a todo instante, etapas didáticas, área do ronda otimizada para uso móvel, painel de supervisão e gestão dentro da Administração. Sem gamificação.
 
 ## Como executar a demonstração web
 
