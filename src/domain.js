@@ -106,9 +106,18 @@ export function updateLocation(s,fix,now=Date.now()){
   s.checkpoints[s.index].dwellMs=Math.max(0,Math.min(requiredDwellMs(s),now-s.insideSince));
   return {valid:true,inside:true,outside:false};
 }
+/** Controle por ponto: GPS, QR ou combinação, sempre na ordem programada.
+ * Leitura QR real deverá ter autenticação e validação do código no servidor.
+ */
 export function canCompletePoint(s){
-  return s.status==='active'&&!!currentCheckpoint(s)&&s.insideSince!==null&&
-    s.checkpoints[s.index].dwellMs>=requiredDwellMs(s)&&!hasBlock(s);
+  if(s.status!=='active'||!currentCheckpoint(s)||hasBlock(s))return false;
+  const policy=s.route.rules?.verificationMode??'gps';
+  const point=s.checkpoints[s.index];
+  const gps=s.insideSince!==null&&point.dwellMs>=requiredDwellMs(s);
+  const qr=!!point.qrVerifiedAt;
+  if(policy==='qr')return qr;
+  if(policy==='gps+qr')return gps&&qr;
+  return gps;
 }
 export function completePoint(s,now=Date.now()){
   if(!canCompletePoint(s))return false;

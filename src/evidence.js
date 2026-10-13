@@ -1,8 +1,7 @@
 /** Demonstração local da etapa R4. Não captura imagens nem lê sensores reais. */
 export const EVIDENCE_DIRECTIONS=Object.freeze([
  {id:'front',label:'Frente'}, {id:'right',label:'Direita'},
- {id:'back',label:'Trás'}, {id:'left',label:'Esquerda'},
- {id:'selfie',label:'Selfie'}
+ {id:'back',label:'Trás'}, {id:'left',label:'Esquerda'}
 ]);
 export function getPointEvidence(session,index){
  const id=session?.checkpoints?.[index]?.id;

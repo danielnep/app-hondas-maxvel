@@ -1,5 +1,14 @@
 # Rondas Pro · Grupo Maxvel
 
+## Ampliação demonstrativa · GPS, QR, pânico, offline e relatórios (13/10/2026)
+
+Uma ramificação de trabalho acrescenta ao Rondas Pro: botão de pânico sempre acessível ao vigia, alerta local com vigia e horário, acesso ao discador 190 mediante confirmação, escolha administrativa **GPS / QR / GPS + QR**, registro de ocorrências com foto, áudio e vídeo, armazenamento offline em **IndexedDB** e rotas/esquemas disponíveis localmente, visão demonstrativa do cliente, **relatório inteligente** e exportação configurável **HTML, CSV, JSON**, inclusive no painel inicial do administrador.
+
+A identidade Maxvel e as regras antigas de GPS (raio 25 m, permanência 30 s, sequência) são preservadas quando o modo configurado é GPS. O Android já tinha SQLite/serviço de localização nativo; a Web usa cache das páginas após primeira conexão. **A demonstração não envia notificações ou dados entre aparelhos, não possui servidor multiusuário e não faz sincronização remota real.** Os registros offline ficam em fila local aguardando integração. Salvar o mapa significa salvar geometria/esquema SVG, não cartografia de ruas offline. O GPS em segundo plano e os recursos multimídia variam conforme permissões e dispositivo.
+
+[Guia operacional completo e limites verificáveis](docs/GUIA-COMPLETO-OPERACAO-E-OFFLINE.md).
+
+
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com logo original do Grupo Maxvel, fundo preto, superfícies cinza muito escuro e detalhes celeste/violeta, supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
 ## Implantação do Rondas Pro no Railway

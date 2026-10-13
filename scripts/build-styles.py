@@ -97,5 +97,6 @@ compiled += '\n' + structure((ROOT / 'assets/maxvel-06.css').read_text(), only='
 compiled += '\n' + (ROOT / 'assets/ronda-pro-theme.css').read_text()
 compiled += '\n' + (ROOT / 'assets/ronda-pro-layout.css').read_text()
 compiled += '\n' + (ROOT / 'assets/ronda-pro-motion.css').read_text()
+compiled += '\n' + (ROOT / 'assets/ronda-pro-upgrade.css').read_text()
 (ROOT / 'assets/ronda-pro.css').write_text(compiled)
 print('Compiled one stylesheet:', len(compiled), 'characters')
