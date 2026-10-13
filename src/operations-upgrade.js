@@ -70,7 +70,7 @@ export function buildReportData(context,sections=['resumo','rondas','pontos','oc
  if(sections.includes('pontos'))result.pontos=sessions.flatMap(s=>(s.checkpoints??[]).map((p,i)=>({ronda:s.id,nome:s.route?.points?.[i]?.name,indice:i+1,concluidoEm:p.completedAt,permanenciaMs:p.dwellMs,qrValidadoEm:p.qrVerifiedAt??null})));
  if(sections.includes('ocorrencias'))result.ocorrencias=sessions.flatMap(s=>(s.incidents??[]).map(i=>({ronda:s.id,vigia:s.name,...i,media:(i.media??[]).map(m=>({nome:m.name,tipo:m.type,tamanho:m.size}))})));
  if(sections.includes('alertas'))result.alertas=[...sessions.flatMap(s=>(s.notifications??[]).map(n=>({ronda:s.id,vigia:s.name,...n}))),...events.filter(x=>x.kind==='panic').map(x=>({vigia:x.payload?.vigia,tipo:'panic',criadoEm:x.at,entrega:x.status}))];
- if(sections.includes('coordenadas'))result.coordenadas=sessions.map(s=>({ronda:s.id,ultimaPosicao:s.lastFix??null,observacao:'Trajeto completo disponível somente quando coletado por GPS e recuperado do dispositivo'}));
+ if(sections.includes('coordenadas'))result.coordenadas=sessions.map(s=>({ronda:s.id,ultimaPosicao:s.lastFix??null,amostras:events.filter(e=>e.kind==='gps'&&e.payload?.sessionId===s.id).sort((a,b)=>a.at-b.at).map(e=>({at:e.at,...e.payload.position})),observacao:'Amostras guardadas neste dispositivo; históricos nativos adicionais dependem da recuperação SQLite'}));
  if(sections.includes('programacao'))result.programacao=(context.programs??[]).map(p=>({...p}));
  return result;
 }
