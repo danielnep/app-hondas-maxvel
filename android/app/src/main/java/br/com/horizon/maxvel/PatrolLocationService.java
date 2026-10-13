@@ -13,6 +13,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.BatteryManager;
 import android.os.IBinder;
 import android.os.Looper;
 
@@ -66,7 +67,7 @@ public class PatrolLocationService extends Service implements LocationListener {
     }
 
     @Override public void onLocationChanged(Location loc){
-        if(getSharedPreferences("tracking",MODE_PRIVATE).getBoolean("active",false))database.record(loc);
+        if(getSharedPreferences("tracking",MODE_PRIVATE).getBoolean("active",false)){BatteryManager battery=(BatteryManager)getSystemService(BATTERY_SERVICE);int level=battery==null?-1:battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);database.record(loc,level);} 
     }
     @Override public void onProviderDisabled(String provider) { }
     @Override public void onProviderEnabled(String provider) { }
