@@ -19,6 +19,7 @@ export function createUiMotion({root,modal}) {
   if(reduce.matches||event.button!==0||!event.isPrimary||window.innerWidth>900)return;
   const handle=event.target.closest('h2,.ux06-sheet-header');
   if(!handle||event.target.closest('button,input,select,textarea,a'))return;
+  event.preventDefault();
   drag={id:event.pointerId,startY:event.clientY,amount:0};
   modal.setPointerCapture?.(event.pointerId);
  });
@@ -31,7 +32,7 @@ export function createUiMotion({root,modal}) {
  });
  modal.addEventListener('pointerup',event=>{
   if(!drag||drag.id!==event.pointerId)return;
-  const dismiss=drag.amount>110;
+  const dismiss=Math.max(drag.amount,event.clientY-drag.startY)>110;
   if(modal.hasPointerCapture?.(event.pointerId))modal.releasePointerCapture(event.pointerId);
   restore();
   if(dismiss)modal.close();

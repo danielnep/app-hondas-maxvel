@@ -13,6 +13,8 @@
 .entry-screen .entry-topnav .brand.maxvel-only-brand { width:260px!important; max-width:100%!important; flex:0 1 auto!important; }
 .entry-screen .brand .ronda-pro-wordmark { font-size:25px!important; }
 .entry-screen .brand .maxvel-real-logo { width:96px!important; }
+.entry-screen { height:100dvh!important; min-height:0!important; max-height:100dvh!important; overflow:hidden!important; }
+.entry-screen .entry-main { min-height:0!important; flex:1 1 auto!important; overflow-y:auto; }
 
 /* Surfaces replace repeated outlines. Focus and meaningful map geometry stay visible. */
 :is(.button,.help-toggle,.user-pill,.context-help,.app-menu-button,.ux06-expand-button,.ux06-sheet-back,.choice,.role-picker-list button,.ux-access-menu button) { border:0!important; }
@@ -59,7 +61,7 @@ dialog,#toast,.horizon-tour .tour-panel { box-shadow:0 18px 60px #0008!important
  .entry-screen .entry-topnav { gap:8px!important; }
  .entry-screen .entry-topnav .nav-actions .button { min-width:68px!important; font-size:12px!important; gap:4px!important; padding:8px!important; }
  .entry-screen .entry-topnav .nav-actions .button svg { width:14px!important; height:14px!important; }
- dialog h2,.ux06-sheet-header { touch-action:none; cursor:grab; }
+ dialog h2,.ux06-sheet-header { touch-action:none; user-select:none; -webkit-user-select:none; cursor:grab; }
  dialog::before { content:""; display:block; width:28px; height:3px; margin:0 auto 10px; background:#9c9ca650; border-radius:3px; }
 }
 @media(min-width:1800px) {
