@@ -1,6 +1,6 @@
 # Rondas Pro · Grupo Maxvel
 
-Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Grupo Maxvel (grafite, vermelho e prata), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
+Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com logo original do Grupo Maxvel, fundo preto, superfícies cinza muito escuro e detalhes celeste/violeta, supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
 ## Implantação do Rondas Pro no Railway
 
@@ -13,6 +13,10 @@ Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pelo Railway
 ## Refinamento visual · 13/10/2026
 
 A identidade pública é exclusivamente **Grupo Maxvel**. A versão 07 suaviza o preto absoluto em grafite intermediário e torna topo, rodapé móvel, listas e indicadores mais compactos sem alterar o domínio, GPS, permanência e simulações. O repositório mantém camadas técnicas antigas por compatibilidade, mas o aplicativo apresenta somente Maxvel. **Ainda não há chatbot integrado neste aplicativo**: nenhum recurso de Copiloto ou de planilhas foi migrado de outro projeto.
+
+## Revisão 09 · preto, celeste e cantos suaves
+
+A revisão visual de 13/10/2026 substitui os controles totalmente retos e os detalhes vermelhos da interface por cantos discretos (6 px nos controles, 8 px nos painéis e 10 px nos diálogos). O fundo é preto; cabeçalho, campos e superfícies usam cinzas muito escuros. Azul celeste luminoso identifica ações, foco e seleção; o roxo aparece de forma sutil no degradê das ações principais e no nome Pro. A imagem original da Maxvel permanece intacta. Mapas, menus, perfis e regras da ronda mantêm seu comportamento.
 
 ## Revisão 08 · marca real e consistência visual
 
