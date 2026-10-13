@@ -26,11 +26,11 @@ async function load(){
  if(!token){loginView();return}
  try{
   account=(await api('/me')).user;roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
-  const requested=[api('/events?limit=500')];
-  if(review()){requested.push(api('/dashboard'),api('/users'),api('/templates'));}
+  const requested=[api('/events?limit=500'),api('/templates')];
+  if(review()){requested.push(api('/dashboard'),api('/users'));}
   const responses=await Promise.all(requested);
-  events=responses[0].events||[];
-  if(review()){dashboard=responses[1];users=responses[2].users||[];templates=responses[3].templates||[];}
+  events=responses[0].events||[];templates=responses[1].templates||[];
+  if(review()){dashboard=responses[2];users=responses[3].users||[];}
   render();
  }catch(err){sessionStorage.removeItem('rondaspro_api_token');token='';loginView(err.message)}
 }
