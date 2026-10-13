@@ -113,9 +113,79 @@ export function createOperationsUpgrade(api){
  const persistEvent=async event=>{
   events.unshift(event);
   try{await store.put('events',event);}catch(err){api.notify('Falha ao salvar evento offline no dispositivo.');console.warn(err);}
+  if(event.status==='pending')void syncPending().catch(console.warn);
  };
+ const allowedSyncedKinds=new Set(['panic','gps','battery','checkpoint','incident','alert','patrol_start','patrol_end','gps_issue','route_deviation']);
+ let inSync=false;
+ async function syncPending(){
+  const token=sessionStorage.getItem('rondaspro_api_token');
+  if(!token||!navigator.onLine||inSync)return;
+  inSync=true;
+  try{
+   const toSync=events.filter(e=>e.status==='pending'&&allowedSyncedKinds.has(e.kind)&&e.payload?.mode!=='simulation').slice().reverse().slice(0,80);
+   for(const event of toSync){
+    const p=event.payload||{},pos=p.position;
+    const data={id:event.id,kind:event.kind,roundId:p.sessionId||null,occurredAt:event.at,
+      description:p.description||p.observation||p.title||({'panic':'Acionamento do botão de pânico','gps':'Leitura GPS','battery':'Nível de bateria','checkpoint':'Conferência do ponto','patrol_start':'Ronda iniciada','patrol_end':'Ronda concluída'}[event.kind]||'Evento de ronda'),
+      position:pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)?pos:null,
+      battery:Number.isFinite(p.battery)?p.battery:null,
+      details:{...p,position:undefined,battery:undefined}};
+    let response;
+    try{response=await fetch('/api/events',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});}
+    catch{return}
+    if(response.status===401||response.status===403)return;
+    if(!response.ok){event.syncError='HTTP '+response.status;await store.put('events',event);continue;}
+    event.status='synced';event.syncedAt=Date.now();delete event.syncError;
+    await store.put('events',event);
+    if(Array.isArray(p.mediaIds)){
+     for(const mediaId of p.mediaIds){
+      const media=await store.get('media',mediaId);
+      if(!media?.blob||media.remoteUploaded)continue;
+      try{
+       const res=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+token,
+        'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at)},body:media.blob});
+       if(res.ok){media.remoteUploaded=true;await store.put('media',media);}
+      }catch{}
+     }
+    }
+   }
+  }finally{inSync=false;}
+ }
+ async function recordIncident(incident){
+  const c=current(),session=c.session;
+  if(session?.mode!=='real')return;
+  await persistEvent({id:incident.id,at:incident.at,kind:'incident',status:'pending',payload:{
+    sessionId:session.id,mode:'real',description:incident.title+': '+incident.description,
+    position:incident.location,battery:lastBattery?.level??null,
+    severity:incident.severity,mediaIds:(incident.media??[]).map(x=>x.id)}});
+ }
+ async function recordCheckpoint(checkpoint,files,point){
+  const c=current(),session=c.session,at=checkpoint.observedAt||Date.now(),saved=[];
+  for(const file of files){
+   if(!file?.size||file.size>25*1024*1024){api.notify('Evidência excede 25 MB ou está vazia.');continue;}
+   if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.type)){api.notify('Tipo de mídia não suportado.');continue;}
+   const mid=uuid(),metadata={id:mid,name:limit(file.name),type:file.type,size:file.size,takenAt:file.lastModified||at,
+    position:checkpoint.position,battery:lastBattery?.level??null};
+   await store.put('media',{...metadata,blob:file});
+   saved.push(metadata);
+  }
+  checkpoint.media=saved;
+  session.timeline.unshift({id:uuid(),at,kind:'checkpoint-observation',label:'Observação registrada: '+point.name,
+    pointId:point.id,description:checkpoint.observation});
+  await persistEvent({id:uuid(),at,kind:'checkpoint',status:'pending',payload:{
+   mode:session.mode,sessionId:session.id,pointId:point.id,pointName:point.name,
+   observation:checkpoint.observation,description:'Ponto '+point.name+': '+checkpoint.observation,
+   position:checkpoint.position,battery:lastBattery?.level??null,mediaIds:saved.map(x=>x.id)}});
+ }
+ async function recordLifecycle(kind,round){
+  if(round?.mode!=='real')return;
+  await persistEvent({id:uuid(),at:Date.now(),kind,status:'pending',payload:{
+   mode:'real',sessionId:round.id,description:kind==='patrol_start'?'Início da ronda '+round.route.name:'Término da ronda '+round.route.name,
+   position:round.lastFix??null,battery:lastBattery?.level??null}});
+ }
+
  async function load(){
-  try{events=(await store.all('events')).sort((a,b)=>b.at-a.at);}
+  try{events=(await store.all('events')).sort((a,b)=>b.at-a.at);await syncPending();}
   catch(err){console.warn('Registro offline indisponível:',err);}
   // Só a demonstração local é alterada pela recuperação; nenhum envio remoto é presumido.
   api.render();
@@ -125,7 +195,7 @@ export function createOperationsUpgrade(api){
   const sample=await batteryApi();if(!sample)return;
   if(!lastBattery||Math.abs(sample.level-lastBattery.level)>=1||sample.charging!==lastBattery.charging){
    lastBattery=sample;const c=current();
-   if(c.session?.status==='active'&&c.mode==='real')await persistEvent({id:uuid(),at:Date.now(),kind:'battery',status:'pending',payload:{sessionId:c.session.id,...sample}});
+   if(c.session?.status==='active'&&c.mode==='real')await persistEvent({id:uuid(),at:Date.now(),kind:'battery',status:'pending',payload:{sessionId:c.session.id,mode:'real',battery:sample.level,...sample}});
   }else lastBattery=sample;
  }
  const warning='<p class="ops-demo-note">Demonstração: registros deste aparelho. Sem servidor de sincronização nem alerta remoto ativo.</p>';
@@ -234,7 +304,7 @@ export function createOperationsUpgrade(api){
   if(Date.now()-lastFixSaved<5000)return;
   lastFixSaved=Date.now();
   await persistEvent({id:uuid(),at:fix.at||Date.now(),kind:'gps',status:'pending',
-   payload:{sessionId:s.session.id,position:{lat:fix.lat,lng:fix.lng,accuracy:fix.accuracy},battery:lastBattery?.level??null,source:'webview-or-browser'}});
+   payload:{sessionId:s.session.id,mode:'real',position:{lat:fix.lat,lng:fix.lng,accuracy:fix.accuracy},battery:lastBattery?.level??null,source:'webview-or-browser'}});
  }
  async function autoReport(){
   const ctx=current(),sig=JSON.stringify(ctx.sessions.map(s=>[s.id,s.status,s.index,s.incidents?.length,s.notifications?.length]));
@@ -245,7 +315,7 @@ export function createOperationsUpgrade(api){
  }
  async function panic(){
   const c=current(),at=Date.now(),name=c.user?.name??'Vigia';
-  const payload={vigia:name,sessionId:c.session?.id??null,position:c.locationFix??null,battery:lastBattery?.level??null,at};
+  const payload={vigia:name,sessionId:c.session?.id??null,mode:c.session?.mode??'simulation',position:c.locationFix??null,battery:lastBattery?.level??null,at};
   if(c.session?.status==='active'){
    c.session.notifications.unshift({id:uuid(),kind:'panic',at,seenAt:null,sessionId:c.session.id,label:'PÂNICO: '+name+' solicitou atendimento imediato'});
    c.session.timeline.unshift({id:uuid(),kind:'panic',at,label:'Botão de pânico acionado'});
@@ -364,11 +434,11 @@ export function createOperationsUpgrade(api){
   api.notify('Relatório exportado do dispositivo.');api.closeDialog();
  },true);
  document.addEventListener('click',e=>{if(e.target.closest('[data-action="close-dialog"]'))stopCamera();},true);
- window.addEventListener('online',()=>api.notify('Conexão restaurada. Registros locais permanecem aguardando integração de sincronização.'));
+ window.addEventListener('online',()=>{api.notify('Conexão restaurada. Tentando sincronizar registros autenticados.');syncPending().catch(console.warn);});
  load();
- setInterval(()=>{autoReport().catch(console.warn);sampleBattery().catch(console.warn);},60000);
+ setInterval(()=>{autoReport().catch(console.warn);sampleBattery().catch(console.warn);syncPending().catch(console.warn);},60000);
  sampleBattery().catch(console.warn);
- return {decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,autoReport,requestEntryGPS,guideSection:()=>
+ return {decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
   '<details class="ops-guide-details"><summary>Recursos operacionais adicionais e modo offline</summary><p><b>GPS contínuo:</b> acompanhe a ronda durante o serviço. No Android o serviço nativo pode registrar posições em segundo plano, sujeito às permissões do sistema.</p>'+
   '<p><b>Sequência e validação:</b> 25 m, 30 segundos e QR opcional; Administração configura GPS, QR ou ambos.</p>'+
   '<p><b>Sem conexão:</b> coordenadas ficam no SQLite do Android; registros e evidências ficam no IndexedDB do dispositivo. Envio ao servidor exige integração posterior.</p>'+
