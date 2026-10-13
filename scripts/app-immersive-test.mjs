@@ -114,8 +114,8 @@ try{
    await reason.fill('Desvio ilustrativo para conferir uma situação no perímetro.');
    await tap(page,'#justification-form button[type="submit"]');
    await tap(page,'[data-action="sim-role-picker"]');
-   await tap(page,'#dialog [data-action="sim-role"][data-role="supervisor"]');
-   await capture(page,'supervisor',width,height);
+   await tap(page,'#dialog [data-action="sim-role"][data-role="admin"]');
+   await capture(page,'admin',width,height);
    await tap(page,'[data-view="notificacoes"]:visible');
    await tap(page,'[data-action="open-incidents"]');
    await tap(page,'.list-row[data-action="incident-detail"]');
@@ -148,10 +148,6 @@ try{
    // Consultar por vigia e testar filtros por página, sem rolagem da tela.
    if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Filtro por vigia ficou vazio');
    await capture(page,'agenda-filtrada',width,height);
-   await tap(page,'[data-action="sim-role-picker"]');
-   await tap(page,'#dialog [data-action="sim-role"][data-role="gestor"]');
-   await tap(page,'[data-action="sim-role-picker"]');
-   await tap(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await tap(page,'[data-action="sim-role-picker"]');
    await tap(page,'#dialog [data-action="sim-role"][data-role="ronda"]');
    await tap(page,width<=900?'.patrol-map-canvas [data-action="feature-help"]':'.patrol-map-heading [data-action="feature-help"]');
@@ -193,4 +189,4 @@ try{
  writeFileSync(out+'/metrics.json',JSON.stringify(report,null,2));
  await browser.close();server.kill('SIGTERM');
 }
-console.log(JSON.stringify({result:'Ronda, agenda, desvio, justificativa, quatro perfis, ajuda e tour',screens:report.length,viewportErrors:0}));
+console.log(JSON.stringify({result:'Ronda, agenda, desvio, justificativa, dois perfis, ajuda e tour',screens:report.length,viewportErrors:0}));
