@@ -308,3 +308,35 @@ dialog .field input,dialog .field textarea,dialog .field select{background:var(-
 .dashboard .app-content .ux-report-stage>[hidden],
 .dashboard .app-content .ux-paged-list>[hidden],
 .dashboard .app-content .v4-stage .v4-summary-pane [hidden]{display:none!important}
+
+/* Entrada e escolha de perfis mantêm a mesma identidade, sem azul residual. */
+.entry-screen,.entry-screen.product-home,.product-home,.entry-panel,.entry-main{background:var(--mx-bg)!important;color:var(--mx-text)!important}
+.entry-screen .entry-topnav,.entry-screen .entry-footer{background:var(--mx-bg)!important;border-color:var(--mx-line)!important}
+.entry-screen :is(h1,h2,h3,.entry-aside-stat strong){color:var(--mx-text)!important}
+.entry-screen .entry-panel h1 span,.entry-screen .entry-eyebrow,.entry-screen .entry-aside-head,
+.entry-screen .entry-details svg{color:var(--mx-red)!important}
+.entry-screen :is(p,small,.entry-details,.entry-actions span){color:var(--mx-secondary)!important}
+.entry-screen .entry-aside,.entry-screen .entry-panel,.entry-screen .entry-aside-stat{
+ background:var(--mx-surface)!important;border-color:var(--mx-line)!important;box-shadow:none!important}
+.entry-screen .entry-panel{background:transparent!important}
+.entry-screen .button.primary{background:var(--mx-red-hover)!important;color:#fff!important;border:0!important;box-shadow:none!important}
+.entry-screen .button:not(.primary){background:var(--mx-raised)!important;color:var(--mx-text)!important;border-color:var(--mx-line)!important}
+.entry-screen :is(.entry-aside-mark,.ops-live-dot){color:var(--mx-red)!important}
+.entry-screen .entry-footer{color:var(--mx-secondary)!important}
+dialog :is(.role-picker-list button,.ux-access-menu button){background:transparent!important;color:var(--mx-text)!important}
+dialog .role-picker-list button.selected{border-color:var(--mx-red)!important;background:var(--mx-raised)!important;color:var(--mx-text)!important}
+dialog .eyebrow,.sim-onboarding .eyebrow{color:var(--mx-red)!important}
+dialog .help-detail,.sim-onboarding{background:var(--mx-surface)!important;color:var(--mx-text)!important}
+dialog .sim-onboarding .maxvel-only-brand{margin-bottom:18px}
+@media print{
+ .dashboard .sidebar,.dashboard .app-header,.dashboard .mobile-nav,.dashboard .footer-app,
+ .dashboard .app-content .ux-report-tabs{display:none!important}
+ .dashboard,.dashboard .app-shell,.dashboard .shell-main,.dashboard .app-content{
+  display:block!important;height:auto!important;max-height:none!important;overflow:visible!important;
+  background:#fff!important;color:#111!important}
+ .dashboard .app-content .ux-report-stage>[data-ux-report],
+ .dashboard .app-content .ux-report-stage>[data-ux-report][hidden]{display:block!important;break-inside:avoid-page!important}
+ .dashboard .app-content .report-page :is(h1,h2,h3,p,small,strong,td,th){color:#111!important}
+ .dashboard .app-content :is(.card,.report-card,.table-wrap){border:1px solid #ccc!important}
+ .dashboard .app-content .report-page .button{display:none!important}
+}
