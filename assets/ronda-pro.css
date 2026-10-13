@@ -3124,7 +3124,7 @@ dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)
 .ops-client-list>div{display:grid;gap:4px;padding:11px 0;border-bottom:1px solid rgba(179,196,206,.16)}
 .ops-client-list span,.ops-client-list small{font-size:.85rem;color:#b7cbd7}
 .ops-media-fields{margin:16px 0;border:1px solid rgba(116,165,201,.3);border-radius:8px;padding:14px}
-.ops-media-fields legend{font-weight:700;color:#eaf4fa;padding:0 8px}
+.ops-media-fields summary{font-weight:700;color:#eaf4fa;padding:0 8px}
 .ops-media-fields p{font-size:.85rem;line-height:1.5;color:#c1d1db}
 .ops-media-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .ops-media-choices label{display:flex;flex-direction:column;gap:7px;min-width:0;min-height:65px;padding:12px 10px;border:1px solid #4c7086;border-radius:6px;background:#1e3341;color:#e9f7ff;font-size:.85rem;font-weight:650;cursor:pointer}
