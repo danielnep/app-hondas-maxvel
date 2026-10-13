@@ -17,3 +17,7 @@
 .checkpoint-submit:disabled{opacity:.48;cursor:not-allowed}
 .checkpoint-footnote{display:block;font-size:10px;color:#b2c8d4;margin:12px 0 0}
 @media(max-height:620px){.checkpoint-curtain-panel{max-height:100dvh}.checkpoint-stopwatch{padding:9px;margin:9px 0}.checkpoint-stopwatch strong{font-size:34px}}
+
+body.checkpoint-arrived .map-marker-active,body.checkpoint-arrived .map-person-dot{background:#33d3a3!important;color:#06221c!important;border-color:#ecfff9!important;box-shadow:0 0 0 8px #33d3a338,0 0 22px #33d3a3aa!important}
+body.checkpoint-arrived .map-person-ring{border-color:#33d3a3!important}
+body.checkpoint-arrived .fallback-svg g:last-of-type circle{stroke:#33d3a3}
