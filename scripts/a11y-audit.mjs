@@ -39,11 +39,11 @@ try{
    await click(page,'#dialog [data-action="logout"]');
   }else await click(page,'[data-action="logout"]');
   await click(page,'[data-action="login"]:visible');
-  await page.locator('#login-form input[name="role"][value="supervisor"]').check();
+  await page.locator('#login-form input[name="role"][value="admin"]').check();
   await click(page,'#login-form button[type="submit"]');
   await sleep(580);
   if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
-  await check(page,'04-supervisao',width);
+  await check(page,'04-administracao',width);
   if(width<=900)await click(page,'[data-action="open-mobile-menu"]');
   await page.locator(width<=900?'#dialog [data-view="rondas"]':'.sidebar [data-view="rondas"]').click();
   await check(page,'04b-agenda',width);
