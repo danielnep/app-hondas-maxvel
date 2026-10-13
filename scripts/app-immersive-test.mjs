@@ -105,9 +105,9 @@ try{
     await tap(page,'#incident-form button[type="submit"]');
    if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="demo-leave"]');}
    else await tap(page,'.patrol-actions [data-action="demo-leave"]');
-   await wait(7400);
+   // A política anti-falso-positivo requer três amostras confiáveis distribuídas no tempo.
+   await page.locator('.patrol-actions [data-action="justify"]').waitFor({timeout:24000});
    await capture(page,'deviation',width,height);
-   if(!await page.locator('.patrol-actions [data-action="justify"]').count())throw Error('Desvio não exigiu justificativa');
    await tap(page,'.patrol-actions [data-action="justify"]');
    const reason=page.locator('#justification-form textarea').first();
    await revealDialogControl(page,'#justification-form textarea');
