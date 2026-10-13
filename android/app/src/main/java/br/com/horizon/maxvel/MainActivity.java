@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -115,6 +116,7 @@ public class MainActivity extends Activity {
     private void stopTracking(){stopService(new Intent(this,PatrolLocationService.class));getSharedPreferences("tracking",MODE_PRIVATE).edit().putBoolean("active",false).apply();}
 
     public class NativeBridge {
+        @JavascriptInterface public int getBatteryLevel(){BatteryManager battery=(BatteryManager)getSystemService(BATTERY_SERVICE);return battery==null?-1:battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);}
         @JavascriptInterface public void startTracking(){runOnUiThread(()->MainActivity.this.startTracking());}
         @JavascriptInterface public void stopTracking(){runOnUiThread(()->MainActivity.this.stopTracking());}
         @JavascriptInterface public String getLocationsSince(long at){return trace.after(at);}
