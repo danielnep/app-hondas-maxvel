@@ -3,29 +3,22 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const theme=readFileSync(new URL('../assets/horizon-operacional.css',import.meta.url),'utf8');
+const theme=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const gradle=readFileSync(new URL('../android/app/build.gradle',import.meta.url),'utf8');
 
 test('tema operacional é carregado na web e empacotado no Android',()=>{
- assert.ok(existsSync(new URL('../assets/horizon-operacional.css',import.meta.url)));
- assert.match(html,/assets\/horizon-operacional\.css/);
+ assert.ok(existsSync(new URL('../assets/ronda-pro.css',import.meta.url)));
+ assert.match(html,/assets\/ronda-pro\.css/);
  assert.match(gradle,/assets\/\*\*/);
 });
 
-test('a navegação mobile é definida por papel, com perfil acessível',()=>{
- assert.match(app,/mobileNavFor=role/);
- assert.match(app,/\['minha-ronda','Minha ronda','compass'\]/);
- assert.match(app,/\['notificacoes','Alertas','bell'\]/);
+test('menu pelo topo preserva acesso a todas as áreas do papel e ao perfil',()=>{
+ assert.match(app,/data-action="open-mobile-menu"/);
+ assert.match(app,/const options=allNav\[user\?\.role\]/);
  assert.match(app,/data-action="profile-menu"/);
  assert.match(app,/Sair deste perfil/);
- assert.match(app,/mobileEntries\.map/);
-});
-
-test('a navegação compacta não pode ser substituída por display block',()=>{
- assert.match(theme,/\.mobile-nav\.mobile-only\s*\{/);
- assert.match(theme,/display:grid!important/);
- assert.match(theme,/grid-template-columns:repeat\(var\(--nav-items,3\)/);
+ assert.doesNotMatch(app,/class="mobile-nav mobile-only"/);
  assert.match(theme,/safe-area-inset-bottom/);
 });
 

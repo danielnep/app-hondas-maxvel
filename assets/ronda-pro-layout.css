@@ -1,0 +1,27 @@
+/* Ronda Pró: uma área de rolagem, cabeçalho no fluxo e navegação pelo topo. */
+.dashboard .app-shell { height:100dvh!important; min-height:0!important; max-height:100dvh!important; overflow:hidden!important; }
+.dashboard .shell-main { height:100dvh!important; min-height:0!important; max-height:100dvh!important; display:flex!important; flex-direction:column!important; overflow:hidden!important; }
+.dashboard .app-header { position:relative!important; inset:auto!important; flex:0 0 auto!important; min-height:64px!important; height:auto!important; max-height:none!important; padding:8px 20px!important; }
+.dashboard .app-content { position:relative!important; top:auto!important; margin:0!important; flex:1 1 0%!important; width:100%!important; min-height:0!important; height:auto!important; max-height:none!important; overflow-y:auto!important; overflow-x:hidden!important; padding:20px 24px calc(20px + env(safe-area-inset-bottom,0px))!important; }
+.dashboard .sidebar { height:100dvh!important; overflow-y:auto!important; }
+.dashboard .app-menu-button { align-items:center; justify-content:center; flex:none; width:44px; min-width:44px; min-height:44px; padding:10px; border:1px solid var(--mx-line); background:var(--mx-raised); color:var(--mx-text); }
+.dashboard .app-menu-button svg { width:22px; height:22px; }
+.dashboard .page-title,.dashboard .v4-dashboard-heading { flex:none!important; height:auto!important; min-height:0!important; max-height:none!important; align-items:flex-start!important; }
+.dashboard .v4-dashboard-heading::after,.dashboard .page-title::after { display:none!important; }
+.dashboard .page-title h1,.dashboard .v4-dashboard-heading h1 { line-height:1.2!important; white-space:normal!important; overflow:visible!important; }
+@media(max-width:900px) {
+ html,body,#app { height:100%!important; min-height:0!important; overflow:hidden!important; }
+ .dashboard .app-header { gap:8px!important; min-height:64px!important; padding:8px 12px!important; }
+ .dashboard .app-header .desktop-only,.dashboard .app-header .header-actions>button.desktop-only { display:none!important; }
+ .dashboard .app-menu-button.mobile-only { display:flex!important; }
+ .dashboard .app-header .header-actions { margin-left:auto!important; gap:0!important; }
+ .dashboard .app-content { padding:14px 14px calc(16px + env(safe-area-inset-bottom,0px))!important; }
+ .dashboard .page-title,.dashboard .v4-dashboard-heading { display:flex!important; flex-direction:column!important; gap:6px!important; }
+ .dashboard .v4-local-notice { max-width:none!important; font-size:12px!important; width:auto!important; }
+ .dashboard .v4-local-notice::after { content:none!important; }
+ .dashboard .v4-dashboard-tabs { display:flex!important; width:100%!important; min-height:44px!important; overflow-x:auto!important; gap:0!important; scrollbar-width:none; }
+ .dashboard .app-content .v4-dashboard-tabs button { flex:1 1 0%!important; min-width:0!important; padding:10px 4px!important; }
+ .dashboard .app-content.ronda-page { padding:0!important; }
+ .dashboard .ronda-page .patrol-workspace { height:100%!important; min-height:0!important; }
+}
+@media(min-width:901px) { .dashboard .app-menu-button.mobile-only { display:none!important; } }

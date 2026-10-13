@@ -9,6 +9,8 @@ on:
       - 'index.html'
       - 'src/app.js'
       - 'styles.css'
+      - 'assets/ronda-pro*.css'
+      - 'assets/maxvel-logo.webp'
       - 'assets/horizon-operacional.css'
       - 'assets/horizon-graphite.css'
       - 'src/tutorial.js'

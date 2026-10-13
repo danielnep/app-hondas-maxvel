@@ -1,20 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
-<title id="title">Ronda Pró</title><desc id="desc">Marco de localização com bússola sobre horizonte azul.</desc>
-<defs>
- <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".52" stop-color="#e6f6ff"/><stop offset="1" stop-color="#a7dbfb"/></linearGradient>
- <linearGradient id="pin" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#51d4f8"/><stop offset=".48" stop-color="#0786e5"/><stop offset="1" stop-color="#0751a6"/></linearGradient>
- <linearGradient id="road" x1=".1" y1="0" x2=".9" y2="1"><stop stop-color="#049ae5"/><stop offset="1" stop-color="#064b9c"/></linearGradient>
- <clipPath id="round"><rect width="128" height="128" rx="27"/></clipPath>
-</defs>
-<g clip-path="url(#round)">
-<rect width="128" height="128" fill="url(#sky)"/>
-<path d="M0 81c24-6 34-12 54-9 21 3 34-12 74-1v57H0Z" fill="#9ed7f8" opacity=".55"/>
-<path d="M0 98c33-9 43-3 68-12 20-7 34 0 60-6v48H0Z" fill="url(#road)"/>
-<path d="M68 83c-5 13-19 16-20 24-2 7 15 11 16 21H46c0-11-18-14-15-24 3-11 17-13 18-21" fill="none" stroke="#e2faff" stroke-width="5" stroke-linecap="round"/>
-<path d="M64 11c-25 0-43 18-43 42 0 27 33 54 43 64 10-10 43-37 43-64 0-24-18-42-43-42Z" fill="url(#pin)" stroke="#ffffff" stroke-width="3"/>
-<circle cx="64" cy="52" r="28" fill="#fff" opacity=".95"/>
-<path d="M64 30 83 75 64 65 45 75Z" fill="#0863b8"/>
-<path d="M64 30 83 75 64 65Z" fill="#29c4f5"/>
-<path d="M64 65 45 75 58 55Z" fill="#073d84"/>
-<path d="M5 5h118v118H5Z" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="2"/>
-</g></svg>
+<title id="title">Grupo Maxvel · Ronda Pró</title><desc id="desc">Símbolo M com acento vermelho intenso em fundo preto.</desc>
+<defs><linearGradient id="red" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#ff2039"/><stop offset="1" stop-color="#b7001c"/></linearGradient><linearGradient id="silver" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#8b8b91"/></linearGradient></defs>
+<rect width="128" height="128" rx="25" fill="#09090b"/>
+<circle cx="64" cy="64" r="51" fill="url(#red)"/>
+<path d="M17 83c21-41 54-58 96-51" fill="none" stroke="url(#silver)" stroke-width="5" stroke-linecap="round" opacity=".92"/>
+<path d="M29 91 46 37 64 68 84 37l16 54H83l-6-27-13 22-14-22-7 27Z" fill="#fff"/>
+<path d="m12 92 104-54" stroke="url(#silver)" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+</svg>

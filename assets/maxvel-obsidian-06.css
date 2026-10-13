@@ -1,0 +1,425 @@
+/* Maxvel Obsidian · redesign operacional #27 · camada final de UI
+ * Prioridades: identidade Maxvel, leitura, navegação por tarefa e responsividade REAL.
+ * Não altera GPS, domínio, simulação ou dados. */
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap');
+:root {
+ --mx-bg:#09090b;--mx-surface:#141416;--mx-raised:#1d1d20;--mx-hover:#26262a;
+ --mx-line:#343438;--mx-text:#f7f7f8;--mx-secondary:#d1d1d5;--mx-muted:#afb0b7;
+ --mx-red:#f01832;--mx-red-hover:#d80923;--mx-safe:#67d5ad;--mx-alert:#ffc16b;
+ --ui-bg:var(--mx-bg);--ui-panel:var(--mx-surface);--ui-panel-2:var(--mx-raised);
+ --ui-panel-3:var(--mx-hover);--ui-border:var(--mx-line);--ui-text:var(--mx-text);
+ --ui-muted:var(--mx-secondary);--ui-soft:var(--mx-muted);--ui-action:var(--mx-red);
+ --ui-action-hover:var(--mx-red-hover);--ui-accent:var(--mx-red);
+ --hx05-bg:var(--mx-bg);--hx05-surface:var(--mx-surface);--hx05-raised:var(--mx-raised);
+ --hx05-line:var(--mx-line);--hx05-ink:var(--mx-text);--hx05-muted:var(--mx-secondary);
+ --hx05-electric:var(--mx-red);--hx05-silver:var(--mx-secondary);--sky:var(--mx-red);
+ --cyan:var(--mx-red);--navy:var(--mx-text);--ink:var(--mx-text);
+ --muted:var(--mx-secondary);--line:var(--mx-line);--wash:var(--mx-bg);--white:var(--mx-text);
+ color-scheme:dark;
+}
+html,body,#app{background:var(--mx-bg)!important;color:var(--mx-text)!important}
+body,button,input,select,textarea,.dashboard,.entry-screen{font-family:'Barlow',system-ui,Arial,sans-serif!important}
+h1,h2,h3,h4,.dashboard .page-title h1,.dashboard .v4-dashboard-heading h1,
+.dashboard .v4-pane-head h2{font-family:'Barlow Condensed','Barlow',sans-serif!important;letter-spacing:.015em!important}
+h1,h2,h3,h4,.card-title h2,.dashboard .app-content strong{color:var(--mx-text)}
+p,small{color:var(--mx-secondary)}
+*:focus-visible{outline:2px solid var(--mx-red)!important;outline-offset:3px!important}
+.dashboard .app-shell{grid-template-columns:225px minmax(0,1fr)!important}
+.dashboard .sidebar{background:var(--mx-bg)!important;border-right:1px solid var(--mx-line)!important;padding:20px 13px!important;min-width:0}
+.dashboard .side-caption,.dashboard .eyebrow,.dashboard .v4-eyebrow,.dashboard .page-title .eyebrow{color:var(--mx-red)!important}
+.dashboard .sidebar>.brand{padding:8px 8px 22px!important;border-bottom:1px solid var(--mx-line)!important}
+.dashboard .side-link{color:var(--mx-secondary)!important;background:none!important;border:0!important;border-radius:10px!important;gap:12px!important}
+.dashboard .side-link.active{background:var(--mx-raised)!important;color:var(--mx-text)!important;box-shadow:inset 3px 0 0 var(--mx-red)!important}
+.dashboard .side-link.active svg,.dashboard .side-link:hover svg{color:var(--mx-red)!important}
+.dashboard .side-link:hover{background:var(--mx-hover)!important}
+.dashboard .side-bottom{border-top:1px solid var(--mx-line)!important}
+.dashboard .app-header{background:var(--mx-bg)!important;border-bottom:1px solid var(--mx-line)!important;min-height:66px;height:66px;padding:0 25px!important}
+.dashboard .shell-main{background:var(--mx-bg)!important;min-width:0!important;display:flex;flex-direction:column;min-height:100dvh}
+.dashboard .header-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:nowrap!important;gap:10px!important}
+.dashboard .header-actions>*{flex-shrink:0!important}
+.dashboard .header-actions :is(.button,.help-toggle,.user-pill){background:transparent!important;border:0!important;border-radius:9px!important;box-shadow:none!important;color:var(--mx-text)!important}
+.dashboard .header-actions :is(.button,.help-toggle,.user-pill):hover{background:var(--mx-hover)!important}
+.dashboard .header-actions .compact-role-picker{color:var(--mx-red)!important;font-weight:700!important}
+.dashboard .header-actions .icon-svg{width:19px;height:19px}
+.dashboard .app-content{background:var(--mx-bg)!important;color:var(--mx-text)!important;max-width:none!important;
+ width:100%!important;min-width:0!important;min-height:0!important;flex:1 1 auto!important;
+ height:auto!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;
+ padding:26px clamp(20px,3vw,48px) 46px!important;display:block!important}
+.dashboard .footer-app{display:none!important}
+.dashboard .page-title{margin:0 0 22px!important;padding:0 0 14px!important;border-bottom:1px solid var(--mx-line)!important}
+.dashboard .page-title h1{font-size:clamp(26px,2.1vw,34px)!important;line-height:1.05!important}
+.dashboard .page-title p{color:var(--mx-secondary)!important}
+.dashboard .simulation-rolebar{display:none!important} /* Troca de perfil continua em Áreas no cabeçalho */
+.maxvel-only-brand{display:inline-flex!important;gap:10px!important;align-items:center!important;min-width:0!important;white-space:nowrap!important}
+.maxvel-only-brand .brand-insignia{height:38px;width:38px;flex:none;display:grid;place-items:center;color:#fff;
+ font:italic 800 29px/1 'Barlow Condensed',sans-serif;letter-spacing:-3px;
+ border-radius:50%;background:linear-gradient(145deg,#ff213b,#bc001d)}
+.maxvel-only-brand .brand-titles{display:flex;flex-direction:column;line-height:1;min-width:0}
+.maxvel-only-brand .brand-titles strong{font:italic 800 31px/.9 'Barlow Condensed',sans-serif!important;
+ color:var(--mx-text)!important;letter-spacing:.045em!important}
+.maxvel-only-brand .brand-titles strong span{color:var(--mx-red)!important}
+.maxvel-only-brand .brand-titles small{font:600 9px/1.2 'Barlow',sans-serif!important;letter-spacing:.18em!important;
+ color:var(--mx-muted)!important;margin-top:6px}
+.dashboard .mobile-nav{background:var(--mx-surface)!important;border-top:1px solid var(--mx-line)!important}
+.dashboard .mobile-nav button{background:transparent!important;border:0!important;color:var(--mx-secondary)!important}
+.dashboard .mobile-nav button.active{background:transparent!important;color:var(--mx-text)!important;
+ box-shadow:inset 0 3px 0 var(--mx-red)!important}
+.dashboard .mobile-nav button.active svg{color:var(--mx-red)!important}
+.dashboard :is(.card,.ops-card,.ops-map-card,.report-card,.table-wrap,.schedule-workspace,.map-command-panel,
+ .map-checkpoint-panel,.alerts-queue-card,.map-history,.operational-settings){box-shadow:none!important}
+.dashboard .app-content :is(.card,.ops-card,.report-card,.table-wrap,.schedule-workspace,.alerts-queue-card,
+ .map-history,.map-checkpoint-panel){background:transparent!important;border:0!important;border-radius:0!important}
+.dashboard .app-content :is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.hx05-list-row,
+ .team-row,.schedule-row){background:transparent!important;border:0!important;border-bottom:1px solid var(--mx-line)!important;
+ border-radius:0!important;color:var(--mx-text)!important;box-shadow:none!important}
+.dashboard .app-content :is(.list-row,.event-item,.v4-history-row,.v4-team-row,.v4-insight-row,.hx05-list-row):hover{background:var(--mx-raised)!important}
+.dashboard .app-content :is(.v4-history-row,.v4-team-row,.event-item) strong{color:var(--mx-text)!important;font-size:clamp(13px,1.05vw,16px)!important;white-space:normal!important;line-height:1.32!important}
+.dashboard .app-content :is(.v4-history-row,.v4-team-row,.event-item) small{color:var(--mx-secondary)!important;font-size:12px!important}
+.dashboard .app-content :is(.v4-history-row,.v4-team-row) b,.dashboard .app-content .v4-insight-row b{color:var(--mx-red)!important}
+.dashboard .app-content :is(.button.primary,button.primary){background:var(--mx-red-hover)!important;border:1px solid transparent!important;
+ border-radius:10px!important;color:#fff!important;box-shadow:none!important}
+.dashboard .app-content :is(.button.primary,button.primary):hover{background:var(--mx-red)!important}
+.dashboard .app-content :is(.button:not(.primary),.hx05-open-button){background:var(--mx-raised)!important;
+ color:var(--mx-text)!important;border:1px solid var(--mx-line)!important;border-radius:9px!important}
+.dashboard .app-content .hx05-open-button{min-width:60px!important;min-height:38px!important}
+.dashboard .app-content :is(h1,h2,h3,h4,.card-title h2,.v4-pane-head h2,.report-roster h2,
+ .report-card h2,.report-breakdown h2){color:var(--mx-text)!important;text-shadow:none!important;opacity:1!important}
+.dashboard .app-content :is(p,small,.v4-ethics-note,.map-caption){color:var(--mx-secondary)!important}
+.dashboard .app-content :is(.tag,.requirement,.v4-local-notice){border-radius:9px!important}
+.dashboard .app-content .tag{border-color:var(--mx-line)!important;background:var(--mx-raised)!important;color:var(--mx-secondary)!important}
+.dashboard .app-content .eyebrow{color:var(--mx-red)!important}
+.dashboard .app-content :is(.ux-report-tabs,.v4-dashboard-tabs,.ux-ronda-tabs,.tabs){background:transparent!important;
+ border:0!important;border-bottom:1px solid var(--mx-line)!important;border-radius:0!important;
+ padding:0!important;gap:clamp(3px,.6vw,15px)!important}
+.dashboard .app-content :is(.ux-report-tabs,.v4-dashboard-tabs,.ux-ronda-tabs,.tabs) button{
+ border:0!important;border-bottom:3px solid transparent!important;border-radius:0!important;box-shadow:none!important;
+ background:transparent!important;color:var(--mx-secondary)!important;padding:11px 9px!important;
+ font-size:clamp(12px,1vw,15px)!important;min-height:43px!important;height:auto!important;
+ text-overflow:ellipsis!important;overflow:hidden!important;white-space:nowrap!important}
+.dashboard .app-content :is(.ux-report-tabs,.v4-dashboard-tabs,.ux-ronda-tabs,.tabs) button[aria-selected=true],
+.dashboard .app-content :is(.ux-report-tabs,.v4-dashboard-tabs,.ux-ronda-tabs,.tabs) button.active{
+ color:var(--mx-text)!important;background:transparent!important;border-bottom-color:var(--mx-red)!important}
+.dashboard .app-content .dashboard-v4{display:flex!important;flex-direction:column!important;gap:18px!important;
+ width:100%!important;min-height:0!important;height:auto!important;padding:0!important;overflow:visible!important}
+.dashboard .v4-dashboard-heading{min-height:54px!important;height:auto!important;flex:0 0 auto!important;
+ padding:0 0 12px!important;border-bottom:1px solid var(--mx-line)!important}
+.dashboard .v4-dashboard-heading h1{font-size:clamp(24px,2.1vw,34px)!important;color:var(--mx-text)!important;line-height:1.06!important}
+.dashboard .v4-dashboard-tabs{display:flex!important;flex:0 0 auto!important;height:auto!important;min-height:45px!important;
+ justify-content:flex-start!important;overflow-x:auto!important;width:100%!important}
+.dashboard .v4-dashboard-tabs button{flex:0 0 auto!important;min-width:100px!important}
+.dashboard .v4-local-notice{color:var(--mx-secondary)!important;font-size:11px!important}
+.dashboard .v4-local-notice svg{color:var(--mx-red)!important}
+.dashboard .v4-stage{display:block!important;height:auto!important;min-height:0!important;max-height:none!important;
+ overflow:visible!important;width:100%!important;flex:none!important}
+.dashboard .v4-stage>.v4-pane{display:flex!important;flex-direction:column!important;flex:none!important;
+ width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;
+ gap:12px!important;overflow:visible!important;background:transparent!important}
+.dashboard .v4-stage>.v4-pane[hidden]{display:none!important}
+.dashboard .v4-pane-head{background:transparent!important;border-bottom:1px solid var(--mx-line)!important;
+ padding:6px 0 12px!important;min-height:46px!important;flex:none!important}
+.dashboard .v4-pane-head h2{font-size:20px!important}
+.dashboard .v4-pane-head span{font-size:12px!important;color:var(--mx-secondary)!important}
+.dashboard .v4-pane-foot{flex:none!important;height:auto!important;min-height:48px!important;justify-content:flex-start!important;
+ border-top:1px solid var(--mx-line)!important;padding-top:12px!important}
+.dashboard .v4-pane-foot .button{height:41px!important;min-height:41px!important;font-size:13px!important;padding:8px 16px!important}
+.dashboard .v4-stage :is(.v4-history-list,.v4-alerts-list,.v4-insights-list,.v4-team-list){
+ flex:none!important;display:flex!important;flex-direction:column!important;height:auto!important;min-height:0!important;
+ max-height:none!important;overflow:visible!important;gap:0!important;background:transparent!important}
+.dashboard .v4-history-row{min-height:79px!important;padding:14px 4px!important;gap:14px!important}
+.dashboard .v4-history-row .icon-svg{color:var(--mx-red)!important}
+.dashboard .v4-insight-row,.dashboard .v4-team-row{padding:12px 5px!important;min-height:74px!important}
+.dashboard .v4-summary-metrics{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ grid-auto-rows:minmax(110px,auto)!important;grid-template-rows:none!important;gap:1px!important;
+ border-top:1px solid var(--mx-line)!important;border-bottom:1px solid var(--mx-line)!important}
+.dashboard .v4-summary-metric{background:transparent!important;border:0!important;border-radius:0!important;
+ padding:18px 12px!important;min-width:0!important}
+.dashboard .v4-summary-metric strong{font-size:clamp(27px,2.5vw,39px)!important;color:var(--mx-text)!important}
+.dashboard .v4-summary-metric span{font-size:13px!important;color:var(--mx-secondary)!important}
+.dashboard .v4-summary-metric small{color:var(--mx-muted)!important}
+.dashboard .v4-summary-callout{background:var(--mx-surface)!important;border:0!important;border-left:3px solid var(--mx-red)!important;
+ border-radius:0 12px 12px 0!important;padding:18px!important}
+.dashboard .v4-summary-quick{display:flex!important;gap:12px!important;flex-wrap:wrap!important}
+.dashboard .v4-summary-quick button{font-size:13px!important;min-height:42px!important;height:42px!important;padding:8px 15px!important;border-radius:9px!important}
+.dashboard .v4-map-pane .ops-map-card{background:var(--mx-surface)!important;border:0!important;
+ border-radius:14px!important;overflow:hidden!important;height:auto!important;min-height:0!important;padding:13px!important}
+.dashboard .v4-map-pane .ops-map-stage{flex:none!important;min-height:0!important;height:auto!important;overflow:hidden!important}
+.dashboard .v4-map-pane #ops-map.map-container.large{height:clamp(410px,57vh,680px)!important;min-height:410px!important;width:100%!important;
+ border:0!important;border-radius:10px!important}
+.dashboard .v4-map-foot{padding:10px 4px!important;display:flex!important;flex-wrap:wrap!important;gap:6px 22px!important}
+.dashboard .v4-map-pane .ops-panel-heading h2{font-size:22px!important}
+.dashboard .app-content :is(.ux-row-pagination,.v4-summary-pager){display:flex!important;align-items:center!important;
+ justify-content:space-between!important;gap:10px!important;margin:16px 0 0!important;padding:12px 0!important;
+ flex:none!important;height:auto!important;min-height:45px!important;max-height:none!important;
+ background:transparent!important;border-top:1px solid var(--mx-line)!important}
+.dashboard .app-content :is(.ux-row-pagination,.v4-summary-pager) button{background:var(--mx-raised)!important;
+ border:1px solid var(--mx-line)!important;border-radius:9px!important;color:var(--mx-text)!important;
+ min-width:42px!important;min-height:39px!important;height:39px!important;padding:6px 14px!important}
+.dashboard .app-content :is(.ux-row-pagination,.v4-summary-pager) span{color:var(--mx-secondary)!important;font-size:12px!important}
+.dashboard .app-content .ux-paged-list{display:block!important;height:auto!important;min-height:0!important;
+ max-height:none!important;overflow:visible!important}
+.dashboard .app-content .ux-report-tabs{display:flex!important;overflow-x:auto!important;flex:none!important}
+.dashboard .app-content .report-page{display:block!important;flex:none!important;height:auto!important;
+ min-height:0!important;max-height:none!important;overflow:visible!important}
+.dashboard .app-content .ux-report-stage{display:block!important;min-height:0!important;height:auto!important;
+ overflow:visible!important;flex:none!important}
+.dashboard .app-content .ux-report-stage>[data-ux-report]{display:block!important;
+ flex:none!important;width:100%!important;height:auto!important;min-height:0!important;
+ max-height:none!important;overflow:visible!important;padding:14px 0!important;margin:0!important}
+.dashboard .app-content .ux-report-stage>[data-ux-report][hidden]{display:none!important}
+.dashboard .app-content .ux-report-stage .grid-kpis{display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+.dashboard .app-content .ux-report-summary>.grid-kpis>.kpi{background:var(--mx-surface)!important;
+ padding:18px!important;border-radius:12px!important;min-height:112px!important;max-height:none!important}
+.dashboard .app-content .ux-report-summary .kpi strong{font-size:28px!important;color:var(--mx-text)!important}
+.dashboard .app-content .ux-report-summary .kpi small,.dashboard .app-content .ux-report-summary .kpi em{font-size:12px!important;color:var(--mx-secondary)!important}
+.dashboard .app-content .report-roster,.dashboard .app-content .report-roster .table-wrap{display:block!important;
+ height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}
+.dashboard .app-content .report-roster .data-table{display:table!important;width:100%!important;min-width:0!important;
+ border-collapse:collapse!important}
+.dashboard .app-content .report-roster .data-table thead{display:table-header-group!important}
+.dashboard .app-content .report-roster .data-table tbody{display:table-row-group!important}
+.dashboard .app-content .report-roster .data-table tbody tr{display:table-row!important;height:auto!important;
+ min-height:0!important;border-bottom:1px solid var(--mx-line)!important}
+.dashboard .app-content .report-roster .data-table th,.dashboard .app-content .report-roster .data-table td{
+ color:var(--mx-text)!important;padding:12px 9px!important;font-size:13px!important}
+.dashboard .app-content .report-roster .data-table td:nth-child(n){display:table-cell!important}
+.dashboard .app-content .report-roster .data-table thead th{color:var(--mx-secondary)!important;font-weight:600!important}
+.dashboard .app-content .report-roster .data-table td .button{min-height:36px!important;background:var(--mx-raised)!important;color:var(--mx-text)!important}
+.dashboard .app-content .report-events-list{height:auto!important;max-height:none!important;overflow:visible!important}
+.dashboard .app-content .report-events-list .event-item{min-height:60px!important;max-height:none!important}
+.dashboard .app-content .report-events-list .event-item p{display:block!important}
+.dashboard .app-content :is(.map-container,.map-container.large){border:0!important;border-radius:10px!important}
+.dashboard .app-content :is(.schedule-list,.team-list,.alerts-queue-list,.table-wrap,.timeline){max-height:none!important}
+.dashboard .app-content .hx05-open-button{background:var(--mx-raised)!important;color:var(--mx-text)!important}
+.dashboard .app-content .v4-ethics-note{font-size:12px!important;line-height:1.5!important}
+/* Navegação mobile e estruturas específicas. */
+@media(min-width:901px){
+ .dashboard .sidebar{display:flex!important}
+ .dashboard .mobile-nav{display:none!important}
+ .dashboard .app-content:has(.dashboard-v4){display:block!important;height:auto!important;overflow-y:auto!important}
+ .dashboard .app-content:has(.report-page){display:block!important;height:auto!important;overflow-y:auto!important}
+ .dashboard .app-content .ux-report-stage .grid-kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ .dashboard .app-content .v4-stage{max-width:1160px!important}
+ .dashboard .app-content .v4-map-pane .ops-map-card{max-width:1160px!important}
+ .dashboard .app-content .v4-history-pane{max-width:1060px!important}
+ .dashboard .app-content .v4-summary-quick{margin-top:20px!important}
+}
+@media(max-width:900px){
+ html,body,#app,.dashboard,.dashboard .app-shell,.dashboard .shell-main{height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important}
+ .dashboard .app-shell{display:block!important}
+ .dashboard .sidebar{display:none!important}
+ .dashboard .shell-main{display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important}
+ .dashboard .app-header{flex:0 0 62px!important;min-height:62px!important;height:62px!important;max-height:62px!important;
+  padding:6px 12px!important;gap:7px!important}
+ .dashboard .app-header .brand,.dashboard .app-header .maxvel-only-brand{display:inline-flex!important;
+  flex:0 1 auto!important;width:auto!important;min-width:0!important;max-width:180px!important;
+  padding:0!important;margin:0!important;transform:none!important}
+ .maxvel-only-brand .brand-insignia{width:31px;height:31px;font-size:24px}
+ .maxvel-only-brand .brand-titles strong{font-size:25px!important}
+ .maxvel-only-brand .brand-titles small{font-size:7px!important}
+ .dashboard .header-actions{gap:3px!important;min-width:0!important}
+ .dashboard .header-actions>button{width:auto!important;height:39px!important;min-width:39px!important;min-height:39px!important;
+  max-height:39px!important;padding:8px!important;border:0!important}
+ .dashboard .header-actions .compact-role-picker{width:auto!important;min-width:39px!important}
+ .dashboard .header-actions .compact-role-picker .icon-svg{width:19px!important;height:19px!important}
+ .dashboard .header-actions .help-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important}
+ .dashboard .header-actions .user-pill{width:38px!important;min-width:38px!important;border:0!important;padding:2px!important}
+ .dashboard .app-content{flex:1 1 auto!important;display:block!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;
+  padding:17px 15px 32px!important;gap:0!important}
+ .dashboard .mobile-nav.mobile-only{display:flex!important;flex:0 0 calc(60px + env(safe-area-inset-bottom,0px))!important;
+  min-height:60px!important;max-height:none!important;height:auto!important;padding-bottom:env(safe-area-inset-bottom,0px)!important;
+  position:relative!important;inset:auto!important}
+ .dashboard .mobile-nav button{min-height:58px!important;height:auto!important;padding:8px 3px!important;font-size:11px!important;gap:3px!important}
+ .dashboard .mobile-nav svg{width:22px!important;height:22px!important}
+ .dashboard .app-content .page-title{margin-bottom:14px!important;padding:0 0 12px!important;min-height:0!important;flex:none!important}
+ .dashboard .app-content .page-title h1{font-size:26px!important;line-height:1.07!important}
+ .dashboard .app-content .page-title p{display:block!important;font-size:12px!important;line-height:1.45!important}
+ .dashboard .app-content .dashboard-v4{height:auto!important;min-height:0!important;gap:12px!important}
+ .dashboard .v4-dashboard-heading{height:auto!important;min-height:45px!important;max-height:none!important;flex:none!important}
+ .dashboard .v4-dashboard-heading h1{font-size:25px!important}
+ .dashboard .v4-dashboard-tabs{height:auto!important;min-height:46px!important;max-height:none!important;flex:none!important}
+ .dashboard .v4-dashboard-tabs button{min-width:82px!important;font-size:13px!important}
+ .dashboard .v4-stage{height:auto!important;min-height:0!important;overflow:visible!important;flex:none!important}
+ .dashboard .v4-stage>.v4-pane{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;flex:none!important}
+ .dashboard .v4-stage .v4-history-list,.dashboard .v4-stage .v4-alerts-list,
+ .dashboard .v4-stage .v4-team-list,.dashboard .v4-stage .v4-insights-list{height:auto!important;min-height:0!important;overflow:visible!important;flex:none!important}
+ .dashboard .v4-history-row{min-height:75px!important}
+ .dashboard .v4-map-pane .ops-map-card{height:auto!important;min-height:0!important}
+ .dashboard .v4-map-pane .ops-map-stage{height:auto!important;min-height:0!important}
+ .dashboard .v4-map-pane #ops-map.map-container.large{height:48dvh!important;min-height:290px!important;max-height:520px!important}
+ .dashboard .v4-summary-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(96px,auto)!important}
+ .dashboard .v4-summary-metric{padding:12px!important}
+ .dashboard .app-content .ux-report-stage{overflow:visible!important}
+ .dashboard .app-content .ux-report-stage>[data-ux-report]{height:auto!important;max-height:none!important;overflow:visible!important}
+ .dashboard .app-content .report-page{height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
+ .dashboard .app-content .report-roster .data-table thead{display:none!important}
+ .dashboard .app-content .report-roster .data-table tbody{display:block!important}
+ .dashboard .app-content .report-roster .data-table tbody tr{display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto auto!important;gap:6px!important;align-items:center!important;padding:9px 0!important}
+ .dashboard .app-content .report-roster .data-table tbody tr td{display:block!important;border:0!important;padding:4px!important}
+ .dashboard .app-content .report-roster .data-table tbody tr td:nth-child(2),
+ .dashboard .app-content .report-roster .data-table tbody tr td:nth-child(4),
+ .dashboard .app-content .report-roster .data-table tbody tr td:nth-child(5){display:none!important}
+ .dashboard .app-content .report-roster .data-table tbody tr td:first-child{font-weight:600!important}
+ .dashboard .app-content .report-roster .data-table tbody tr td:last-child button{background:var(--mx-raised)!important;
+  color:var(--mx-text)!important;min-width:65px!important;border-radius:9px!important}
+ .dashboard .app-content .ux-report-stage .grid-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .dashboard .app-content .report-roster .table-wrap{display:block!important;overflow:visible!important}
+ .dashboard .app-content .ux-report-tabs{display:flex!important;overflow-x:auto!important}
+ .dashboard .app-content .ux-report-tabs button{flex:1 0 auto!important}
+ .dashboard .app-content .schedule-workspace,.dashboard .app-content .map-command-page,
+ .dashboard .app-content .alerts-command-page{height:auto!important;max-height:none!important;overflow:visible!important;min-height:0!important}
+ .dashboard .app-content :is(.schedule-list,.alerts-queue-list,.team-list,.table-wrap,.timeline){overflow:visible!important;max-height:none!important}
+ .dashboard .app-content .ux-paged-list .ux-row-pagination{margin-top:15px!important}
+ /* A ronda operacional permanece map-first com HUD e ações visíveis. */
+ .dashboard .app-content.ronda-page{display:flex!important;flex-direction:column!important;overflow:hidden!important;
+  padding:8px!important;gap:5px!important}
+ .dashboard .ronda-page .page-title{display:none!important}
+ .dashboard .ronda-page .patrol-workspace{flex:1 1 auto!important;height:auto!important;min-height:0!important;overflow:hidden!important}
+ .dashboard .ronda-page .patrol-map-panel{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+ .dashboard .ronda-page .patrol-map-canvas{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+ .dashboard .ronda-page .patrol-actions{border:0!important;border-top:1px solid var(--mx-line)!important;border-radius:0!important}
+ .dashboard .ronda-page .patrol-action-body{overflow:auto!important}
+}
+/* Menu Más: janela lateral genuína, acessível com botão de fechar já existente no dialog. */
+dialog:has(.ux-access-menu){position:fixed!important;inset:0 auto 0 0!important;margin:0!important;
+ width:min(88vw,345px)!important;max-width:min(88vw,345px)!important;height:100dvh!important;max-height:100dvh!important;
+ border:0!important;border-right:1px solid var(--mx-line)!important;border-radius:0 18px 18px 0!important;
+ background:var(--mx-surface)!important;color:var(--mx-text)!important;overflow-y:auto!important;padding:22px 18px!important}
+dialog:has(.ux-access-menu)::backdrop{background:#000b!important}
+dialog .ux-access-menu{display:flex!important;flex-direction:column!important;gap:3px!important}
+dialog .ux-access-menu h2{font-size:29px!important;color:var(--mx-text)!important;margin:4px 0 14px!important}
+dialog .ux-access-menu>button{width:100%!important;min-height:52px!important;display:flex!important;
+ align-items:center!important;justify-content:flex-start!important;gap:13px!important;background:transparent!important;
+ border:0!important;border-bottom:1px solid var(--mx-line)!important;border-radius:0!important;
+ font-size:15px!important;color:var(--mx-text)!important;text-align:left!important;padding:10px 4px!important}
+dialog .ux-access-menu>button svg{color:var(--mx-red)!important}
+dialog{background:var(--mx-surface)!important;color:var(--mx-text)!important;border:1px solid var(--mx-line)!important;border-radius:16px!important}
+dialog :is(h1,h2,h3){color:var(--mx-text)!important}
+dialog :is(p,small){color:var(--mx-secondary)!important}
+dialog button.primary{background:var(--mx-red-hover)!important;color:#fff!important;border-color:transparent!important}
+dialog .field input,dialog .field textarea,dialog .field select{background:var(--mx-bg)!important;color:var(--mx-text)!important;border:1px solid var(--mx-line)!important}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* Visibilidade semântica: não mostrar registros fora da página selecionada. */
+.dashboard .app-content .report-roster .data-table tbody tr[hidden],
+.dashboard .app-content .v4-stage>.v4-pane[hidden],
+.dashboard .app-content .ux-report-stage>[hidden],
+.dashboard .app-content .ux-paged-list>[hidden],
+.dashboard .app-content .v4-stage .v4-summary-pane [hidden]{display:none!important}
+
+/* Entrada e escolha de perfis mantêm a mesma identidade, sem azul residual. */
+.entry-screen,.entry-screen.product-home,.product-home,.entry-panel,.entry-main{background:var(--mx-bg)!important;color:var(--mx-text)!important}
+.entry-screen .entry-topnav,.entry-screen .entry-footer{background:var(--mx-bg)!important;border-color:var(--mx-line)!important}
+.entry-screen :is(h1,h2,h3,.entry-aside-stat strong){color:var(--mx-text)!important}
+.entry-screen .entry-panel h1 span,.entry-screen .entry-eyebrow,.entry-screen .entry-aside-head,
+.entry-screen .entry-details svg{color:var(--mx-red)!important}
+.entry-screen :is(p,small,.entry-details,.entry-actions span){color:var(--mx-secondary)!important}
+.entry-screen .entry-aside,.entry-screen .entry-panel,.entry-screen .entry-aside-stat{
+ background:var(--mx-surface)!important;border-color:var(--mx-line)!important;box-shadow:none!important}
+.entry-screen .entry-panel{background:transparent!important}
+.entry-screen .button.primary{background:var(--mx-red-hover)!important;color:#fff!important;border:0!important;box-shadow:none!important}
+.entry-screen .button:not(.primary){background:var(--mx-raised)!important;color:var(--mx-text)!important;border-color:var(--mx-line)!important}
+.entry-screen :is(.entry-aside-mark,.ops-live-dot){color:var(--mx-red)!important}
+.entry-screen .entry-footer{color:var(--mx-secondary)!important}
+dialog :is(.role-picker-list button,.ux-access-menu button){background:transparent!important;color:var(--mx-text)!important}
+dialog .role-picker-list button.selected{border-color:var(--mx-red)!important;background:var(--mx-raised)!important;color:var(--mx-text)!important}
+dialog .eyebrow,.sim-onboarding .eyebrow{color:var(--mx-red)!important}
+dialog .help-detail,.sim-onboarding{background:var(--mx-surface)!important;color:var(--mx-text)!important}
+dialog .sim-onboarding .maxvel-only-brand{margin-bottom:18px}
+@media print{
+ .dashboard .sidebar,.dashboard .app-header,.dashboard .mobile-nav,.dashboard .footer-app,
+ .dashboard .app-content .ux-report-tabs{display:none!important}
+ .dashboard,.dashboard .app-shell,.dashboard .shell-main,.dashboard .app-content{
+  display:block!important;height:auto!important;max-height:none!important;overflow:visible!important;
+  background:#fff!important;color:#111!important}
+ .dashboard .app-content .ux-report-stage>[data-ux-report],
+ .dashboard .app-content .ux-report-stage>[data-ux-report][hidden]{display:block!important;break-inside:avoid-page!important}
+ .dashboard .app-content .report-page :is(h1,h2,h3,p,small,strong,td,th){color:#111!important}
+ .dashboard .app-content :is(.card,.report-card,.table-wrap){border:1px solid #ccc!important}
+ .dashboard .app-content .report-page .button{display:none!important}
+}
+
+
+/* MAXVEL MOTION 01 | inspiração: Apple HIG Motion (feedback breve e preciso) e WWDC23 Spring.
+   Durações curtas + continuidade espacial, sem pulo elástico/bounce.
+   Somente compositor: opacity/transform; sem bloquear a interação. */
+:root{
+  --mx-motion-fast:130ms;
+  --mx-motion-medium:200ms;
+  --mx-motion-sheet:280ms;
+  --mx-motion-smooth:cubic-bezier(.22,1,.36,1);
+  --mx-motion-press:cubic-bezier(.2,.8,.2,1);
+}
+@keyframes mx-content-enter{
+  from{opacity:.82;transform:translate3d(0,5px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes mx-panel-enter{
+  from{opacity:.75;transform:translate3d(0,7px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes mx-drawer-in{
+  from{opacity:.9;transform:translate3d(-12px,0,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+@keyframes mx-dialog-in{
+  from{opacity:.75;transform:translate3d(0,8px,0) scale(.99)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+.dashboard .app-content>.page-title,
+.dashboard .app-content>.operations-page:not(.dashboard-v4),
+.dashboard .app-content>.report-page{
+  animation:mx-content-enter var(--mx-motion-medium) var(--mx-motion-smooth) both;
+}
+.dashboard .app-content .v4-stage>.v4-pane:not([hidden]),
+.dashboard .app-content .ux-report-stage>[data-ux-report]:not([hidden]),
+.dashboard .app-content .ux-ronda-stage>[data-ux-subpage]:not([hidden]){
+  animation:mx-panel-enter var(--mx-motion-medium) var(--mx-motion-smooth) both;
+}
+.dashboard .sidebar .side-link,
+.dashboard .header-actions>button,
+.dashboard .mobile-nav button,
+.dashboard .app-content :is(.button,.ux-row-pagination button,.hx05-open-button,.v4-pane-foot button),
+dialog :is(button,input,select,textarea){
+  transition:background-color var(--mx-motion-fast) ease-out,
+   color var(--mx-motion-fast) ease-out,border-color var(--mx-motion-fast) ease-out,
+   opacity var(--mx-motion-fast) ease-out,transform var(--mx-motion-fast) var(--mx-motion-press)!important;
+}
+.dashboard .app-content :is(.ux-report-tabs,.v4-dashboard-tabs,.ux-ronda-tabs) button{
+  transition:color var(--mx-motion-fast) ease-out,
+  border-color var(--mx-motion-medium) var(--mx-motion-smooth),
+  background-color var(--mx-motion-fast) ease-out!important;
+}
+.dashboard .header-actions>button:active,
+.dashboard .mobile-nav button:active,
+.dashboard .app-content :is(.button,.ux-row-pagination button,.hx05-open-button):active,
+dialog button:active{
+  transform:scale(.98)!important;
+}
+@media(hover:hover) and (pointer:fine){
+  .dashboard .sidebar .side-link:hover,
+  .dashboard .app-content :is(.v4-history-row,.v4-team-row):hover{
+    transform:translate3d(2px,0,0)!important;
+  }
+}
+dialog[open]:has(.ux-access-menu){animation:mx-drawer-in var(--mx-motion-sheet) var(--mx-motion-smooth) both}
+dialog[open]:not(:has(.ux-access-menu)){
+  animation:mx-dialog-in var(--mx-motion-medium) var(--mx-motion-smooth) both;
+}
+dialog[open]::backdrop{animation:mx-backdrop-in var(--mx-motion-medium) ease-out both}
+@keyframes mx-backdrop-in{from{opacity:0}to{opacity:1}}
+/* Acessibilidade: não inventar substituições animadas quando o sistema pediu reduzir movimento. */
+@media(prefers-reduced-motion:reduce){
+  :root{--mx-motion-fast:0ms;--mx-motion-medium:0ms;--mx-motion-sheet:0ms}
+  .dashboard .app-content>.page-title,
+  .dashboard .app-content>.operations-page,
+  .dashboard .app-content>.report-page,
+  .dashboard .app-content .v4-stage>.v4-pane,
+  .dashboard .app-content .ux-report-stage>[data-ux-report],
+  .dashboard .app-content .ux-ronda-stage>[data-ux-subpage],
+  dialog[open],dialog[open]::backdrop{
+    animation:none!important;transition:none!important;transform:none!important;
+  }
+}

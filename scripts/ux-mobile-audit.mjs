@@ -10,7 +10,13 @@ const browser=await chromium.launch({headless:true,executablePath:bin,args:['--n
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900],[1920,1080]];
 const metrics=[];let fatal=0;
-async function click(page,selector){await page.locator(selector).first().click({timeout:10000});await wait(130)}
+async function click(page,selector){
+ if(selector==='[data-action="sim-role-picker"]'){
+  if(!await page.locator(selector+':visible').count())await page.locator('[data-action="profile-menu"]').click();
+  selector+=':visible';
+ }
+ await page.locator(selector).first().click({timeout:10000});await wait(130)
+}
 async function revealDialogControl(page,selector){
  for(let step=0;step<10;step++){
   const control=page.locator(selector).first();
@@ -29,7 +35,7 @@ async function checkInteractiveBounds(page,label){
    .filter(el=>{
     if(el.closest('[hidden]')||!el.getClientRects().length)return false;
     const style=getComputedStyle(el),box=el.getBoundingClientRect();
-    return style.visibility!=='hidden'&&style.display!=='none'&&(box.top<bound.top-4||box.bottom>bound.bottom+4);
+    return style.visibility!=='hidden'&&style.display!=='none'&&(box.left<bound.left-4||box.right>bound.right+4);
    }).slice(0,6).map(el=>({element:el.outerHTML.slice(0,115),y:Math.round(el.getBoundingClientRect().y),
      bottom:Math.round(el.getBoundingClientRect().bottom)}));
  });
@@ -39,7 +45,7 @@ async function state(page,width,height,name){
  const data=await page.evaluate(()=>{
   const box=sel=>{const e=document.querySelector(sel);if(!e)return null;const r=e.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
   return {actualWidth:innerWidth,actualHeight:innerHeight,documentWidth:document.documentElement.scrollWidth,documentHeight:document.documentElement.scrollHeight,
-   logo:box('.horizon-maxvel-brand'),map:box('#mobile-map'),cta:box('.patrol-actions [data-action="start"]'),nav:box('.mobile-nav.mobile-only'),tour:box('#horizon-tour'),schedule:box('.schedule-workspace')};
+   logo:box('.maxvel-only-brand'),map:box('#mobile-map'),cta:box('.patrol-actions [data-action="start"]'),nav:box('.mobile-nav.mobile-only'),tour:box('#horizon-tour'),schedule:box('.schedule-workspace')};
  });
  metrics.push({width,height,name,...data});
  await page.screenshot({path:out+'/'+width+'-'+name+'.png',animations:'disabled',timeout:14000});
@@ -73,14 +79,14 @@ try{
    if(width<=900){
     const roleText=await page.locator('#toast').innerText();
     if(!roleText.includes('Vigia:'))throw Error('Aviso de visão de Vigia ausente: '+roleText);
-    const control=await page.locator('.app-header [data-action="sim-role-picker"] svg').evaluate(el=>
+    const control=await page.locator('.app-header [data-action="profile-menu"] .avatar').evaluate(el=>
      ({width:el.getBoundingClientRect().width,display:getComputedStyle(el).display}));
     if(control.width<12||control.display==='none')throw Error('Botão de perfis aparece vazio: '+JSON.stringify(control));
     const sizes=await page.evaluate(()=>{
      const top=document.querySelector('#toast').getBoundingClientRect();
-     return {center:Math.abs(top.x+top.width/2-innerWidth/2),y:top.y};
+     return {center:Math.abs(top.x+top.width/2-innerWidth/2),y:top.y,bottom:top.bottom,height:innerHeight};
     });
-    if(sizes.center>10||sizes.y<0||sizes.y>120)throw Error('Aviso fora do topo-centro: '+JSON.stringify(sizes));
+    if(sizes.center>10||sizes.y<0||sizes.bottom>sizes.height+2)throw Error('Aviso fora da área visível: '+JSON.stringify(sizes));
    }
    await click(page,'.patrol-actions [data-action="start"]');
    await (await revealDialogControl(page,'#dialog #declaration-check')).check();
@@ -89,13 +95,13 @@ try{
    await state(page,width,height,'05-ronda-ativa');
    if(width<=900){
     const dims=await page.evaluate(()=>{
-     const nav=document.querySelector('.mobile-nav.mobile-only')?.getBoundingClientRect(),
+     const viewportBottom=document.documentElement.clientHeight,
       main=document.querySelector('.dashboard .app-content')?.getBoundingClientRect(),
       map=document.querySelector('#mobile-map')?.getBoundingClientRect(),
       action=document.querySelector('.patrol-actions')?.getBoundingClientRect();
-     return {gap:nav.top-main.bottom,mapHeight:map.height,actionBottom:action.bottom,mapBottom:map.bottom};
+     return {gap:viewportBottom-main.bottom,mapHeight:map.height,actionBottom:action.bottom,mapBottom:map.bottom,viewportBottom};
     });
-    if(dims.gap>15||dims.mapHeight<125||dims.actionBottom>dims.gap+dims.mapBottom+125)
+    if(dims.gap>15||dims.mapHeight<125||dims.actionBottom>dims.viewportBottom+2)
      throw Error('Mapa ou limite inferior não ocupam a área útil: '+JSON.stringify(dims));
     await click(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');
     const sheet=await page.locator('#dialog[open].ux06-fullscreen .ux06-sheet').count();
@@ -139,7 +145,7 @@ try{
     if(JSON.stringify(await visiblePanels())!=='["mapa"]')throw Error('Painéis sobrepostos ao entrar no mapa: '+JSON.stringify(await visiblePanels()));
     const alignment=await page.evaluate(()=>{
      const content=document.querySelector('.dashboard .app-content'),panel=document.querySelector('.ux-ronda-stage');
-     const nav=document.querySelector('.mobile-nav.mobile-only');
+     const nav={getBoundingClientRect:()=>({top:document.documentElement.clientHeight})};
      return {panel:panel?.getBoundingClientRect().bottom,content:content?.getBoundingClientRect().bottom,
       nav:nav?.getBoundingClientRect().top,map:document.querySelector('#ops-map')?.getBoundingClientRect().height};
     });
@@ -192,7 +198,7 @@ try{
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await state(page,width,height,'10-admin');
    if(width<=900){
-    await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+    await click(page,'[data-action="open-mobile-menu"]');
     await click(page,'#dialog [data-view="relatorios"]');
     await state(page,width,height,'11-relatorios');
     await checkInteractiveBounds(page,'relatório / resumo');
@@ -208,11 +214,11 @@ try{
      }
      await checkInteractiveBounds(page,'relatório / '+tab);
     }
-    await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+    await click(page,'[data-action="open-mobile-menu"]');
     await click(page,'#dialog [data-view="equipe"]');
     await state(page,width,height,'12-equipe');
     await checkInteractiveBounds(page,'equipe');
-    await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+    await click(page,'[data-action="open-mobile-menu"]');
     await click(page,'#dialog [data-view="configuracoes"]');
     await state(page,width,height,'13-configuracoes');
     await checkInteractiveBounds(page,'configurações');

@@ -13,7 +13,12 @@ const chrome=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v chro
 const browser=await chromium.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-dev-shm-usage']});
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900]];
 const report=[];
-async function tap(page,selector){if(selector.startsWith('#dialog '))await revealDialogControl(page,selector);await page.locator(selector).first().click({timeout:12000});await wait(200)}
+async function tap(page,selector){
+ if(selector==='[data-action="sim-role-picker"]'){
+  if(!await page.locator(selector+':visible').count())await page.locator('[data-action="profile-menu"]').click();
+  selector+=':visible';
+ }
+ if(selector.startsWith('#dialog '))await revealDialogControl(page,selector);await page.locator(selector).first().click({timeout:12000});await wait(200)}
 async function enter(page,role='ronda'){
  await tap(page,'[data-action="login"]:visible');
  await page.locator('#dialog[open]').waitFor({timeout:8000});
@@ -38,8 +43,8 @@ async function capture(page,name,width,height){
   const box=selector=>{const el=document.querySelector(selector);if(!el)return null;const r=el.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
   return {viewport:innerWidth,height:innerHeight,documentWidth:document.documentElement.scrollWidth,
    documentHeight:document.documentElement.scrollHeight,primary:box('.patrol-actions [data-action="start"]'),
-   map:box('#mobile-map'),action:box('.patrol-actions'),logo:box('.horizon-maxvel-brand'),
-   roles:[...document.querySelectorAll('.simulation-roles [data-role]')].length,
+   map:box('#mobile-map'),action:box('.patrol-actions'),logo:box('.maxvel-only-brand'),
+   areas:!!document.querySelector('.app-header [data-action="sim-role-picker"]'),
    app:!!document.querySelector('.dashboard.simulation-mode'),tour:!!document.querySelector('#horizon-tour')};
  });
  report.push({width,height,name,...metrics});
@@ -51,7 +56,7 @@ async function capture(page,name,width,height){
   if(metrics.action.y<0||metrics.action.bottom>height-45)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
  }
  if(name==='ronda'){
-  if(!metrics.app||metrics.roles!==4||!metrics.map||!metrics.action||!metrics.primary)throw Error('Aplicativo, 4 perfis, mapa ou ação não encontrados');
+  if(!metrics.app||!metrics.areas||!metrics.map||!metrics.action||!metrics.primary)throw Error('Aplicativo, seletor Áreas, mapa ou ação não encontrados');
   if(metrics.primary.y<0||metrics.primary.y>height-40)throw Error('Botão de início longe da viewport: '+JSON.stringify(metrics.primary));
  }
  return metrics;
@@ -64,7 +69,7 @@ try{
   try{
    await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:18000});
    await capture(page,'login',width,height);
-   if(!await page.locator('.entry-screen .horizon-maxvel-brand img').count())throw Error('Logo combinado não carregado na entrada');
+   if(!await page.locator('.entry-screen .maxvel-only-brand').count())throw Error('Identidade Maxvel ausente na entrada');
    await enter(page);
    await capture(page,'ronda',width,height);
    if(!await page.locator('.my-schedule').count())throw Error('Página do vigia sem rondas programadas');

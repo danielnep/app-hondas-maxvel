@@ -34,7 +34,7 @@ try{
   await sleep(580);
   if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
   await check(page,'03-ronda',width);
-  if(width<500){
+  if(width<=900){
    await click(page,'[data-action="profile-menu"]');
    await click(page,'#dialog [data-action="logout"]');
   }else await click(page,'[data-action="logout"]');
@@ -44,14 +44,16 @@ try{
   await sleep(580);
   if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
   await check(page,'04-supervisao',width);
-  await page.locator(width<500?'.mobile-nav.mobile-only [data-view="rondas"]':'.sidebar [data-view="rondas"]').click();
+  if(width<=900)await click(page,'[data-action="open-mobile-menu"]');
+  await page.locator(width<=900?'#dialog [data-view="rondas"]':'.sidebar [data-view="rondas"]').click();
   await check(page,'04b-agenda',width);
-  const nav=key=>page.locator(width<500?'.mobile-nav.mobile-only [data-view="'+key+'"]':'.sidebar [data-view="'+key+'"]').first();
+  const nav=key=>page.locator(width<=900?'#dialog [data-view="'+key+'"]':'.sidebar [data-view="'+key+'"]').first();
+  if(width<=900)await click(page,'[data-action="open-mobile-menu"]');
   await nav('notificacoes').click();
   await sleep(140);
   await check(page,'05-alertas',width);
-  if(width<500){
-   await click(page,'.mobile-nav [data-action="open-mobile-menu"]');
+  if(width<=900){
+   await click(page,'[data-action="open-mobile-menu"]');
    await click(page,'#dialog [data-view="relatorios"]');
   }else await nav('relatorios').click();
   await sleep(140);
