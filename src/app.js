@@ -11,8 +11,10 @@ import {getConsent,saveConsent,LOCATION_REQUIREMENTS} from './consent.js';
 import {createSpotlightTour} from './tutorial.js';
 import {createUiMotion} from './ui-motion.js?v=2';
 import {createOperationsUpgrade} from './operations-upgrade.js';
+import {createInstallManager} from './install.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
 
+const installManager=createInstallManager();
 const root=document.getElementById('app'),modal=document.getElementById('dialog'),toast=document.getElementById('toast');
 const uiMotion=createUiMotion({root,modal});
 const ICONS={
@@ -342,7 +344,7 @@ function render(){destroyMaps();renderNumber++;modal.close?.();document.body.cla
  if(screen==='landing')root.innerHTML=entryScreen();
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
- installViewportViews();installUX06();attachMaps();ops.decorate();uiMotion.enterView();justRendered=Date.now();
+ installViewportViews();installUX06();attachMaps();ops.decorate();installManager.decorate();uiMotion.enterView();justRendered=Date.now();
 }
 /** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
 function watchesSession(s,watcher){
