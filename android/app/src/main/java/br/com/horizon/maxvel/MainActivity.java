@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -25,6 +26,8 @@ public class MainActivity extends Activity {
     private static final String TRUSTED_HOST="appassets.androidplatform.net";
     private static final String APP_URL="https://appassets.androidplatform.net/assets/site/index.html";
     private static final int LOCATION_REQUEST=88;
+    private static final int MEDIA_PICKER_REQUEST=101;
+    private ValueCallback<Uri[]> pendingMediaChooser;
     private WebView webView;
     private TraceStore trace;
     private GeolocationPermissions.Callback geoCallback;
@@ -55,6 +58,19 @@ public class MainActivity extends Activity {
             }
         });
         webView.setWebChromeClient(new WebChromeClient(){
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params){
+                if(pendingMediaChooser!=null)pendingMediaChooser.onReceiveValue(null);
+                pendingMediaChooser=callback;
+                try{
+                    Intent intent=params.createIntent();
+                    startActivityForResult(intent,MEDIA_PICKER_REQUEST);
+                    return true;
+                }catch(Exception e){
+                    pendingMediaChooser.onReceiveValue(null);
+                    pendingMediaChooser=null;
+                    return false;
+                }
+            }
             @Override public void onGeolocationPermissionsShowPrompt(String origin,GeolocationPermissions.Callback callback){
                 if(!origin.startsWith("https://"+TRUSTED_HOST)){callback.invoke(origin,false,false);return;}
                 if(hasLocation()){callback.invoke(origin,true,false);return;}
@@ -91,6 +107,13 @@ public class MainActivity extends Activity {
             boolean allowed=hasLocation();
             if(geoCallback!=null){geoCallback.invoke(geoOrigin,allowed,false);geoCallback=null;geoOrigin=null;}
             if(pendingServiceStart){if(allowed)startTracking();pendingServiceStart=false;}
+        }
+    }
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==MEDIA_PICKER_REQUEST&&pendingMediaChooser!=null){
+            pendingMediaChooser.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode,data));
+            pendingMediaChooser=null;
         }
     }
     @Override public void onBackPressed(){if(webView.canGoBack())webView.goBack();else super.onBackPressed();}
