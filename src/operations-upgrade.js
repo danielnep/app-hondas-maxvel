@@ -102,7 +102,7 @@ export function createOperationsUpgrade(api){
  let events=[],lastFixSaved=0,lastReportFingerprint='',cameraStream=null,scanning=false,lastBattery=null,lastBatterySaved=0;
  let alertTemplates=JSON.parse(localStorage.getItem('rondas-pro-local-alert-templates')||'null')||ALERT_PRESETS.map(x=>({...x}));
  const batteryApi=async()=>{
-  try{if(window.AndroidTracking?.getBatteryLevel){const n=Number(window.AndroidTracking.getBatteryLevel());if(Number.isFinite(n))return {level:n,source:'android'};}
+  try{if(window.AndroidTracking?.getBatteryLevel){const n=Number(window.AndroidTracking.getBatteryLevel());if(Number.isFinite(n)&&n>=0&&n<=100)return {level:n,source:'android'};}
   if(navigator.getBattery){const b=await navigator.getBattery();return {level:Math.round(b.level*100),charging:b.charging,source:'web'};}}
   catch(err){console.warn('Bateria indisponível',err);}
   return null;
@@ -198,7 +198,7 @@ export function createOperationsUpgrade(api){
    if(c.session?.status==='active'&&c.mode==='real')await persistEvent({id:uuid(),at:Date.now(),kind:'battery',status:'pending',payload:{sessionId:c.session.id,mode:'real',battery:sample.level,...sample}});
   }else lastBattery=sample;
  }
- const warning='<p class="ops-demo-note">Demonstração: registros deste aparelho. Sem servidor de sincronização nem alerta remoto ativo.</p>';
+ const warning='<p class="ops-demo-note">Dados locais do dispositivo. Sincronização remota só ocorre após autenticação na Central Operacional, com banco configurado e conexão disponível; a demonstração nunca envia dados simulados.</p>';
  function reportSmart(){const info=summary(),operational=comparePatrols(current().sessions,events);
   return section('Relatório inteligente · análise automática',
    '<div class="ops-insights">'+[...info.observations,...operational.insights.map(o=>({label:o.title,value:o.value,detail:o.detail}))].map(o=>'<div><strong>'+safe(o.value)+'</strong><span>'+safe(o.label)+'</span><small>'+safe(o.detail)+'</small></div>').join('')+'</div>'+
@@ -210,7 +210,7 @@ export function createOperationsUpgrade(api){
    '<strong>📡 GPS e registro contínuo durante a ronda</strong>'+
    '<span>'+ (s.mode==='real'?'Localização do aparelho com autorização.':'Deslocamento simulado para apresentação.')+
    ' Sem internet, os eventos continuam em fila local e o mapa esquemático fica disponível. No Android, posições são armazenadas em SQLite; no navegador, usa-se IndexedDB.</span>'+
-   '<small>'+ (navigator.onLine?'Conectado à internet':'Sem internet')+' · '+events.filter(x=>x.status==='pending').length+' evento(s) na fila local · envio ao servidor pendente de implantação</small>'+
+   '<small>'+ (navigator.onLine?'Conectado à internet':'Sem internet')+' · '+events.filter(x=>x.status==='pending').length+' evento(s) na fila local · sincronização exige login operacional</small>'+
    '</div>';
  }
  function panicButton(){
@@ -323,7 +323,7 @@ export function createOperationsUpgrade(api){
   }
   await persistEvent({id:uuid(),kind:'panic',status:'pending',at,payload});
   api.render();
-  api.showDialog('<div class="ops-emergency-panel"><h2>🚨 Pânico registrado</h2><p>Acionamento associado a <b>'+safe(name)+'</b> às '+safe(nowText(at))+'. O aviso aparece na supervisão desta demonstração. A entrega a outros aparelhos depende do servidor operacional.</p><p>Para uma emergência real, abra o discador e confirme a ligação.</p><a class="button danger full" href="tel:190">📞 Abrir discador · 190</a><button type="button" class="button full" data-action="close-dialog">Voltar ao aplicativo</button></div>',true);
+  api.showDialog('<div class="ops-emergency-panel"><h2>🚨 Pânico registrado</h2><p>Acionamento associado a <b>'+safe(name)+'</b> às '+safe(nowText(at))+'. O aviso aparece na supervisão desta demonstração. A entrega a outros aparelhos depende de login operacional, banco persistente e sincronização confirmada.</p><p>Para uma emergência real, abra o discador e confirme a ligação.</p><a class="button danger full" href="tel:190">📞 Abrir discador · 190</a><button type="button" class="button full" data-action="close-dialog">Voltar ao aplicativo</button></div>',true);
  }
  function exportDialog(){
   const opts=[['resumo','Resumo inteligente'],['rondas','Rondas, horários e responsáveis'],['pontos','Pontos, permanência e QR'],['ocorrencias','Ocorrências e evidências (metadados)'],['alertas','Alertas, justificativas e pânico'],['coordenadas','Localizações registradas'],['programacao','Programação e escala']];
