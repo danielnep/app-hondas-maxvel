@@ -143,7 +143,9 @@ export function createOperationsUpgrade(api){
       if(!media?.blob||media.remoteUploaded)continue;
       try{
        const res=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+token,
-        'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at)},body:media.blob});
+        'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at),
+        ...(Number.isFinite(media.position?.lat)&&Number.isFinite(media.position?.lng)?{'X-Media-Lat':String(media.position.lat),'X-Media-Lng':String(media.position.lng)}:{}),
+        ...(Number.isFinite(media.battery)?{'X-Media-Battery':String(media.battery)}:{})},body:media.blob});
        if(res.ok){media.remoteUploaded=true;await store.put('media',media);}
       }catch{}
      }
