@@ -2956,3 +2956,8 @@ body.simulation-running #toast { top:auto!important; bottom:max(12px,env(safe-ar
 .dashboard .app-content .map-command-top h2 { font-size:16px!important; line-height:1.3!important; white-space:normal!important; }
 .dashboard .app-content .map-command-actions .button { width:44px!important; min-width:44px!important; min-height:44px!important; height:44px!important; max-height:none!important; padding:10px!important; font-size:0!important; }
 .dashboard .app-content .map-command-actions .button svg { display:block!important; width:20px!important; height:20px!important; }
+@media(max-width:900px) {
+ .dashboard .app-content .report-page>.page-title { display:flex!important; flex-direction:column!important; align-items:flex-start!important; width:100%!important; min-width:0!important; height:auto!important; min-height:0!important; max-height:none!important; gap:10px!important; }
+ .dashboard .app-content .report-page>.page-title>div { min-width:0!important; width:100%!important; }
+ .dashboard .app-content .report-page>.page-title>.button { position:static!important; flex:none!important; width:auto!important; max-width:100%!important; min-height:44px!important; height:auto!important; padding:10px 14px!important; font-size:14px!important; align-self:flex-start!important; }
+}
