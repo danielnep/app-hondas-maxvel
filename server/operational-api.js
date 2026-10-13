@@ -61,7 +61,7 @@ export function aggregateOperationalRounds(events=[]){
  for(const e of events){
   if(!e.round_id)continue;
   if(!groups.has(e.round_id))groups.set(e.round_id,{id:e.round_id,userId:e.user_id,
-   start:null,end:null,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,started:0});
+   start:null,end:null,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,lastFix:null,lastFixAt:null,started:0});
   const r=groups.get(e.round_id);
   if(e.kind==='patrol_start'){r.start=e.occurred_at;r.started++;}
   if(e.kind==='patrol_end')r.end=e.occurred_at;
@@ -70,6 +70,7 @@ export function aggregateOperationalRounds(events=[]){
    const measurement={lat:e.lat,lng:e.lng,at:e.occurred_at,accuracy:e.accuracy};
    const accepted=addTrackSample(r.gpsTrace,measurement);
    r.gpsTrace=accepted.track;r.km+=accepted.distanceM/1000;
+   if(accepted.accepted){r.lastFix={lat:e.lat,lng:e.lng,accuracy:e.accuracy};r.lastFixAt=e.occurred_at;}
    if(!accepted.accepted)r.rejectedGps++;
   }
   if(e.kind==='panic')r.panics++;
@@ -84,7 +85,7 @@ export function aggregateOperationalRounds(events=[]){
   minutes:r.start?Math.max(0,Math.round(((r.end||Date.now())-r.start)/60000)):null,
   km:Math.round(r.km*100)/100,gpsSamples:r.gpsSamples,rejectedGps:r.rejectedGps,
   alerts:r.alerts,panics:r.panics,incidents:r.incidents,checkpoints:r.checkpoints,
-  lastBattery:r.lastBattery,quality:r.gpsSamples?'Estimativa só com GPS confiável':'Sem dados suficientes'
+  lastBattery:r.lastBattery,lastFix:r.lastFix,lastFixAt:r.lastFixAt,quality:r.gpsSamples?'Estimativa só com GPS confiável':'Sem dados suficientes'
  })).sort((a,b)=>(b.start||0)-(a.start||0));
 }
 export function createOperationalApi(){
@@ -214,6 +215,21 @@ export function createOperationalApi(){
     if(!template){resp(res,422,{error:'Modelo não habilitado ou evento não notificável'});return true;}
     await notifyEmail(ev,template);
     audit(a,'email.retry',ev.id);resp(res,200,{status:db.prepare('SELECT status FROM email_jobs WHERE event_id=?').get(ev.id)?.status});return true;
+   }
+   if(p==='/api/rounds'&&m==='GET'){
+    // Vigias consultam EXCLUSIVAMENTE suas próprias rondas. Operadores e adm têm acesso às rondas da operação.
+    const query='SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ';
+    const rows=a.role==='ronda'
+      ?db.prepare(query+'AND user_id=? ORDER BY occurred_at').all(a.id)
+      :db.prepare(query+'ORDER BY occurred_at').all();
+    resp(res,200,{rounds:aggregateOperationalRounds(rows),scope:a.role==='ronda'?'own':'operational',updatedAt:now()});return true;
+   }
+   if(p==='/api/my-summary'&&m==='GET'){
+    const mine=db.prepare('SELECT kind,COUNT(*) count FROM events WHERE user_id=? GROUP BY kind').all(a.id);
+    const items=db.prepare('SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE user_id=? AND round_id IS NOT NULL ORDER BY occurred_at').all(a.id);
+    const rounds=aggregateOperationalRounds(items);
+    resp(res,200,{rounds,metrics:mine,totalKm:Math.round(rounds.reduce((n,r)=>n+r.km,0)*100)/100,
+      totalMinutes:rounds.reduce((n,r)=>n+(r.minutes||0),0),updatedAt:now(),scope:'own'});return true;
    }
    if(p==='/api/dashboard'&&m==='GET'&&reviewer(a)){
     const rounds=aggregateOperationalRounds(db.prepare('SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ORDER BY occurred_at').all());
