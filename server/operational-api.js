@@ -142,7 +142,7 @@ export function createOperationalApi(){
     if(clean(d.note))db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(id(),ev.id,a.id,'system',clean(d.note).slice(0,4000),now());
     audit(a,'event.review',ev.id);resp(res,200,{ok:true});return true;
    }
-   if(p==='/api/templates'&&m==='GET'&&reviewer(a)){resp(res,200,{templates:db.prepare('SELECT * FROM templates').all()});return true;}
+   if(p==='/api/templates'&&m==='GET'){const rows=reviewer(a)?db.prepare('SELECT * FROM templates').all():db.prepare("SELECT id,title,trigger,priority,enabled,cooldown_min FROM templates WHERE enabled=1 AND trigger='manual'").all();resp(res,200,{templates:rows});return true;}
    if(p==='/api/templates'&&m==='POST'&&manager(a)){
     const d=serialize((await body(req)).toString())||{},tid=clean(d.id)||id();
     if(!/^[\w-]{3,70}$/.test(tid)||clean(d.title).length<3||!['manual','automatic'].includes(d.trigger)||!['low','medium','high'].includes(d.priority)||!Number.isInteger(d.cooldownMin)||d.cooldownMin<0||d.cooldownMin>10080||!Array.isArray(d.recipients)){resp(res,422,{error:'Modelo inválido'});return true;}
