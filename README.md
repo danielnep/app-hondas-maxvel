@@ -1,6 +1,10 @@
-# App Hondas Maxvel · desenvolvido por Horizon
+# Ronda Pró · Grupo Maxvel
 
-Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Horizon (branco, azul celeste e azul-prateado), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
+Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Grupo Maxvel (grafite, vermelho e prata), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
+
+## Refinamento visual · 13/10/2026
+
+A identidade pública é exclusivamente **Grupo Maxvel**. A versão 07 suaviza o preto absoluto em grafite intermediário e torna topo, rodapé móvel, listas e indicadores mais compactos sem alterar o domínio, GPS, permanência e simulações. O repositório mantém camadas técnicas antigas por compatibilidade, mas o aplicativo apresenta somente Maxvel. **Ainda não há chatbot integrado neste aplicativo**: nenhum recurso de Copiloto ou de planilhas foi migrado de outro projeto.
 
 ## Revisão de clareza operacional · 12/10/2026
 
@@ -14,10 +18,10 @@ A função R4 de verificação de ponto apresenta **cinco etapas simuladas** (fr
 
 ## Plataforma Graphite Dark · outubro de 2026
 
-**Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o lockup **Hondas Maxvel × Horizon**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
+**Entrada no próprio sistema:** o endereço abre uma tela compacta de acesso com o marca exclusiva **Grupo Maxvel**. Clique em **Entrar**, escolha Vigia/Ronda, Supervisão, Gestão ou Administração e acesse as telas funcionais da avaliação sem senha.
 
 - **Tutorial opcional por destaque:** cortina fosca translúcida, avanço por **Entendi · continuar**, fechamento livre e comando **Rever tutorial** no topo e menu lateral. Botões discretos `?` abrem ajuda por função.
-- **Graphite Dark:** grafite e cinza-escuro predominantes, azul Horizon nas ações, branco reservado principalmente ao texto; o mapa conserva cartografia legível.
+- **Graphite Dark:** grafite e cinza-escuro predominantes, vermelho Maxvel nas ações, branco reservado principalmente ao texto; o mapa conserva cartografia legível.
 - **12 vigias fictícios e 48 programações iniciais:** agenda organizada por atribuição, data e unidade, com busca, filtros combinados, paginação e estados. Vigia vê suas rondas na página operacional.
 - **Supervisão, Gestão e Administração:** em **Rondas → Programar ronda**, selecionar vigia, rota e horário, validar conflitos, confirmar criação, recorrência diária por até 7 dias, cancelamento e **reprogramação com histórico local de mudanças**.
 - **Programação diferente da execução:** cada execução pode ter `programId` e `watcherId`; a conclusão depende do motor existente de localização e permanência, não de um simples agendamento.
@@ -31,7 +35,7 @@ A função R4 de verificação de ponto apresenta **cinco etapas simuladas** (fr
 
 A interface desta versão foi **reestruturada no código**, não produzida apenas como imagem:
 
-- Entrada de produto com identidade **Hondas Maxvel · Horizon**, iconografia própria e mapa de ruas reais.
+- Entrada de produto com identidade **Grupo Maxvel**, iconografia própria e mapa de ruas reais.
 - Painel de operações com quatro métricas calculadas, mapa ampliado, alertas, tabela de rondas e linha do tempo.
 - Entrada no **próprio aplicativo**, com escolha de perfil e dados ilustrativos identificados, sem apresentação comercial paralela.
 - Tela de ronda móvel com estado, próximo ponto, progresso, mapa amplo, círculos de 25 m e orientação contextual.
@@ -46,13 +50,13 @@ Leia [critérios e estudo de produto/UI/UX 2.0](docs/PRODUTO-UX-V2.md).
 
 ## Reformulação profissional mobile-first · outubro de 2026
 
-**Etapa 01 concluída:** pesquisa atual de UI/UX, acessibilidade, experiência mobile e diagnóstico visual de cores e ergonomia. Os problemas levantados, critérios de contraste, proposta preliminar de paleta Horizon Operacional e roadmap de sete etapas estão documentados em [Pesquisa UX Mobile 2026](docs/PESQUISA-UX-MOBILE-2026.md).
+**Etapa 01 concluída:** pesquisa atual de UI/UX, acessibilidade, experiência mobile e diagnóstico visual de cores e ergonomia. Os problemas levantados, critérios de contraste, proposta preliminar de paleta anterior (substituída pela identidade Maxvel) e roadmap de sete etapas estão documentados em [Pesquisa UX Mobile 2026](docs/PESQUISA-UX-MOBILE-2026.md).
 
-**Etapas 02 a 08 implementadas:** auditoria mobile, sistema visual Horizon Operacional, reconstrução da interface, mapa/supervisão, refinamento desktop, testes de qualidade e [simulação dentro do próprio aplicativo](docs/SIMULACAO-APP-ETAPA-08.md). A homologação de produção continua separada.
+**Etapas 02 a 08 implementadas:** auditoria mobile, sistema visual anterior, posteriormente substituído pelo padrão Maxvel, reconstrução da interface, mapa/supervisão, refinamento desktop, testes de qualidade e [simulação dentro do próprio aplicativo](docs/SIMULACAO-APP-ETAPA-08.md). A homologação de produção continua separada.
 
 ## Evolução UI/UX operacional
 
-O aplicativo foi reformulado com foco **mobile-first** e identidade visual Horizon Operacional: navegação acessível por perfil, aviso de localização compacto, ação primária de iniciar ronda em destaque, contraste reforçado e mapa cartográfico detalhado. A supervisão agora inclui um destino **Mapa** com seleção de pontos e uma fila de alertas filtrável entre **Pendentes** e **Todos**.
+O aplicativo foi reformulado com foco **mobile-first** e identidade operacional Maxvel: navegação acessível por perfil, aviso de localização compacto, ação primária de iniciar ronda em destaque, contraste reforçado e mapa cartográfico detalhado. A supervisão agora inclui um destino **Mapa** com seleção de pontos e uma fila de alertas filtrável entre **Pendentes** e **Todos**.
 
 O mapa usa cartografia OpenStreetMap quando disponível; a linha entre os pontos de demonstração é **ilustrativa**, não um trajeto validado pelas ruas. A simulação é **o próprio aplicativo**, sem uma apresentação paralela: o comprador alterna entre Ronda, Supervisão, Gestão e Administração na mesma janela. Eventos permanecem **locais e ilustrativos**, não remotos.
 
@@ -110,4 +114,4 @@ Os testes unitários podem ser executados por `npm test`. Os fluxos de navegador
 
 Autenticação segura, sincronização real com servidor, entrega de alertas à supervisão, políticas de auditoria e retenção, infraestrutura cartográfica licenciada e testes de GPS em ambientes reais. O aviso de localização não substitui consentimentos e definições jurídicas adequadas pela empresa. Falhas técnicas não devem ser interpretadas como prova automática de conduta.
 
-**Desenvolvido por Horizon | Daniel N. Xavier**
+**Protótipo técnico de demonstração para o Grupo Maxvel.**
