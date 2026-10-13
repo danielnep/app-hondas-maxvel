@@ -9,15 +9,10 @@ const refinements=load('../assets/maxvel-refinement-07.css');
 const baseline=load('../assets/maxvel-obsidian-06.css');
 const metadata=load('../package.json');
 
-test('refinamento 07 é a última camada, sem perder o redesign anterior',()=>{
-  const sixth=html.indexOf('maxvel-obsidian-06.css');
-  const seventh=html.indexOf('maxvel-refinement-07.css');
-  assert.ok(sixth>=0&&seventh>sixth);
-  assert.match(baseline,/--mx-red:#f01832/);
-  assert.match(refinements,/--mx-bg:#15171a/);
-  assert.match(refinements,/--mx-red:#e52a40/);
-  assert.match(refinements,/@media\(min-width:901px\)/);
-  assert.match(refinements,/@media\(max-width:900px\)/);
+test('uma única folha de estilo local governa o aplicativo',()=>{
+ const sheets=[...html.matchAll(/rel="stylesheet" href="(\.\/[^"?]+)/g)];
+ assert.equal(sheets.length,1);
+ assert.equal(sheets[0][1],'./assets/ronda-pro.css');
 });
 test('topo e rodapé móveis compactos preservam orientação e toque',()=>{
   assert.match(refinements,/flex:0 0 56px!important/);
@@ -35,7 +30,7 @@ test('rota, sessão, GPS e alertas seguem no aplicativo original',()=>{
   assert.doesNotMatch(js,/GUIA INTERATIVO · HORIZON/);
 });
 test('identidade pública não descreve outro produto',()=>{
-  assert.match(html,/<title>Ronda Pro · Grupo Maxvel/);
+  assert.match(html,/<title>Ronda Pró · Grupo Maxvel/);
   assert.doesNotMatch(html,/<title>[^<]*Michelle/);
   assert.doesNotMatch(metadata,/Protótipo Horizon \+ Maxvel/);
   assert.doesNotMatch(js,/(?:chatbot|copiloto|POWER_BI_MICHELLE_IA)/i);

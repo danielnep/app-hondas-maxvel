@@ -1,7 +1,7 @@
 name: Validação Hondas Maxvel
 on:
   push:
-    branches: [main]
+    branches: [main, maxvel-06-ux-mobile]
   pull_request:
   workflow_dispatch:
 

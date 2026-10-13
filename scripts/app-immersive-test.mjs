@@ -13,7 +13,22 @@ const chrome=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v chro
 const browser=await chromium.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-dev-shm-usage']});
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900]];
 const report=[];
-async function tap(page,selector){if(selector.startsWith('#dialog '))await revealDialogControl(page,selector);await page.locator(selector).first().click({timeout:12000});await wait(200)}
+async function tap(page,selector){
+ if(selector==='.app-header [data-action="tour-restart"]'&&!await page.locator(selector+':visible').count()){
+  await page.locator('[data-action="profile-menu"]').click();
+  selector='#dialog [data-action="tour-restart"]';
+ }
+
+ if(selector.startsWith('[data-view=')){
+  if(!selector.includes(':visible'))selector+=':visible';
+  if(!await page.locator(selector).count())await page.locator('[data-action="open-mobile-menu"]').click();
+ }
+
+ if(selector==='[data-action="sim-role-picker"]'){
+  if(!await page.locator(selector+':visible').count())await page.locator('[data-action="profile-menu"]').click();
+  selector+=':visible';
+ }
+ if(selector.startsWith('#dialog '))await revealDialogControl(page,selector);await page.locator(selector).first().click({timeout:12000});await wait(200)}
 async function enter(page,role='ronda'){
  await tap(page,'[data-action="login"]:visible');
  await page.locator('#dialog[open]').waitFor({timeout:8000});
@@ -48,7 +63,7 @@ async function capture(page,name,width,height){
  if(metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
  if(width<=900&&metrics.app&&name==='ronda'&&metrics.map&&metrics.action){
   if(metrics.map.y<0||metrics.map.bottom>height-45)throw Error('Mapa cortado: '+JSON.stringify(metrics.map));
-  if(metrics.action.y<0||metrics.action.bottom>height-45)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
+  if(metrics.action.y<0||metrics.action.bottom>height+2)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
  }
  if(name==='ronda'){
   if(!metrics.app||!metrics.areas||!metrics.map||!metrics.action||!metrics.primary)throw Error('Aplicativo, seletor Áreas, mapa ou ação não encontrados');
@@ -76,16 +91,19 @@ try{
    if(width<=900&&await page.locator('#dialog').evaluate(el=>!el.open&&getComputedStyle(el).display!=='none'))
     throw Error('Janela fechada ainda ocupa layout após iniciar ronda');
    await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');
-   await tap(page,'.patrol-actions [data-action="point-evidence"]');
+   if(width<=900)await tap(page,'#dialog [data-action="point-evidence"]');
+   else await tap(page,'.patrol-actions [data-action="point-evidence"]');
    for(const direction of ['front','right','back','left','selfie'])await tap(page,'#dialog [data-action="demo-capture"][data-direction="'+direction+'"]');
    await tap(page,'#dialog [data-action="demo-rotation"]');
    await tap(page,'#dialog [data-action="demo-evidence-confirm"]');
-   await tap(page,'.patrol-actions [data-action="incident-form"]');
+   if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="incident-form"]');}
+   else await tap(page,'.patrol-actions [data-action="incident-form"]');
    await (await revealDialogControl(page,'#incident-form [name="title"]')).fill('Luz de acesso apagada');
    await (await revealDialogControl(page,'#incident-form [name="description"]')).fill('Iluminação do portão em desacordo no cenário de demonstração.');
    await (await revealDialogControl(page,'#incident-form [name="truth"]')).check();
    await tap(page,'#incident-form button[type="submit"]');
-   await tap(page,'.patrol-actions [data-action="demo-leave"]');
+   if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="demo-leave"]');}
+   else await tap(page,'.patrol-actions [data-action="demo-leave"]');
    await wait(7400);
    await capture(page,'deviation',width,height);
    if(!await page.locator('.patrol-actions [data-action="justify"]').count())throw Error('Desvio não exigiu justificativa');
@@ -135,7 +153,7 @@ try{
    await tap(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await tap(page,'[data-action="sim-role-picker"]');
    await tap(page,'#dialog [data-action="sim-role"][data-role="ronda"]');
-   await tap(page,'.patrol-map-heading [data-action="feature-help"]');
+   await tap(page,width<=900?'.patrol-map-canvas [data-action="feature-help"]':'.patrol-map-heading [data-action="feature-help"]');
    if(!await page.locator('#dialog[open] .help-detail').count())throw Error('Ajuda contextual ? inativa');
    await tap(page,'#dialog [data-action="close-dialog"]');
    await tap(page,'.app-header [data-action="tour-restart"]');

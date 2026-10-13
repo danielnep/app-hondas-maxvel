@@ -8,7 +8,7 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
 test('aplicativo usa identidade Maxvel própria nos acessos web e Android',()=>{
  assert.ok(existsSync(new URL('../assets/maxvel-icon.svg',import.meta.url)));
- assert.match(html,/rel="icon"[^>]+maxvel-icon\.svg/);
+ assert.match(html,/rel="icon"[^>]+maxvel-logo\.webp/);
  assert.match(app,/class="brand maxvel-only-brand"/);
  assert.doesNotMatch(app,/Horizon|horizon/);
  assert.match(app,/aria-label="Grupo Maxvel"/);
@@ -41,7 +41,7 @@ test('tela móvel orienta trabalho sem gamificação',()=>{
 
 test('mapa exibe base real, alternativa e localização visual distinguível',()=>{
  assert.match(map,/tile\.openstreetmap\.org/);
- assert.match(map,/basemaps\.cartocdn\.com/);
+ assert.match(map,/osm.addTo\(m\)/);
  assert.match(map,/OpenStreetMap contributors/);
  assert.match(map,/map-person-ring/);
  assert.match(map,/tracePositions/);
@@ -62,4 +62,11 @@ test('cronômetro no topo do mapa e ação aguarda permanência real',()=>{
  assert.match(app,/Aguardando chegada ao ponto/);
  assert.match(app,/requiredDwellMs\(session\)/);
  assert.doesNotMatch(app,/class="timer-ring" data-live="ring"/);
+});
+
+test('produto Ronda Pró tem identidade preservada e nomes consistentes',()=>{
+ assert.match(app,/Ronda Pró/);
+ assert.match(app,/ronda-pro-wordmark/);
+ assert.match(app,/maxvel-logo\.webp/);
+ assert.doesNotMatch(app,/Hondas Maxvel/);
 });

@@ -14,7 +14,9 @@ export function createSpotlightTour({app,steps,onClose=()=>{},storage=localStora
  };
  function place(){
   if(!live||!overlay)return;
-  const step=steps[index],target=document.querySelector(step.target)||document.querySelector('.schedule-workspace, .ops-workspace, .app-content, .simulation-rolebar');
+  const step=steps[index];
+  const visible=element=>{const r=element.getBoundingClientRect();return r.width>0&&r.height>0;};
+  const target=[...document.querySelectorAll(step.target)].find(visible)||[...document.querySelectorAll('.schedule-workspace, .ops-workspace, .app-content')].find(visible);
   const cut=overlay.querySelector('.tour-cutout'),panel=overlay.querySelector('.tour-panel');
   const vpW=window.innerWidth,vpH=window.innerHeight;
   if(target){

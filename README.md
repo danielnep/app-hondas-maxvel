@@ -1,4 +1,4 @@
-# Ronda Pro · Grupo Maxvel
+# Ronda Pró · Grupo Maxvel
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com identidade Grupo Maxvel (grafite, vermelho e prata), supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
@@ -11,6 +11,14 @@ Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pelo Railway
 ## Refinamento visual · 13/10/2026
 
 A identidade pública é exclusivamente **Grupo Maxvel**. A versão 07 suaviza o preto absoluto em grafite intermediário e torna topo, rodapé móvel, listas e indicadores mais compactos sem alterar o domínio, GPS, permanência e simulações. O repositório mantém camadas técnicas antigas por compatibilidade, mas o aplicativo apresenta somente Maxvel. **Ainda não há chatbot integrado neste aplicativo**: nenhum recurso de Copiloto ou de planilhas foi migrado de outro projeto.
+
+## Revisão 08 · marca real e consistência visual
+
+A interface utiliza a imagem original fornecida da Maxvel ao lado do nome **Ronda Pró**. A navegação móvel foi transferida para o menu no cabeçalho, sem barra inferior. Painéis, botões, campos e janelas têm cantos retos; apenas as geocercas e os marcadores geográficos mantêm círculos. Um único CSS compilado (`assets/ronda-pro.css`) preserva a estrutura dos componentes e aplica uma paleta grafite/vermelho. Execute `python3 scripts/build-styles.py` ao alterar a estrutura, o tema ou o layout.
+
+O mapa começa com OpenStreetMap e aplica a aparência escura aos tiles. A fonte anterior podia devolver uma imagem HTTP 200 contendo “API KEY REQUIRED”, sem disparar `tileerror`. Falhas reais de carregamento mantêm a rota esquemática identificada.
+
+Referências de fluxo e telas consultadas: [TrackTik](https://play.google.com/store/apps/details?id=com.staffr.app), [GuardTek — mapa de rondas](https://support.trackforce.com/hc/en-us/articles/12832847712151-Viewing-Tour-Maps-Real-Time), [QR-Patrol — tela operacional](https://learning.qrpatrol.com/docs/perform-a-patrol-as-a-guard-through-the-mobile-app/) e [Mobitraxx — controle GEO](https://suporte.mobitraxx.com.br/informacao-controle). A identidade Maxvel e as regras aprovadas do projeto prevalecem sobre essas referências.
 
 ## Revisão de clareza operacional · 12/10/2026
 

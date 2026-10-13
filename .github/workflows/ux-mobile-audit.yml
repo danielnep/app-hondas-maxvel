@@ -13,6 +13,8 @@ on:
       - 'index.html'
       - 'styles/**'
       - 'styles.css'
+      - 'assets/ronda-pro*.css'
+      - 'assets/maxvel-logo.webp'
       - '.github/workflows/ux-mobile-audit.yml'
 
 jobs:

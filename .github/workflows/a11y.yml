@@ -3,12 +3,14 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, maxvel-06-ux-mobile]
     paths:
       - 'scripts/a11y-audit.mjs'
       - 'index.html'
       - 'src/app.js'
       - 'styles.css'
+      - 'assets/ronda-pro*.css'
+      - 'assets/maxvel-logo.webp'
       - 'assets/horizon-operacional.css'
       - 'assets/horizon-graphite.css'
       - 'src/tutorial.js'

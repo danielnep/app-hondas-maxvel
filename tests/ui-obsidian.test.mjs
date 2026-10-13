@@ -4,19 +4,19 @@ import {readFileSync} from 'node:fs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const css=readFileSync(new URL('../assets/maxvel-obsidian-06.css',import.meta.url),'utf8');
+const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
 
 test('UI carrega a última camada de identidade Maxvel',()=>{
- assert.match(html,/maxvel-obsidian-06\.css/);
- assert.match(html,/<title>Ronda Pro · Grupo Maxvel/);
+ assert.match(html,/ronda-pro\.css/);
+ assert.match(html,/<title>Ronda Pró · Grupo Maxvel/);
  assert.doesNotMatch(html,/(?:alt|content|title)="[^"]*Horizon/);
- assert.match(css,/--mx-red:#f01832/);
- assert.match(css,/--mx-bg:#09090b/);
+ assert.match(css,/--mx-red:#e52a40/);
+ assert.match(css,/--mx-bg:#15171a/);
 });
 test('marca pública no aplicativo não contém Horizon',()=>{
  assert.match(app,/aria-label="Grupo Maxvel"/);
  assert.doesNotMatch(app,/Horizon|horizon/);
- assert.match(app,/MA<span>X<\/span>VEL/);
+ assert.match(app,/maxvel-logo\.webp/);
 });
 test('desktop usa abas únicas e tem menu lateral',()=>{
  assert.match(app,/if\(screen==='landing'\)return; \/\/ Desktop/);

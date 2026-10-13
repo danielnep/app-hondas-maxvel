@@ -11,7 +11,7 @@ on:
       - 'index.html'
       - '.github/workflows/android-build.yml'
   push:
-    branches: [main]
+    branches: [main, maxvel-06-ux-mobile]
     paths:
       - 'android/**'
       - 'src/**'

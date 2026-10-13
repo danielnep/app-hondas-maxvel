@@ -38,6 +38,6 @@ test('identidade Maxvel preta/vermelha aparece em todos os acessos sem Horizon',
  assert.doesNotMatch(app,/maxvelseguranca\.com\.br\/images\/banner\/01\.jpg/);
  assert.doesNotMatch(app,/Horizon|horizon/);
  assert.match(app,/class="brand maxvel-only-brand"/);
- assert.match(html,/maxvel-obsidian-06\.css/);
- assert.match(html,/maxvel-mobile-02\.css/);
+ assert.match(html,/ronda-pro\.css/);
+ assert.match(app,/maxvel-logo\.webp/);
 });
