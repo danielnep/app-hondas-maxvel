@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Protótipo Horizon + Maxvel de rondas, mapa real, orientação contextual e base Android",
+  "description": "Protótipo Grupo Maxvel de rondas operacionais, mapa, rotas e base Android",
   "scripts": {
     "start": "python3 -m http.server 8000 --directory .",
     "check": "node --check src/app.js && node --check src/map.js && node --check src/domain.js && node --check src/simulation.js && node --check src/storage.js && node --check src/consent.js && node --check src/tutorial.js && node --check src/scheduling.js && node --check src/evidence.js",
