@@ -195,13 +195,13 @@ export function createOperationsUpgrade(api){
   if(user?.role==='cliente'&&view==='cliente')main.insertAdjacentHTML('afterbegin','');
  }
  function mediaFields(){
-  return '<fieldset class="ops-media-fields"><legend>Evidências contextuais (opcionais)</legend>'+
+  return '<details class="ops-media-fields"><summary>Evidências contextuais (opcionais): foto, áudio ou vídeo</summary>'+
    '<p>Adicione foto, áudio ou vídeo. Os arquivos ficam na memória local do dispositivo até integração com servidor. Não é exigida selfie.</p>'+
    '<div class="ops-media-choices">'+
    '<label>📷 Tirar foto<input type="file" name="ops-photo" accept="image/*" capture="environment"></label>'+
    '<label>🎙 Gravar áudio<input type="file" name="ops-audio" accept="audio/*" capture="microphone"></label>'+
    '<label>🎥 Filmar<input type="file" name="ops-video" accept="video/*" capture="environment"></label>'+
-   '</div></fieldset>';
+   '</div></details>';
  }
  async function attachIncidentMedia(incident,form){
   const files=[...form.querySelectorAll('[name="ops-photo"],[name="ops-audio"],[name="ops-video"]')].flatMap(i=>[...(i.files??[])]);
