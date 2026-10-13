@@ -77,10 +77,8 @@ function persist(){const ok=saveState({sessions,programs,selectedWatcherId,opera
 function save(){if(session){const idx=sessions.findIndex(s=>s.id===session.id);if(idx>=0)sessions[idx]=session;else sessions.unshift(session);}persist();void ops.autoReport()}
 function notify(message){toast.textContent=message;toast.classList.add('toast-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('toast-visible'),4900)}
 const ux06RoleTips={
- ronda:'Vigia: própria rota, permanência, ocorrências e histórico.',
- supervisor:'Supervisão: mapas dos vigias, alertas e justificativas.',
- gestor:'Gestão: indicadores, equipe, relatórios e configurações.',
- admin:'Administração: todas as áreas e ferramentas de gerenciamento.'
+ ronda:'Operação de Ronda: sequência, permanência, justificativas e ocorrências.',
+ admin:'Administração: supervisão, equipe, programação, alertas, relatórios e configurações.'
 };
 function notifyRoleView(role){notify('Visão de demonstração: '+ux06RoleTips[role]);}
 function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
@@ -128,7 +126,7 @@ function installUX06(){
 
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
 let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo',uxRondaPane='mapa';
-const uxDashboardPane={supervisor:'mapa',gestor:'resumo',admin:'resumo'};
+const uxDashboardPane={admin:'resumo'};
 const uxListSizes=()=>8; // Listas roláveis: não fragmentar três itens em páginas artificiais.
 function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
  if(!container)return;
