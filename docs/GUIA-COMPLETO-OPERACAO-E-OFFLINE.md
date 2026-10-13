@@ -2,7 +2,7 @@
 **Versão de demonstração · Grupo Maxvel · 13-10-2026**
 
 ## 1. Primeiro acesso e objetivo
-Este é o aplicativo de demonstração do produto que será implantado posteriormente. A navegação permite conhecer as perspectivas Vigia/Ronda, Supervisão, Gestão, Administração e Cliente. Os nomes, as rotas e os dados de exemplo são fictícios e exibidos no próprio aplicativo.
+Este é o aplicativo de demonstração do produto que será implantado posteriormente. A navegação oferece exatamente dois acessos de demonstração: **Operação de Ronda** e **Administração**. A Administração reúne as funções de supervisão, gestão, configuração, alertas, equipe e relatórios; o vigia apenas executa rondas e registra informações em campo. Os nomes, as rotas e os dados de exemplo são fictícios e exibidos no próprio aplicativo.
 
 **GPS antes da ronda:** ao acessar como vigia na demonstração, o aplicativo solicita permissão de localização quando o aparelho e o navegador suportam a solicitação. Na ronda de GPS real, é obrigatório obter uma posição precisa para iniciar. Se a autorização for negada, não é possível iniciar a ronda real; o modo de simulação continua disponível, com localização declaradamente fictícia.
 
@@ -37,13 +37,13 @@ O gestor deve avaliar individualmente qualquer GPS impreciso, queda de energia o
 ## 6. Gestão e Administração
 - O painel inicial mostra indicadores, rondas e colaboradores. Selecione um vigia para consultar sua última rota e registros.
 - Em **Configurações**, escolha a regra de validação dos pontos: GPS, QR ou GPS + QR, aplicada às próximas execuções.
-- **Exportar relatório completo** fica no início da Administração e em Relatórios. Ao clicar, é possível marcar o que entra: resumo, rondas, pontos e QR, ocorrências e metadados de evidência, alertas/pânico, coordenadas e programações.
+- **Exportar relatório completo** e **Relatório Inteligente** ficam exclusivamente na página **Relatórios** da Administração. Nenhum relatório aparece no início nem na área de Operação de Ronda. Ao clicar, é possível marcar o que entra: resumo, rondas, pontos e QR, ocorrências e metadados de evidência, alertas/pânico, coordenadas e programações.
 - Formatos disponíveis: **HTML para abrir/imprimir em PDF, CSV ou JSON**.
-- **Relatório inteligente**: análise automática calculada sobre rondas concluídas, duração média, ocorrências abertas e alertas pendentes. Os dados são demonstrativos, sem julgamento de desempenho do indivíduo.
+- **Relatório inteligente**: análise automática exibida apenas em **Relatórios**, calculada sobre rondas concluídas, duração média, ocorrências abertas e alertas pendentes. Os dados são demonstrativos, sem julgamento de desempenho do indivíduo.
 - O sistema mantém um snapshot local do relatório de forma automática quando ocorrem atualizações, salvo em IndexedDB. Não existe envio automático por e-mail na demo.
 
 ## 7. Cliente acompanha serviço
-A área **Cliente** permite conhecer o progresso da ronda ativa, o responsável, o horário, a etapa atual e o histórico local com status e número de ocorrências. É uma visão demonstrativa; em produção os clientes só poderão consultar dados da empresa/unidade autorizada, após autenticação com isolamento por organização e registros de acesso.
+Não existe login de Cliente nesta versão: a demonstração oferece apenas **Administração** e **Operação de Ronda**. O acompanhamento de serviços fica sob responsabilidade da Administração, com supervisão e gestão concentradas na mesma área. Um portal de cliente, caso contratado, dependerá de implementação e credenciais específicas.
 
 ## 8. Evidências e privacidade
 Fotos, áudios e vídeos opcionais ficam em armazenamento local IndexedDB, com metadados referenciados pela ocorrência. Em exportações, o relatório inclui os **metadados**, não incorpora automaticamente o arquivo binário. Pessoas reais não devem ser filmadas sem base legal e critérios apropriados. A finalidade, período de coleta, retenção e acesso precisam ser definidos pela empresa antes de produzir.
