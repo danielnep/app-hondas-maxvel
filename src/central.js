@@ -4,7 +4,7 @@ const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
 const id=x=>escape(x);
 const friendly={panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término'};
-let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
+let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
 const roles={ronda:'Vigia',operador:'Equipe interna',admin:'Administrador',master:'Master'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 async function api(path,{method='GET',data,headers={},raw}={}){
@@ -26,29 +26,91 @@ async function load(){
  if(!token){loginView();return}
  try{
   account=(await api('/me')).user;roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
-  const requested=[api('/events?limit=500'),api('/templates')];
-  if(review()){requested.push(api('/dashboard'),api('/users'),api('/email-jobs'));}
+  const previousRole=root.dataset.loadedRole;
+  if(previousRole!==account.role){page=account.role==='operador'?'monitor':'dashboard';selected=null;root.dataset.loadedRole=account.role;}
+  const requested=[api('/events?limit=500'),api('/templates'),api('/rounds')];
+  if(review())requested.push(api('/dashboard'),api('/users'),api('/email-jobs'));
+  else requested.push(api('/my-summary'));
   const responses=await Promise.all(requested);
-  events=responses[0].events||[];templates=responses[1].templates||[];
-  if(review()){dashboard=responses[2];users=responses[3].users||[];emailJobs=responses[4].jobs||[];}
+  events=responses[0].events||[];templates=responses[1].templates||[];rounds=responses[2].rounds||[];
+  if(review()){dashboard=responses[3];users=responses[4].users||[];emailJobs=responses[5].jobs||[];mySummary=null;}
+  else {mySummary=responses[3];dashboard=null;users=[];emailJobs=[];}
   render();
  }catch(err){sessionStorage.removeItem('rondaspro_api_token');token='';loginView(err.message)}
 }
-const nav=()=>{
- const menus=review()?[['dashboard','Resumo'],['events','Ocorrências e registros'],['team','Equipe e análises'],['alerts','Alertas e e-mails']]:[['events','Meus registros'],['send','Registrar alerta']];
- if(account.role==='ronda')menus.push(['send','Novo alerta']);
- if(privileged())menus.push(['export','Exportar XLSX']);
- return '<nav class="side" aria-label="Áreas da central">'+menus.filter((x,i,a)=>a.findIndex(y=>y[0]===x[0])===i).map(([k,v])=>'<button data-page="'+k+'" class="'+(page===k?'active':'')+'">'+escape(v)+'</button>').join('')+'</nav>';
+const roleMenus={
+ ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Avisar equipe','✉']],
+ operador:[['monitor','Monitoramento','◉'],['events','Alertas e ocorrências','!'],['team','Vigias','♙']],
+ admin:[['dashboard','Indicadores','▥'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩']],
+ master:[['dashboard','Indicadores','▥'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩']]
 };
+const nav=()=>'<nav class="side" aria-label="Navegação do '+escape(roles[account.role])+'">'+
+ (roleMenus[account.role]||[]).map(([key,label,icon])=>'<button type="button" data-page="'+key+'" class="'+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+icon+'</span>'+escape(label)+'</button>').join('')+'</nav>';
 function kpis(){
  const kinds=Object.fromEntries((dashboard?.metrics||[]).map(x=>[x.kind,x.count]));
  return '<div class="cards">'+[['Eventos',events.length],['Pânicos',kinds.panic||0],['Ocorrências',kinds.incident||0],['Amostras GPS',kinds.gps||0],['Alertas de e-mail',kinds.alert||0],['Baterias monitoradas',kinds.battery||0]].map(([label,num])=>'<div class="metric"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>';
 }
 function dashboardView(){
- return '<section class="stack"><div class="toolbar"><div><h1>Visão geral</h1><p class="muted">Indicadores originados do banco operacional autenticado, sem misturar simulações.</p></div><button data-refresh>Atualizar</button></div>'+
- kpis()+'<section class="surface"><h2>Colaboradores e evidências</h2>'+
- (dashboard?.team?.length?'<div class="list">'+dashboard.team.map(w=>'<button class="list-item" data-person="'+id(w.id)+'"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Sem descrição')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' pânicos</span></button>').join('')+'</div>':'<p class="empty">Nenhum colaborador com registros no banco.</p>')+
- '</section><section class="surface"><h2>Indicadores das rondas</h2><p class="muted">Distância GPS estimada, duração e alertas por execução. Falhas de GPS não são julgamentos sobre colaboradores.</p>'+roundTable(dashboard?.rounds||[])+'</section><section class="surface"><h2>Últimos acontecimentos</h2>'+eventList(events.slice(0,12))+'</section></section>';
+ const open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
+ const active=rounds.filter(r=>r.status==='em_andamento');
+ const totalKm=rounds.reduce((n,r)=>n+(r.km||0),0);
+ const summary=[['Rondas',rounds.length],['Em andamento',active.length],['Pendências',open.length],['Distância registrada',totalKm.toFixed(2)+' km']];
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">GESTÃO E INDICADORES</div><h1>Painel administrativo</h1><p class="muted">Dados do banco operacional, com análises e histórico para tomada de decisão.</p></div><button data-refresh>Atualizar</button></div>'+
+ '<div class="cards">'+summary.map(([label,value],i)=>'<div class="metric '+(i===2&&open.length?'urgent':'')+'"><strong>'+value+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
+ '<section class="surface"><div class="toolbar"><h2>Ocorrências que precisam de tratamento</h2><button data-page="events">Abrir todas</button></div>'+eventList(open.slice(0,6))+'</section>'+
+ '<section class="surface"><div class="toolbar"><h2>Rondas recentes</h2><button data-page="team">Analisar colaboradores</button></div>'+roundTable(rounds.slice(0,7))+'</section>'+
+ '<details class="details-toggle"><summary>Comparações, telemetria e indicadores adicionais</summary><div class="surface">'+kpis()+'<h2 style="margin-top:16px">Histórico geral</h2>'+roundTable(rounds.slice(0,30))+'</div></details></section>';
+}
+function ownDashboard(){
+ const mine=mySummary||{},all=mine.rounds||rounds,activity=events.filter(e=>e.kind!=='gps'&&e.kind!=='battery');
+ const open=activity.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
+ const latest=all.find(r=>r.status==='em_andamento')||all[0];
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">ACESSO DO VIGIA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
+ '<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
+ '<section class="surface"><div class="toolbar"><h2>Minha execução mais recente</h2><button data-page="history">Histórico completo</button></div>'+
+ (latest?'<div class="detail-grid">'+[['Início',fmt(latest.start)],['Estado',latest.status.replaceAll('_',' ')],['Percorrido',latest.km.toFixed(2)+' km'],['Tempo em trajeto',latest.minutes==null?'Sem registro':latest.minutes+' min'],['Alertas',latest.alerts],['Pânico',latest.panics],['Bateria',latest.lastBattery==null?'Não informada':latest.lastBattery+'%']].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>':'<div class="empty">Nenhuma ronda real sincronizada para sua conta.</div>')+
+ '</section><section class="surface"><div class="toolbar"><h2>Minhas ocorrências e mensagens</h2><button data-page="send">Enviar alerta</button></div>'+eventList(open.slice(0,6))+'</section>'+
+ '<section class="surface"><h2>Registros recentes</h2>'+eventList(activity.slice(0,6))+'</section></section>';
+}
+function ownHistory(){
+ const operational=events.filter(e=>!['gps','battery'].includes(e.kind));
+ const telemetry=events.filter(e=>['gps','battery'].includes(e.kind));
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">MEUS DADOS</div><h1>Meu histórico</h1><p class="muted">Rondas, trajeto, tempo, observações, evidências, alertas, acionamentos de pânico e respostas.</p></div><button data-refresh>Atualizar</button></div>'+
+ '<section class="surface"><h2>Resumo por ronda</h2>'+roundTable(rounds)+'</section>'+
+ '<section class="surface"><h2>Ocorrências, pontos e comunicação</h2>'+eventList(operational)+'</section>'+
+ '<details class="details-toggle"><summary>Ver histórico técnico completo · '+telemetry.length+' registros de GPS e bateria</summary><div class="surface">'+eventList(telemetry)+'</div></details>'+
+ '<p class="muted">Distâncias são estimativas de amostras GPS confiáveis. O histórico remoto só mostra dados efetivamente sincronizados.</p></section>';
+}
+function monitorView(){
+ const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
+ const urgent=open.filter(e=>e.kind==='panic');
+ const list=active.length?active:rounds.slice(0,5);
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CENTRAL DE MONITORAMENTO</div><h1>Acompanhamento de rondas</h1><p class="muted">Localização, estado do sinal, comunicação e ocorrências de cada vigia.</p></div><button data-refresh>Atualizar agora</button></div>'+
+ '<div class="cards">'+[['Rondas ativas',active.length],['Pânicos em aberto',urgent.length],['Pendências',open.length],['Vigias cadastrados',users.filter(w=>w.role==='ronda').length]].map(([n,v],i)=>'<div class="metric '+(i===1&&v?'urgent':'')+'"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
+ '<section class="surface"><div class="toolbar"><h2>Prioridade da operação</h2><button data-page="events">Tratar ocorrências</button></div>'+eventList(open.slice(0,8))+'</section>'+
+ '<section class="surface"><h2>'+ (active.length?'Rondas em acompanhamento':'Últimas rondas registradas')+'</h2><p class="muted">Posições com horário da última atualização. Ausência de GPS não comprova desvio.</p>'+monitorRows(list)+'</section>'+
+ '<details class="details-toggle"><summary>Consultar histórico operacional completo</summary><div class="surface">'+roundTable(rounds.slice(0,50))+'</div></details></section>';
+}
+function monitorRows(rows){
+ if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
+ return '<div class="list">'+rows.map(r=>{
+  const worker=users.find(w=>w.id===r.userId)?.name||'Colaborador';
+  const age=r.lastFixAt?Date.now()-r.lastFixAt:Infinity;
+  const signal=age<60000?'GPS recente':age<180000?'GPS desatualizado':'Sem GPS recente';
+  const lastEvent=events.find(e=>e.round_id===r.id&&['panic','incident','alert','checkpoint'].includes(e.kind));
+  return '<details class="details-toggle"><summary>'+escape(worker)+' · '+(r.status==='em_andamento'?'Em ronda':'Última ronda')+
+  ' · '+escape(signal)+'</summary><div class="surface"><div class="detail-grid">'+
+  [['Última posição',fmt(r.lastFixAt)],['Distância',r.km.toFixed(2)+' km'],['Em trajeto',r.minutes==null?'—':r.minutes+' min'],['Bateria',r.lastBattery==null?'—':r.lastBattery+'%'],['Alertas',r.alerts],['Pânico',r.panics]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
+  positionMap(r.lastFix)+
+  (lastEvent?'<p class="row" style="margin-top:13px"><button data-event="'+escape(lastEvent.id)+'">Abrir registros e conversar</button></p>':'<p class="muted">Sem ocorrência ou ponto registrado para abrir conversa.</p>')+
+  '</div></details>';
+ }).join('')+'</div>';
+}
+function positionMap(fix){
+ if(!fix||!Number.isFinite(fix.lat)||!Number.isFinite(fix.lng))return '<p class="muted">Mapa indisponível: sem coordenadas confiáveis recentes.</p>';
+ const lat=fix.lat,lng=fix.lng,bbox=[lng-.007,lat-.005,lng+.007,lat+.005].join('%2C');
+ const src='https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+lat+'%2C'+lng;
+ return '<div class="event-map-wrap"><iframe class="event-map" loading="lazy" title="Última posição registrada no mapa" referrerpolicy="no-referrer" src="'+src+'"></iframe><a target="_blank" rel="noopener noreferrer" href="https://www.openstreetmap.org/?mlat='+lat+'&mlon='+lng+'#map=17/'+lat+'/'+lng+'">Abrir mapa ↗</a></div>';
 }
 function roundTable(rows){
  if(!rows.length)return '<div class="empty">Ainda não há rondas reais sincronizadas.</div>';
@@ -65,8 +127,12 @@ function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
 function eventsView(){
- const incident=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)),rest=events.filter(e=>!incident.includes(e));
- return '<section class="stack"><div class="toolbar"><div><h1>Registros operacionais</h1><p class="muted">Ocorrências, pânico, alertas e telemetria com data, hora e autoria.</p></div><button data-refresh>Atualizar</button></div><section class="surface"><h2>Ocorrências prioritárias</h2>'+eventList(incident)+'</section><section class="surface"><h2>Demais eventos</h2>'+eventList(rest)+'</section></section>';
+ const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
+ const ordinary=events.filter(e=>!priority.includes(e));
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">TRATAMENTO E REGISTROS</div><h1>Ocorrências</h1><p class="muted">Prioridades, respostas da equipe, evidências e histórico.</p></div><button data-refresh>Atualizar</button></div>'+
+ '<section class="surface"><h2>Exigem atenção</h2>'+eventList(priority.filter(e=>e.status!=='resolvida'))+'</section>'+
+ '<details class="details-toggle"><summary>Ocorrências tratadas · '+priority.filter(e=>e.status==='resolvida').length+'</summary><div class="surface">'+eventList(priority.filter(e=>e.status==='resolvida'))+'</div></details>'+
+ '<details class="details-toggle"><summary>Histórico técnico · '+ordinary.length+' eventos</summary><div class="surface">'+eventList(ordinary)+'</div></details></section>';
 }
 function teamView(){
  return '<section class="stack"><h1>Equipe e indicadores individuais</h1><div class="surface"><div class="list">'+(dashboard?.team||[]).map(w=>'<button data-person="'+id(w.id)+'" class="list-item"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Descrição pendente')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' acionamentos</span></button>').join('')+'</div></div>'+
@@ -108,7 +174,9 @@ function render(){
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
  const content=selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
-   page==='dashboard'?dashboardView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='send'?sendView():exportView();
+   account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
+   account.role==='operador'?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
+   page==='dashboard'?dashboardView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  root.innerHTML='<div class="workspace">'+nav()+'<article class="content">'+content+'</article></div>';
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
 }
@@ -170,8 +238,8 @@ async function printAllConversations(){
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
-  if(target.dataset.page){selected=null;page=target.dataset.page;render();return;}
-  if(target.dataset.event){selected={event:events.find(x=>x.id===target.dataset.event)};render();return;}
+  if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;selected=null;page=target.dataset.page;render();return;}
+  if(target.dataset.event){const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
   if(target.dataset.template){
    const t=templates.find(x=>x.id===target.dataset.template);if(!privileged()||!t)return;
