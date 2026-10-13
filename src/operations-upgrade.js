@@ -180,7 +180,6 @@ export function createOperationsUpgrade(api){
   if(['supervisor','gestor','admin'].includes(user?.role)){
    if(view==='overview'){
     main.querySelector('.v4-dashboard-heading')?.insertAdjacentHTML('beforeend',user.role==='admin'?adminQuick():'<button type="button" class="button" data-ops="export">⬇ Exportar relatório</button>');
-    main.querySelector('.dashboard-v4')?.insertAdjacentHTML('beforeend',reportSmart());
    }
    if(view==='relatorios'){
     main.querySelector('.report-page')?.insertAdjacentHTML('afterbegin',adminQuick()+reportSmart());
