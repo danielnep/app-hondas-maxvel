@@ -770,6 +770,7 @@ async function startSession(){const now=Date.now();if(mode==='real'&&!presentati
     session.timeline.unshift({id:'gps-unavailable-'+at,kind:'gps-unavailable',at,label:'GPS indisponível durante a ronda'});
     save();
    }
+   void ops.recordGpsIssue('GPS indisponível durante ronda real',locationFix,{immediate:true});
    notify(contextWarning);
   },{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
  }catch{notify('Permita o uso do GPS ou volte à simulação.');return;}
@@ -788,7 +789,11 @@ function startMove(kind){const p=currentCheckpoint(session);if(kind==='demo-arri
 function processPosition(){if(!session||session.status!=='active'||screen==='landing')return;
  const now=Date.now(),priorDeviations=session.deviations.length,priorReturns=session.deviations.map(d=>d.returnedAt),priorValid=session.returnConfirmed;
  const result=updateLocation(session,locationFix,now);
- if(mode==='real')void ops.recordFix(locationFix);
+ if(mode==='real'){
+  void ops.recordFix(locationFix);
+  if(result.reason==='gps-unreliable')void ops.recordGpsIssue('Precisão GPS insuficiente ou leitura desatualizada',locationFix);
+  else ops.gpsQualityRecovered();
+ }
  if(session.deviations.length>priorDeviations){patrolSheetCollapsed=true;save();render();window.scrollTo({top:0,behavior:'instant'});notify('Desvio detectado. Justificativa solicitada e aviso exibido na supervisão · simulação.');return;}
  if(priorReturns.some((r,i)=>!r&&session.deviations[i]?.returnedAt)){save();render();notify('Retorno registrado. A permanência de 30 segundos recomeçou.');return;}
  if(!priorValid&&session.returnConfirmed){save();render();notify('Retorno à base confirmado. Você pode concluir a ronda.');return;}
