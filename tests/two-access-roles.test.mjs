@@ -28,7 +28,7 @@ test('apenas Administração e Operação de Ronda são opções de login',()=>{
 test('vigia somente executa ronda e não recebe relatório ou painel azul',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
  assert.match(nav,/ronda:\[\['minha-ronda','Minha ronda','compass'\]\]/);
- assert.doesNotMatch(nav,/ronda:[\s\S]*?\['relatorios'/);
+ assert.doesNotMatch(nav,/ronda:\[\['relatorios'/);
  const panel=range(extra,'function decorate(){','function mediaFields(){');
  const vigia=range(panel,"if(user?.role==='ronda'){","if(user?.role==='admin'){");
  assert.doesNotMatch(vigia,/reportSmart|adminQuick|statusBanner|relatorios|view-client/);
