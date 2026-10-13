@@ -1,0 +1,19 @@
+
+.checkpoint-curtain{position:fixed;inset:0;z-index:1300;display:flex;align-items:flex-end;justify-content:center;color:#f7fbff;font-family:inherit}
+.checkpoint-curtain-shade{position:absolute;inset:0;background:rgba(6,14,23,.78);backdrop-filter:blur(10px)}
+.checkpoint-curtain-panel{position:relative;z-index:1;width:min(100%,700px);max-height:95dvh;overflow:auto;border-radius:24px 24px 0 0;background:linear-gradient(135deg,#102635,#13202e 55%,#10151e);box-shadow:0 -18px 80px #0009;padding:24px clamp(16px,4vw,28px) calc(28px + env(safe-area-inset-bottom));border:1px solid #3f7c95;border-bottom:0}
+.checkpoint-curtain-eyebrow{color:#81e8c9;font-size:11px;font-weight:800;letter-spacing:1.2px}
+.checkpoint-curtain-panel h2{font-size:clamp(24px,5vw,33px);margin:8px 0}.checkpoint-curtain-panel p{color:#bdcdd8;font-size:13px}
+.checkpoint-stopwatch{display:grid;justify-items:center;gap:8px;background:#0c1a26;border:1px solid #34546b;border-radius:15px;padding:18px;margin:18px 0}
+.checkpoint-stopwatch strong{color:#8bddfa;font-size:50px;font-variant-numeric:tabular-nums;line-height:1}
+.checkpoint-stopwatch small{font-size:12px;text-align:center;color:#b9d0dc}
+.checkpoint-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.checkpoint-tools>button,.checkpoint-tools label{cursor:pointer;display:flex;justify-content:center;align-items:center;text-align:center;background:#18364a;color:#f1faff;border:1px solid #386078;border-radius:10px;padding:12px 5px;font-size:11px;min-height:53px}
+.checkpoint-tools label input{position:absolute;max-width:1px;opacity:0;pointer-events:none}
+.checkpoint-tools .checkpoint-panic{background:#9d2945;border-color:#e25578;color:#fff;font-weight:800}
+.checkpoint-note{display:grid;gap:10px;margin:18px 0;font-size:13px;font-weight:700}
+.checkpoint-note textarea{box-sizing:border-box;width:100%;background:#0a1824;color:#fff;border:1px solid #54849c;border-radius:12px;min-height:90px;padding:12px;font:inherit;resize:vertical}
+.checkpoint-submit{width:100%;background:#74d3f7;color:#0d2837;border:0;border-radius:10px;padding:15px;font-size:14px;font-weight:800;min-height:50px}
+.checkpoint-submit:disabled{opacity:.48;cursor:not-allowed}
+.checkpoint-footnote{display:block;font-size:10px;color:#b2c8d4;margin:12px 0 0}
+@media(max-height:620px){.checkpoint-curtain-panel{max-height:100dvh}.checkpoint-stopwatch{padding:9px;margin:9px 0}.checkpoint-stopwatch strong{font-size:34px}}
