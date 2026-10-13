@@ -22,7 +22,7 @@ export function createCheckpointCurtain(api){
  };
  function open(){
   const state=api.get(),s=state.session,p=s&&currentCheckpoint(s);
-  if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||!p||s.insideSince==null){status();return}
+  if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||s.mode!=='real'||!p||s.insideSince==null){status();return}
   const next=s.id+':'+s.index;if(root&&key===next){status();return}
   close();key=next;root=document.createElement('section');
   root.className='checkpoint-curtain';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
