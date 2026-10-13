@@ -2,6 +2,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {dirname,resolve,join} from 'node:path';
 import {randomBytes,scryptSync,timingSafeEqual,createHash,randomUUID} from 'node:crypto';
+import {addTrackSample} from '../src/field-intelligence.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
 const roles=['ronda','operador','admin','master'];
@@ -53,6 +54,38 @@ function initialize(){
  const seedRecipients=db.prepare("UPDATE templates SET recipients=? WHERE id=? AND recipients='[]'");
  for(const [k,v] of Object.entries(defaultGroups))seedRecipients.run(JSON.stringify(v),k);
  return db;
+}
+
+export function aggregateOperationalRounds(events=[]){
+ const groups=new Map();
+ for(const e of events){
+  if(!e.round_id)continue;
+  if(!groups.has(e.round_id))groups.set(e.round_id,{id:e.round_id,userId:e.user_id,
+   start:null,end:null,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,started:0});
+  const r=groups.get(e.round_id);
+  if(e.kind==='patrol_start'){r.start=e.occurred_at;r.started++;}
+  if(e.kind==='patrol_end')r.end=e.occurred_at;
+  if(e.kind==='gps'&&Number.isFinite(e.lat)&&Number.isFinite(e.lng)){
+   r.gpsSamples++;
+   const measurement={lat:e.lat,lng:e.lng,at:e.occurred_at,accuracy:e.accuracy};
+   const accepted=addTrackSample(r.gpsTrace,measurement);
+   r.gpsTrace=accepted.track;r.km+=accepted.distanceM/1000;
+   if(!accepted.accepted)r.rejectedGps++;
+  }
+  if(e.kind==='panic')r.panics++;
+  if(e.kind==='incident')r.incidents++;
+  if(e.kind==='alert')r.alerts++;
+  if(e.kind==='checkpoint')r.checkpoints++;
+  if(e.battery!=null)r.lastBattery=e.battery;
+ }
+ return [...groups.values()].map(r=>({
+  id:r.id,userId:r.userId,start:r.start,end:r.end,
+  status:r.end?'concluida':r.start?'em_andamento':'sem_inicio',
+  minutes:r.start?Math.max(0,Math.round(((r.end||Date.now())-r.start)/60000)):null,
+  km:Math.round(r.km*100)/100,gpsSamples:r.gpsSamples,rejectedGps:r.rejectedGps,
+  alerts:r.alerts,panics:r.panics,incidents:r.incidents,checkpoints:r.checkpoints,
+  lastBattery:r.lastBattery,quality:r.gpsSamples?'Estimativa só com GPS confiável':'Sem dados suficientes'
+ })).sort((a,b)=>(b.start||0)-(a.start||0));
 }
 export function createOperationalApi(){
  let db=null;try{db=initialize()}catch(e){console.error('SQLite:',e.message);}
@@ -163,7 +196,8 @@ export function createOperationalApi(){
     audit(a,'recipient.save',email);resp(res,200,{ok:true});return true;
    }
    if(p==='/api/dashboard'&&m==='GET'&&reviewer(a)){
-    resp(res,200,{source:'sqlite',metrics:db.prepare('SELECT kind,COUNT(*) count FROM events GROUP BY kind').all(),team:db.prepare("SELECT u.id,u.name,u.description,COUNT(e.id) events,SUM(CASE WHEN e.kind='panic' THEN 1 ELSE 0 END) panics FROM users u LEFT JOIN events e ON e.user_id=u.id WHERE u.role='ronda' GROUP BY u.id").all(),updatedAt:now()});return true;
+    const rounds=aggregateOperationalRounds(db.prepare('SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ORDER BY occurred_at').all());
+    resp(res,200,{source:'sqlite',metrics:db.prepare('SELECT kind,COUNT(*) count FROM events GROUP BY kind').all(),team:db.prepare("SELECT u.id,u.name,u.description,COUNT(e.id) events,SUM(CASE WHEN e.kind='panic' THEN 1 ELSE 0 END) panics FROM users u LEFT JOIN events e ON e.user_id=u.id WHERE u.role='ronda' GROUP BY u.id").all(),rounds,updatedAt:now()});return true;
    }
    if(p==='/api/media'&&m==='POST'){
     const eid=clean(req.headers['x-ronda-event-id']),ev=event(eid);
@@ -201,7 +235,7 @@ export function createOperationalApi(){
    }
    if(p==='/api/export'&&m==='GET'&&manager(a)){
     const events=db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT 50000').all(),messages=db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id ORDER BY m.created_at DESC LIMIT 50000').all();
-    audit(a,'export',null);resp(res,200,{source:'sqlite',at:now(),events,messages,limit:50000});return true;
+    audit(a,'export',null);resp(res,200,{source:'sqlite',at:now(),events,messages,rondas:aggregateOperationalRounds(events),limit:50000});return true;
    }
    resp(res,404,{error:'Endpoint não encontrado ou acesso não autorizado'});return true;
   }catch(e){console.error('Erro operacional:',e.message);resp(res,e.status||500,{error:e.status===413?'Limite de tamanho excedido':'Falha no processamento'});return true;}
