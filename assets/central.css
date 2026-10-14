@@ -27,3 +27,24 @@ main{max-width:1420px;margin:auto;padding:24px clamp(14px,3vw,30px)}.workspace{d
 @media(max-width:350px){.central-quick-actions{grid-template-columns:1fr}.central-quick-action{flex-direction:row;min-height:55px;padding:10px 14px;justify-content:flex-start;text-align:left}}
 @media(prefers-reduced-motion:reduce){.central-quick-action{transition:none}}
 @media print{.central-panic-fab,.central-quick-actions,.central-panic-dialog{display:none!important}}
+
+/* Central mobile: as telas abertas pelas ações rápidas não perdem formulário ou envio. */
+@media screen and (max-width:760px){
+ html,body{min-height:100%;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
+ #central-root{min-width:0;width:100%;overflow:visible}
+ main{min-width:0;overflow:visible;padding-bottom:calc(115px + env(safe-area-inset-bottom,0px))}
+ .workspace,.content,.content>.stack{min-width:0;max-width:100%;overflow:visible}
+ .content form.surface{
+   display:flex;flex-direction:column;gap:13px;min-width:0;max-width:100%;
+   overflow:visible;padding:15px 13px 18px;scroll-margin-top:85px;
+ }
+ .content form.surface>label,.content form.surface>p{min-width:0;max-width:100%}
+ .content form.surface :is(input,select,textarea){font-size:16px!important;min-height:46px;scroll-margin:100px}
+ .content form.surface textarea{min-height:128px;line-height:1.45;resize:vertical}
+ .content form.surface>button.primary{
+   align-self:stretch;min-height:50px;margin-top:5px;position:sticky;bottom:10px;z-index:2;
+   box-shadow:0 0 0 5px #151518,0 8px 25px #0008;
+ }
+ .central-panic-dialog{max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+ .central-panic-dialog .panic-buttons{position:sticky;bottom:0;background:#19191ef5;padding:8px 0}
+}
