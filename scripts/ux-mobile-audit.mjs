@@ -127,10 +127,15 @@ try{
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
   try{
    await page.goto('http://127.0.0.1:'+base,{waitUntil:'domcontentloaded',timeout:16000});
-   await page.locator('.location-entry-gate').waitFor({timeout:9000});
-   await state(page,width,height,'01-gps-primeiro-acesso');
-   await click(page,'.location-entry-grant');
-   await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:11000});
+   // Permissão já concedida: entra sem modal. Caso contrário, exige toque explícito.
+   await page.locator('.location-entry-gate:visible, .dashboard:visible').first().waitFor({timeout:12000});
+   const needsPermission=await page.locator('.location-entry-gate:visible').count()>0;
+   await state(page,width,height,needsPermission?'01-gps-primeiro-acesso':'01-gps-ja-autorizado');
+   if(needsPermission){
+    await click(page,'.location-entry-grant');
+    await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:11000});
+   }
+   await page.locator('.dashboard:visible').first().waitFor({timeout:11000});
    await wait(450);
    if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
    await state(page,width,height,'04-ronda');
