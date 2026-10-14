@@ -90,7 +90,7 @@ export function aggregateOperationalRounds(events=[]){
   if(e.battery!=null)r.lastBattery=e.battery;
  }
  return [...groups.values()].map(r=>({
-  id:r.id,userId:r.userId,site:r.site,routeId:r.routeId,start:r.start,end:r.end,
+  id:r.id,userId:r.userId,site:r.site,routeId:r.routeId,start:r.start,end:r.end,track:r.gpsTrace.slice(-1200),
   status:r.incomplete?'incompleta':r.interrupted?'interrompida':r.end?'concluida':r.start?'em_andamento':'sem_inicio',
   routeStatus:r.deviations?'Percurso a verificar':r.gpsIssues?'GPS com falha técnica':!r.gpsSamples?'Sem dados GPS':'Sem desvio registrado',
   minutes:r.start?Math.max(0,Math.round(((r.end||Date.now())-r.start)/60000)):null,
