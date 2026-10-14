@@ -344,6 +344,17 @@ export function createOperationalApi(){
     const mime=clean(req.headers['content-type']).split(';')[0];
     const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm','audio/webm','audio/mp4','audio/ogg'];
     if(!types.includes(mime)){resp(res,415,{error:'Formato não autorizado'});return true;}
+    const requestedMediaId=clean(req.headers['x-ronda-media-id']);
+    if(requestedMediaId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedMediaId)){
+     resp(res,422,{error:'Identificador da mídia inválido'});return true;
+    }
+    if(requestedMediaId){
+     const existing=db.prepare('SELECT id,event_id,author_id FROM media WHERE id=?').get(requestedMediaId);
+     if(existing){
+      if(existing.event_id!==eid||existing.author_id!==a.id){resp(res,409,{error:'Identificador da mídia já utilizado'});return true;}
+      resp(res,200,{id:existing.id,alreadyUploaded:true});return true;
+     }
+    }
     const evidenceView=clean(req.headers['x-media-view']).toLowerCase();
     if(evidenceView&&(!['front','back','left','right','selfie'].includes(evidenceView)||!mime.startsWith('image/'))){
      resp(res,422,{error:'Identificação da foto inválida'});return true;
@@ -358,7 +369,7 @@ export function createOperationalApi(){
       ||(mime==='audio/mp4'&&magic.subarray(4,8).toString()==='ftyp')
       ||(mime==='audio/ogg'&&magic.subarray(0,4).toString()==='OggS');
     if(!correct){resp(res,415,{error:'Conteúdo do arquivo incompatível'});return true;}
-    const mediaId=id(),folder=resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media');
+    const mediaId=requestedMediaId||id(),folder=resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media');
     mkdirSync(folder,{recursive:true});writeFileSync(join(folder,mediaId),bytes,{flag:'wx',mode:0o600});
     const captured=Number(req.headers['x-captured-at']);
     const geoLat=Number(req.headers['x-media-lat']),geoLng=Number(req.headers['x-media-lng']);
