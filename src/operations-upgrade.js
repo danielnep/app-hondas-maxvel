@@ -248,7 +248,19 @@ export function createOperationsUpgrade(api){
    '</div>';
  }
  function panicButton(){
-  return '<button type="button" class="ops-panic" data-ops="panic-confirm" aria-label="Botão de pânico, abre confirmação e discador de emergência"><span>⚠</span> PÂNICO</button>';
+  return '<button type="button" class="ops-panic" data-ops="panic-confirm" aria-label="Abrir acionamento de pânico"><span class="ops-panic-symbol" aria-hidden="true">!</span><strong>PÂNICO</strong></button>';
+ }
+ function communicationActions(){
+  const icons={
+   alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 3 9 16H3L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>',
+   incident:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/></svg>',
+   message:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v12H9l-5 4V5Z"/><path d="M8 10h8M8 13h6"/></svg>'
+  };
+  return '<div class="patrol-communication-actions" role="group" aria-label="Comunicação com a central">'+
+   '<button type="button" data-ops="central-alert">'+icons.alert+'<span>Enviar alerta</span></button>'+
+   '<button type="button" data-ops="incident-quick">'+icons.incident+'<span>Registrar ocorrência</span></button>'+
+   '<button type="button" data-ops="central-message">'+icons.message+'<span>Enviar mensagem</span></button></div>'+
+   '<p class="patrol-communication-note">Alertas e mensagens à central exigem acesso autenticado. A ocorrência durante a ronda demonstrativa é registrada neste aparelho.</p>';
  }
  function gpsQrRow(){
   const {session:s,operationalSettings:settings}=current();
@@ -258,8 +270,7 @@ export function createOperationsUpgrade(api){
   return section('Comprovação do ponto',
    '<div class="ops-inline-actions">'+
    '<button type="button" class="ops-mini-action" data-ops="save-map">⬇ Salvar mapa offline</button>'+
-   (point&&mode!=='gps'?'<button type="button" class="ops-mini-action" data-ops="scan-qr" '+(verified?'disabled':'')+'>▣ '+(verified?'QR confirmado':'Ler QR Code')+'</button>':'')+
-   '<button type="button" class="ops-mini-action" data-ops="incident-quick">📷 Registrar ocorrência</button></div>'+
+   (point&&mode!=='gps'?'<button type="button" class="ops-mini-action" data-ops="scan-qr" '+(verified?'disabled':'')+'>▣ '+(verified?'QR confirmado':'Ler QR Code')+'</button>':'')+'</div>'+
    '<p>Validação configurada: <b>'+safe(mode==='gps'?'GPS no ponto + permanência':mode==='qr'?'QR Code por ponto':'GPS e QR Code obrigatórios')+'</b>. Ordem dos pontos obrigatória. Sem selfie.</p>');
  }
  function adminQuick(){
@@ -292,6 +303,7 @@ export function createOperationsUpgrade(api){
   if(user?.role==='ronda'){
    dashboard.insertAdjacentHTML('beforeend',panicButton());
    if(view==='minha-ronda'){
+    main.querySelector('.patrol-action-heading')?.insertAdjacentHTML('afterend',communicationActions());
     main.querySelector('.patrol-action-body')?.insertAdjacentHTML('beforeend',gpsQrRow());
    }
   }
@@ -432,7 +444,13 @@ export function createOperationsUpgrade(api){
     '<button type="button" class="button full" data-action="close-dialog">Cancelar</button></div>',true);return;
   }
   if(cmd==='panic-now'){await panic();return;}
-  if(cmd==='incident-quick'){api.incidentDialog();return;}
+  if(cmd==='central-alert'){window.location.assign('/central.html#alert');return;}
+  if(cmd==='central-message'){window.location.assign('/central.html#message');return;}
+  if(cmd==='incident-quick'){
+   if(current().session?.status==='active')api.incidentDialog();
+   else window.location.assign('/central.html#incident');
+   return;
+  }
   if(cmd==='export'){if(current().user?.role!=='admin')return;exportDialog();return;}
   if(cmd==='save-map'){await saveMap();return;}
   if(cmd==='scan-qr'){await scanQR();return;}
