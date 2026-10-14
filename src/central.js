@@ -97,8 +97,47 @@ const roleMenus={
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Notificações','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
-const nav=()=>'<nav class="side" aria-label="Navegação do '+escape(roles[account.role])+'">'+
- (roleMenus[account.role]||[]).filter(([key])=>!review()||!({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'}[key])||ops.allowed(({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[key])).map(([key,label,icon])=>'<button type="button" data-page="'+key+'" class="'+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+icon+'</span>'+escape(label)+'</button>').join('')+'</nav>';
+const rp2Priority={
+ ronda:['dashboard','dispatches','notifications','send'],
+ operador:['monitor','notifications','dispatches','events'],
+ coi:['monitor','notifications','dispatches','events'],
+ admin:['dashboard','monitor','notifications','dispatches'],
+ master:['dashboard','monitor','notifications','dispatches'],
+ cliente:['client'],
+ vistoriador:['inspections','dispatches','notifications','send']
+};
+const rp2GlyphPaths={
+ dashboard:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
+ monitor:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 22h8M12 18v4M6 13l3-4 3 2 5-5"/>',
+ dispatches:'<path d="m3 7 8-4 10 6-8 4zM3 7v10l10 5V13M13 22l8-5V9"/>',
+ notifications:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/>',
+ history:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/>',
+ send:'<path d="M3 11 21 3l-7 18-3-8-8-2zM11 13l10-10"/>',
+ guide:'<circle cx="12" cy="12" r="9"/><path d="M10 9a2.5 2.5 0 0 1 5 1c0 2-3 2-3 4M12 17h.01"/>',
+ routes:'<path d="M3 6 9 3l6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15"/>',
+ events:'<path d="m12 3 10 18H2zM12 9v5M12 18h.01"/>',
+ team:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2H3zM17 7a3 3 0 0 1 0 6M18 16a4 4 0 0 1 3 4"/>',
+ alerts:'<path d="M3 6h18v12H3zM3 7l9 7 9-7"/>',
+ export:'<path d="M12 3v12m-5-5 5 5 5-5M4 18v3h16v-3"/>',
+ permissions:'<circle cx="8" cy="10" r="4"/><path d="M12 10h9v3h-3v3h-3v-3h-3"/>',
+ inspections:'<rect x="5" y="3" width="14" height="19" rx="2"/><path d="M9 3V2h6v2M9 10l2 2 4-4M9 17h6"/>',
+ client:'<path d="M3 20V6l9-4 9 4v14H3zM9 20v-7h6v7M8 8h.01M16 8h.01"/>'
+};
+const rp2Glyph=key=>'<svg viewBox="0 0 24 24" class="rp2-nav-svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(rp2GlyphPaths[key]||rp2GlyphPaths.guide)+'</svg>';
+function nav(){
+ const role=account.role,permitted=(roleMenus[role]||[]).filter(([key])=>!review()||!({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'}[key])||ops.allowed(({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[key]));
+ const priority=rp2Priority[role]||[];
+ const primaries=permitted.filter(([key])=>priority.includes(key));
+ const secondary=permitted.filter(([key])=>!priority.includes(key));
+ const node=([key,label])=>'<button type="button" data-page="'+key+'" class="rp2-nav-item '+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'>'+rp2Glyph(key)+'<span>'+escape(label)+'</span></button>';
+ const moreActive=secondary.some(([key])=>key===page);
+ const wide=typeof window!=='undefined'&&window.matchMedia('(min-width:761px)').matches;
+ return '<nav class="side rp2-role-nav" aria-label="Navegação do '+escape(roles[role])+'">'+
+  '<span class="rp2-nav-eyebrow">TRABALHO · '+escape(roles[role])+'</span>'+
+  '<div class="rp2-nav-primary">'+primaries.map(node).join('')+'</div>'+
+  (secondary.length?'<details class="rp2-nav-secondary" '+(wide||moreActive?'open':'')+'><summary>Mais áreas <span aria-hidden="true">'+(moreActive?'●':'⌄')+'</span></summary><div class="rp2-nav-secondary-items">'+secondary.map(node).join('')+'</div></details>':'')+
+  '</nav>';
+}
 function kpis(){
  const kinds=Object.fromEntries((dashboard?.metrics||[]).map(x=>[x.kind,x.count]));
  return '<div class="cards">'+[['Eventos',events.length],['Pânicos',kinds.panic||0],['Ocorrências',kinds.incident||0],['Amostras GPS',kinds.gps||0],['Alertas de e-mail',kinds.alert||0],['Baterias monitoradas',kinds.battery||0]].map(([label,num])=>'<div class="metric"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>';
@@ -185,6 +224,8 @@ function monitorView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),
   open=events.filter(e=>['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message'].includes(e.kind)&&e.status!=='resolvida'),
   urgent=open.filter(e=>e.kind==='panic');
+ const priorityRank={panic:0,route_deviation:1,incident:2,gps_issue:3,patrol_interrupted:4,patrol_incomplete:5,alert:6,message:7};
+ const triage=open.slice().sort((a,b)=>(priorityRank[a.kind]??9)-(priorityRank[b.kind]??9)||(b.occurred_at||0)-(a.occurred_at||0));
  const agenda=routes.slice(0,9).map(route=>{
   const item=rounds.find(r=>r.routeId===route.id)||null;
   return {route,round:item};
@@ -203,10 +244,11 @@ function monitorView(){
  '<p class="muted">Local / posto: '+escape(account.site||'Todos os locais autorizados')+'</p></div>'+
  '<div class="ops-agenda-live"><span class="ops-live-led"></span><span>Monitoramento ativo</span><strong data-ops-live-clock>'+escape(new Date().toLocaleTimeString('pt-BR'))+'</strong></div></header>'+
  '<div class="ops-monitor-kpis">'+[['Em ronda',active.length],['Pendentes',open.length],['Pânicos',urgent.length],['Vigias',users.filter(w=>w.role==='ronda').length]].map(([label,num],i)=>'<div class="ops-monitor-kpi'+(i===2&&num?' critical':'')+'"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
+ '<section class="surface rp2-attention-queue" aria-label="Pendências em prioridade"><div class="toolbar"><div><h2>Fila de atenção</h2><p class="muted">Pânicos e ocorrências no topo; GPS sem leitura não prova desvio.</p></div><button data-page="events">Abrir triagem</button></div>'+(triage.length?eventList(triage.slice(0,5)):'<p class="empty">Nenhuma pendência registrada.</p>')+'</section>'+
  '<section class="surface ops-agenda-surface"><div class="toolbar"><div><h2>Agenda de Rondas</h2><p class="muted">Mapa compacto, horários e verificação por local</p></div><button data-page="routes">Programar / consultar</button></div>'+
  '<div class="ops-agenda-list">'+(rows||'<p class="empty">Nenhuma rota cadastrada. A Administração pode preparar os percursos.</p>')+'</div></section>'+
  '<section class="surface"><div class="toolbar"><div><h2>Vigias e localização</h2><p class="muted">A última leitura GPS não comprova presença contínua.</p></div><button data-page="dispatches">Despachar vigia</button></div>'+monitorRows(active.length?active:rounds.slice(0,6))+'</section>'+
- '<section class="ops-monitor-footer"><div class="toolbar"><div><h2>Alertas e ocorrências</h2><p class="muted">'+open.length+' registro(s) para triagem prioritária pelo COI</p></div><button data-page="events">Abrir e tratar</button></div>'+eventList(open.slice(0,6))+'</section></section>';
+ '<div class="rp2-monitor-footnote">As informações são de eventos recebidos pelo servidor. A ausência de atualização não confirma ausência de atividade.</div></section>';
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -387,7 +429,7 @@ function staticClientMap(fix){
 function clientView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),past=rounds.filter(r=>r.status!=='em_andamento');
  const inspections=events.filter(e=>e.kind==='inspection').slice(0,12);
- const item=r=>'<details class="details-toggle"><summary>'+escape(roundStatus(r))+' · '+clientDate(r.start)+' · '+escape(r.site||account.site)+'</summary>'+
+ const item=r=>'<details class="details-toggle rp2-timeline-entry"><summary>'+escape(roundStatus(r))+' · '+clientDate(r.start)+' · '+escape(r.site||account.site)+'</summary>'+
   '<div class="surface"><div class="detail-grid">'+[['Local',r.site||account.site],['Situação',roundStatus(r)],
   ['Hora de início',clientDate(r.start)],['Hora de término',clientDate(r.end)],['Pontos verificados',r.checkpoints],
   ['Distância estimada',Number(r.km||0).toFixed(2)+' km'],['Última posição recebida',clientDate(r.lastFixAt)]]
@@ -400,7 +442,7 @@ function clientView(){
   '<p>'+escape(e.description||'Sem descrição')+'</p>'+
   '<div class="client-inspection-media" data-client-inspection="'+escape(e.id)+'"><small>Carregando evidências autorizadas…</small></div></article>';
  return '<section class="stack ops-client-portal"><header class="ops-agenda-header"><div><div class="eyebrow">PATRIMÔNIO PROTEGIDO · PORTAL DO CLIENTE</div>'+
-  '<h1>'+siteLabel()+'</h1><p class="muted">Dados restritos ao local autorizado à sua conta.</p></div>'+
+  '<h1>'+siteLabel()+'</h1><p class="muted">Acompanhamento do local autorizado à sua conta · Atualizações registradas no servidor.</p></div>'+
   '<button data-refresh>Atualizar</button></header>'+
   '<div class="cards"><div class="metric"><strong>'+active.length+'</strong><span>Rondas em andamento</span></div>'+
   '<div class="metric"><strong>'+past.filter(r=>r.status==='concluida').length+'</strong><span>Rondas concluídas</span></div>'+
@@ -411,7 +453,7 @@ function clientView(){
   '<section class="surface"><h2>Rondas atuais</h2>'+(active.length?active.map(item).join(''):'<p class="empty">Nenhuma ronda ativa neste local.</p>')+'</section>'+
   '<section class="surface"><h2>Vistorias e evidências</h2><p class="muted">Laudos e fotos, vídeos ou áudios vinculados ao seu local.</p>'+
   (inspections.length?inspections.map(inspectionRow).join(''):'<p class="empty">Nenhum laudo disponível para este local.</p>')+'</section>'+
-  '<section class="surface"><h2>Histórico de rondas</h2>'+(past.length?past.slice(0,40).map(item).join(''):'<p class="empty">Sem rondas anteriores registradas.</p>')+'</section></section>';
+  '<section class="surface"><h2>Linha do tempo das rondas</h2><p class="muted">Toque em um registro para ver os pontos e a última posição disponível.</p><div class="rp2-client-timeline">'+(past.length?past.slice(0,40).map(item).join(''):'<p class="empty">Sem rondas anteriores registradas.</p>')+'</div></section></section>';
 }
 async function loadClientInspectionMedia(){
  const nodes=[...document.querySelectorAll('[data-client-inspection]')];
@@ -443,7 +485,7 @@ function inspectionView(){
  const entries=events.filter(e=>e.kind==='inspection'),scored=entries.filter(e=>Number.isFinite(e.details?.qualityPercent));
  const avg=scored.length?Math.round(scored.reduce((n,e)=>n+e.details.qualityPercent,0)/scored.length):null;
  const criteria=[['acessos','Acessos verificados'],['estrutura','Estrutura em conformidade'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização em conformidade']];
- return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?'<div class="surface"><h2>Destino atribuído pelo COI</h2><p>'+escape(assignment.site||assignment.address)+' · '+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><h2>Nova vistoria</h2><p class="muted">Informe o resultado de cada critério verificado. Nenhum item é considerado irregular por falta de resposta.</p>'+criteria.map(([key,label])=>'<label class="inspection-check"><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Selecione o resultado</option><option value="ok">Conforme</option><option value="no">Não conforme</option></select></label>').join('')+'<label>Observações<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Descreva objetivamente o que foi verificado"></textarea></label><h3>Registrar evidências</h3>'+evidenceButtons()+'<button class="primary">Registrar vistoria e evidências</button></form>':'<div class="surface"><h2>Aguardando despacho do COI</h2><p>O COI escolhe o destino autorizado. Consulte <button type="button" data-page="dispatches">Meus despachos</button>.</p></div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
+ return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?'<div class="surface rp2-assignment"><div class="eyebrow">ETAPA 1 · DESTINO AUTORIZADO PELO COI</div><h2>'+escape(assignment.site||assignment.address)+'</h2><p>'+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack rp2-inspection-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><div class="rp2-inspection-header"><span class="rp2-step">02</span><div><h2>Conferir o local</h2><p class="muted">Avalie os quatro critérios. Um campo vazio nunca significa conforme.</p></div></div><div class="rp2-inspection-checklist">'+criteria.map(([key,label],i)=>'<label class="inspection-check rp2-inspection-item"><span class="rp2-inspection-number">'+(i+1)+'</span><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Avaliar</option><option value="ok">Conforme</option><option value="no">Não conforme</option></select></label>').join('')+'</div><label>Observações da vistoria<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Registre somente o que foi verificado"></textarea></label><div class="rp2-inspection-header"><span class="rp2-step">03</span><div><h3>Evidências</h3><p class="muted">Anexe fotos, vídeo ou áudio quando necessário.</p></div></div>'+evidenceButtons()+'<button class="primary rp2-inspection-submit">Registrar vistoria e evidências</button></form>':'<div class="surface"><h2>Aguardando despacho do COI</h2><p>O COI escolhe o destino autorizado. Consulte <button type="button" data-page="dispatches">Meus despachos</button>.</p></div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
 }
 
 function render(){
@@ -458,7 +500,8 @@ function render(){
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?(page==='send'?sendView():inspectionView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
- root.innerHTML='<div class="workspace">'+nav()+'<article class="content"><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+ 
+ const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
+ root.innerHTML='<div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+ 
   (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
