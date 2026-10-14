@@ -62,3 +62,242 @@
  min-height:44px;border-radius:999px;padding:10px 15px;font-size:12px;font-weight:750;text-decoration:none}
 .location-entry-emergency .location-entry-panic{color:#fff;background:rgba(185,28,28,.82);border:1px solid #fda4af}
 .location-entry-emergency .location-entry-contact{color:#f0f9ff;background:rgba(9,9,11,.8);border:1px solid #7dd3fc}
+
+
+/* MAXVEL | Cockpit Premium Dark • 14/10/2026
+   Mantém cores oficiais, mapa como plano principal e ação sem rolagem.
+   O cronômetro aparece somente em cortina sobreposta, sem empurrar a tela. */
+:root{
+  --rp-maxvel-red:#f5223d;
+  --rp-dark-canvas:#09090b;
+  --rp-dark-panel:rgba(20,20,24,.94);
+  --rp-soft-white:#f4f5f7;
+  --rp-cyan-current:#38bdf8;
+}
+@media screen and (max-width:900px){
+  /* Cockpit sobre o mapa, sem segunda área de scroll. */
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+    position:absolute!important;
+    inset:auto 10px calc(118px + env(safe-area-inset-bottom,0px)) 10px!important;
+    width:auto!important;max-width:none!important;min-height:0!important;
+    height:auto!important;max-height:none!important;overflow:visible!important;
+    display:flex!important;flex-direction:column!important;
+    background:linear-gradient(155deg,rgba(32,32,37,.96),var(--rp-dark-panel))!important;
+    border:1px solid rgba(219,226,237,.28)!important;
+    border-top:2px solid rgba(245,34,61,.75)!important;
+    border-radius:16px!important;
+    box-shadow:0 18px 48px rgba(0,0,0,.57),inset 0 1px rgba(255,255,255,.08)!important;
+    backdrop-filter:blur(18px) saturate(113%)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(113%)!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-heading{
+    min-height:36px!important;flex:0 0 auto!important;
+    padding:7px 11px 3px!important;background:transparent!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-heading strong{
+    max-width:73%!important;white-space:nowrap!important;
+    overflow:hidden!important;text-overflow:ellipsis!important;font-size:12px!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-body{
+    display:block!important;height:auto!important;min-height:0!important;
+    max-height:none!important;overflow:visible!important;
+    padding:3px 11px 10px!important;background:transparent!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-primary-flow{
+    display:grid!important;gap:5px!important;min-height:0!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-stage-intro{
+    margin:0!important;padding:0!important;gap:2px!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-stage-intro h2{
+    font-size:clamp(17px,4.6vw,21px)!important;line-height:1.12!important;
+    margin:0!important;letter-spacing:-.015em!important;color:var(--rp-soft-white)!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-stage-intro p{
+    display:-webkit-box!important;-webkit-box-orient:vertical!important;
+    -webkit-line-clamp:2;overflow:hidden!important;
+    line-height:1.3!important;font-size:11px!important;
+    color:#bec6d0!important;margin:1px 0 0!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-stage-index{
+    font-size:10px!important;letter-spacing:.06em!important;
+    color:#96dffa!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-main-action{
+    margin:3px 0 1px!important;min-width:0!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-primary-flow .rondas-main-action>.button,
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-primary-flow>.button[data-action="start"],
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-primary-flow>.button[data-action="demo-arrive"]{
+    width:100%!important;min-height:48px!important;max-height:none!important;
+    padding:10px 12px!important;font-size:14px!important;
+    line-height:1.3!important;border-radius:11px!important;
+    color:#f7fbff!important;box-shadow:0 6px 20px #06192473!important;
+  }
+  /* Navegação externa continua disponível, mas integrada à mesma superfície. */
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions{
+    margin:4px 0 0!important;padding:6px 0 0!important;gap:4px!important;
+    border:0!important;border-top:1px solid rgba(232,237,244,.13)!important;
+    background:none!important;border-radius:0!important;box-shadow:none!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions>span{
+    display:none!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions-links{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions a{
+    min-height:40px!important;border-radius:9px!important;
+    background:rgba(47,49,55,.74)!important;
+    border:1px solid rgba(222,232,243,.21)!important;
+    color:#eaf4fc!important;font-size:11px!important;padding:6px!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions small{
+    display:block!important;color:#aab8c7!important;
+    font-size:10px!important;line-height:1.25!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-microtext{
+    margin:2px 0!important;font-size:11px!important;line-height:1.25!important;
+  }
+  /* Ações de emergência permanecem separadas e com as cores Maxvel. */
+  .dashboard .ronda-page .ops-panic{
+    background:var(--rp-maxvel-red)!important;color:#fff!important;
+  }
+  body.checkpoint-arrived .dashboard .ronda-page .patrol-map-clock{
+    visibility:hidden!important;
+  }
+}
+/* Cortina de checagem como superfície modal, nunca um card na coluna da ronda. */
+.checkpoint-curtain{
+  position:fixed!important;inset:0!important;z-index:1300!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:max(10px,env(safe-area-inset-top,0px))
+          max(10px,env(safe-area-inset-right,0px))
+          max(10px,env(safe-area-inset-bottom,0px))
+          max(10px,env(safe-area-inset-left,0px))!important;
+}
+.checkpoint-curtain-shade{
+  background:rgba(4,4,7,.84)!important;
+  backdrop-filter:blur(9px)!important;-webkit-backdrop-filter:blur(9px)!important;
+}
+.checkpoint-curtain-panel{
+  display:flex!important;flex-direction:column!important;
+  width:min(100%,540px)!important;height:auto!important;
+  min-height:0!important;max-height:calc(100dvh - 20px)!important;
+  overflow:hidden!important;overscroll-behavior:contain!important;
+  border-radius:20px!important;padding:clamp(12px,2.5vw,18px)!important;
+  border:1px solid rgba(235,239,246,.28)!important;
+  border-top:3px solid var(--rp-maxvel-red)!important;
+  background:linear-gradient(150deg,#25252b 0%,#151518 52%,#09090b 100%)!important;
+  box-shadow:0 28px 90px rgba(0,0,0,.83),inset 0 1px rgba(255,255,255,.1)!important;
+  animation:rp-premium-curtain-in 260ms cubic-bezier(.2,.7,.2,1) both;
+}
+.checkpoint-curtain-panel.is-ready{
+  height:min(710px,calc(100dvh - 20px))!important;
+}
+.checkpoint-curtain-panel h2{
+  margin:4px 0 2px!important;font-size:clamp(21px,4vw,27px)!important;
+  letter-spacing:-.025em!important;flex-shrink:0!important;
+}
+.checkpoint-curtain-panel>p{
+  margin:1px 0 4px!important;line-height:1.3!important;
+  font-size:12px!important;flex-shrink:0!important;
+}
+.checkpoint-curtain-eyebrow{
+  color:#ff8294!important;font-size:10px!important;flex-shrink:0!important;
+}
+.checkpoint-curtain .checkpoint-stopwatch{
+  display:flex!important;align-items:center!important;
+  justify-content:space-between!important;gap:12px!important;
+  min-height:75px!important;margin:7px 0!important;
+  padding:8px 12px!important;flex:0 0 auto!important;
+  background:linear-gradient(105deg,rgba(19,40,53,.9),rgba(18,19,23,.92))!important;
+  border:1px solid rgba(128,212,252,.44)!important;border-radius:13px!important;
+}
+.checkpoint-curtain .checkpoint-stopwatch strong{
+  font-size:clamp(35px,10vw,49px)!important;
+  color:var(--rp-cyan-current)!important;white-space:nowrap!important;
+  font-variant-numeric:tabular-nums;
+}
+.checkpoint-curtain .checkpoint-stopwatch>small{
+  max-width:58%!important;font-size:11px!important;
+  line-height:1.35!important;color:#e1e7ee!important;
+}
+.checkpoint-curtain .checkpoint-evidence-title{
+  margin:5px 0!important;flex-shrink:0!important;
+}
+.checkpoint-curtain .checkpoint-tools{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:6px!important;flex:0 0 auto!important;
+}
+.checkpoint-curtain .checkpoint-tools>button,.checkpoint-curtain .checkpoint-tools label{
+  min-height:48px!important;max-height:70px!important;
+  padding:6px!important;border-radius:9px!important;
+  background:rgba(45,47,55,.8)!important;border-color:#586777!important;
+}
+.checkpoint-curtain .checkpoint-utility-row{
+  display:grid!important;grid-template-columns:1fr 1fr!important;
+  gap:8px!important;margin:7px 0!important;flex:0 0 auto!important;
+}
+.checkpoint-curtain .checkpoint-utility-row>button{
+  min-height:44px!important;border-radius:9px!important;
+}
+.checkpoint-curtain .checkpoint-utility-row>.checkpoint-panic{
+  background:var(--rp-maxvel-red)!important;border-color:#ff8d9e!important;
+  color:#fff!important;
+}
+.checkpoint-curtain-panel .checkpoint-condition{
+  min-height:0!important;flex:1 1 auto!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior:contain!important;scrollbar-width:thin!important;
+  padding:7px 2px 2px!important;margin:0!important;
+}
+.checkpoint-curtain-panel .checkpoint-condition[hidden]{display:none!important}
+.checkpoint-curtain-panel .checkpoint-condition>label:not(.checkpoint-note){
+  min-height:42px!important;padding:7px 10px!important;
+}
+.checkpoint-curtain-panel .checkpoint-note{margin:4px 0!important}
+.checkpoint-curtain-panel .checkpoint-note textarea{
+  min-height:68px!important;max-height:100px!important;
+}
+.checkpoint-curtain-panel .checkpoint-submit{
+  position:relative!important;flex:0 0 auto!important;
+  min-height:47px!important;margin:8px 0 0!important;
+  border-radius:10px!important;color:#091721!important;
+}
+.checkpoint-curtain-panel .checkpoint-footnote{
+  font-size:10px!important;line-height:1.25!important;
+  margin:6px 0 0!important;flex:0 0 auto!important;
+}
+@media(max-width:390px),(max-height:610px){
+  .checkpoint-curtain-panel{padding:10px!important;border-radius:14px!important}
+  .checkpoint-curtain-panel h2{font-size:20px!important}
+  .checkpoint-curtain .checkpoint-stopwatch{
+    min-height:62px!important;padding:7px 10px!important;margin:4px 0!important;
+  }
+  .checkpoint-curtain .checkpoint-stopwatch strong{font-size:34px!important}
+  .checkpoint-curtain .checkpoint-utility-row{margin:4px 0!important}
+  .checkpoint-curtain .checkpoint-tools>button,.checkpoint-curtain .checkpoint-tools label{
+    min-height:44px!important;padding:4px!important;
+  }
+  .checkpoint-curtain-panel .checkpoint-footnote{font-size:9px!important}
+}
+@media screen and (max-width:900px) and (max-height:590px){
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+    bottom:calc(98px + env(safe-area-inset-bottom,0px))!important;
+  }
+  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-stage-intro p{
+    -webkit-line-clamp:1;
+  }
+}
+@keyframes rp-premium-curtain-in{
+  from{opacity:.45;transform:translateY(18px) scale(.985)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .checkpoint-curtain-panel{animation:none!important;transition:none!important}
+  .dashboard .ronda-page .patrol-primary-flow .rondas-main-action>.button{
+    transition:none!important;
+  }
+}

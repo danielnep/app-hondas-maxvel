@@ -19,6 +19,7 @@ export function createCheckpointCurtain(api){
   root.querySelector('[data-dwell-seconds]').textContent=String(remain).padStart(2,'0');
   root.querySelector('[data-dwell-seconds]').parentElement?.setAttribute('aria-label',remain+' segundos restantes');
   root.querySelector('[data-curtain-observation-wrap]').hidden=remain>0;
+  root.querySelector('.checkpoint-curtain-panel')?.classList.toggle('is-ready',remain===0);
   root.querySelector('[data-curtain-observation-wrap]').setAttribute('aria-hidden',String(remain>0));
   root.querySelector('[data-dwell-message]').textContent=s.insideSince==null
     ?'GPS fora do raio ou impreciso. A validação está suspensa.'
