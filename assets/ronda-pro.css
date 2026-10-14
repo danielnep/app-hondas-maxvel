@@ -3575,3 +3575,17 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
   dialog.guide-dialog .guide-scroll{overflow:visible!important}
   dialog.guide-dialog .guide-footer{display:none!important}
 }
+
+/* Comunicação operacional: botões imediatos do vigia; pânico destacado e circular. */
+.patrol-communication-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 8px}
+.patrol-communication-actions button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:86px;padding:12px 6px;border:1px solid #32617a;border-radius:10px;background:#102735;color:#eaf6ff;font-weight:700;font-size:12px;line-height:1.2;text-align:center;cursor:pointer}
+.patrol-communication-actions button:hover{background:#194057;border-color:#61bce8}
+.patrol-communication-actions button:focus-visible{outline:3px solid #7bdbff;outline-offset:3px}
+.patrol-communication-actions svg{width:26px;height:26px;flex-shrink:0;color:#72d1ff}
+.patrol-communication-note{margin:0 2px 10px;color:#a4b9c8;font-size:11px;line-height:1.45}
+.ops-panic{width:90px!important;height:90px!important;min-height:90px!important;border-radius:50%!important;padding:8px!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:3px!important;right:max(18px,env(safe-area-inset-right))!important;bottom:max(18px,env(safe-area-inset-bottom))!important}
+.ops-panic .ops-panic-symbol{width:30px!important;height:30px!important;display:grid;place-items:center;background:#fff;color:#b5203b;border:2px solid #b5203b;border-radius:50%;font-size:23px;font-weight:900;line-height:1}
+.ops-panic strong{font-size:11px;letter-spacing:.045em}
+@media(max-width:900px){.patrol-communication-actions{gap:6px}.patrol-communication-actions button{font-size:11px;padding:9px 3px;min-height:86px}.ops-panic{width:84px!important;height:84px!important;min-height:84px!important;right:max(12px,env(safe-area-inset-right))!important;bottom:max(13px,env(safe-area-inset-bottom))!important}.patrol-workspace{padding-bottom:88px}}
+@media(max-width:350px){.patrol-communication-actions{grid-template-columns:1fr}.patrol-communication-actions button{flex-direction:row;justify-content:flex-start;min-height:52px;gap:12px;padding:10px 14px}}
+@media print{.patrol-communication-actions,.patrol-communication-note,.ops-panic{display:none!important}}
