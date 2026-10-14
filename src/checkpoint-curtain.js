@@ -5,24 +5,34 @@
 import {canCompletePoint,completePoint,currentCheckpoint,requiredDwellMs} from './domain.js';
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createCheckpointCurtain(api){
- let key=null,root=null,torchStream=null,torchTrack=null;
+ let key=null,root=null,torchStream=null,torchTrack=null,saving=false;
  const closeTorch=()=>{torchStream?.getTracks().forEach(t=>t.stop());torchStream=null;torchTrack=null};
- function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;closeTorch()}
+ function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;saving=false;closeTorch()}
  const status=()=>{
   if(!root)return;
   const s=api.get().session,point=s&&currentCheckpoint(s);
   if(!s||s.status!=='active'||!point||key!==s.id+':'+s.index){close();return}
   const elapsed=Math.round(s.checkpoints[s.index].dwellMs/1000),target=Math.round(requiredDwellMs(s)/1000);
-  root.querySelector('[data-dwell-seconds]').textContent=String(Math.min(target,elapsed)).padStart(2,'0');
+  const remain=Math.max(0,target-elapsed);
+  root.querySelector('[data-dwell-seconds]').textContent=String(remain).padStart(2,'0');
+  root.querySelector('[data-dwell-seconds]').parentElement?.setAttribute('aria-label',remain+' segundos restantes');
+  root.querySelector('[data-curtain-observation-wrap]').hidden=remain>0;
+  root.querySelector('[data-curtain-observation-wrap]').setAttribute('aria-hidden',String(remain>0));
   root.querySelector('[data-dwell-message]').textContent=s.insideSince==null
     ?'GPS fora do raio ou impreciso. A validação está suspensa.'
-    :elapsed<target?'Permaneça no ponto. O tempo depende de GPS confiável.':'Tempo cumprido. Descreva o ponto e registre.';
+    :elapsed<target?'Aguarde e observe o ambiente para registrar as condições deste ponto.':'Tempo concluído. Informe as condições verificadas para prosseguir.';
   const button=root.querySelector('[data-curtain-submit]');
-  button.disabled=!canCompletePoint(s)||root.querySelector('textarea').value.trim().length<10;
+  const concern=root.querySelector('[name="point-state"]:checked')?.value==='attention';
+  const observation=root.querySelector('textarea').value.trim();
+  const noteReady=concern?observation.length>=10:true;
+  button.disabled=saving||!canCompletePoint(s)||!noteReady;
+  root.querySelector('textarea').required=Boolean(concern);
+  root.querySelector('textarea').minLength=concern?10:0;
+  root.querySelector('[data-curtain-note-hint]').textContent=concern?'Descreva o que aconteceu. Obrigatório, mínimo de 10 caracteres.':'Observações complementares (opcionais).';
  };
  function open(){
   const state=api.get(),s=state.session,p=s&&currentCheckpoint(s);
-  if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||s.mode!=='real'||!p||s.insideSince==null){status();return}
+  if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||!p||s.insideSince==null){status();return}
   const next=s.id+':'+s.index;if(root&&key===next){status();return}
   close();key=next;document.body.classList.add('checkpoint-arrived');root=document.createElement('section');
   root.className='checkpoint-curtain';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
@@ -30,16 +40,19 @@ export function createCheckpointCurtain(api){
   root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel">'+
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
-   '<div class="checkpoint-stopwatch"><strong><span data-dwell-seconds>00</span> s</strong><small data-dwell-message>Verificando permanência…</small></div>'+
+   '<div class="checkpoint-stopwatch" aria-live="polite"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message>Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
    '<div class="checkpoint-tools"><label>📷 Foto<input type="file" accept="image/*" capture="environment" data-point-photo></label>'+
    '<label>🎥 Vídeo<input type="file" accept="video/*" capture="environment" data-point-video></label>'+
    '<button type="button" data-curtain-torch>🔦 Lanterna</button>'+
    '<button type="button" class="checkpoint-panic" data-ops="panic-confirm">⚠ PÂNICO</button></div>'+
-   '<label class="checkpoint-note">Observações obrigatórias<textarea required maxlength="1400" minlength="10" placeholder="Como está este ponto? Descreva as condições e eventuais problemas." data-checkpoint-observation></textarea></label>'+
-   '<button class="checkpoint-submit" data-curtain-submit disabled>Enviar registro e continuar a ronda</button>'+
+   '<fieldset class="checkpoint-condition" data-curtain-observation-wrap hidden><legend>Condições encontradas neste ponto</legend>'+
+   '<label><input type="radio" name="point-state" value="ok" checked> Tudo dentro do esperado</label>'+
+   '<label><input type="radio" name="point-state" value="attention"> Situação que exige atenção</label>'+
+   '<label class="checkpoint-note"><span data-curtain-note-hint>Observações complementares (opcionais).</span><textarea maxlength="1400" placeholder="Descreva as condições do ponto e, se necessário, informe o que encontrou." data-checkpoint-observation></textarea></label></fieldset>'+
+   '<button class="checkpoint-submit" data-curtain-submit disabled>Finalizar ponto e seguir para o próximo</button>'+
    '<small class="checkpoint-footnote">As observações, evidências e horário são registrados no dispositivo. A entrega remota exige sessão operacional autenticada.</small>'+
    '</div>';
-  document.body.append(root);root.querySelector('textarea').addEventListener('input',status);
+  document.body.append(root);root.querySelector('textarea').addEventListener('input',status);root.querySelectorAll('[name="point-state"]').forEach(input=>input.addEventListener('change',status));
   root.querySelector('[data-curtain-torch]').addEventListener('click',toggleTorch);
   root.querySelector('[data-curtain-submit]').addEventListener('click',submit);
   status();root.querySelector('textarea').focus({preventScroll:true});
@@ -60,14 +73,24 @@ export function createCheckpointCurtain(api){
  async function submit(){
   const {session:s,locationFix}=api.get(),p=currentCheckpoint(s),checkpoint=s?.checkpoints[s.index];
   if(!p||!canCompletePoint(s)){status();api.notify('Aguarde a permanência com GPS confiável.');return}
-  const observation=root.querySelector('textarea')?.value.trim()||'';
-  if(observation.length<10){api.notify('Descreva o estado do ponto com pelo menos 10 caracteres.');return}
+  const attention=root.querySelector('[name="point-state"]:checked')?.value==='attention';
+  const note=root.querySelector('textarea')?.value.trim()||'';
+  if(attention&&note.length<10){api.notify('Descreva a situação que exige atenção com pelo menos 10 caracteres.');return}
+  const observation=attention?'Atenção no ponto: '+note:note?'Tudo dentro do esperado. '+note:'Tudo dentro do esperado, sem anormalidades.';
+  if(saving)return;saving=true;status();
   const files=[root.querySelector('[data-point-photo]')?.files?.[0],root.querySelector('[data-point-video]')?.files?.[0]].filter(Boolean);
   checkpoint.observation=observation;checkpoint.observedAt=Date.now();
   checkpoint.position=locationFix?{lat:locationFix.lat,lng:locationFix.lng,accuracy:locationFix.accuracy,at:locationFix.at}:null;
-  await api.recordCheckpoint(checkpoint,files,p);
-  if(!completePoint(s,Date.now())){api.notify('A localização mudou. Não foi possível concluir o ponto.');status();return}
-  api.save();close();api.render();api.notify('Ponto e observações registrados.');
+  try{
+   if(!completePoint(s,Date.now())){saving=false;api.notify('A localização mudou. Não foi possível concluir o ponto.');status();return}
+   checkpoint.condition=attention?'attention':'ok';
+   await api.recordCheckpoint(checkpoint,files,p);
+   api.save();close();api.render();
+   api.notify(currentCheckpoint(s)?'Ponto registrado. Siga para o próximo ponto.':'Todos os pontos registrados. Retorne à base.');
+  }catch(err){
+   saving=false;api.save();status();
+   api.notify('Falha ao armazenar a verificação. Confira o histórico antes de prosseguir.');
+  }
  }
  document.addEventListener('visibilitychange',()=>{if(document.hidden)closeTorch()});
  return {open,close,status};
