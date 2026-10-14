@@ -48,3 +48,16 @@ main{max-width:1420px;margin:auto;padding:24px clamp(14px,3vw,30px)}.workspace{d
  .central-panic-dialog{max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
  .central-panic-dialog .panic-buttons{position:sticky;bottom:0;background:#19191ef5;padding:8px 0}
 }
+
+
+/* Ações rápidas: amarelo (alerta), azul (ocorrência), branco (mensagem).
+   O botão flutuante de pânico mantém integralmente suas regras anteriores. */
+.central-quick-action[data-compose="alert"]{background:#facc15;border-color:#f4b400;color:#262106}
+.central-quick-action[data-compose="alert"] svg{color:#262106}
+.central-quick-action[data-compose="alert"]:is(:hover,.selected){background:#ffe45c;border-color:#ffed97;box-shadow:0 0 0 2px #facc1530}
+.central-quick-action[data-compose="incident"]{background:#1677cc;border-color:#69b8ff;color:#fff}
+.central-quick-action[data-compose="incident"] svg{color:#fff}
+.central-quick-action[data-compose="incident"]:is(:hover,.selected){background:#258fe6;border-color:#a0d4ff;box-shadow:0 0 0 2px #1677cc38}
+.central-quick-action[data-compose="message"]{background:#f8fafc;border-color:#fff;color:#111c2a}
+.central-quick-action[data-compose="message"] svg{color:#163551}
+.central-quick-action[data-compose="message"]:is(:hover,.selected){background:#e5eef8;border-color:#b7d1e8;box-shadow:0 0 0 2px #d6e7f550}
