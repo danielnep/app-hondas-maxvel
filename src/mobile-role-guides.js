@@ -3,6 +3,17 @@
  * Não atribui funcionamento remoto aos recursos demonstrativos.
  */
 export const MOBILE_GUIDES = Object.freeze({
+  ronda: Object.freeze({
+    title:'Operação de Ronda',
+    subtitle:'Execute a rota passo a passo, acompanhe GPS e registre ocorrências.',
+    stages:Object.freeze([
+      Object.freeze({title:'Confira a área',body:'<p>Confira o vigia e a ronda selecionada. Na demonstração, nomes e rotas são fictícios. No acesso autenticado, cada pessoa precisa ter seu local cadastrado.</p>'}),
+      Object.freeze({title:'GPS e sequência',body:'<p>Na ronda real, permita localização e verifique a precisão. Siga os pontos na ordem. O padrão é raio de 25 m com 30 segundos de permanência contínua, ou a regra configurada.</p><p>Sem sinal confiável, a validação deve aguardar. GPS ruim não comprova desvio.</p>'}),
+      Object.freeze({title:'Registre evidências',body:'<p>Confirme as etapas requeridas e registre as observações nos pontos. Anexe mídia nas ocorrências quando permitido e revise antes de enviar.</p>'}),
+      Object.freeze({title:'Comunicação e pânico',body:'<p>Use Ocorrência para fatos, Alerta para situações importantes e Mensagem para comunicação comum. O PÂNICO registra uma solicitação prioritária, e o botão 190 abre o discador quando necessário.</p>'}),
+      Object.freeze({title:'Finalize e consulte',body:'<p>Conclua os pontos e retorne conforme as instruções da ronda. Consulte o histórico com horários, GPS, observações e resultados.</p><p><strong>Atenção:</strong> dados desta avaliação ficam locais. O servidor só reconhece registros de contas autenticadas e efetivamente sincronizados.</p>'})
+    ])
+  }),
   operador: Object.freeze({
     title:'Central de Monitoramento',
     subtitle:'Acompanhe vigias, rondas e alertas com os controles da central.',
@@ -35,7 +46,7 @@ export const MOBILE_GUIDES = Object.freeze({
     stages:Object.freeze([
       Object.freeze({
         title:'Visão geral do painel',
-        body:'<p>O <strong>Administrativo</strong> reúne a visão global do cenário: indicadores, rondas, notificações, ocorrências e equipe.</p><ol><li>Abra <strong>Visão geral</strong> para ver os indicadores.</li><li>Confira o período ou contexto exibido antes de comparar números.</li><li>Use os atalhos de cada área para chegar aos registros.</li></ol>'
+        body:'<p>O <strong>Administrativo</strong> mostra indicadores, rondas recentes, notificações, ocorrências e equipe deste cenário.</p><ol><li>Abra <strong>Visão geral</strong> para conferir os indicadores.</li><li>Use <strong>Rondas</strong> para ver o vigia selecionado, mapa e histórico.</li><li>Na <strong>Central autenticada</strong>, a gestão ainda pode cadastrar rotas com pontos no mapa e acompanhar execuções reais sincronizadas.</li></ol>'
       }),
       Object.freeze({
         title:'Rondas e equipe',
