@@ -251,7 +251,7 @@ try{
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await state(page,width,height,'09-dashboard-administrativo');
-   if(width<=900)await checkRoleGuide(page,width,height,'admin','Painel Administrativo');
+   if(width<=900)await checkRoleGuide(page,width,height,'admin','Administração e Gestão');
    if(!await page.locator('.dashboard-v4').count())throw Error('Administrativo sem dashboard.');
    if(width<=900){
     await click(page,'[data-action="open-mobile-menu"]');
