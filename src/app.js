@@ -224,11 +224,12 @@ function installViewportViews(){
    nav.setAttribute('aria-label','Ferramentas da ronda');
    const groups={
     sim:extra.querySelector('.patrol-scenario-tools'),
+    verificacao:extra.querySelector('.patrol-verification-pane'),
     agenda:extra.querySelector('.my-schedule'),
     instrucoes:extra.querySelector('.patrol-help-details')
    };
    const stage=document.createElement('div');stage.className='ux-patrol-stage';
-   const options=[['sim','Simulação'],['agenda','Agenda'],['instrucoes','Instruções']];
+   const options=[['sim','Simulação'],['verificacao','Ponto'],['agenda','Agenda'],['instrucoes','Instruções']];
    for(const [key] of options){if(groups[key]){groups[key].dataset.uxToolsPane=key;stage.append(groups[key]);}}
    const visible=options.filter(([k])=>!!groups[k]);
    let current=visible.length?visible[0][0]:'agenda';
@@ -725,6 +726,7 @@ function phoneContent(){
        ${active&&point&&mode==='simulation'&&s.evidenceEnabled!==false?`<button type="button" class="patrol-evidence-link" data-action="point-evidence">${ic('clipboard')} Verificação ilustrativa do ponto ${s.index+1}</button>`:''}
        ${mySchedule()}
        ${patrolScenarioControls()}
+       ${active?'<section class="patrol-verification-pane" aria-label="Comprovação do ponto"></section>':''}
        <details class="patrol-help-details"><summary>${ic('help')} Instruções e pontos</summary>${coachHtml()}<div class="patrol-point-list">${route.points.map((p,i)=>`<button type="button" data-action="point-details" data-index="${i}" class="${s?.checkpoints[i]?.completedAt?'done':active&&s.index===i?'current':''}"><b>${s?.checkpoints[i]?.completedAt?ic('check'):i+1}</b><span>${esc(p.name)}</span></button>`).join('')}</div><button type="button" class="patrol-help-link" data-action="guide">${ic('help')} Abrir guia completo</button>${active&&mode==='simulation'&&point&&s.index<route.points.length-1?btn('Testar tentativa de pular ponto','demo-skip','small'):''}</details>
       </div>
     </div>

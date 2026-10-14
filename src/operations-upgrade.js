@@ -48,6 +48,10 @@ export function createDeviceStore(){
   delete:(name,id)=>transact(name,'readwrite',o=>o.delete(id))
  };
 }
+/** Exibe a comprovação apenas na ronda em andamento do próprio vigia. */
+export function canShowPatrolVerification({user,view,session}={}){
+ return user?.role==='ronda'&&view==='minha-ronda'&&session?.status==='active';
+}
 export function patrolInsights(sessions=[],programs=[]){
  const total=sessions.length,finished=sessions.filter(s=>s.status==='completed'),
   open=sessions.reduce((n,s)=>n+(s.incidents??[]).filter(i=>i.status!=='Resolvida').length,0),
@@ -297,14 +301,16 @@ export function createOperationsUpgrade(api){
    '</div>';
  }
  function decorate(){
-  const {user,view}=current();
+  const context=current();
+  const {user,view}=context;
   const dashboard=document.querySelector('.dashboard'),main=dashboard?.querySelector('.app-content');
   if(!main)return;
   if(user?.role==='ronda'){
    dashboard.insertAdjacentHTML('beforeend',panicButton());
    if(view==='minha-ronda'){
     main.querySelector('.patrol-action-heading')?.insertAdjacentHTML('afterend',communicationActions());
-    main.querySelector('.patrol-action-body')?.insertAdjacentHTML('beforeend',gpsQrRow());
+    if(canShowPatrolVerification(context))
+     main.querySelector('.patrol-verification-pane')?.insertAdjacentHTML('beforeend',gpsQrRow());
    }
   }
   if(user?.role==='admin'){

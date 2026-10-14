@@ -3589,3 +3589,9 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
 @media(max-width:900px){.patrol-communication-actions{gap:6px}.patrol-communication-actions button{font-size:11px;padding:9px 3px;min-height:86px}.ops-panic{width:84px!important;height:84px!important;min-height:84px!important;right:max(12px,env(safe-area-inset-right))!important;bottom:max(13px,env(safe-area-inset-bottom))!important}.patrol-workspace{padding-bottom:88px}}
 @media(max-width:350px){.patrol-communication-actions{grid-template-columns:1fr}.patrol-communication-actions button{flex-direction:row;justify-content:flex-start;min-height:52px;gap:12px;padding:10px 14px}}
 @media print{.patrol-communication-actions,.patrol-communication-note,.ops-panic{display:none!important}}
+
+/* FIX: verificacao somente nas ferramentas da ronda ativa; sem painel cortado na preparacao. */
+@media(max-width:900px){
+ .dashboard .ronda-page .ux-patrol-stage>.patrol-verification-pane[data-ux-tools-pane]{overflow-y:auto!important;overscroll-behavior:contain;padding:4px 7px 12px!important;}
+ .dashboard .ronda-page .patrol-verification-pane .ops-added-section{margin:0!important;}
+}
