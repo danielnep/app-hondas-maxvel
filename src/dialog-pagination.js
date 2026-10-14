@@ -2,7 +2,7 @@
  * Reorganiza apenas apresentação DOM, preservando campos e handlers.
  */
 export function installDialogPagination(dialog){
- if(!dialog?.open||window.innerWidth>900||dialog.querySelector('.round-wizard,.ux06-sheet'))return;
+ if(!dialog?.open||window.innerWidth>900||dialog.querySelector('.round-wizard,.ux06-sheet')||dialog.classList.contains('guide-dialog'))return;
  const maxOuter=Math.max(230,window.innerHeight-46);
  const roots=[...dialog.children].filter(el=>!el.classList.contains('dialog-close'));
  const root=roots.length===1?roots[0]:dialog;
