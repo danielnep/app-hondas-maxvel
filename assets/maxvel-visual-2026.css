@@ -201,3 +201,130 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
  .field-torch-fab,.field-torch-fab svg,.dashboard .ronda-page .ops-panic,
  .dashboard .ronda-page .patrol-communication-actions button{animation:none!important;transition:none!important}
 }
+
+/* 14/10/2026 · DESKTOP OPERACIONAL
+   Nas centrais, mapa e contexto não competem por uma única aba.
+   Tablet/mobile continuam com uma área por vez; desktop oferece supervisão paralela. */
+@media (min-width:1280px){
+ .dashboard .app-content:has(.ux-wide-workspace,.v4-wide-workspace){
+  display:block!important;min-height:0!important;overflow-y:auto!important;
+  overflow-x:hidden!important;padding:18px clamp(18px,1.8vw,32px) 30px!important;
+  scrollbar-width:thin;scroll-padding-top:16px;
+ }
+ .dashboard .ux-wide-workspace .ux-operations-tabs,
+ .dashboard .v4-wide-workspace .v4-dashboard-tabs{display:none!important}
+ .dashboard .ux-wide-workspace.operations-page,
+ .dashboard .v4-wide-workspace.dashboard-v4{
+  display:block!important;height:auto!important;min-height:100%!important;
+  max-height:none!important;overflow:visible!important;
+ }
+ /* COI e Monitoramento: quadro geográfico à esquerda; filas e histórico à direita. */
+ .dashboard .ux-wide-workspace .ux-operations-surface{
+  display:grid!important;
+  grid-template-columns:minmax(0,1.55fr) minmax(320px,.9fr)!important;
+  grid-template-rows:auto minmax(270px,auto) minmax(225px,auto)!important;
+  align-items:stretch!important;gap:14px!important;width:100%!important;
+  height:auto!important;min-height:0!important;overflow:visible!important;
+ }
+ .dashboard .ux-wide-workspace .ux-operations-surface>.ops-metrics{
+  grid-column:1/-1!important;grid-row:1!important;display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:12px!important;margin:0!important;min-height:0!important;
+ }
+ .dashboard .ux-wide-workspace .ux-operations-surface>.ops-map-card{
+  grid-column:1!important;grid-row:2/span 2!important;
+  display:flex!important;flex-direction:column!important;min-height:510px!important;
+  height:100%!important;max-height:none!important;overflow:hidden!important;
+ }
+ .dashboard .ux-wide-workspace .ux-operations-surface>.ops-activity{
+  grid-column:2!important;grid-row:2!important;display:flex!important;
+  flex-direction:column!important;min-height:265px!important;height:auto!important;
+  max-height:425px!important;overflow:hidden!important;
+ }
+ .dashboard .ux-wide-workspace .ux-operations-surface>.ops-recent{
+  grid-column:2!important;grid-row:3!important;display:flex!important;
+  flex-direction:column!important;min-height:215px!important;overflow:hidden!important;
+ }
+ .dashboard .ux-wide-workspace .ops-workspace:empty{display:none!important}
+ .dashboard .ux-wide-workspace .ops-map-card .ops-map-stage{
+  display:flex!important;flex:1 1 auto!important;min-height:420px!important;
+  height:auto!important;overflow:hidden!important;
+ }
+ .dashboard .ux-wide-workspace .ops-map-card .map-container.large{
+  width:100%!important;height:100%!important;min-height:420px!important;
+ }
+ .dashboard .ux-wide-workspace .ops-activity .ops-alert-list,
+ .dashboard .ux-wide-workspace .ops-recent .table-wrap{
+  overflow-y:auto!important;min-height:0!important;max-height:310px!important;
+  scrollbar-width:thin;overscroll-behavior:contain;
+ }
+ /* Administração: resumo, cartografia central, prioridades e equipe lado a lado. */
+ .dashboard .v4-wide-workspace .v4-stage{
+  display:grid!important;grid-template-columns:minmax(0,1.65fr) minmax(315px,.9fr)!important;
+  grid-template-rows:auto minmax(255px,auto) minmax(240px,auto) auto!important;
+  gap:14px!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow:visible!important;align-items:stretch!important;
+ }
+ .dashboard .v4-wide-workspace .v4-stage>.v4-pane{
+  width:auto!important;height:auto!important;max-height:none!important;
+  min-height:0!important;overflow:hidden!important;flex:initial!important;
+  padding:14px!important;border-radius:14px!important;
+  border:1px solid rgba(188,203,214,.18)!important;
+  background:rgba(20,20,24,.78)!important;
+ }
+ .dashboard .v4-management.v4-wide-workspace .v4-summary-pane{
+  grid-column:1/-1!important;grid-row:1!important;
+ }
+ .dashboard .v4-management.v4-wide-workspace .v4-map-pane{
+  grid-column:1!important;grid-row:2/span 2!important;min-height:530px!important;
+ }
+ .dashboard .v4-management.v4-wide-workspace .v4-alerts-pane{
+  grid-column:2!important;grid-row:2!important;min-height:250px!important;
+ }
+ .dashboard .v4-management.v4-wide-workspace .v4-team-pane{
+  grid-column:2!important;grid-row:3!important;min-height:240px!important;
+ }
+ .dashboard .v4-management.v4-wide-workspace .v4-insights-pane{
+  grid-column:1/-1!important;grid-row:4!important;
+ }
+ .dashboard .v4-wide-workspace .v4-map-pane .ops-map-card{
+  height:100%!important;min-height:440px!important;
+ }
+ .dashboard .v4-wide-workspace .v4-map-pane .ops-map-stage,
+ .dashboard .v4-wide-workspace .v4-map-pane .map-container.large{
+  height:100%!important;min-height:380px!important;flex:1 1 auto!important;
+ }
+ .dashboard .v4-wide-workspace .v4-alerts-list,
+ .dashboard .v4-wide-workspace .v4-history-list,
+ .dashboard .v4-wide-workspace .v4-team-list{
+  overflow-y:auto!important;max-height:295px!important;min-height:0!important;
+  scrollbar-width:thin;overscroll-behavior:contain;
+ }
+ .dashboard .v4-wide-workspace .v4-pane-head h2{font-size:clamp(13px,1vw,16px)!important}
+ .dashboard .v4-wide-workspace .v4-pane-head{min-height:36px!important}
+ .dashboard .v4-wide-workspace .v4-summary-metrics{
+  display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:9px!important;
+ }
+ .dashboard .v4-wide-workspace .v4-summary-metric strong{font-size:clamp(19px,1.65vw,30px)!important}
+ .dashboard .v4-wide-workspace .v4-insights-list{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  align-items:start!important;gap:10px!important;
+ }
+ .dashboard .v4-wide-workspace .v4-insight-row{min-width:0!important}
+ /* Navegação e diálogos com áreas úteis de leitura, inclusive teclado/mouse. */
+ .dashboard .sidebar{scrollbar-width:thin}
+ .dashboard .ux-wide-workspace button:focus-visible,
+ .dashboard .v4-wide-workspace button:focus-visible{outline:2px solid #62c3e8!important;outline-offset:3px!important}
+ #dialog[open]:not(.guide-dialog):not(.ux06-fullscreen){
+  max-height:min(88dvh,900px)!important;overflow-y:auto!important;
+  overscroll-behavior:contain;scrollbar-width:thin;
+ }
+}
+@media (min-width:1280px) and (max-height:730px){
+ .dashboard .ux-wide-workspace .ux-operations-surface>.ops-map-card{min-height:420px!important}
+ .dashboard .v4-management.v4-wide-workspace .v4-map-pane{min-height:440px!important}
+}
+@media (prefers-reduced-motion:reduce){
+ .dashboard .ux-wide-workspace *,
+ .dashboard .v4-wide-workspace *{scroll-behavior:auto!important}
+}
