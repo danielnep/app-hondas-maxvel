@@ -20,7 +20,7 @@ test('API: senha, perfis, mensagens internas, idempotência e upload reservado',
   assert.equal((await post('/login',{email:'master@example.test',password:'wrong'})).status,401);
   const root=await post('/login',{email:'master@example.test',password:process.env.RONDA_PRO_MASTER_PASSWORD});
   assert.equal(root.status,200);const {token:master}=await root.json();
-  const newUser=await post('/users',{name:'Vigia Teste',email:'ronda@example.test',password:'PasswordEnough1234!',role:'ronda',description:'Atua no turno noturno e realiza a rota designada'},master);
+  const newUser=await post('/users',{name:'Vigia Teste',email:'ronda@example.test',password:'PasswordEnough1234!',role:'ronda',site:'Maxvel Centro',description:'Atua no turno noturno e realiza a rota designada'},master);
   assert.equal(newUser.status,201);
   const login=await post('/login',{email:'ronda@example.test',password:'PasswordEnough1234!'});assert.equal(login.status,200);
   const {token:guard}=await login.json();
