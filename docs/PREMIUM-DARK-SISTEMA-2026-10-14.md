@@ -22,3 +22,12 @@ O usuário aprovou replicar a repaginação Premium Dark do cockpit no restante 
 - `npm run check`, `npm test` e auditorias GitHub Actions do projeto; teste estático `premium-dark-system.test.mjs`.
 - Conferência obrigatória em dispositivo real e navegador com estados de erro, tabelas grandes, modal com teclado e fonte ampliada.
 - Ambiente PWA atualiza cache v24; publicação e sincronização de serviço externo devem ser confirmadas por commit.
+
+## Revisão Uniform aprovada em 14/10/2026
+- Remoção de degradês decorativos nas superfícies dos estilos ativos do sistema, Central e cockpit.
+- Raios de referência de 7px nos controles, 10px nos painéis e 14px nas janelas; ícones de pânico seguem circulares.
+- Abas do dashboard em uma linha de cinco, sem card envolvente; listas de equipe, alertas e histórico com divisórias, sem cards individuais.
+- Indicadores compactos na mesma faixa; somente mapas, formulários e blocos independentes mantêm contêiner.
+- Fundo geral preto grafite, vermelho Maxvel, celeste atual e alertas semânticos preservados.
+- Motor de ronda, cronômetro sobreposto, permissões, dados e backend não alterados.
+- Editadas folhas CSS existentes; nenhuma folha extra foi criada.

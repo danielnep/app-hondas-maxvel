@@ -18,9 +18,9 @@
   --mxp-cyan:#38bdf8;
   --mxp-alert:#f7cb35;
   --mxp-green:#10b981;
-  --mxp-r-sm:9px;
-  --mxp-r-md:13px;
-  --mxp-r-lg:18px;
+  --mxp-r-sm:7px;
+  --mxp-r-md:10px;
+  --mxp-r-lg:14px;
   --mxp-speed:180ms;
   --mxp-ease:cubic-bezier(.2,.72,.2,1);
 }
@@ -84,7 +84,7 @@ html,body{background:var(--mxp-canvas);color:var(--mxp-ink)}
   .v4-map-pane,.v4-alerts-pane,.v4-team-pane,.v4-insights-pane,
   .demo-role-site,.demo-role-columns>section,.demo-role-columns>form
 ){
-  background:linear-gradient(155deg,rgba(34,34,40,.92),rgba(17,17,20,.93))!important;
+  background:#19191e!important;
   color:var(--mxp-ink)!important;
   border:1px solid var(--mxp-rule)!important;
   border-radius:var(--mxp-r-md)!important;
@@ -98,7 +98,7 @@ html,body{background:var(--mxp-canvas);color:var(--mxp-ink)}
 .dashboard .app-content:not(.ronda-page) :is(
   .kpi,.v4-summary-metric,.ops-metric,.demo-role-metrics>div
 ){
-  background:linear-gradient(145deg,#292930,#1b1b20)!important;
+  background:#24242b!important;
   border:1px solid var(--mxp-rule)!important;
   border-radius:11px!important;
   box-shadow:none!important;
@@ -199,7 +199,7 @@ html,body{background:var(--mxp-canvas);color:var(--mxp-ink)}
 }
 /* Modais são sobreposições, não mais uma peça no fluxo da página. */
 #dialog[open]:not(.guide-dialog):not(.ux06-fullscreen):not(.role-picker-dialog){
-  background:linear-gradient(150deg,#24242a,#111115)!important;
+  background:#19191e!important;
   border:1px solid var(--mxp-rule-strong)!important;
   border-top:3px solid var(--mxp-red)!important;
   border-radius:var(--mxp-r-lg)!important;
@@ -229,7 +229,7 @@ html,body{background:var(--mxp-canvas);color:var(--mxp-ink)}
 .entry-screen :is(.entry-panel,.entry-aside,.entry-aside-stat){
   border:1px solid var(--mxp-rule)!important;
   border-radius:var(--mxp-r-md)!important;
-  background:linear-gradient(150deg,#24242a,#111114)!important;
+  background:#19191e!important;
   box-shadow:0 16px 44px rgba(0,0,0,.27)!important;
 }
 .entry-screen .entry-panel{border-top:2px solid rgba(245,34,61,.7)!important}
@@ -284,7 +284,7 @@ body:has(#central-root) main{max-width:1600px}
 #central-root .toolbar .eyebrow{color:#ffc2cc!important}
 #central-root .stack{gap:14px!important}
 #central-root :is(.surface,.ops-agenda-surface,.route-filter){
-  background:linear-gradient(155deg,rgba(34,34,39,.94),rgba(18,18,22,.95))!important;
+  background:#19191e!important;
   border:1px solid var(--mxp-rule)!important;
   border-radius:var(--mxp-r-md)!important;
   box-shadow:inset 0 1px rgba(255,255,255,.035)!important;
@@ -296,7 +296,7 @@ body:has(#central-root) main{max-width:1600px}
   padding:0!important;
 }
 #central-root :is(.metric,.ops-monitor-kpi){
-  background:linear-gradient(145deg,#2b2b31,#1d1d21)!important;
+  background:#24242b!important;
   border:1px solid var(--mxp-rule)!important;
   border-radius:10px!important;
   box-shadow:none!important;
@@ -359,7 +359,7 @@ body:has(#central-root) main{max-width:1600px}
 }
 #central-root button:not(.central-panic-fab):active:not(:disabled){transform:scale(.985)}
 #central-root button.primary{
-  background:linear-gradient(125deg,#e32c46,#c51e36)!important;
+  background:#e32c46!important;
   color:#fff!important;border-color:#f06073!important;
 }
 #central-root .ops-priority-toast.priority-panic{
@@ -448,4 +448,170 @@ body:has(#central-root) main{max-width:1600px}
   #central-root .surface,.dashboard .app-content .card{
     background:#fff!important;box-shadow:none!important;color:#111!important;
   }
+}
+
+
+/* Maxvel Premium Dark Uniform • 14/10/2026
+   Uma superfície, linhas contínuas e raios de 7/10/14px.
+   Cockpit map-first e lógica operacional preservados. */
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  width:100%!important;min-height:44px!important;gap:0!important;
+  flex-wrap:nowrap!important;padding:0!important;margin:8px 0 12px!important;
+  background:transparent!important;background-image:none!important;
+  border:0!important;border-bottom:1px solid var(--mxp-rule)!important;
+  border-radius:0!important;box-shadow:none!important;overflow:visible!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs>button{
+  flex:none!important;min-width:0!important;width:100%!important;min-height:44px!important;
+  padding:8px 1px!important;margin:0!important;
+  background:transparent!important;background-image:none!important;
+  border:0!important;border-bottom:2px solid transparent!important;
+  border-radius:0!important;box-shadow:none!important;
+  color:#b8beca!important;font-size:clamp(10px,2.9vw,13px)!important;
+  font-weight:650!important;white-space:nowrap!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs>button[aria-selected="true"]{
+  background:rgba(56,189,248,.07)!important;background-image:none!important;
+  border:0!important;border-bottom:2px solid var(--mxp-cyan)!important;
+  border-radius:0!important;box-shadow:none!important;color:#f4f9fc!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-stage{
+  gap:0!important;background:transparent!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-pane:not(.v4-map-pane){
+  background:transparent!important;background-image:none!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+  padding:clamp(6px,2.6vw,15px) 0!important;min-width:0!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-map-pane{
+  background:#19191e!important;background-image:none!important;
+  border:1px solid var(--mxp-rule)!important;
+  border-radius:10px!important;box-shadow:none!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-pane-head{
+  background:transparent!important;border:0!important;
+  border-bottom:1px solid var(--mxp-rule)!important;
+  border-radius:0!important;margin:0 0 5px!important;padding:6px 0 11px!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-pane-head h2{
+  font-size:clamp(16px,4.4vw,22px)!important;letter-spacing:-.014em!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 :is(
+  .v4-team-list,.v4-history-list,.v4-alerts-list,.v4-insights-list){
+  display:flex!important;flex-direction:column!important;
+  gap:0!important;background:transparent!important;
+  border:0!important;box-shadow:none!important;min-width:0!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 :is(
+  .v4-team-row,.v4-history-row,.v4-insight-row,.event-item){
+  display:flex!important;align-items:center!important;
+  padding:11px 3px!important;min-height:66px!important;margin:0!important;
+  border:0!important;border-bottom:1px solid var(--mxp-rule)!important;
+  border-radius:0!important;background:transparent!important;
+  background-image:none!important;box-shadow:none!important;gap:10px!important;
+  color:var(--mxp-ink)!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 :is(
+  .v4-team-row,.v4-history-row,.v4-insight-row,.event-item):hover{
+  background:rgba(144,160,180,.075)!important;box-shadow:none!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-team-avatar{
+  display:grid!important;place-items:center!important;
+  min-width:40px!important;width:40px!important;height:40px!important;
+  border:1px solid #41414a!important;border-radius:7px!important;
+  background:#24242b!important;background-image:none!important;
+  box-shadow:none!important;color:#f4f5f7!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-team-copy{
+  min-width:0!important;flex:1 1 auto!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-team-copy strong{
+  font-size:clamp(14px,3.8vw,17px)!important;line-height:1.2!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-team-copy small{
+  font-size:12px!important;color:var(--mxp-muted)!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-team-status{
+  font-size:10px!important;color:#cbd0d8!important;
+  white-space:nowrap!important;flex:0 0 auto!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-ethics-note{
+  border:0!important;border-top:1px solid var(--mxp-rule)!important;
+  background:transparent!important;padding:10px 0!important;
+  margin:12px 0 0!important;color:var(--mxp-muted)!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-summary-metrics,
+#central-root .cards{
+  background:#19191e!important;background-image:none!important;
+  border:1px solid var(--mxp-rule)!important;border-radius:10px!important;
+  box-shadow:none!important;gap:0!important;padding:3px!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-summary-metric,
+#central-root .cards>.metric{
+  background:transparent!important;background-image:none!important;
+  border:0!important;border-right:1px solid var(--mxp-rule)!important;
+  border-radius:0!important;box-shadow:none!important;
+  padding:12px 9px!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-summary-metric:last-child,
+#central-root .cards>.metric:last-child{border-right:0!important}
+.dashboard .app-content:not(.ronda-page) :is(
+  .schedule-row,.team-row,.list-row,.event-item,.demo-ops-row){
+  background:transparent!important;background-image:none!important;
+  border:0!important;border-bottom:1px solid var(--mxp-rule)!important;
+  border-radius:0!important;box-shadow:none!important;margin-top:0!important;
+}
+.dashboard .app-content:not(.ronda-page) :is(.report-card,.ops-card,.card){
+  background:#19191e!important;background-image:none!important;
+  border-radius:10px!important;box-shadow:none!important;
+}
+.dashboard .app-content:not(.ronda-page) .v4-pane :is(.card,.ops-card){
+  background:transparent!important;border:0!important;
+  padding:0!important;box-shadow:none!important;
+}
+#central-root .content>.stack>.surface:not(form){
+  background:transparent!important;background-image:none!important;
+  border:0!important;border-top:1px solid var(--mxp-rule)!important;
+  border-radius:0!important;box-shadow:none!important;padding:14px 0!important;
+}
+#central-root :is(.surface,.route-filter,.ops-agenda-surface){
+  background:#19191e!important;background-image:none!important;
+  border-radius:10px!important;box-shadow:none!important;
+}
+#central-root :is(.list-item,.ops-notification-row,.ops-dispatch-line,.ops-worker-row){
+  border-radius:0!important;border:0!important;
+  border-bottom:1px solid var(--mxp-rule)!important;
+  background:transparent!important;box-shadow:none!important;
+}
+#central-root :is(.ops-agenda-row,.route-line){
+  background:#19191e!important;background-image:none!important;
+  border-radius:10px!important;border:1px solid var(--mxp-rule)!important;
+}
+.dashboard :is(.button,.app-menu-button,.patrol-sheet-toggle,.ux06-expand-button),
+#central-root :is(button,.route-filter select),#dialog[open] :is(button,input,select,textarea){
+  border-radius:7px!important;
+}
+.dashboard :is(.ops-panic,.field-torch-fab),
+#central-root .central-panic-fab{border-radius:50%!important}
+#dialog[open]:not(.guide-dialog):not(.ux06-fullscreen):not(.role-picker-dialog){
+  border-radius:14px!important;
+}
+@media(max-width:900px){
+  .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs{
+    display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    overflow:visible!important;
+  }
+  .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs>button{
+    min-width:0!important;padding:8px 1px!important;
+  }
+  .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-pane:not(.v4-map-pane){
+    padding:3px 0!important;
+  }
+  #central-root .cards>.metric:nth-child(2n){border-right:0!important}
+  #central-root .cards>.metric:nth-child(-n+2){border-bottom:1px solid var(--mxp-rule)!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard .dashboard-v4 .v4-dashboard-tabs>button,
+  .dashboard .dashboard-v4 .v4-team-row{animation:none!important;transition:none!important}
 }

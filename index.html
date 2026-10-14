@@ -19,8 +19,8 @@
  <link rel="stylesheet" href="./assets/field-entry-v2.css?v=3">
  <link rel="stylesheet" href="./assets/evidence-direct.css?v=1">
  <link rel="stylesheet" href="./assets/maxvel-visual-2026.css?v=2">
- <link rel="stylesheet" href="./assets/rondas-pro-flow-20261014.css?v=2">
- <link rel="stylesheet" href="./assets/maxvel-premium-system-20261014.css?v=1">
+ <link rel="stylesheet" href="./assets/rondas-pro-flow-20261014.css?v=3">
+ <link rel="stylesheet" href="./assets/maxvel-premium-system-20261014.css?v=2">
 </head>
 <body>
  <a href="#main" class="skip-link">Ir para o conteúdo</a>
@@ -31,7 +31,7 @@
  <script type="module" src="./src/soft-polish.js?v=1"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.includes("appassets.androidplatform.net")){
-  const updateKey="rondas-pro-updated-v24";
+  const updateKey="rondas-pro-updated-v25";
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
     if(sessionStorage.getItem(updateKey))return;
     sessionStorage.setItem(updateKey,"1");
@@ -47,7 +47,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.in
       document.body.append(notice);
     }
   });
-  navigator.serviceWorker.register("./sw.js?v=24",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register("./sw.js?v=25",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
 }
 </script>
 </body>
