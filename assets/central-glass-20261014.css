@@ -1,0 +1,22 @@
+:root{--rp-dark:#09090b;--rp-ice:#bae6fd}
+body{background:#09090b!important;color:#f4f4f5}
+.ops-agenda-header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:18px;border-radius:22px;border:1px solid #52525b;background:linear-gradient(120deg,rgba(40,40,44,.9),rgba(9,9,11,.9));backdrop-filter:blur(18px)}
+.ops-agenda-header h1{font-size:clamp(22px,3vw,32px);margin:5px 0}
+.ops-agenda-live{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid #52525b;padding:8px 12px;border-radius:999px;font-size:12px}
+.ops-agenda-live strong{font-variant-numeric:tabular-nums;font-size:16px}
+.ops-live-led{height:8px;width:8px;border-radius:50%;background:#34d399;box-shadow:0 0 13px #34d399}
+.ops-agenda-surface{background:linear-gradient(130deg,rgba(39,39,42,.9),rgba(9,9,11,.94))!important;border:1px solid #52525b!important;border-radius:19px!important}
+.ops-agenda-list{display:grid;gap:11px;margin-top:15px}
+.ops-agenda-row{display:grid;grid-template-columns:minmax(125px,26%) minmax(0,1fr);gap:15px;padding:10px;border-radius:17px;border:1px solid #52525b;background:rgba(24,24,27,.75)}
+.ops-agenda-thumb{height:130px;overflow:hidden;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#27272a;font-size:11px;color:#a1a1aa}
+.ops-agenda-thumb .leaflet-tile-pane{filter:grayscale(.78) brightness(.78)}
+.ops-agenda-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.ops-agenda-copy>small{font-size:10px;color:#a1a1aa;text-transform:uppercase}
+.ops-agenda-copy h3{font-size:clamp(15px,2vw,20px);margin:0}
+.ops-agenda-facts{display:flex;flex-wrap:wrap;gap:8px 14px}
+.ops-agenda-facts span{font-size:11px;color:#a1a1aa}
+.ops-agenda-facts b{color:#f4f4f5}
+.ops-agenda-copy .pill{border-radius:999px;margin-top:auto}
+.ops-monitor .toolbar>button{border-radius:999px!important;min-height:42px!important;border:1px solid #7dd3fc!important}
+@media(max-width:700px){.ops-agenda-header{flex-direction:column;align-items:flex-start}.ops-agenda-row{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.ops-agenda-row{transition:none}}
