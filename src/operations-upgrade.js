@@ -1,4 +1,4 @@
-import {evidenceButtons} from './media-capture.js';
+import {evidenceButtons,createMediaCapture} from './media-capture.js';
 /** Rondas Pro: ampliação aditiva da demonstração operacional.
  * Persistência em IndexedDB no dispositivo; em Android o trajeto também usa SQLite nativo.
  * Sem API de produção, "pendente de envio" nunca significa entregue remotamente.
@@ -104,6 +104,7 @@ function section(title,body,sub=''){
 
 export function createOperationsUpgrade(api){
  const store=createDeviceStore();
+ const evidenceCapture=createMediaCapture({notify:api.notify});
  let events=[],lastFixSaved=0,lastReportFingerprint='',cameraStream=null,scanning=false,lastBattery=null,lastBatterySaved=0;
  let alertTemplates=JSON.parse(localStorage.getItem('rondas-pro-local-alert-templates')||'null')||ALERT_PRESETS.map(x=>({...x}));
  const batteryApi=async()=>{
@@ -437,6 +438,34 @@ export function createOperationsUpgrade(api){
    enableHighAccuracy:true,timeout:12000,maximumAge:0
   });
  }
+ document.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-evidence-kind],[data-evidence-remove]');
+  if(!button)return;
+  const host=button.closest('.ops-media-fields');
+  if(!host)return;
+  event.preventDefault();event.stopPropagation();
+  const form=host.closest('form');
+  if(!form)return;
+  const list=host.querySelector('[data-evidence-attachments]');
+  if(button.hasAttribute('data-evidence-remove')){
+   const index=Number(button.dataset.evidenceRemove);
+   if(Number.isInteger(index))form.__evidenceFiles?.splice(index,1);
+  }else{
+   try{
+    const file=await evidenceCapture.request(button.dataset.evidenceKind);
+    if(!form.isConnected)return;
+    if(!file?.size||file.size>25*1024*1024){api.notify('O arquivo deve ter no máximo 25 MB.');return;}
+    form.__evidenceFiles??=[];
+    if(form.__evidenceFiles.length>=3){api.notify('Limite de três evidências por registro.');return;}
+    form.__evidenceFiles.push(file);
+   }catch(error){if(!/cancelad|Nenhuma evidência/i.test(error.message))api.notify(error.message);}
+  }
+  if(list&&form.isConnected){
+   list.innerHTML=form.__evidenceFiles?.length
+    ?form.__evidenceFiles.map((file,i)=>'<span class="attached-file">'+safe(file.name)+' <button type="button" data-evidence-remove="'+i+'" aria-label="Remover evidência">×</button></span>').join('')
+    :'Nenhuma evidência anexada.';
+  }
+ },true);
  document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-ops]');if(!el)return;
   e.preventDefault();e.stopPropagation();
