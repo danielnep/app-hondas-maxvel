@@ -3,6 +3,7 @@ import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {dirname,resolve,join} from 'node:path';
 import {randomBytes,scryptSync,timingSafeEqual,createHash,randomUUID} from 'node:crypto';
 import {addTrackSample} from '../src/field-intelligence.js';
+import {validateConclusion} from '../src/conclusion-validation.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
 const roles=['ronda','operador','admin','master','coi','cliente','vistoriador'];
@@ -42,7 +43,9 @@ function initialize(){
   'CREATE TABLE IF NOT EXISTS email_jobs(event_id TEXT PRIMARY KEY,status TEXT NOT NULL,last_error TEXT,at INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,action TEXT NOT NULL,subject_id TEXT,at INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS planned_routes(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,site TEXT NOT NULL,name TEXT NOT NULL,points TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,created_by TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))',
-  'CREATE INDEX IF NOT EXISTS idx_planned_routes_user ON planned_routes(user_id,updated_at)'
+  'CREATE INDEX IF NOT EXISTS idx_planned_routes_user ON planned_routes(user_id,updated_at)',
+  'CREATE TABLE IF NOT EXISTS event_treatments(id TEXT PRIMARY KEY,event_id TEXT NOT NULL,author_id TEXT NOT NULL,from_status TEXT NOT NULL,to_status TEXT NOT NULL,conclusion TEXT NOT NULL,created_at INTEGER NOT NULL,FOREIGN KEY(event_id) REFERENCES events(id))',
+  'CREATE INDEX IF NOT EXISTS idx_treatment_event ON event_treatments(event_id,created_at)'
  ];for(const statement of ddl)db.exec(statement);
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
@@ -241,10 +244,25 @@ export function createOperationalApi(){
    if(review&&m==='POST'&&reviewer(a)){
     const ev=event(review[1]),d=serialize((await body(req)).toString())||{};
     if(!ev){resp(res,404,{error:'Não encontrado'});return true;}
-    if(!['aberta','em_analise','resolvida'].includes(d.status)||d.status==='resolvida'&&clean(d.note).length<10){resp(res,422,{error:'Estado ou justificativa inválidos'});return true;}
-    db.prepare('UPDATE events SET status=?,reviewer_id=?,reviewed_at=? WHERE id=?').run(d.status,a.id,now(),ev.id);
-    if(clean(d.note))db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(id(),ev.id,a.id,'system',clean(d.note).slice(0,4000),now());
-    audit(a,'event.review',ev.id);resp(res,200,{ok:true});return true;
+    const status=clean(d.status),validation=validateConclusion(d.conclusion??d.note);
+    if(!['aberta','em_analise','resolvida','encaminhada'].includes(status)||!validation.ok){resp(res,422,{error:validation.reason||'Situação inválida'});return true;}
+    if(status==='encaminhada'&&a.role==='ronda'){resp(res,403,{error:'Sem permissão para encaminhar'});return true;}
+    const at=now(),comment=validation.value;
+    db.exec('BEGIN IMMEDIATE');
+    try{
+     db.prepare('UPDATE events SET status=?,reviewer_id=?,reviewed_at=? WHERE id=?').run(status,a.id,at,ev.id);
+     db.prepare('INSERT INTO event_treatments(id,event_id,author_id,from_status,to_status,conclusion,created_at) VALUES(?,?,?,?,?,?,?)')
+      .run(id(),ev.id,a.id,ev.status,status,comment,at);
+     db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)')
+      .run(id(),ev.id,a.id,'system','Conclusão ('+status+'): '+comment,at);
+     db.exec('COMMIT');
+    }catch(error){db.exec('ROLLBACK');throw error}
+    audit(a,'event.review.'+status,ev.id);resp(res,200,{ok:true,status,treatedAt:at});return true;
+   }
+   if(p==='/api/event-treatments'&&m==='GET'&&reviewer(a)){
+    const limit=Math.min(2000,Math.max(1,Number(u.searchParams.get('limit'))||500));
+    const rows=db.prepare('SELECT t.*,reviewer.name concluded_by,worker.name reporter_name,e.kind,e.description,e.occurred_at,e.site,e.user_id FROM event_treatments t JOIN events e ON e.id=t.event_id JOIN users reviewer ON reviewer.id=t.author_id JOIN users worker ON worker.id=e.user_id ORDER BY t.created_at DESC LIMIT ?').all(limit);
+    resp(res,200,{treatments:rows});return true;
    }
    if(p==='/api/templates'&&m==='GET'){const rows=reviewer(a)?db.prepare('SELECT * FROM templates').all():db.prepare("SELECT id,title,trigger,priority,enabled,cooldown_min FROM templates WHERE enabled=1 AND trigger='manual'").all();resp(res,200,{templates:rows});return true;}
    if(p==='/api/templates'&&m==='POST'&&manager(a)){
