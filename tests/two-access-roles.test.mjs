@@ -14,9 +14,9 @@ test('as áreas de avaliação incluem vigia, monitoramento, COI, cliente, visto
  const nav=range(app,'const allNav=','\nconst roleName=');
  for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])assert.match(nav,new RegExp(role+':'));
  for(const obsolete of ['supervisor','gestor'])assert.doesNotMatch(nav,new RegExp(obsolete+':'));
- const chooser=range(app,'function loginDialog(){','function startDialog(){');
- for(const [role,label] of [['ronda','Vigia'],['operador','Central de Monitoramento'],['coi','COI'],['cliente','Cliente'],['vistoriador','Vistoriador'],['admin','Administrativo']])
-  assert.ok(chooser.includes("['"+role+"','"+label+"'"),role+' está disponível na escolha inicial');
+ assert.doesNotMatch(app,/function loginDialog\(\)/,'A demonstração não deve exibir formulário de acesso');
+ assert.doesNotMatch(app,/id="login-form"/,'Sem tela de login/seleção obrigatória na demo');
+ assert.match(app,/if\(act==='login'\)\{beginSimulation\(/,'O primeiro acesso abre a demonstração diretamente');
  const picker=range(app,"if(act==='sim-role-picker'){","if(act==='schedule-tab')");
  for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])
   assert.ok(picker.includes("['"+role+"',"),'perfil '+role+' disponível no seletor');
