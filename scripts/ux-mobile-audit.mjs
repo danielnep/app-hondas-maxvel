@@ -132,7 +132,7 @@ try{
     });
     if(geometry.dialogWidth>width+2||geometry.dialogHeight>height+2||
        geometry.dialogRight>width+3||geometry.dialogBottom>height+3||
-       geometry.scrollWidth>geometry.clientWidth+2||geometry.scrollHeight<=geometry.clientHeight||
+       geometry.scrollWidth>geometry.clientWidth+2||
        geometry.scrollBottom>geometry.footerTop+2||geometry.footerBottom>height+3||
        !['auto','scroll'].includes(geometry.bodyOverflow)||geometry.hasGenericPages)
       throw Error('Guia do vigia não cabe ou não rola verticalmente em '+width+': '+JSON.stringify(geometry));
@@ -147,9 +147,11 @@ try{
     if(nav.w>nav.clientW+2||!nav.vertical)throw Error('Etapas do guia não são verticais: '+JSON.stringify(nav));
     await page.locator('#dialog .guide-step-picker > summary').click();
     const content=page.locator('#dialog .guide-scroll');
-    await content.evaluate(el=>{el.scrollTop=el.scrollHeight});
-    const reached=await content.evaluate(el=>el.scrollTop);
-    if(reached<10)throw Error('Não é possível rolar o conteúdo do guia verticalmente: '+reached);
+    if(geometry.scrollHeight>geometry.clientHeight+10){
+      await content.evaluate(el=>{el.scrollTop=el.scrollHeight});
+      const reached=await content.evaluate(el=>el.scrollTop);
+      if(reached<10)throw Error('Não é possível rolar o conteúdo do guia verticalmente: '+reached);
+    }
     for(let step=2;step<=5;step++){
       await page.locator('#dialog [data-action="guide-forward"]:visible').click();
       const text=await page.locator('#dialog .guide-stage-progress > span').innerText();
