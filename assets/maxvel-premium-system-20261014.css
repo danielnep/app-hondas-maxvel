@@ -659,3 +659,272 @@ body:has(#central-root) main{max-width:1600px}
 @media(prefers-reduced-motion:reduce){
   .checkpoint-curtain .checkpoint-view-action{transition:none}
 }
+
+
+/* ── RONDAS PRO 2.0 · design de tarefas ───────────────────────────────
+ * Camada única de acabamento no stylesheet transversal existente.
+ * Reaproveita tokens Maxvel e não substitui cores oficiais/semânticas.
+ * Perfil / contexto / ação / confirmação; mobile é composição própria.
+ * A refatoração de folhas legadas precisa preservar os testes e ocorre à parte.
+ */
+:root{
+  --rp2-space-1:4px;--rp2-space-2:8px;--rp2-space-3:12px;
+  --rp2-space-4:16px;--rp2-space-5:20px;--rp2-space-6:24px;
+  --rp2-focus:var(--mxp-cyan);--rp2-panel:var(--mxp-panel);
+}
+#central-root .workspace.rp2-workspace{gap:clamp(12px,2vw,26px);align-items:start}
+#central-root .side.rp2-role-nav{
+  display:flex;flex-direction:column;gap:6px;min-width:0;
+  border-right:1px solid var(--mxp-rule);padding:8px 14px 12px 0;
+  overflow:visible;
+}
+#central-root .rp2-nav-eyebrow{
+  color:var(--mxp-muted);font-size:10px;letter-spacing:.13em;
+  font-weight:750;padding:8px 12px 6px;
+}
+#central-root .rp2-nav-primary,
+#central-root .rp2-nav-secondary-items{
+  display:grid;gap:4px;min-width:0;
+}
+#central-root .rp2-nav-item{
+  min-width:0;min-height:46px;display:flex;align-items:center;gap:11px;
+  text-align:left;font-size:13px;font-weight:600;
+  line-height:1.35;white-space:normal;padding:10px 12px;
+  border-radius:var(--mxp-r-sm);transition:background 150ms ease,color 150ms ease;
+}
+#central-root .rp2-nav-item svg{
+  width:19px;height:19px;flex:0 0 19px;
+  color:var(--mxp-muted);
+}
+#central-root .rp2-nav-item.active{
+  color:var(--mxp-ink)!important;
+  background:rgba(245,34,61,.13)!important;
+  box-shadow:inset 3px 0 0 var(--mxp-red)!important;
+}
+#central-root .rp2-nav-item.active svg{color:var(--mxp-red)}
+#central-root .rp2-nav-secondary{min-width:0;border-top:1px solid var(--mxp-rule);padding-top:8px}
+#central-root .rp2-nav-secondary summary{
+  color:var(--mxp-muted);font-weight:650;font-size:12px;
+  cursor:pointer;padding:10px 12px;
+  border-radius:var(--mxp-r-sm);list-style:none;
+  display:flex;align-items:center;justify-content:space-between;
+}
+#central-root .rp2-nav-secondary summary::-webkit-details-marker{display:none}
+#central-root .rp2-nav-secondary summary:hover{background:var(--mxp-elevated)}
+#central-root .rp2-nav-secondary[open] summary{color:var(--mxp-ink)}
+#central-root .rp2-nav-secondary-items{padding-top:4px}
+#central-root .rp2-contextbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;min-width:0;margin-bottom:15px;
+  padding:9px 0 13px;border-bottom:1px solid var(--mxp-rule);
+}
+#central-root .rp2-context-copy{display:grid;gap:1px;min-width:0}
+#central-root .rp2-context-copy strong{
+  color:var(--mxp-ink);font-size:12px;line-height:1.35;
+  white-space:normal;
+}
+#central-root .rp2-context-copy small{color:var(--mxp-muted);font-size:11px}
+#central-root .rp2-context-refresh{
+  min-height:40px;background:var(--mxp-elevated);color:var(--mxp-ink);
+  border:1px solid var(--mxp-rule-strong);
+  padding:8px 12px;flex-shrink:0;
+}
+#central-root .rp2-context-refresh:hover{background:var(--mxp-raised)}
+#central-root .rp2-attention-queue{
+  border-left:3px solid var(--mxp-alert)!important;
+  padding-left:clamp(12px,2vw,18px)!important;
+}
+#central-root .rp2-attention-queue .toolbar{padding-bottom:11px}
+#central-root .rp2-attention-queue .list-item{
+  display:flex;align-items:start;gap:10px;padding-block:13px!important;
+}
+#central-root .rp2-attention-queue .list-item:focus-visible,
+#central-root .rp2-nav-item:focus-visible,
+#central-root .rp2-context-refresh:focus-visible{
+  outline:2px solid var(--rp2-focus)!important;outline-offset:2px;
+}
+#central-root .rp2-monitor-footnote{
+  color:var(--mxp-muted);font-size:11px;
+  padding:9px 12px;border-left:2px solid var(--mxp-cyan);
+}
+#central-root .rp2-client-timeline{
+  display:grid;gap:0;border-left:2px solid var(--mxp-rule-strong);
+  margin-left:7px;padding-left:16px;
+}
+#central-root .rp2-timeline-entry{
+  position:relative;margin:0;background:transparent;border:0;
+  border-bottom:1px solid var(--mxp-rule);border-radius:0;
+}
+#central-root .rp2-timeline-entry:before{
+  content:"";position:absolute;top:19px;left:-23px;
+  width:10px;height:10px;border:2px solid var(--mxp-cyan);
+  border-radius:50%;background:var(--mxp-canvas);
+}
+#central-root .rp2-timeline-entry summary{
+  padding:13px 2px;font-size:13px;line-height:1.5;
+}
+#central-root .rp2-timeline-entry[open]{background:var(--mxp-elevated)}
+#central-root .rp2-timeline-entry[open] summary{padding-left:10px}
+#central-root .rp2-inspection-form{gap:17px!important}
+#central-root .rp2-assignment{border-left:3px solid var(--mxp-cyan)!important}
+#central-root .rp2-assignment h2{margin-top:5px}
+#central-root .rp2-inspection-header{
+  display:flex;gap:12px;align-items:start;
+  border-bottom:1px solid var(--mxp-rule);padding-bottom:12px;
+}
+#central-root .rp2-inspection-header h2,
+#central-root .rp2-inspection-header h3{margin:0 0 3px;font-size:17px;color:var(--mxp-ink)}
+#central-root .rp2-step{
+  display:grid;place-items:center;flex:0 0 37px;
+  width:37px;height:37px;background:var(--mxp-elevated);
+  border:1px solid var(--mxp-rule);border-radius:var(--mxp-r-sm);
+  font-size:12px;font-weight:800;color:var(--mxp-cyan);
+}
+#central-root .rp2-inspection-checklist{
+  display:grid;gap:0;background:var(--mxp-canvas);
+  border:1px solid var(--mxp-rule);border-radius:var(--mxp-r-md);
+  padding:0 12px;
+}
+#central-root .rp2-inspection-item{
+  display:grid;grid-template-columns:28px minmax(0,1fr) minmax(115px,175px);
+  gap:12px;align-items:center;min-height:70px;
+  padding:10px 0;border-bottom:1px solid var(--mxp-rule);
+  font-size:13px;line-height:1.4;
+}
+#central-root .rp2-inspection-item:last-child{border-bottom:0}
+#central-root .rp2-inspection-number{
+  color:var(--mxp-muted);font-size:11px;font-variant-numeric:tabular-nums;
+}
+#central-root .rp2-inspection-item select{
+  margin:0;min-height:44px;width:100%;
+}
+#central-root .rp2-inspection-submit{
+  min-height:52px;font-weight:780;
+}
+/* O cronômetro tem um estado percebível também sem depender só de cor. */
+.checkpoint-curtain .checkpoint-curtain-panel[data-rp2-phase="paused"] .checkpoint-stopwatch{
+  border-color:var(--mxp-alert)!important;
+}
+.checkpoint-curtain .checkpoint-curtain-panel[data-rp2-phase="ready"] .checkpoint-stopwatch{
+  border-color:var(--mxp-green)!important;
+}
+.checkpoint-curtain .checkpoint-evidence-title{
+  display:flex;flex-wrap:wrap;justify-content:space-between;
+  align-items:baseline;gap:5px;margin:14px 0 3px;
+}
+.checkpoint-curtain .checkpoint-evidence-title span{
+  font-size:14px;color:var(--mxp-ink);font-weight:750;
+}
+.checkpoint-curtain .checkpoint-evidence-title small{
+  color:var(--mxp-muted);font-size:11px;font-weight:500;
+}
+.checkpoint-curtain .checkpoint-view-action{
+  min-height:74px;gap:3px;position:relative;
+  border-radius:var(--mxp-r-sm)!important;
+}
+.checkpoint-curtain .rp2-view-number{
+  font-size:10px;color:var(--mxp-muted);line-height:1.2;
+  font-variant-numeric:tabular-nums;
+}
+.checkpoint-curtain .checkpoint-view-action.has-capture .rp2-view-number{color:var(--mxp-green)}
+.checkpoint-curtain .rp2-evidence-preview-list{display:grid;gap:7px}
+.checkpoint-curtain .rp2-evidence-preview{
+  display:flex;align-items:center;gap:9px;
+  background:var(--mxp-canvas);
+  border:1px solid var(--mxp-rule);border-radius:var(--mxp-r-sm);
+  padding:6px;min-width:0;
+}
+.checkpoint-curtain .rp2-evidence-preview img,
+.checkpoint-curtain .rp2-evidence-media-icon{
+  width:52px;height:48px;flex:0 0 52px;border-radius:5px;
+  object-fit:cover;background:var(--mxp-elevated);
+  color:var(--mxp-cyan);
+}
+.checkpoint-curtain .rp2-evidence-media-icon{display:grid;place-items:center;font-size:21px}
+.checkpoint-curtain .rp2-evidence-preview-copy{display:grid;gap:3px;min-width:0;flex:1}
+.checkpoint-curtain .rp2-evidence-preview-copy strong{
+  font-size:12px;color:var(--mxp-ink);
+}
+.checkpoint-curtain .rp2-evidence-preview-copy small{
+  font-size:10px;color:var(--mxp-muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;
+}
+.checkpoint-curtain .rp2-evidence-preview button{
+  flex:0 0 42px;width:42px;min-height:42px;padding:0;
+  background:var(--mxp-elevated);border:1px solid var(--mxp-rule);
+  border-radius:var(--mxp-r-sm);color:var(--mxp-ink);font-size:18px;
+}
+.checkpoint-curtain .rp2-evidence-empty{font-size:11px;color:var(--mxp-muted);padding:8px 0}
+.checkpoint-curtain .checkpoint-view-action:focus-visible,
+.checkpoint-curtain .rp2-evidence-preview button:focus-visible{
+  outline:2px solid var(--rp2-focus)!important;outline-offset:3px;
+}
+/* Abas de Gestão em 320 px: múltiplas linhas legíveis > cinco comprimidas. */
+@media (max-width:900px){
+  .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs{
+    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:5px!important;overflow:visible!important;
+  }
+  .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs>button{
+    min-width:0!important;min-height:44px!important;
+    padding:9px 6px!important;white-space:normal!important;
+    line-height:1.25!important;
+  }
+}
+/* Navegação da Central muda de estrutura no celular, não apenas de escala. */
+@media (max-width:760px){
+  #central-root .workspace.rp2-workspace{display:flex;flex-direction:column;gap:0}
+  #central-root .side.rp2-role-nav{
+    display:flex!important;position:static;width:100%;gap:7px;
+    margin:0 0 9px;padding:0 0 12px;overflow:visible!important;
+    border-right:0!important;border-bottom:1px solid var(--mxp-rule)!important;
+  }
+  #central-root .rp2-nav-eyebrow{padding:0 2px 2px}
+  #central-root .rp2-nav-primary{
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    width:100%;gap:5px;
+  }
+  #central-root .rp2-nav-primary:has(> :only-child){grid-template-columns:1fr}
+  #central-root .rp2-nav-item{
+    width:100%!important;white-space:normal!important;flex-shrink:1;
+    display:flex;flex-direction:column;text-align:center;justify-content:center;
+    gap:5px;font-size:10px;line-height:1.15;
+    min-height:68px;padding:7px 3px;border:1px solid var(--mxp-rule)!important;
+    background:var(--mxp-panel)!important;
+  }
+  #central-root .rp2-nav-item svg{width:20px;height:20px;flex:0 0 20px}
+  #central-root .rp2-nav-item.active{border-color:var(--mxp-red)!important;box-shadow:inset 0 3px 0 var(--mxp-red)!important}
+  #central-root .rp2-nav-secondary{
+    width:100%;border-top:0;padding:0;
+    background:var(--mxp-panel);border:1px solid var(--mxp-rule);
+    border-radius:var(--mxp-r-sm);
+  }
+  #central-root .rp2-nav-secondary summary{min-height:43px;padding:10px 13px}
+  #central-root .rp2-nav-secondary-items{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    padding:6px;gap:6px;
+  }
+  #central-root .rp2-nav-secondary-items .rp2-nav-item{
+    flex-direction:row;min-height:46px;text-align:left;
+    justify-content:start;padding:8px 10px;font-size:12px;
+  }
+  #central-root .rp2-nav-secondary-items .rp2-nav-item svg{width:17px;height:17px;flex-basis:17px}
+  #central-root .content{width:100%;max-width:100%;min-width:0}
+  #central-root .rp2-contextbar{margin-bottom:13px}
+  #central-root .rp2-inspection-item{
+    grid-template-columns:20px minmax(0,1fr);
+    gap:8px;
+  }
+  #central-root .rp2-inspection-item select{grid-column:2;grid-row:2;max-width:none}
+}
+@media(max-width:380px){
+  .checkpoint-curtain .checkpoint-view-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .checkpoint-curtain .checkpoint-view-action{min-height:68px}
+  #central-root .rp2-nav-primary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #central-root .rp2-nav-item{min-height:56px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  #central-root .rp2-nav-item,.checkpoint-curtain .checkpoint-view-action{
+    transition:none!important;animation:none!important
+  }
+}
