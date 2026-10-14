@@ -128,35 +128,45 @@ export function createOperationsUpgrade(api){
   if(!token||!navigator.onLine||inSync)return;
   inSync=true;
   try{
-   const toSync=events.filter(e=>e.status==='pending'&&allowedSyncedKinds.has(e.kind)&&e.payload?.mode!=='simulation').slice().reverse().slice(0,80);
+   // Eventos concluídos ainda podem conter imagens cujo envio falhou.
+   const toSync=events.filter(e=>allowedSyncedKinds.has(e.kind)&&e.payload?.mode!=='simulation'&&(
+    e.status==='pending'||(e.status==='synced'&&Array.isArray(e.payload?.mediaIds)&&e.payload.mediaIds.length>0&&!e.mediaSyncedAt)
+   )).slice().reverse().slice(0,80);
    for(const event of toSync){
     const p=event.payload||{},pos=p.position;
-    const data={id:event.id,kind:event.kind,roundId:p.sessionId||null,occurredAt:event.at,
-      description:p.description||p.observation||p.title||({'panic':'Acionamento do botão de pânico','gps':'Leitura GPS','battery':'Nível de bateria','checkpoint':'Conferência do ponto','patrol_start':'Ronda iniciada','patrol_end':'Ronda concluída'}[event.kind]||'Evento de ronda'),
-      position:pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)?pos:null,
-      battery:Number.isFinite(p.battery)?p.battery:null,
-      details:{...p,position:undefined,battery:undefined}};
-    let response;
-    try{response=await fetch('/api/events',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});}
-    catch{return}
-    if(response.status===401||response.status===403)return;
-    if(!response.ok){event.syncError='HTTP '+response.status;await store.put('events',event);continue;}
-    event.status='synced';event.syncedAt=Date.now();delete event.syncError;
-    await store.put('events',event);
-    if(Array.isArray(p.mediaIds)){
-     for(const mediaId of p.mediaIds){
-      const media=await store.get('media',mediaId);
-      if(!media?.blob||media.remoteUploaded)continue;
-      try{
-       const res=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+token,
-        'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at),
-        ...(Number.isFinite(media.position?.lat)&&Number.isFinite(media.position?.lng)?{'X-Media-Lat':String(media.position.lat),'X-Media-Lng':String(media.position.lng)}:{}),
-        ...(Number.isFinite(media.battery)?{'X-Media-Battery':String(media.battery)}:{}),
-        ...(media.view?{'X-Media-View':media.view}:{})},body:media.blob});
-       if(res.ok){media.remoteUploaded=true;await store.put('media',media);}
-      }catch{}
-     }
+    if(event.status==='pending'){
+     const data={id:event.id,kind:event.kind,roundId:p.sessionId||null,occurredAt:event.at,
+       description:p.description||p.observation||p.title||({'panic':'Acionamento do botão de pânico','gps':'Leitura GPS','battery':'Nível de bateria','checkpoint':'Conferência do ponto','patrol_start':'Ronda iniciada','patrol_end':'Ronda concluída'}[event.kind]||'Evento de ronda'),
+       position:pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)?pos:null,
+       battery:Number.isFinite(p.battery)?p.battery:null,
+       details:{...p,position:undefined,battery:undefined}};
+     let response;
+     try{response=await fetch('/api/events',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});}
+     catch{return}
+     if(response.status===401||response.status===403)return;
+     if(!response.ok){event.syncError='HTTP '+response.status;await store.put('events',event);continue;}
+     event.status='synced';event.syncedAt=Date.now();delete event.syncError;
+     await store.put('events',event);
     }
+    if(!Array.isArray(p.mediaIds)||!p.mediaIds.length)continue;
+    let mediaPending=false;
+    for(const mediaId of p.mediaIds){
+     const media=await store.get('media',mediaId);
+     if(!media?.blob){mediaPending=true;continue;}
+     if(media.remoteUploaded)continue;
+     try{
+      const res=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+token,
+       'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at),
+       ...(Number.isFinite(media.position?.lat)&&Number.isFinite(media.position?.lng)?{'X-Media-Lat':String(media.position.lat),'X-Media-Lng':String(media.position.lng)}:{}),
+       ...(Number.isFinite(media.battery)?{'X-Media-Battery':String(media.battery)}:{}),
+       ...(media.view?{'X-Media-View':media.view}:{}),
+       ...(/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(media.id)?{'X-Ronda-Media-Id':media.id}:{})},body:media.blob});
+      if(res.status===401||res.status===403)return;
+      if(res.ok){media.remoteUploaded=true;delete media.syncError;await store.put('media',media);}
+      else{mediaPending=true;media.syncError='HTTP '+res.status;await store.put('media',media);}
+     }catch{mediaPending=true;}
+    }
+    if(!mediaPending){event.mediaSyncedAt=Date.now();await store.put('events',event);}
    }
   }finally{inSync=false;}
  }
