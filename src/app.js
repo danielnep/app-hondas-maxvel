@@ -358,7 +358,14 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBl
  const workspace=document.querySelector('.patrol-workspace');
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
- attachMaps();ops.decorate();installManager.decorate();uiMotion.enterView();justRendered=Date.now();
+ attachMaps();ops.decorate();
+ // Ajuda da cartografia pertence ao nível do cockpit: atrás do painel o ícone
+ // fica visível mas não recebe clique, mesmo com z-index elevado no filho.
+ if(window.innerWidth<=900&&workspace){
+  const mapHelp=workspace.querySelector('.patrol-map-canvas .ux06-map-help');
+  if(mapHelp)workspace.append(mapHelp);
+ }
+ installManager.decorate();uiMotion.enterView();justRendered=Date.now();
  if(user?.role==='ronda'&&view==='minha-ronda'&&screen!=='landing'&&!locationGate.isGranted())locationGate.open({demo:presentation});
  else if(user?.role!=='ronda'||view!=='minha-ronda')locationGate.close();
 }
