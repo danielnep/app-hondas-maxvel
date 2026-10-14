@@ -139,6 +139,7 @@ function installUX06(){
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
 let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo',uxRondaPane='mapa';
 const uxDashboardPane={admin:'resumo'};
+let cleanupLayoutBreakpoint=()=>{};
 const uxListSizes=()=>8; // Listas roláveis: não fragmentar três itens em páginas artificiais.
 function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
  if(!container)return;
@@ -165,18 +166,22 @@ function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
  host.append(bar);paint();
 }
 function installViewportViews(){
- if(screen==='landing')return; // Desktop também usa janelas, não colunas simultâneas comprimidas.
+ cleanupLayoutBreakpoint();cleanupLayoutBreakpoint=()=>{};
+ if(screen==='landing')return; // A página de entrada mantém a estrutura própria.
  const main=document.querySelector('.dashboard .app-content');
  if(!main)return;
  if(view==='overview'&&main.querySelector('.dashboard-v4')){
   const shell=main.querySelector('.dashboard-v4'),tabs=[...shell.querySelectorAll('[data-v4-tab]')];
   const paneMap=new Map([...shell.querySelectorAll('[data-v4-pane]')].map(p=>[p.dataset.v4Pane,p]));
+  const wideDesktop=window.matchMedia('(min-width:1280px)');
   const show=key=>{
    const selected=paneMap.has(key)?key:tabs[0]?.dataset.v4Tab;
    uxDashboardPane[user.role]=selected;
-   for(const [id,node] of paneMap){node.hidden=id!==selected;node.id='v4-'+id;}
-   for(const bt of tabs){const active=bt.dataset.v4Tab===selected;bt.setAttribute('aria-selected',String(active));bt.tabIndex=active?0:-1;}
-   if(selected==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
+   const multiple=wideDesktop.matches;
+   shell.classList.toggle('v4-wide-workspace',multiple);
+   for(const [id,node] of paneMap){node.hidden=!multiple&&id!==selected;node.id='v4-'+id;}
+   for(const bt of tabs){const active=bt.dataset.v4Tab===selected;bt.setAttribute('aria-selected',String(active));bt.tabIndex=multiple||active?0:-1;}
+   if(multiple||selected==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
   };
   shell.querySelector('.v4-dashboard-tabs')?.addEventListener('click',event=>{
    const bt=event.target.closest('[data-v4-tab]');if(bt)show(bt.dataset.v4Tab);
@@ -193,6 +198,9 @@ function installViewportViews(){
   paginateRows(shell.querySelector('.v4-alerts-list'),'.event-item','V4Alerts',uxListSizes());
   paginateRows(shell.querySelector('.v4-history-list'),'.v4-history-row','V4History',uxListSizes());
   paginateRows(shell.querySelector('.v4-insights-list'),'.v4-insight-row','V4Insights',uxListSizes());
+  const onDesktopChange=()=>show(uxDashboardPane[user.role]);
+  wideDesktop.addEventListener('change',onDesktopChange);
+  cleanupLayoutBreakpoint=()=>wideDesktop.removeEventListener('change',onDesktopChange);
   show(uxDashboardPane[user.role]);
   return;
  }
@@ -206,18 +214,24 @@ function installViewportViews(){
     historico:root.querySelector('.ops-recent'),indicadores:root.querySelector('.ops-metrics')};
    const surface=document.createElement('div');surface.className='ux-operations-surface';
    for(const [key] of tabs){if(nodes[key]){nodes[key].dataset.uxPane=key;surface.append(nodes[key]);}}
+   const wideDesktop=window.matchMedia('(min-width:1280px)');
    const selected=()=>tabs.some(x=>x[0]===uxOverviewPanel)?uxOverviewPanel:'mapa';
    const paint=()=>{
-    for(const [key] of tabs){if(nodes[key])nodes[key].hidden=selected()!==key;}
+    const multiple=wideDesktop.matches;
+    root.classList.toggle('ux-wide-workspace',multiple);
+    for(const [key] of tabs){if(nodes[key])nodes[key].hidden=!multiple&&selected()!==key;}
     [...nav.querySelectorAll('button')].forEach(b=>{b.setAttribute('aria-selected',String(b.dataset.uxTab===selected()));});
-    if(selected()==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
+    if(multiple||selected()==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
    };
    nav.innerHTML=tabs.map(([k,label])=>'<button type="button" role="tab" data-ux-tab="'+k+'">'+label+'</button>').join('');
    nav.addEventListener('click',e=>{const b=e.target.closest('[data-ux-tab]');if(b){uxOverviewPanel=b.dataset.uxTab;paint();}});
    const selector=root.querySelector('.supervision-context');
    if(selector)selector.after(nav,surface);else root.prepend(nav,surface);
    paginateRows(nodes.alertas,'.event-item','Alerts',3);
-   paginateRows(nodes.historico,'tbody tr','Patrols',3);
+   paginateRows(nodes.historico,'tbody tr','Patrols',wideDesktop.matches?8:3);
+   const onDesktopChange=()=>paint();
+   wideDesktop.addEventListener('change',onDesktopChange);
+   cleanupLayoutBreakpoint=()=>wideDesktop.removeEventListener('change',onDesktopChange);
    paint();
   }
  }
@@ -578,7 +592,7 @@ function dashboardV4(){
   '<button type="button" role="tab" data-v4-tab="'+key+'" aria-controls="v4-'+key+'">'+label+'</button>').join('')+'</nav>';
  return '<div class="operations-page dashboard-v4 '+(manager?'v4-management':'v4-supervision')+'">'+
   '<header class="v4-dashboard-heading"><div><span class="v4-eyebrow">RONDAS PRO · '+(manager?'GESTÃO':'SUPERVISÃO')+'</span>'+
-  '<h1>'+(manager?'Dashboard gerencial':'Operação supervisionada')+'</h1></div>'+notice+'</header>'+
+  '<h1>'+(manager?'Dashboard gerencial':'Operação supervisionada')+'</h1><p class="v4-site-context">Posto em foco · '+esc(context.watcher.unit||'Local demonstrativo')+'</p></div>'+notice+'</header>'+
   tabHtml+'<div class="v4-stage">'+summaryPane+mapPane+rosterPane+alertsPane+insightPane+historyPane+'</div></div>';
 }
 
@@ -593,7 +607,7 @@ function overview(){
   {icon:'alert',name:'Alertas para análise',value:open.length,detail:`${inc.length} ocorrências no histórico`,tone:open.length?'red':'neutral'}
  ];
  const context=supervisedContext(),activeSession=context.current,trail=activeSession?.timeline??[];
- return `<div class="operations-page">${pageTitle('Central de operações','Acompanhe rotas, pontos, justificativas e ocorrências no mesmo painel.',btn(ic('print')+' Imprimir relatório','print','small'))}<div class="ops-topline"><div><span class="ops-live-dot"></span><strong>Visão da operação</strong><span>Dados deste ambiente de avaliação</span></div><div class="ops-topline-right">${ic('clock')} <span>${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</span> ${tag('Cenário local','neutral')}</div></div>${supervisorWatcherSelector()}${all.length===0?`<div class="ops-empty-state"><span>${ic('clock')} Ainda não há execução registrada neste dispositivo. As rondas já estão na agenda.</span>${btn('Consultar agenda '+ic('arrow'),'nav-rondas','small')}</div>`:''}<div class="ops-metrics">${metricRows.map(m=>`<article class="ops-metric tone-${m.tone}"><div class="ops-metric-top"><span class="ops-metric-icon">${ic(m.icon)}</span></div><strong>${String(m.value).padStart(2,'0')}</strong><h3>${m.name}</h3><p>${m.detail}</p></article>`).join('')}</div><div class="ops-workspace"><section class="ops-map-card"><div class="ops-panel-heading"><div><div class="eyebrow">ACOMPANHAMENTO GEOGRÁFICO</div><h2>${ic('map')} Mapa · ${esc(context.watcher.name)}</h2><p>Traçado ilustrativo sobre cartografia real, quando online</p></div><div class="ops-map-actions">${tag(context.pointCount+' pontos previstos','neutral')}${btn(ic('crosshair')+' Enquadrar','center-maps','small')}</div></div><div class="ops-map-stage"><div id="ops-map" class="map-container large"></div><div class="ops-map-corner"><strong>${ic('shield')} ${esc(context.route.name)}</strong><span>Área de verificação · 25 m</span></div></div><div class="ops-map-legend">${legend()}<span class="ops-map-note">Pontos e trajeto de demonstração</span></div></section><aside class="ops-activity"><div class="ops-panel-heading"><div><div class="eyebrow">FILA DE ATENÇÃO</div><h2>${ic('bell')} Alertas e justificativas</h2><p>Eventos registrados neste navegador</p></div>${tag(`${open.length} pendente(s)`,open.length?'red':'green')}</div><div class="ops-alert-list">${alerts.slice(0,6).map(notificationRow).join('')||`<div class="ops-empty"><span>${ic('shield')}</span><strong>Operação sem alertas pendentes</strong><p>Ao identificar um desvio, ele aparecerá aqui junto com o contexto para análise.</p></div>`}</div><div class="ops-help">${ic('help')} <span>Falhas de GPS não devem ser tratadas automaticamente como irregularidades.</span></div></aside></div><div class="ops-bottom-grid"><section class="card ops-recent"><div class="card-title"><div><div class="eyebrow">REGISTROS RECENTES</div><h2>Histórico de rondas</h2></div>${btn('Ver todas '+ic('arrow'),'nav-rondas','small')}</div>${tablePatrols(context.history.slice(0,5))}</section><aside class="card ops-progress"><div class="eyebrow">LINHA DO TEMPO</div><h2>Última atividade</h2><p>${activeSession?`Referente a ${esc(activeSession.name)} · ${esc(activeSession.route.name)}`:'Inicie uma ronda para acompanhar os registros.'}</p><div class="ops-timeline">${trail.slice(0,5).map(t=>`<div class="ops-timeline-item"><i></i><div><strong>${esc(t.label)}</strong><small>${time(t.at)}</small></div></div>`).join('')||'<div class="empty">Aguardando início da primeira ronda.</div>'}</div></aside></div><div class="ops-footer-note">${ic('help')} Protótipo operacional: os registros são locais e não chegam a um supervisor real. A implantação requer servidor e autenticação.</div></div>`;
+ return `<div class="operations-page">${pageTitle('Central de operações','Acompanhe rotas, pontos, justificativas e ocorrências no mesmo painel.',btn(ic('print')+' Imprimir relatório','print','small'))}<div class="ops-topline"><div><span class="ops-live-dot"></span><strong>Visão da operação</strong><span class="ops-site-context">Posto em foco · ${esc(context.watcher.unit||'Local demonstrativo')}</span><span>Dados deste ambiente de avaliação</span></div><div class="ops-topline-right">${ic('clock')} <span>${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</span> ${tag('Cenário local','neutral')}</div></div>${supervisorWatcherSelector()}${all.length===0?`<div class="ops-empty-state"><span>${ic('clock')} Ainda não há execução registrada neste dispositivo. As rondas já estão na agenda.</span>${btn('Consultar agenda '+ic('arrow'),'nav-rondas','small')}</div>`:''}<div class="ops-metrics">${metricRows.map(m=>`<article class="ops-metric tone-${m.tone}"><div class="ops-metric-top"><span class="ops-metric-icon">${ic(m.icon)}</span></div><strong>${String(m.value).padStart(2,'0')}</strong><h3>${m.name}</h3><p>${m.detail}</p></article>`).join('')}</div><div class="ops-workspace"><section class="ops-map-card"><div class="ops-panel-heading"><div><div class="eyebrow">ACOMPANHAMENTO GEOGRÁFICO</div><h2>${ic('map')} Mapa · ${esc(context.watcher.name)}</h2><p>Traçado ilustrativo sobre cartografia real, quando online</p></div><div class="ops-map-actions">${tag(context.pointCount+' pontos previstos','neutral')}${btn(ic('crosshair')+' Enquadrar','center-maps','small')}</div></div><div class="ops-map-stage"><div id="ops-map" class="map-container large"></div><div class="ops-map-corner"><strong>${ic('shield')} ${esc(context.route.name)}</strong><span>Área de verificação · 25 m</span></div></div><div class="ops-map-legend">${legend()}<span class="ops-map-note">Pontos e trajeto de demonstração</span></div></section><aside class="ops-activity"><div class="ops-panel-heading"><div><div class="eyebrow">FILA DE ATENÇÃO</div><h2>${ic('bell')} Alertas e justificativas</h2><p>Eventos registrados neste navegador</p></div>${tag(`${open.length} pendente(s)`,open.length?'red':'green')}</div><div class="ops-alert-list">${alerts.slice(0,6).map(notificationRow).join('')||`<div class="ops-empty"><span>${ic('shield')}</span><strong>Operação sem alertas pendentes</strong><p>Ao identificar um desvio, ele aparecerá aqui junto com o contexto para análise.</p></div>`}</div><div class="ops-help">${ic('help')} <span>Falhas de GPS não devem ser tratadas automaticamente como irregularidades.</span></div></aside></div><div class="ops-bottom-grid"><section class="card ops-recent"><div class="card-title"><div><div class="eyebrow">REGISTROS RECENTES</div><h2>Histórico de rondas</h2></div>${btn('Ver todas '+ic('arrow'),'nav-rondas','small')}</div>${tablePatrols(context.history.slice(0,5))}</section><aside class="card ops-progress"><div class="eyebrow">LINHA DO TEMPO</div><h2>Última atividade</h2><p>${activeSession?`Referente a ${esc(activeSession.name)} · ${esc(activeSession.route.name)}`:'Inicie uma ronda para acompanhar os registros.'}</p><div class="ops-timeline">${trail.slice(0,5).map(t=>`<div class="ops-timeline-item"><i></i><div><strong>${esc(t.label)}</strong><small>${time(t.at)}</small></div></div>`).join('')||'<div class="empty">Aguardando início da primeira ronda.</div>'}</div></aside></div><div class="ops-footer-note">${ic('help')} Protótipo operacional: os registros são locais e não chegam a um supervisor real. A implantação requer servidor e autenticação.</div></div>`;
 }
 function tablePatrols(rows){return rows.length?`<div class="table-wrap"><table class="data-table"><thead><tr><th>Responsável</th><th>Rota</th><th>Progresso</th><th>Situação</th><th>Início</th><th>Detalhes</th></tr></thead><tbody>${rows.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.route.name)}</td><td>${s.index} / ${s.route.points.length} pontos</td><td>${tag(s.status==='completed'?'Concluída':'Em andamento',s.status==='completed'?'green':'orange')}</td><td>${fmt(s.startedAt)}</td><td><button data-action="session-detail" data-id="${esc(s.id)}">Abrir</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma ronda registrada. Experimente a apresentação guiada.</div>'}
 
