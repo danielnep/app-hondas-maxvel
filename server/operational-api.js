@@ -334,7 +334,7 @@ export function createOperationalApi(){
     const eid=clean(req.headers['x-ronda-event-id']),ev=event(eid);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     const mime=clean(req.headers['content-type']).split(';')[0];
-    const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm'];
+    const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm','audio/webm','audio/mp4','audio/ogg'];
     if(!types.includes(mime)){resp(res,415,{error:'Formato não autorizado'});return true;}
     const bytes=await body(req,25*1024*1024);
     const magic=bytes.subarray(0,12);
@@ -342,7 +342,9 @@ export function createOperationalApi(){
       ||(mime==='image/png'&&magic.subarray(1,4).toString()==='PNG')
       ||(mime==='image/webp'&&magic.subarray(8,12).toString()==='WEBP')
       ||(mime==='video/mp4'&&magic.subarray(4,8).toString()==='ftyp')
-      ||(mime==='video/webm'&&magic.subarray(0,4).equals(Buffer.from([26,69,223,163])));
+      ||(['video/webm','audio/webm'].includes(mime)&&magic.subarray(0,4).equals(Buffer.from([26,69,223,163])))
+      ||(mime==='audio/mp4'&&magic.subarray(4,8).toString()==='ftyp')
+      ||(mime==='audio/ogg'&&magic.subarray(0,4).toString()==='OggS');
     if(!correct){resp(res,415,{error:'Conteúdo do arquivo incompatível'});return true;}
     const mediaId=id(),folder=resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media');
     mkdirSync(folder,{recursive:true});writeFileSync(join(folder,mediaId),bytes,{flag:'wx',mode:0o600});
