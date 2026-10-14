@@ -251,7 +251,7 @@ export function createOperationalApi(){
     }
    }
    const review=p.match(/^\/api\/events\/([0-9a-z-]+)\/review$/i);
-   if(review&&m==='POST'){
+   if(review&&m==='POST'&&reviewer(a)){
     const ev=event(review[1]);
     if(!ev){resp(res,404,{error:'Não encontrado'});return true;}
     if(!['coi','operador','master'].includes(a.role)){resp(res,403,{error:'Tratamento reservado ao COI; Administração acompanha a conclusão.'});return true;}
