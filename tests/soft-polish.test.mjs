@@ -36,7 +36,7 @@ test('as duas interfaces carregam a camada e a PWA atualiza seus arquivos',()=>{
  assert.match(central,/soft-polish\.css/);
  assert.match(central,/soft-polish\.js/);
  assert.match(read('../assets/ronda-pro.css'),/rp-soft-view-in/);
- assert.match(sw,/rondas-pro-interface-v8/);
+ assert.match(sw,/const CACHE='rondas-pro-interface-v\\d+';/);
  assert.match(sw,/soft-polish\.css/);
  assert.match(sw,/soft-polish\.js/);
 });
