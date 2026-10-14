@@ -1,73 +1,52 @@
-/** Conteúdo dos guias operacionais móveis.
- * Somente informativo: não altera navegação, permissões ou dados.
- * Não atribui funcionamento remoto aos recursos demonstrativos.
+/**
+ * Rondas Pro / Grupo Maxvel. Guias demonstrativos atualizados em 14-10-2026.
+ * Estes textos descrevem os acessos de avaliação, NÃO provam integração operacional.
  */
-export const MOBILE_GUIDES = Object.freeze({
-  ronda: Object.freeze({
-    title:'Operação de Ronda',
-    subtitle:'Execute a rota passo a passo, acompanhe GPS e registre ocorrências.',
-    stages:Object.freeze([
-      Object.freeze({title:'Confira a área',body:'<p>Confira o vigia e a ronda selecionada. Na demonstração, nomes e rotas são fictícios. No acesso autenticado, cada pessoa precisa ter seu local cadastrado.</p>'}),
-      Object.freeze({title:'GPS e sequência',body:'<p>Na ronda real, permita localização e verifique a precisão. Siga os pontos na ordem. O padrão é raio de 25 m com 30 segundos de permanência contínua, ou a regra configurada.</p><p>Sem sinal confiável, a validação deve aguardar. GPS ruim não comprova desvio.</p>'}),
-      Object.freeze({title:'Registre evidências',body:'<p>Confirme as etapas requeridas e registre as observações nos pontos. Anexe mídia nas ocorrências quando permitido e revise antes de enviar.</p>'}),
-      Object.freeze({title:'Comunicação e pânico',body:'<p>Use Ocorrência para fatos, Alerta para situações importantes e Mensagem para comunicação comum. O PÂNICO registra uma solicitação prioritária, e o botão 190 abre o discador quando necessário.</p>'}),
-      Object.freeze({title:'Finalize e consulte',body:'<p>Conclua os pontos e retorne conforme as instruções da ronda. Consulte o histórico com horários, GPS, observações e resultados.</p><p><strong>Atenção:</strong> dados desta avaliação ficam locais. O servidor só reconhece registros de contas autenticadas e efetivamente sincronizados.</p>'})
-    ])
-  }),
-  operador: Object.freeze({
-    title:'Central de Monitoramento',
-    subtitle:'Acompanhe vigias, rondas e alertas com os controles da central.',
-    stages:Object.freeze([
-      Object.freeze({
-        title:'Conheça sua central',
-        body:'<p>O acesso de <strong>Operadores</strong> reúne as áreas Monitoramento, Alertas, Ocorrências e Vigias.</p><ol><li>Abra <strong>Monitoramento</strong> para ter a visão geral.</li><li>Use o menu inferior ou o menu de navegação para mudar de área.</li><li>Retorne ao monitoramento sem perder o contexto local da demonstração.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Acompanhe as rondas',
-        body:'<p>Na área <strong>Monitoramento</strong>, consulte as informações de rondas, pontos e vigias disponíveis no cenário.</p><ol><li>Escolha o vigia ou a rota, quando o filtro estiver disponível.</li><li>Confira horário, progresso e localização apresentada no mapa.</li><li>Distinga posição simulada de GPS real e observe a qualidade do sinal.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Entenda os alertas',
-        body:'<p>Abra <strong>Alertas</strong> para consultar avisos e mudanças registradas no cenário.</p><ol><li>Identifique o tipo de evento e o horário.</li><li>Consulte o contexto do ponto ou rota envolvida.</li><li>Não interprete GPS impreciso como prova automática de desvio: falhas técnicas precisam de análise.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Consulte ocorrências',
-        body:'<p>Na área <strong>Ocorrências</strong>, acompanhe justificativas, histórico e registros disponíveis.</p><ol><li>Abra uma ocorrência para entender o fato informado.</li><li>Verifique a sequência de eventos e as informações apresentadas.</li><li>Encaminhamento, comunicação ou tratamento remoto só têm efeito operacional quando integrados à central autenticada.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Equipe e limites',
-        body:'<p>Em <strong>Vigias</strong>, consulte a equipe e as informações de cada colaborador no cenário de avaliação.</p><p><strong>Importante:</strong> esta interface de demonstração usa dados fictícios ou locais. O acompanhamento remoto real depende de autenticação, servidor configurado, permissões e conexão. A ausência de GPS confiável não determina irregularidade.</p>'
-      })
-    ])
-  }),
-  admin:Object.freeze({
-    title:'Painel Administrativo',
-    subtitle:'Organize o acompanhamento, investigue registros e consulte indicadores.',
-    stages:Object.freeze([
-      Object.freeze({
-        title:'Visão geral do painel',
-        body:'<p>O <strong>Administrativo</strong> mostra indicadores, rondas recentes, notificações, ocorrências e equipe deste cenário.</p><ol><li>Abra <strong>Visão geral</strong> para conferir os indicadores.</li><li>Use <strong>Rondas</strong> para ver o vigia selecionado, mapa e histórico.</li><li>Na <strong>Central autenticada</strong>, a gestão ainda pode cadastrar rotas com pontos no mapa e acompanhar execuções reais sincronizadas.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Rondas e equipe',
-        body:'<p>Nas áreas <strong>Rondas</strong> e <strong>Equipe</strong>, acompanhe as atividades e seus responsáveis.</p><ol><li>Selecione uma ronda ou colaborador para consultar o histórico exibido.</li><li>Observe horários, etapas concluídas e pendências.</li><li>Diferencie registros demonstrativos de operações autenticadas.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Alertas e ocorrências',
-        body:'<p>Use <strong>Notificações</strong> e <strong>Ocorrências</strong> para compreender as exceções da atividade.</p><ol><li>Confira local, horário e contexto de cada evento.</li><li>Leia justificativas antes de avaliar uma ocorrência.</li><li>Trate baixa precisão GPS como condição técnica a verificar, não como desvio comprovado.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Relatórios e ajustes',
-        body:'<p>A área <strong>Relatórios</strong> apresenta informações consolidadas e opções de exportação disponíveis nesta versão.</p><ol><li>Consulte os indicadores e os dados do período.</li><li>Use os formatos de exportação disponibilizados na interface.</li><li>Em <strong>Configurações</strong>, revise os parâmetros apresentados no cenário, sem presumir alteração de um servidor real.</li></ol>'
-      }),
-      Object.freeze({
-        title:'Resultados e limites',
-        body:'<p>O objetivo do painel é facilitar conferências e decisões com trilha de registros.</p><p><strong>Ambiente de avaliação:</strong> dados fictícios ou locais não equivalem a monitoramento de colaboradores reais. Uso operacional exige integração ao servidor, autenticação, persistência segura, regras de acesso e validação do desempenho em campo.</p>'
-      })
-    ])
-  })
+const guide=(title,subtitle,sections)=>Object.freeze({
+ title,subtitle,stages:Object.freeze(sections.map(([title,body])=>Object.freeze({title,body})))
 });
-
-export function mobileGuideFor(role){
- return MOBILE_GUIDES[role] || null;
-}
+export const MOBILE_GUIDES=Object.freeze({
+ ronda:guide('Operação de Ronda','Seu percurso, validação de pontos e registros em ordem.',[
+  ['Antes de começar','<p>Confira o colaborador, a rota e as orientações. A localização é necessária no modo GPS real, com autorização do aparelho.</p><p><strong>Neste teste:</strong> trajetos e posições são fictícios.</p>'],
+  ['Percorra os pontos','<p>Inicie a ronda e siga os pontos na ordem. Com localização confiável, aproxime-se a 25 m do ponto e permaneça 30 segundos contínuos antes de confirmar.</p>'],
+  ['Desvios e falhas técnicas','<p>Se o sistema identificar uma possível saída da rota, informe a justificativa. Baixa precisão ou perda de GPS exige análise e não comprova desvio.</p>'],
+  ['Evidências e pânico','<p>Use as ações para registrar ocorrência e evidências quando exigidas. O acionamento de pânico é uma prioridade operacional. Mensagens e sincronização reais dependem da central autenticada.</p>'],
+  ['Meu histórico','<p>Consulte seus horários, pontos, ocorrências e progresso no menu Meu histórico. O demonstrativo armazena registros no navegador; a central autenticada possui dados sincronizados.</p>']
+ ]),
+ operador:guide('Central de Monitoramento','Rotas e vigias, com prioridade para alertas.',[
+  ['Visão da operação','<p>Abra Monitoramento para consultar as rondas do cenário, a localização indicada e o status de cada vigia.</p>'],
+  ['Escolher colaborador','<p>Selecione um vigia para analisar sua rota atual ou as rondas anteriores. Veja os detalhes antes de interpretar um alerta.</p>'],
+  ['Alertas e ocorrências','<p>Consulte as abas Alertas e Ocorrências para verificar os fatos, justificativas e sequência de eventos.</p>'],
+  ['Qualidade do GPS','<p>Sinal desatualizado ou impreciso não representa automaticamente uma falha do vigia. Compare horários e registros confiáveis.</p>'],
+  ['Integração real','<p>Este ambiente é demonstrativo. Na central autenticada, o operador recebe apenas dados enviados ao servidor, sujeitos às permissões da conta.</p>']
+ ]),
+ coi:guide('COI · Central de Monitoramento','Controle visual da operação e priorização de ocorrências.',[
+  ['Monitoramento COI','<p>Visualize as rondas disponíveis, suas últimas posições e as condições de acompanhamento em um único local.</p>'],
+  ['Situação dos percursos','<p>Confira se a execução está em andamento, foi concluída ou apresenta registros que exigem análise. Dados técnicos insuficientes permanecem sinalizados como tal.</p>'],
+  ['Vigias e histórico','<p>Selecione o colaborador e consulte os registros por data, começando pelos mais recentes.</p>'],
+  ['Comunicação e alertas','<p>Abra Alertas ou Ocorrências para verificar justificativas. A central autenticada mantém conversas e providências, conforme a permissão.</p>'],
+  ['Frequência de atualização','<p>Na central autenticada, o painel procura novos registros a cada 30 segundos enquanto está aberto. A versão de avaliação não rastreia outros aparelhos.</p>']
+ ]),
+ admin:guide('Administração e Gestão','Gestão de vigias, rotas, indicadores e relatórios.',[
+  ['Visão geral','<p>Consulte os indicadores de rondas, alertas e atividades. Acompanhe os locais e verifique o período dos dados antes de compará-los.</p>'],
+  ['Rotas por vigia','<p>Abra Rondas e selecione um colaborador. As execuções ficam em ordem cronológica, cada uma com mapa e detalhes. O mapa da demonstração usa dados fictícios.</p>'],
+  ['Criar uma nova rota','<p>Na seção de rotas, use <strong>Criar nova rota para colaborador</strong> para abrir a central autenticada. Lá o administrador escolhe vigia, nome e pontos, marcando no mapa ou inserindo coordenadas.</p>'],
+  ['Tratamento','<p>Use Notificações e Ocorrências para investigar, justificar e registrar a análise. Perda de precisão do GPS não é prova de irregularidade.</p>'],
+  ['Relatórios e acesso real','<p>Relatórios e Configurações estão na área administrativa. Exportações remotas, cadastro e controles efetivos exigem autenticação da central operacional; os dados do cenário não são dados de produção.</p>']
+ ]),
+ cliente:guide('Acompanhamento do Cliente','Transparência das rondas do seu local, sem administração.',[
+  ['Seu local','<p>A primeira informação é o nome do local acompanhado. No demonstrativo a unidade é fictícia; na central real o acesso fica limitado à unidade atribuída.</p>'],
+  ['Rondas em andamento','<p>Veja o número de rondas atuais, a rota e a última posição disponível. A ausência de sinal não significa movimento nem desvio.</p>'],
+  ['Histórico','<p>Abra as últimas rondas para conferir data, horário, situação e os registros exibidos na área permitida.</p>'],
+  ['Mapa e atualização','<p>A posição no cenário de demonstração é ilustrativa. A visão autenticada atualiza os registros do servidor aproximadamente a cada 30 segundos com a tela aberta.</p>'],
+  ['Permissões','<p>Este perfil é de consulta, sem criação de usuários, edição de rotas, tratamento interno de ocorrências ou acesso à operação de outros locais.</p>']
+ ]),
+ vistoriador:guide('Vistoriador · Qualidade','Checklist simples com indicadores do posto.',[
+  ['Nome do local','<p>Confira o local apresentado no início da tela antes de avaliar. O local de demonstração é ilustrativo.</p>'],
+  ['Nova vistoria','<p>Verifique cada critério apresentado: acessos, estrutura, equipamentos e sinalização. Marque somente os critérios conformes e descreva o que observou.</p>'],
+  ['Indicador de qualidade','<p>O percentual representa a quantidade de critérios atendidos entre os quatro avaliados. É um indicador do local, não uma nota de desempenho pessoal.</p>'],
+  ['Histórico','<p>Após registrar, consulte a lista com data, hora, observações e porcentagem das vistorias anteriores.</p>'],
+  ['Salvar corretamente','<p>Esta demonstração registra vistorias neste navegador. Para salvar no servidor, acesse a Central operacional com perfil Vistoriador e local vinculado.</p>']
+ ])
+});
+export function mobileGuideFor(role){return MOBILE_GUIDES[role]||null}
