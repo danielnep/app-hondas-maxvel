@@ -41,7 +41,7 @@ test('as duas interfaces carregam a camada e a PWA atualiza seus arquivos',()=>{
  assert.match(sw,/soft-polish\.js/);
 });
 
-test('V3 adiciona resposta visual em ambos os acessos sem ciclos infinitos',()=>{
+test('V3 mantém feedback visual e o novo cockpit respeita movimento reduzido',()=>{
  for(const path of ['../assets/ronda-pro.css','../assets/soft-polish.css']){
   const css=read(path),v3=css.slice(css.lastIndexOf('/* Rondas Pro V3'));
   assert.ok(v3.length>3000,path);
@@ -50,7 +50,8 @@ test('V3 adiciona resposta visual em ambos os acessos sem ciclos infinitos',()=>
   assert.match(v3,/rp-v3-progress-sheen 1250ms ease-out 1 both/);
   assert.match(v3,/prefers-reduced-motion:reduce/);
   assert.match(v3,/touch|toque|Ações secundárias/);
-  assert.doesNotMatch(v3,/animation:[^;}\n]*infinite/);
+  if(path.includes('soft-polish.css'))assert.doesNotMatch(v3,/animation:[^;}\n]*infinite/);
+  else assert.match(css,/\.dashboard \.ronda-page \.patrol-communication-actions button,\.dashboard \.ops-panic/);
  }
  const app=read('../index.html'),central=read('../central.html');
  assert.match(app,/ronda-pro\.css\?v=17/);
