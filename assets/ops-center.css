@@ -52,3 +52,20 @@
 @media(max-width:760px){.ops-dispatch-form{grid-template-columns:1fr}.ops-dispatch-form .ops-reason{grid-column:auto}.ops-monitor-kpis{grid-template-columns:repeat(2,1fr)}.ops-live-map{height:330px}.ops-priority-toast{top:65px;right:12px}.ops-monitor-footer{max-height:31vh;position:relative}.ops-notification-bell span{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.ops-priority-toast{animation:none}.permission-switch input::before{transition:none}}
 @media print{.ops-notification-bell,.ops-priority-toast,.ops-bell-bar,.ops-dispatch-form,.permission-list{display:none!important}.ops-monitor-footer{position:static}}
+
+/* Despacho acessível por seleção do vigia: modal responsivo, sem azul opaco. */
+.ops-worker-select{width:100%;min-height:75px;text-align:left;color:#fafafa;cursor:pointer;font:inherit}
+.ops-worker-select:not(:disabled):hover,.ops-worker-select:not(:disabled):focus-visible{border-color:#10b981!important;background:#10b98113!important;outline:2px solid #10b98155;outline-offset:1px}
+.ops-worker-select:disabled{opacity:.64;cursor:not-allowed}
+.ops-dispatch-modal{position:fixed;inset:0;width:min(94vw,610px);max-width:610px;max-height:min(90dvh,780px);overflow-y:auto;background:linear-gradient(155deg,rgba(36,36,40,.98),rgba(9,9,11,.99));color:#fafafa;border:1px solid #71717a;border-radius:15px;padding:22px;box-shadow:0 24px 90px #000d}
+.ops-dispatch-modal::backdrop{background:#000c;backdrop-filter:blur(16px)}
+.ops-dispatch-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:15px}
+.ops-dispatch-modal-header h2{font-size:23px;margin:6px 0}
+.ops-dispatch-modal-header button{min-height:38px;min-width:38px;background:#18181b;border:1px solid #52525b}
+.ops-dispatch-modal .ops-dispatch-form{grid-template-columns:1fr}
+.ops-dispatch-modal .ops-dispatch-form label{font-size:13px}
+.ops-dispatch-modal .ops-dispatch-form textarea{min-height:128px}
+.ops-dispatch-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.ops-dispatch-actions button{min-height:46px}
+.ops-dispatch-modal .ops-required{font-size:10px;color:#fbbf24;font-weight:750}
+@media(max-width:600px){.ops-dispatch-modal{padding:18px 14px;width:calc(100vw - 20px);max-height:94dvh}.ops-dispatch-actions{display:grid;grid-template-columns:1fr 1fr}.ops-dispatch-actions button{padding:10px 7px}}
