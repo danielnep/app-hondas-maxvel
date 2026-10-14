@@ -14,7 +14,7 @@ sleep 2
 curl --fail --silent http://127.0.0.1:8123/ >/dev/null
 "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --no-first-run --virtual-time-budget=4500 --dump-dom http://127.0.0.1:8123/ > artifacts/desktop-dom.html 2>/tmp/maxvel-chrome.err
 # A demonstração entra diretamente no Vigia, sem login ou página intermediária.
-grep -q 'simulation-rolebar' artifacts/desktop-dom.html
+grep -q 'dashboard simulation-mode' artifacts/desktop-dom.html
 grep -q 'maxvel-only-brand' artifacts/desktop-dom.html
 grep -q 'location-entry-gate' artifacts/desktop-dom.html
 grep -q 'Ative sua localização' artifacts/desktop-dom.html
