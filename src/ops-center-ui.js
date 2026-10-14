@@ -4,7 +4,7 @@ const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle
 const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
 const activeKinds=new Set(['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message']);
 export function createOpsCenterUI({api,flash,openNotice}){
- let notifications=[],dispatches=[],modules=[],current=null,seen=new Set(),lastReminder=0;
+ let notifications=[],dispatches=[],modules=[],current=null,seen=new Set(),lastReminder=0,initialized=false;
  const manager=()=>['admin','master'].includes(current?.role);
  const reviewer=()=>['admin','master','operador','coi'].includes(current?.role);
  const allowed=key=>manager()||!!modules.find(x=>x.module===key)?.enabled;
@@ -44,7 +44,13 @@ export function createOpsCenterUI({api,flash,openNotice}){
    requests.push(api('/dispatches'));
   }
   const results=await Promise.allSettled(requests);
-  if(results[0].status==='fulfilled')notifications=results[0].value.notifications||[];
+  if(results[0].status==='fulfilled'){
+   notifications=results[0].value.notifications||[];
+   // Notificações antigas não devem gerar um popup novo a cada atualização.
+   if(!initialized){seen=new Set(notifications.map(item=>item.id));initialized=true;}
+   const bell=document.querySelector('.ops-bell-bar');
+   if(bell)bell.innerHTML=badge();
+  }
   if(reviewer()&&results[1]?.status==='fulfilled')modules=results[1].value.modules||[];
   if(results[2]?.status==='fulfilled')dispatches=results[2].value.dispatches||[];
   if(withPopup)present();
@@ -63,21 +69,24 @@ export function createOpsCenterUI({api,flash,openNotice}){
  }
  function dispatchesView({users,rounds,events}){
   const active=new Set(rounds.filter(x=>x.status==='em_andamento').map(x=>x.userId));
-  const vigias=users.filter(x=>x.role==='ronda').map(w=>{
+  const guards=users.filter(x=>x.role==='ronda').map(w=>{
    const latest=events.find(e=>e.user_id===w.id);
    const fresh=latest&&Date.now()-latest.occurred_at<=15*60000;
    const status=!w.active?'Fora de serviço':active.has(w.id)?'Em ronda':fresh?'Disponível':'Fora de serviço';
    return {...w,dispatchStatus:status,lastActivity:latest?.occurred_at};
   });
-  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">COI · MOVIMENTAÇÃO OPERACIONAL</div><h1>Despacho de vigias</h1><p class="muted">A disponibilidade utiliza atividade recente do dispositivo e a execução das rondas. Ausência de sinal não confirma presença.</p></div>'+badge()+'</header>'+
-   '<section class="surface"><h2>Direcionar vigia disponível</h2><p class="muted">O despacho gera atribuição, notificação ao vigia, registro de auditoria e aviso à administração.</p>'+
-   '<form id="ops-dispatch-form" class="ops-dispatch-form"><label>Vigia disponível<select name="workerId" required><option value="">Selecione um colaborador</option>'+
-   vigias.map(w=>'<option value="'+esc(w.id)+'" '+(w.dispatchStatus!=='Disponível'?'disabled':'')+'>'+esc(w.name)+' · '+esc(w.dispatchStatus)+' · '+esc(w.site||'Sem posto')+'</option>').join('')+
-   '</select></label><label>Destino / endereço<input name="address" required minlength="5" maxlength="350" placeholder="Endereço ou ponto de referência"></label>'+
-   '<label class="ops-reason">Motivo obrigatório do despacho<textarea name="reason" required minlength="10" maxlength="1000" placeholder="Descreva a necessidade operacional e o que deverá ser verificado"></textarea></label>'+
-   '<button class="primary" '+(!vigias.some(w=>w.dispatchStatus==='Disponível')?'disabled':'')+'>Confirmar e notificar o vigia</button></form></section>'+
-   '<section class="surface"><h2>Estado dos vigias</h2><div class="ops-worker-list">'+vigias.map(w=>'<div class="ops-worker-row"><b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.dispatchStatus==='Disponível'?'ready':w.dispatchStatus==='Em ronda'?'busy':'off')+'">'+w.dispatchStatus+'</span><small>'+esc(w.site||'Posto não definido')+' · Última atividade: '+stamp(w.lastActivity)+'</small></div>').join('')+'</div></section>'+
-   '<section class="surface"><h2>Despachos recentes</h2>'+dispatchList()+'</section></section>';
+  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">COI · DESPACHO SOB DEMANDA</div><h1>Disponibilidade e direcionamento</h1><p class="muted">Selecione um vigia disponível para abrir o despacho. Status exige atividade recente sincronizada, não basta cadastro ativo.</p></div>'+badge()+'</header>'+
+   '<section class="surface"><h2>Vigias</h2><p class="muted">Toque no profissional para informar destino e justificativa. A administração recebe o registro automaticamente.</p>'+
+   '<div class="ops-worker-list">'+guards.map(w=>
+    '<button type="button" class="ops-worker-row ops-worker-select" data-ops-select-worker="'+esc(w.id)+'" '+(w.dispatchStatus!=='Disponível'?'disabled':'')+' aria-label="Despachar '+esc(w.name)+' · '+esc(w.dispatchStatus)+'">'+
+    '<b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.dispatchStatus==='Disponível'?'ready':w.dispatchStatus==='Em ronda'?'busy':'off')+'">'+w.dispatchStatus+'</span>'+
+    '<small>'+esc(w.site||'Posto não definido')+' · Última atividade: '+stamp(w.lastActivity)+'</small></button>').join('')+'</div></section>'+
+   '<dialog id="ops-dispatch-modal" class="ops-dispatch-modal" aria-labelledby="ops-dispatch-heading"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESPACHO OPERACIONAL</div><h2 id="ops-dispatch-heading">Direcionar vigia</h2><p id="ops-dispatch-worker-label" class="muted">Selecione um vigia</p></div><button type="button" data-ops-close-dispatch aria-label="Fechar">✕</button></div>'+
+   '<form id="ops-dispatch-form" class="ops-dispatch-form"><input type="hidden" name="workerId" required>'+
+   '<label>Endereço ou ponto específico<input name="address" required minlength="5" maxlength="350" placeholder="Rua, número, local ou referência" autocomplete="street-address"></label>'+
+   '<label class="ops-reason">Motivo do despacho <span class="ops-required">Obrigatório</span><textarea name="reason" required minlength="10" maxlength="1000" placeholder="Explique o que ocorreu e o que deve ser verificado"></textarea></label>'+
+   '<div class="ops-dispatch-actions"><button type="button" data-ops-close-dispatch>Cancelar</button><button class="primary" type="submit">Registrar despacho e notificar</button></div></form></dialog>'+
+   '<section class="surface"><h2>Últimos despachos</h2>'+dispatchList()+'</section></section>';
  }
  function dispatchList(){
   if(!dispatches.length)return '<p class="empty">Nenhum despacho registrado.</p>';
@@ -94,6 +103,16 @@ export function createOpsCenterUI({api,flash,openNotice}){
    '<section class="surface"><h2>Módulos de operação</h2><div class="permission-list">'+permissionRows()+'</div></section></section>';
  }
  async function click(target){
+  if(target.dataset.opsSelectWorker){
+   const dialog=document.querySelector('#ops-dispatch-modal');
+   if(!dialog)return true;
+   dialog.querySelector('[name="workerId"]').value=target.dataset.opsSelectWorker;
+   dialog.querySelector('#ops-dispatch-worker-label').textContent=target.querySelector('b')?.textContent||'Vigia selecionado';
+   dialog.showModal();
+   dialog.querySelector('[name="address"]').focus();
+   return true;
+  }
+  if(target.hasAttribute('data-ops-close-dispatch')){document.querySelector('#ops-dispatch-modal')?.close();return true;}
   if(target.dataset.opsPage){openNotice({page:target.dataset.opsPage});return true;}
   if(target.dataset.opsAck){
    await api('/dispatches/'+target.dataset.opsAck+'/ack',{method:'POST'});flash('Recebimento registrado.');await refresh(current,false);openNotice({page:'dispatches'});return true;
@@ -111,6 +130,7 @@ export function createOpsCenterUI({api,flash,openNotice}){
   if(form.id!=='ops-dispatch-form')return false;
   const data=Object.fromEntries(new FormData(form));
   await api('/dispatches',{method:'POST',data});
+  document.querySelector('#ops-dispatch-modal')?.close();
   flash('Despacho registrado. Vigia e administração notificados.');
   await refresh(current,false);openNotice({page:'dispatches'});return true;
  }
