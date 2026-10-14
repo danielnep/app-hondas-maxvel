@@ -14,6 +14,7 @@ import {createOperationsUpgrade} from './operations-upgrade.js';
 import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
 import {createLocationEntryGate} from './location-entry-gate.js';
+import {createFieldTorch} from './field-torch.js';
 import {mobileGuideFor} from './mobile-role-guides.js';
 import {summarizePatrol} from './field-intelligence.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
@@ -359,6 +360,9 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBl
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
  attachMaps();ops.decorate();
+ const dash=document.querySelector('.dashboard');
+ if(dash)dash.dataset.torchRole=user?.role||'';
+ torch.decorate();
  // Ajuda da cartografia pertence ao nível do cockpit: atrás do painel o ícone
  // fica visível mas não recebe clique, mesmo com z-index elevado no filho.
  if(window.innerWidth<=900&&workspace){
@@ -1298,6 +1302,7 @@ const ops=createOperationsUpgrade({
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });
 const curtain=createCheckpointCurtain({get:()=>({user,view,session,locationFix}),recordCheckpoint:(checkpoint,files,point)=>ops.recordCheckpoint(checkpoint,files,point),save,render,notify});
+const torch=createFieldTorch({notify});
 const locationGate=createLocationEntryGate({onGranted:fix=>{
  if(!presentation)locationFix=fix;
  const map=liveMaps.find(x=>x?.container?.id==='mobile-map');
