@@ -10,8 +10,8 @@ const baseline=load('../assets/maxvel-obsidian-06.css');
 const metadata=load('../package.json');
 
 test('estilos base e de perfis demonstrativos carregam sem repetição',()=>{
- const sheets=[...html.matchAll(/rel="stylesheet" href="(\\.\\/[^"?]+)/g)].map(x=>x[1]);
- assert.deepEqual(sheets,['./assets/ronda-pro.css','./assets/demo-roles.css']);
+ const sheets=html.split('\n').filter(line=>line.includes('rel="stylesheet" href="./assets/')).map(line=>line.match(/href="([^"?]+)/)?.[1]).filter(Boolean);
+ assert.deepEqual(sheets,['./assets/ronda-pro.css','./assets/demo-roles.css','./assets/field-entry-v2.css']);
  assert.equal(new Set(sheets).size,sheets.length);
 });
 test('topo e rodapé móveis compactos preservam orientação e toque',()=>{
