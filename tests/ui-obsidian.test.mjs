@@ -18,11 +18,15 @@ test('marca pública no aplicativo não contém Horizon',()=>{
  assert.doesNotMatch(app,/Horizon|horizon/);
  assert.match(app,/maxvel-logo\.webp/);
 });
-test('desktop usa abas únicas e tem menu lateral',()=>{
- assert.match(app,/if\(screen==='landing'\)return; \/\/ Desktop/);
+test('desktop amplo apresenta mapa e alertas simultâneos, tablet mantém abas e menu lateral',()=>{
+ const visual=readFileSync(new URL('../assets/maxvel-visual-2026.css',import.meta.url),'utf8');
+ assert.match(app,/if\(screen==='landing'\)return/);
+ assert.match(app,/matchMedia\('\(min-width:1280px\)'\)/);
  assert.match(css,/@media\(min-width:901px\)/);
  assert.match(css,/\.dashboard \.sidebar\{display:flex!important\}/);
  assert.match(css,/\.dashboard \.v4-stage>\.v4-pane\[hidden\]\{display:none!important\}/);
+ assert.match(visual,/\.ux-wide-workspace \.ux-operations-surface\{/);
+ assert.match(visual,/\.v4-wide-workspace \.v4-stage\{/);
 });
 test('sem paginação duplicada em relatórios e sem painéis vazios fixos',()=>{
  assert.match(app,/if\(view==='registros'\)paginateRows/);
