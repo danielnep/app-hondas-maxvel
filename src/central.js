@@ -1,6 +1,7 @@
 import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
 import {openConclusionDialog} from './conclusion-dialog.js';
+import {createOpsCenterUI} from './ops-center-ui.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
@@ -18,6 +19,7 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 }
 const privileged=()=>account&&['admin','master','coi'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
+const ops=createOpsCenterUI({api,flash,openNotice:({page:nextPage,eventId}={})=>{if(eventId){const evt=events.find(x=>x.id===eventId);if(evt){selected={event:evt};page=review()?'events':'history';render();return;}}if(nextPage){selected=null;page=nextPage;render();}}});
 const routeBoard=createRouteBoard({api,getContext:()=>({users,rounds,events,routes,account}),redraw:async(loadRemote=false)=>loadRemote?await load():render(),notify:flash});
 const actionGlyph={
  alert:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 9 16H3L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>',
@@ -66,32 +68,34 @@ async function load(){
     composeKind=requestedCompose;page='send';history.replaceState(null,'',location.pathname+location.search);
    }
   }
-  const [e,r,planned]=await Promise.all([api('/events?limit=500'),api('/rounds'),api('/routes')]);
-  events=e.events||[];rounds=r.rounds||[];routes=planned.routes||[];
+  await ops.refresh(account,false);
+  const [e,r,planned]=await Promise.allSettled([review()&&!ops.allowed('ocorrencias')?Promise.resolve({events:[]}):api('/events?limit=500'),api('/rounds'),review()&&!ops.allowed('rondas')?Promise.resolve({routes:[]}):api('/routes')]);
+  events=e.status==='fulfilled'?e.value.events||[]:[];rounds=r.status==='fulfilled'?r.value.rounds||[]:[];routes=planned.status==='fulfilled'?planned.value.routes||[]:[];
   if(selected?.event)selected={event:events.find(record=>record.id===selected.event.id)||selected.event};
   if(review()){
-   const [d,u,j,t,tr]=await Promise.all([api('/dashboard'),api('/users'),api('/email-jobs'),api('/templates'),api('/event-treatments?limit=1500')]);
-   dashboard=d;users=u.users||[];emailJobs=j.jobs||[];templates=t.templates||[];treatments=tr.treatments||[];mySummary=null;
+   const results=await Promise.allSettled([ops.allowed('mapa')?api('/dashboard'):Promise.resolve(null),ops.allowed('rondas')?api('/users'):Promise.resolve({users:[]}),ops.allowed('alertas')?api('/email-jobs'):Promise.resolve({jobs:[]}),api('/templates'),ops.allowed('ocorrencias')?api('/event-treatments?limit=1500'):Promise.resolve({treatments:[]})]);
+   const val=i=>results[i].status==='fulfilled'?results[i].value:null;
+   dashboard=val(0);users=val(1)?.users||[];emailJobs=val(2)?.jobs||[];templates=val(3)?.templates||[];treatments=val(4)?.treatments||[];mySummary=null;
   }else if(account.role==='ronda'){
    const [sum,t]=await Promise.all([api('/my-summary'),api('/templates')]);
    mySummary=sum;templates=t.templates||[];dashboard=null;users=[];emailJobs=[];
   }else{
    mySummary=null;dashboard=null;users=[];emailJobs=[];templates=[];
   }
-  render();
+  render();ops.present();
  }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
- ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
- coi:[['dashboard','Indicadores','▥'],['monitor','Central COI','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Notificações','✉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
+ operador:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
+ coi:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['inspections','Vistorias e qualidade','▤'],['guide','Guia completo','?']]
 };
 const nav=()=>'<nav class="side" aria-label="Navegação do '+escape(roles[account.role])+'">'+
- (roleMenus[account.role]||[]).map(([key,label,icon])=>'<button type="button" data-page="'+key+'" class="'+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+icon+'</span>'+escape(label)+'</button>').join('')+'</nav>';
+ (roleMenus[account.role]||[]).filter(([key])=>!review()||!({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'}[key])||ops.allowed(({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[key])).map(([key,label,icon])=>'<button type="button" data-page="'+key+'" class="'+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+icon+'</span>'+escape(label)+'</button>').join('')+'</nav>';
 function kpis(){
  const kinds=Object.fromEntries((dashboard?.metrics||[]).map(x=>[x.kind,x.count]));
  return '<div class="cards">'+[['Eventos',events.length],['Pânicos',kinds.panic||0],['Ocorrências',kinds.incident||0],['Amostras GPS',kinds.gps||0],['Alertas de e-mail',kinds.alert||0],['Baterias monitoradas',kinds.battery||0]].map(([label,num])=>'<div class="metric"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>';
@@ -316,13 +320,13 @@ function render(){
  routeBoard.resetMaps();
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
- const content=page==='guide'?guideView():page==='routes'&&privileged()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
+ const content=page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(account.role==='ronda'?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&privileged()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?inspectionView():
    account.role==='operador'?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
- root.innerHTML='<div class="workspace">'+nav()+'<article class="content">'+firstAccessGuide()+content+'</article></div>'+
+ root.innerHTML='<div class="workspace">'+nav()+'<article class="content"><div class="ops-bell-bar">'+ops.badge()+'</div>'+firstAccessGuide()+content+'</article></div>'+ 
   (account.role==='ronda'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
@@ -386,6 +390,7 @@ async function printAllConversations(){
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
+  if(await ops.click(target))return;
   if(await routeBoard.click(target))return;
   if(target.dataset.compose){if(account?.role!=='ronda'||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;page='send';render();return;}
   if(target.id==='central-panic'){document.querySelector('#central-panic-dialog')?.showModal();return;}
@@ -439,6 +444,7 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
  const form=e.target;
+ if(form.id==='ops-dispatch-form'){e.preventDefault();try{await ops.submit(form)}catch(err){flash(err.message)}return;}
  if(form.id==='route-form'){e.preventDefault();try{await routeBoard.submit(form)}catch(err){flash(err.message)}return;}
  if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','send-message','upload-evidence','inspection-form'].includes(form.id))return;
  e.preventDefault();const d=Object.fromEntries(new FormData(form));
@@ -476,7 +482,9 @@ document.addEventListener('submit',async e=>{
 // A central do operador acompanha o servidor sem depender de recarregar a página.
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
 setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
+setInterval(()=>{if(account&&!document.hidden)void ops.refresh(account,true).catch(()=>{});},15000);
 document.addEventListener('change',e=>{
+ if(e.target?.dataset?.coiToggle){void ops.change(e.target).then(()=>load()).catch(error=>flash(error.message));return;}
  const field=e.target.closest('[data-occ-filter]');
  if(field){occurrenceFilters[field.dataset.occFilter]=field.value;render();return;}
  routeBoard.change(e.target);
