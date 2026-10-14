@@ -6,7 +6,7 @@ import {addTrackSample} from '../src/field-intelligence.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
 const roles=['ronda','operador','admin','master','coi','cliente','vistoriador'];
-const manager=u=>['admin','master','coi'].includes(u.role);
+const manager=u=>['admin','master'].includes(u.role);
 const reviewer=u=>['operador','admin','master','coi'].includes(u.role);
 const authHash=(password,salt)=>scryptSync(password,salt,64).toString('hex');
 const resp=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
@@ -65,10 +65,14 @@ export function aggregateOperationalRounds(events=[]){
  for(const e of events){
   if(!e.round_id)continue;
   if(!groups.has(e.round_id))groups.set(e.round_id,{id:e.round_id,userId:e.user_id,site:e.site||'',
-   start:null,end:null,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,lastFix:null,lastFixAt:null,started:0});
+   start:null,end:null,incomplete:false,interrupted:false,deviations:0,gpsIssues:0,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,lastFix:null,lastFixAt:null,started:0});
   const r=groups.get(e.round_id);
   if(e.kind==='patrol_start'){r.start=e.occurred_at;r.started++;}
   if(e.kind==='patrol_end')r.end=e.occurred_at;
+  if(e.kind==='patrol_interrupted')r.interrupted=true;
+  if(e.kind==='patrol_incomplete')r.incomplete=true;
+  if(e.kind==='route_deviation')r.deviations++;
+  if(e.kind==='gps_issue')r.gpsIssues++;
   if(e.kind==='gps'&&Number.isFinite(e.lat)&&Number.isFinite(e.lng)){
    r.gpsSamples++;
    const measurement={lat:e.lat,lng:e.lng,at:e.occurred_at,accuracy:e.accuracy};
@@ -84,8 +88,9 @@ export function aggregateOperationalRounds(events=[]){
   if(e.battery!=null)r.lastBattery=e.battery;
  }
  return [...groups.values()].map(r=>({
-  id:r.id,userId:r.userId,start:r.start,end:r.end,
-  status:r.end?'concluida':r.start?'em_andamento':'sem_inicio',
+  id:r.id,userId:r.userId,site:r.site,start:r.start,end:r.end,
+  status:r.incomplete?'incompleta':r.interrupted?'interrompida':r.end?'concluida':r.start?'em_andamento':'sem_inicio',
+  routeStatus:r.deviations?'Percurso a verificar':r.gpsIssues?'GPS com falha técnica':!r.gpsSamples?'Sem dados GPS':'Sem desvio registrado',
   minutes:r.start?Math.max(0,Math.round(((r.end||Date.now())-r.start)/60000)):null,
   km:Math.round(r.km*100)/100,gpsSamples:r.gpsSamples,rejectedGps:r.rejectedGps,
   alerts:r.alerts,panics:r.panics,incidents:r.incidents,checkpoints:r.checkpoints,
@@ -100,7 +105,7 @@ export function createOperationalApi(){
   return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active,u.site FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
  };
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
- const visible=(u,e)=>u.role==='cliente'?Boolean(u.site)&&e.site===u.site:['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
+ const visible=(u,e)=>u.role==='cliente'?false:['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
  const criteriaKeys=['acessos','estrutura','equipamentos','sinalizacao'];
  async function notifyEmail(record,template){
   const targetGroups=serialize(template.recipients)||[];
@@ -155,7 +160,7 @@ export function createOperationalApi(){
     const validCriteria=d.kind==='inspection'?Object.fromEntries(criteriaKeys.map(key=>[key,inspection[key]])):null;
     const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length)}:
      {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
-    if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
+    if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','patrol_incomplete','patrol_interrupted','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
     }
     const eid=/^[0-9a-z-]{8,80}$/i.test(d.id||'')?d.id:id();
@@ -178,7 +183,7 @@ export function createOperationalApi(){
    if(p==='/api/events'&&m==='GET'){
     const limit=Math.min(500,Math.max(1,Number(u.searchParams.get('limit'))||100));
     const rows=['ronda','vistoriador'].includes(a.role)?db.prepare('SELECT * FROM events WHERE user_id=? ORDER BY occurred_at DESC LIMIT ?').all(a.id,limit):
-     a.role==='cliente'?(a.site?db.prepare('SELECT * FROM events WHERE site=? ORDER BY occurred_at DESC LIMIT ?').all(a.site,limit):[]):
+     a.role==='cliente'?(a.site?db.prepare("SELECT * FROM events WHERE site=? AND kind IN ('patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted') ORDER BY occurred_at DESC LIMIT ?").all(a.site,limit):[]):
      db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT ?').all(limit);
     resp(res,200,{events:rows.map(x=>({...x,details:serialize(x.details),position:x.lat==null?null:{lat:x.lat,lng:x.lng,accuracy:x.accuracy}}))});return true;
    }
