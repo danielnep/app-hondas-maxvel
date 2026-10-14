@@ -13,6 +13,7 @@ import {createUiMotion} from './ui-motion.js?v=2';
 import {createOperationsUpgrade} from './operations-upgrade.js';
 import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
+import {mobileGuideFor} from './mobile-role-guides.js';
 import {summarizePatrol} from './field-intelligence.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
 
@@ -737,14 +738,16 @@ function phoneContent(){
 const lessonNames=['O que você verá','Início e percurso','Desvios e justificativa','Supervisão e resultado','Limites e implantação'];
 function lesson(i){const stages=[`<p>Você acompanhará a mesma ronda dentro do aplicativo. Use o seletor de áreas para alternar entre Operação de Ronda e Administração, sem perder o progresso nem os alertas locais.</p><ol><li>Inicie a ronda e veja a localização no mapa.</li><li>Percorra os pontos na ordem e aguarde os 30 segundos.</li><li>Simule um desvio ou registre uma ocorrência.</li><li>Consulte a notificação e a justificativa no painel.</li></ol>`,`<p>O deslocamento usa posições intermediárias sobre a cartografia real, mas o trajeto de exemplo não é uma rota de trânsito oficial.</p><ol><li>Clique em <strong>Iniciar ronda</strong> e aceite as regras.</li><li>No painel da ronda, use <strong>Ir ao próximo ponto</strong> nos comandos do cenário.</li><li>Aguarde a chegada dentro do raio de 25 m.</li><li>Espere 30 segundos reais e confirme a conclusão para liberar o próximo.</li></ol>`,`<p>A progressão para quando a posição sai do corredor da rota simulada ou tenta avançar fora da sequência.</p><ol><li>Use <strong>Sair da rota</strong> nos comandos do cenário.</li><li>O ronda verá a solicitação de justificativa.</li><li>Escreva o motivo e confirme o envio local simulado.</li><li>Use <strong>Ir ao próximo ponto</strong> para voltar ao ponto pendente e cumpra 30 segundos novamente: justificar não substitui a visita.</li></ol>`,`<p>Alterne para <strong>Administração</strong> na barra superior do próprio aplicativo. Os avisos reúnem nome, rota, ponto, horário, posição ilustrativa e explicação. O administrador pode abrir o aviso e marcá-lo como analisado.</p><p style="margin-top:12px"><strong>Benefício proposto:</strong> facilitar conferências, histórico e tratamento de exceções. A eficiência só pode ser medida numa operação piloto.</p>`,`<p><strong>Protótipo, não produção.</strong> As notificações são locais, os usuários não possuem autenticação real e os registros ficam neste navegador. O mapa usa ruas reais, mas as rotas da Maxvel foram substituídas por pontos fictícios.</p><ol><li>No piloto: validar precisão GPS, rede, bateria, duração e acessibilidade.</li><li>Na implantação: servidor, autenticação, auditoria, permissões, mapas e notificações reais.</li><li>Na privacidade: documentar finalidade, acesso, retenção e tratamento conforme a LGPD.</li></ol>`];return stages[i]||stages[0]}
 function showGuide(forPresentation=false,step=0){
- const changingStep=modal.open&&modal.classList.contains('guide-dialog');
- guideStage=Math.max(0,Math.min(lessonNames.length-1,Number(step)||0));
+ const changingStep=modal.open&&modal.classList.contains(<guide-dialog');
  const isLaunching=forPresentation||screen==='landing';
- const steps=lessonNames.map((title,i)=>
+ const mobileGuide=window.innerWidth<=900&&!isLaunching?mobileGuideFor(user?.role):null;
+ const names=mobileGuide?mobileGuide.stages.map(item=>item.title):lessonNames;
+ guideStage=Math.max(0,Math.min(names.length-1,Number(step)||0));
+ const steps=names.map((title,i)=>
   '<button type="button" data-action="guide-stage" data-stage="'+i+'"'+
   ' aria-current="'+(i===guideStage?'step':'false')+'" class="'+(i===guideStage?'active':'')+'">'+
   '<span class="guide-step-number">'+(i+1)+'</span><span>'+esc(title)+'</span></button>').join('');
- const last=guideStage===lessonNames.length-1;
+ const last=guideStage===names.length-1;
  const actions=[
   guideStage>0?btn(ic('arrowleft')+' Anterior','guide-back','guide-prev'):'',
   !last?btn('Próxima etapa '+ic('arrow'),'guide-forward','primary guide-next'):
@@ -753,25 +756,26 @@ function showGuide(forPresentation=false,step=0){
  ].join('');
  showDialog('<div class="guide-shell">'+
   '<header class="guide-header"><div class="eyebrow">GUIA INTERATIVO · GRUPO MAXVEL</div>'+
-  '<h2 id="guide-title">Conheça o sistema sem decorar instruções.</h2>'+
-  '<div class="guide-stage-progress"><span>Etapa '+(guideStage+1)+' de '+lessonNames.length+'</span>'+
+  '<h2 id="guide-title">'+esc(mobileGuide?.title||'Conheça o sistema sem decorar instruções.')+'</h2>'+ 
+  '<div class="guide-stage-progress"><span>Etapa '+(guideStage+1)+' de '+names.length+'</span>'+ 
   '<div class="guide-progress-track" role="progressbar" aria-label="Progresso no guia"'+
-  ' aria-valuemin="0" aria-valuemax="'+lessonNames.length+'" aria-valuenow="'+(guideStage+1)+'">'+
-  '<span style="width:'+((guideStage+1)/lessonNames.length*100)+'%"></span></div></div></header>'+
+  ' aria-valuemin="0" aria-valuemax="'+names.length+'" aria-valuenow="'+(guideStage+1)+'">'+ 
+  '<span style="width:'+((guideStage+1)/names.length*100)+'%"></span></div></div></header>'+ 
   '<div class="guide-scroll" id="guide-scroll" aria-labelledby="guide-current-heading" tabindex="0">'+
-  '<p class="guide-description">Cada tema explica o que fazer, o que observar e o valor para a empresa. A ajuda continuará acessível durante a operação.</p>'+
+  '<p class="guide-description">'+esc(mobileGuide?.subtitle||'Cada tema explica o que fazer, o que observar e o valor para a empresa. A ajuda continuará acessível durante a operação.')+'</p>'+ 
   '<details class="guide-step-picker"><summary>Escolher etapa <span>'+esc(lessonNames[guideStage])+'</span></summary>'+
   '<nav class="guide-tabs" aria-label="Etapas do guia">'+steps+'</nav></details>'+
   '<section class="guide-pan" aria-labelledby="guide-current-heading"><h3 id="guide-current-heading" tabindex="-1">'+
-  esc(lessonNames[guideStage])+'</h3>'+lesson(guideStage)+'</section>'+
-  ops.guideSection()+
+  esc(names[guideStage])+'</h3>'+(mobileGuide?mobileGuide.stages[guideStage].body:lesson(guideStage))+'</section>'+ 
+  (mobileGuide?'':ops.guideSection())+
   (isLaunching&&last?'<section class="guide-pan guide-launch"><h3>Pronto para testar?</h3>'+
   '<label class="field">Nome do ronda na apresentação'+
   '<input id="presentation-name" maxlength="60" minlength="2" value="'+esc(presentationName)+'"></label></section>':'')+
   '</div><footer class="guide-footer"><span class="guide-footer-step">'+
-  (guideStage+1)+' / '+lessonNames.length+'</span><div class="guide-footer-actions">'+actions+
+  (guideStage+1)+' / '+names.length+'</span><div class="guide-footer-actions">'+actions+
   '</div></footer></div>',true);
  modal.classList.add('guide-dialog');
+ modal.dataset.guideRole=mobileGuide?user.role:(user?.role||'ronda');
  modal.dataset.guideLaunch=isLaunching?'true':'false';
  // A rolagem fica exclusivamente no conteúdo. Ao mudar de etapa,
  // reiniciamos a leitura e oferecemos foco correto para teclado/leitor de tela.
@@ -930,7 +934,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='presentation-intro'){loginDialog();return;}
  if(act==='guide'){showGuide(false);return;}
  if(act==='guide-stage'){const input=modal.querySelector('#presentation-name');if(input?.value?.trim())presentationName=input.value.trim().slice(0,60);showGuide(modal.dataset.guideLaunch==='true',Number(el.dataset.stage));return;}
- if(act==='guide-back'||act==='guide-forward'){const input=modal.querySelector('#presentation-name');if(input?.value?.trim())presentationName=input.value.trim().slice(0,60);showGuide(modal.dataset.guideLaunch==='true',Math.max(0,Math.min(4,guideStage+(act==='guide-forward'?1:-1))));return;}
+ if(act==='guide-back'||act==='guide-forward'){const input=modal.querySelector('#presentation-name');if(input?.value?.trim())presentationName=input.value.trim().slice(0,60);showGuide(modal.dataset.guideLaunch==='true',Math.max(0,Math.min(lessonNames.length-1,guideStage+(act==='guide-forward'?1:-1))));return;}
  if(act==='launch-presentation'){
   const name=modal.querySelector('#presentation-name')?.value?.trim()||presentationName;
   if(name.length<2){notify('Informe um nome com pelo menos duas letras.');return;}
