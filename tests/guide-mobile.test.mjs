@@ -10,7 +10,7 @@ const motion=read('../src/ui-motion.js');
 
 test('guia mobile do vigia mantém cinco etapas, conteúdos e navegação guiada',()=>{
  const guide=app.slice(app.indexOf('function showGuide('),app.indexOf('function showDialog(',app.indexOf('function showGuide(')));
- assert.match(guide,/lessonNames\.map/);
+ assert.match(guide,/names\.map/);
  assert.match(guide,/ops\.guideSection\(\)/);
  assert.match(guide,/lesson\(guideStage\)/);
  assert.match(guide,/guide-shell/);

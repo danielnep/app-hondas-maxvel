@@ -6,7 +6,7 @@ const CORE=[
  './','./index.html','./manifest.webmanifest',
  './assets/ronda-pro.css','./assets/ronda-pro-upgrade.css','./assets/soft-polish.css',
  './assets/maxvel-logo.webp',
- './src/app.js','./src/soft-polish.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./central.html','./assets/central.css','./assets/checkpoint-curtain.css',
+ './src/app.js','./src/mobile-role-guides.js','./src/soft-polish.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./central.html','./assets/central.css','./assets/checkpoint-curtain.css',
  './src/domain.js','./src/map.js','./src/wizard.js',
  './src/demo-scenarios.js','./src/dashboard-insights.js',
  './src/dialog-pagination.js','./src/evidence.js',
