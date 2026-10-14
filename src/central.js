@@ -131,15 +131,48 @@ function ownHistory(){
  '<details class="details-toggle"><summary>Ver histórico técnico completo · '+telemetry.length+' registros de GPS e bateria</summary><div class="surface">'+eventList(telemetry)+'</div></details>'+
  '<p class="muted">Distâncias são estimativas de amostras GPS confiáveis. O histórico remoto só mostra dados efetivamente sincronizados.</p></section>';
 }
+let operationalMap=null;
+function resetOperationalMap(){if(operationalMap){try{operationalMap.remove()}catch{}operationalMap=null}}
+function mountOperationalMap(){
+ const node=document.querySelector('#ops-live-map'),L=globalThis.L;if(!node||!L)return;
+ resetOperationalMap();node.innerHTML='';
+ const active=rounds.find(r=>r.status==='em_andamento'),planned=routes.find(r=>r.id===active?.routeId)||routes[0];
+ const worker=active?users.find(w=>w.id===active.userId):null;
+ const pts=(planned?.points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+ const map=L.map(node,{zoomControl:true,scrollWheelZoom:false});
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+ let bounds=[];
+ if(pts.length){
+  L.polyline(pts.map(p=>[p.lat,p.lng]),{color:'#7ac8e4',weight:4,opacity:.9}).addTo(map);
+  pts.forEach((p,i)=>{L.circleMarker([p.lat,p.lng],{radius:6,color:'#d5effb',fillColor:'#7ac8e4',fillOpacity:1})
+   .bindTooltip(String(i+1)+' · '+escape(p.name)).addTo(map);bounds.push([p.lat,p.lng])});
+ }
+ const track=(active?.track||[]).filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng));
+ if(track.length>1)L.polyline(track.map(x=>[x.lat,x.lng]),{color:'#10b981',weight:3,opacity:.8,dashArray:'6 5'}).addTo(map);
+ const pos=active?.lastFix;
+ if(pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)){
+  L.circleMarker([pos.lat,pos.lng],{radius:9,color:'#fff',weight:2,fillColor:'#10b981',fillOpacity:1}).bindTooltip('Último GPS: '+escape(worker?.name||'Vigia')).addTo(map);bounds.push([pos.lat,pos.lng]);
+ }
+ if(bounds.length)map.fitBounds(bounds,{padding:[35,35],maxZoom:17});else map.setView([-20.145,-44.89],12);
+ operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
+}
 function monitorView(){
- const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
+ const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message'].includes(e.kind)&&e.status!=='resolvida');
  const urgent=open.filter(e=>e.kind==='panic');
- const list=active.length?active:rounds.slice(0,5);
- return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CENTRAL DE MONITORAMENTO</div><h1>COI · Acompanhamento de rondas</h1><p class="muted">Local, status, histórico, localização GPS e ocorrências de cada vigia. Atualização a cada 30 segundos com a tela aberta.</p></div><button data-refresh>Atualizar agora</button></div>'+
- '<div class="cards">'+[['Rondas ativas',active.length],['Pânicos em aberto',urgent.length],['Pendências',open.length],['Vigias cadastrados',users.filter(w=>w.role==='ronda').length]].map(([n,v],i)=>'<div class="metric '+(i===1&&v?'urgent':'')+'"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
- '<section class="surface"><div class="toolbar"><h2>Prioridade da operação</h2><button data-page="events">Tratar ocorrências</button></div>'+eventList(open.slice(0,8))+'</section>'+
- '<section class="surface"><h2>'+ (active.length?'Rondas em acompanhamento':'Últimas rondas registradas')+'</h2><p class="muted">Posições com horário da última atualização. Ausência de GPS não comprova desvio.</p>'+monitorRows(list)+'</section>'+
- '<details class="details-toggle"><summary>Consultar histórico operacional completo</summary><div class="surface">'+roundTable(rounds.slice(0,50))+'</div></details></section>';
+ const current=active[0],def=routes.find(r=>r.id===current?.routeId)||routes[0],worker=users.find(w=>w.id===current?.userId);
+ const future=routes.filter(r=>r.id!==def?.id).slice(0,8);
+ const list=active.length?active:rounds.slice(0,6);
+ const info=current?escape(worker?.name||'Vigia')+' · '+escape(current.site||'Posto não informado')+' · '+fmt(current.start):def?escape(def.workerName||'Vigia')+' · '+escape(def.site||'Posto')+' · Horário a definir':'Nenhuma ronda programada';
+ return '<section class="stack ops-monitor"><div class="toolbar"><div><div class="eyebrow">COI · MONITORAMENTO INTEGRADO</div><h1>Centro operacional</h1><p class="muted">Acompanhamento das equipes, prioridades e registros sincronizados. GPS sem sinal recente não é tratado como desvio comprovado.</p></div><button data-refresh>Atualizar</button></div>'+
+ '<div class="ops-monitor-kpis">'+[['Em ronda',active.length],['Pendentes',open.length],['Pânicos',urgent.length],['Vigias',users.filter(w=>w.role==='ronda').length]].map(([label,num],i)=>'<div class="ops-monitor-kpi'+(i===2&&num?' critical':'')+'"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
+ '<div class="ops-monitor-columns"><section class="surface ops-monitor-main"><div class="toolbar"><div><div class="eyebrow">MAPA DINÂMICO</div><h2>'+(current?'Ronda em andamento':def?'Próxima rota cadastrada':'Nenhuma rota ativa')+'</h2><p class="muted">'+info+'</p></div><button data-page="routes">Ver percursos</button></div><div id="ops-live-map" class="ops-live-map" aria-label="Mapa da ronda atual com trajeto planejado e última posição GPS"></div><p class="muted">Azul celeste: trajeto previsto · Verde: percurso GPS recebido · A localização só é considerada atual quando houver leitura recente.</p></section>'+
+ '<aside class="surface ops-monitor-sequence"><div class="toolbar"><h2>Sequência de rondas</h2><button data-page="dispatches">Novo despacho</button></div>'+
+ '<div class="ops-sequence-list">'+(current?'<div class="ops-sequence-row is-live"><b>Em andamento</b><strong>'+escape(worker?.name||'Vigia')+'</strong><small>'+fmt(current.start)+' · '+escape(current.site||'Posto')+'</small></div>':'')+
+ (def&&!current?'<div class="ops-sequence-row"><b>Próxima rota cadastrada</b><strong>'+escape(def.name)+'</strong><small>'+escape(def.workerName||'Vigia')+' · Horário ainda não programado</small></div>':'')+
+ future.map((route,i)=>'<div class="ops-sequence-row"><b>Subsequente '+(i+1)+'</b><strong>'+escape(route.name)+'</strong><small>'+escape(route.workerName||'Vigia')+' · Horário ainda não programado</small></div>').join('')+
+ '<h3>Histórico recente</h3>'+rounds.filter(r=>r.status!=='em_andamento').slice(0,5).map(r=>'<div class="ops-sequence-row"><b>'+escape(roundStatus(r))+'</b><strong>'+escape(users.find(w=>w.id===r.userId)?.name||'Vigia')+'</strong><small>'+fmt(r.start)+'</small></div>').join('')+'</div></aside></div>'+
+ '<section class="surface"><div class="toolbar"><h2>Vigias e localização</h2><button data-page="team">Consultar equipe</button></div>'+monitorRows(list)+'</section>'+
+ '<section class="ops-monitor-footer"><div class="toolbar"><div><h2>Alertas e ocorrências</h2><p class="muted">'+open.length+' registro(s) aguardando acompanhamento</p></div><button data-page="events">Abrir e tratar</button></div>'+eventList(open.slice(0,5))+'</section></section>';
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -317,7 +350,7 @@ function inspectionView(){
 }
 
 function render(){
- routeBoard.resetMaps();
+ routeBoard.resetMaps();resetOperationalMap();
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
  const content=page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(account.role==='ronda'?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&privileged()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
@@ -331,6 +364,7 @@ function render(){
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&privileged())requestAnimationFrame(()=>routeBoard.mount());
+ if(page==='monitor')requestAnimationFrame(mountOperationalMap);
 }
 async function loadMessages(eventId){
  try{messages=(await api('/events/'+eventId+'/messages')).messages||[];const host=document.querySelector('#thread');if(!host)return;
