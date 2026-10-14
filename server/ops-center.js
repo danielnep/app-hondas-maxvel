@@ -7,7 +7,7 @@ const EVENT_LABELS={
  panic:'PÂNICO ACIONADO',incident:'Nova ocorrência',alert:'Alerta operacional',
  gps_issue:'Sinal GPS impreciso',route_deviation:'Possível desvio de rota',
  patrol_incomplete:'Ronda incompleta',patrol_interrupted:'Ronda interrompida',
- message:'Nova mensagem do vigia'
+ message:'Nova mensagem do vigia',inspection:'Novo laudo de vistoria'
 };
 const clean=x=>String(x??'').trim();
 export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}){
@@ -17,6 +17,11 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  db.exec('CREATE TABLE IF NOT EXISTS notifications(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,kind TEXT NOT NULL,title TEXT NOT NULL,body TEXT NOT NULL,event_id TEXT,dispatch_id TEXT,created_at INTEGER NOT NULL,read_at INTEGER)');
  db.exec('CREATE INDEX IF NOT EXISTS idx_notification_user ON notifications(user_id,created_at)');
  db.exec('CREATE TABLE IF NOT EXISTS operational_presence(user_id TEXT PRIMARY KEY,last_seen INTEGER NOT NULL)');
+ db.exec('CREATE TABLE IF NOT EXISTS inspection_destinations(id TEXT PRIMARY KEY,client_name TEXT NOT NULL,contact_name TEXT NOT NULL DEFAULT "",phone TEXT NOT NULL DEFAULT "",email TEXT NOT NULL DEFAULT "",address TEXT NOT NULL,latitude REAL,longitude REAL,active INTEGER NOT NULL DEFAULT 1,created_by TEXT NOT NULL,created_at INTEGER NOT NULL)');
+ const dispatchCols=db.prepare('PRAGMA table_info(dispatches)').all().map(x=>x.name);
+ if(!dispatchCols.includes('kind'))db.exec("ALTER TABLE dispatches ADD COLUMN kind TEXT NOT NULL DEFAULT 'ronda'");
+ if(!dispatchCols.includes('destination_id'))db.exec('ALTER TABLE dispatches ADD COLUMN destination_id TEXT');
+ if(!dispatchCols.includes('site'))db.exec("ALTER TABLE dispatches ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  const fields=db.prepare('PRAGMA table_info(dispatches)').all().map(x=>x.name);
  if(!fields.includes('started_at'))db.exec('ALTER TABLE dispatches ADD COLUMN started_at INTEGER');
  if(!fields.includes('completed_at'))db.exec('ALTER TABLE dispatches ADD COLUMN completed_at INTEGER');
@@ -68,12 +73,12 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  }
  function availability(){
   const busy=new Set(recentRounds().filter(r=>r.status==='em_andamento').map(r=>r.userId));
-  const workers=db.prepare("SELECT u.id,u.name,u.site,u.active,p.last_seen FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role='ronda' ORDER BY u.name").all();
+  const workers=db.prepare("SELECT u.id,u.name,u.role,u.site,u.active,p.last_seen FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role IN ('ronda','vistoriador') ORDER BY u.name").all();
   return workers.map(w=>({...w,status:!w.active?'Fora de serviço':busy.has(w.id)?'Em ronda':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço'}));
  }
  async function handle(req,res,user,p,method){
   if(p==='/api/presence'&&method==='POST'){
-   if(user.role!=='ronda'){resp(res,403,{error:'Presença reservada ao vigia'});return true;}
+   if(!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Presença reservada à equipe de campo'});return true;}
    db.prepare('INSERT INTO operational_presence(user_id,last_seen) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen').run(user.id,now());
    resp(res,200,{ok:true});return true;
   }
@@ -84,7 +89,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   }
   if(p==='/api/availability'&&method==='GET'){
    if(!review(user)||!allows(user,'rondas')){resp(res,403,{error:'Sem acesso à disponibilidade'});return true;}
-   resp(res,200,{guards:availability()});return true;
+   const rows=availability();resp(res,200,{guards:rows.filter(w=>w.role==='ronda'),inspectors:rows.filter(w=>w.role==='vistoriador')});return true;
   }
   if(p==='/api/notifications/stream'&&method==='GET'){
    if(!req.headers.authorization){resp(res,401,{error:'Sessão obrigatória'});return true;}
@@ -117,33 +122,61 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const change=db.prepare('UPDATE notifications SET read_at=COALESCE(read_at,?) WHERE id=? AND user_id=?').run(now(),seen[1],user.id);
    resp(res,change.changes?200:404,change.changes?{ok:true}:{error:'Notificação não encontrada'});return true;
   }
+  if(p==='/api/inspection-destinations'&&method==='GET'){
+   if(!review(user)){resp(res,403,{error:'Sem acesso aos clientes de vistoria'});return true;}
+   resp(res,200,{destinations:db.prepare('SELECT id,client_name,contact_name,phone,email,address,latitude,longitude,active FROM inspection_destinations ORDER BY client_name').all()});return true;
+  }
+  if(p==='/api/inspection-destinations'&&method==='POST'){
+   if(!admin(user)){resp(res,403,{error:'Só Administração cadastra destinos'});return true;}
+   const data=serialize((await body(req)).toString())||{};
+   const name=clean(data.clientName),address=clean(data.address),contact=clean(data.contactName),
+    phone=clean(data.phone),email=clean(data.email);
+   const lat=data.latitude==null?null:Number(data.latitude),lng=data.longitude==null?null:Number(data.longitude);
+   if(name.length<2||name.length>130||address.length<5||address.length>350||contact.length>100||
+    phone.length>35||email.length>160||(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))||
+    lat!=null&&(!Number.isFinite(lat)||Math.abs(lat)>90)||lng!=null&&(!Number.isFinite(lng)||Math.abs(lng)>180)){
+    resp(res,422,{error:'Dados de destino inválidos'});return true;
+   }
+   const destId=id();
+   db.prepare('INSERT INTO inspection_destinations(id,client_name,contact_name,phone,email,address,latitude,longitude,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)')
+    .run(destId,name,contact,phone,email,address,lat,lng,user.id,now());
+   audit(user,'inspection.destination.create',destId);
+   resp(res,201,{id:destId});return true;
+  }
   if(p==='/api/dispatches'&&method==='GET'){
-   if(user.role!=='ronda'&&(!review(user)||!allows(user,'despachos'))){resp(res,403,{error:'Despachos sem permissão'});return true;}
+   if(!['ronda','vistoriador'].includes(user.role)&&(!review(user)||!allows(user,'despachos'))){resp(res,403,{error:'Despachos sem permissão'});return true;}
    const query='SELECT d.*,worker.name worker,operator.name author FROM dispatches d JOIN users worker ON worker.id=d.worker_id JOIN users operator ON operator.id=d.author_id ';
-   const items=user.role==='ronda'?db.prepare(query+'WHERE d.worker_id=? ORDER BY d.created_at DESC LIMIT 120').all(user.id):db.prepare(query+'ORDER BY d.created_at DESC LIMIT 120').all();
+   const items=['ronda','vistoriador'].includes(user.role)?db.prepare(query+'WHERE d.worker_id=? ORDER BY d.created_at DESC LIMIT 120').all(user.id):db.prepare(query+'ORDER BY d.created_at DESC LIMIT 120').all();
    resp(res,200,{dispatches:items});return true;
   }
   if(p==='/api/dispatches'&&method==='POST'){
    if(!review(user)||!allows(user,'despachos')){resp(res,403,{error:'Despacho indisponível'});return true;}
-   const data=serialize((await body(req)).toString())||{},address=clean(data.address),reason=clean(data.reason);
-   const worker=db.prepare("SELECT id,name,site,active FROM users WHERE id=? AND role='ronda'").get(clean(data.workerId));
-   if(!worker||!worker.active||address.length<5||address.length>350||reason.length<10||reason.length>1000){
-    resp(res,422,{error:'Escolha um vigia ativo, endereço e motivo com 10 ou mais caracteres'});return true;
+   const data=serialize((await body(req)).toString())||{},reason=clean(data.reason),
+    kind=data.kind==='inspection'?'vistoria':'ronda';
+   const role=kind==='vistoria'?'vistoriador':'ronda';
+   const worker=db.prepare('SELECT id,name,site,role,active FROM users WHERE id=? AND role=?').get(clean(data.workerId),role);
+   const dest=kind==='vistoria'?db.prepare('SELECT * FROM inspection_destinations WHERE id=? AND active=1').get(clean(data.destinationId)):null;
+   const address=dest?.address||clean(data.address),site=dest?.client_name||worker?.site||'';
+   if(!worker||!worker.active||kind==='vistoria'&&!dest||address.length<5||address.length>350||reason.length<10||reason.length>1000){
+    resp(res,422,{error:'Escolha um colaborador disponível, destino autorizado e justificativa com 10 ou mais caracteres'});return true;
    }
    if(!availability().some(w=>w.id===worker.id&&w.status==='Disponível')){
-    resp(res,409,{error:'O vigia não está disponível no momento. Atualize a presença.'});return true;
+    resp(res,409,{error:'Profissional indisponível. Atualize a presença.'});return true;
    }
-   const latitude=data.latitude==null?null:Number(data.latitude),longitude=data.longitude==null?null:Number(data.longitude);
-   if(latitude!=null&&!Number.isFinite(latitude)||longitude!=null&&!Number.isFinite(longitude)||latitude!=null&&Math.abs(latitude)>90||longitude!=null&&Math.abs(longitude)>180){
+   const latitude=dest?dest.latitude:data.latitude==null?null:Number(data.latitude),
+    longitude=dest?dest.longitude:data.longitude==null?null:Number(data.longitude);
+   if(latitude!=null&&(!Number.isFinite(latitude)||Math.abs(latitude)>90)||
+    longitude!=null&&(!Number.isFinite(longitude)||Math.abs(longitude)>180)){
     resp(res,422,{error:'Coordenadas inválidas'});return true;
    }
    const dispatchId=id(),at=now();
-   db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at) VALUES(?,?,?,?,?,?,?,?)')
-    .run(dispatchId,worker.id,user.id,address,reason,latitude,longitude,at);
-   insert.run(id(),worker.id,'dispatch','Nova ronda adicionada',address+' · '+reason,null,dispatchId,at);
+   db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at,kind,destination_id,site) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+    .run(dispatchId,worker.id,user.id,address,reason,latitude,longitude,at,kind,dest?.id||null,site);
+   insert.run(id(),worker.id,'dispatch',kind==='vistoria'?'Nova vistoria atribuída':'Nova ronda adicionada',
+    address+' · '+reason,null,dispatchId,at);
    announce(worker.id);
    notify(ADMIN_ROLES,'dispatch','Despacho sob demanda registrado',user.name+' → '+worker.name+' · '+address+' · '+reason,{dispatchId,except:[user.id]});
-   audit(user,'dispatch.create',dispatchId);
+   audit(user,'dispatch.'+kind+'.create',dispatchId);
    resp(res,201,{id:dispatchId,createdAt:at});return true;
   }
   const ack=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/ack$/i);
@@ -154,7 +187,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   }
   const task=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/(start|complete)$/i);
   if(task&&method==='POST'){
-   if(user.role!=='ronda'){resp(res,403,{error:'Somente o vigia atribuído pode executar'});return true;}
+   if(!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Somente o profissional atribuído pode executar'});return true;}
    const item=db.prepare('SELECT * FROM dispatches WHERE id=? AND worker_id=?').get(task[1],user.id);
    if(!item){resp(res,404,{error:'Atribuição não encontrada'});return true;}
    if(task[2]==='start'&&item.completed_at||task[2]==='complete'&&(!item.started_at||item.completed_at)){
@@ -174,7 +207,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
      db.prepare('UPDATE dispatches SET started_at=?,acknowledged_at=COALESCE(acknowledged_at,?) WHERE id=?').run(at,at,item.id);
     }else db.prepare('UPDATE dispatches SET completed_at=?,completion_note=? WHERE id=?').run(at,comment,item.id);
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-     .run(id(),user.id,kind,item.id,at,at,validPosition?position.lat:null,validPosition?position.lng:null,validPosition?position.accuracy??null:null,null,description,JSON.stringify({dispatchId:item.id,address:item.address,reason:item.reason}),user.site||'');
+     .run(id(),user.id,kind,item.id,at,at,validPosition?position.lat:null,validPosition?position.lng:null,validPosition?position.accuracy??null:null,null,description,JSON.stringify({dispatchId:item.id,address:item.address,reason:item.reason,destinationId:item.destination_id}),item.site||user.site||'');
     db.exec('COMMIT');
    }catch(error){db.exec('ROLLBACK');throw error}
    audit(user,'dispatch.'+task[2],item.id);
