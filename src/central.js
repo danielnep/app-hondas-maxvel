@@ -17,7 +17,7 @@ async function api(path,{method='GET',data,headers={},raw}={}){
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
  return res.headers.get('content-type')?.includes('application/json')?res.json():res.blob();
 }
-const privileged=()=>account&&['admin','master','coi'].includes(account.role);
+const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
 const ops=createOpsCenterUI({api,flash,openNotice:({page:nextPage,eventId}={})=>{if(eventId){const evt=events.find(x=>x.id===eventId);if(evt){selected={event:evt};page=review()?'events':'history';render();return;}}if(nextPage){selected=null;page=nextPage;render();}}});
 const routeBoard=createRouteBoard({api,getContext:()=>({users,rounds,events,routes,account}),redraw:async(loadRemote=false)=>loadRemote?await load():render(),notify:flash});
@@ -88,7 +88,7 @@ async function load(){
 }
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Notificações','✉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
+ operador:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  coi:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  admin:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  master:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
@@ -354,17 +354,18 @@ function render(){
  routeBoard.resetMaps();resetOperationalMap();
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
- const content=page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(account.role==='ronda'?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&privileged()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
+ const required=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[page];
+ if(review()&&required&&!ops.allowed(required)){page='notifications';selected=null;}
+ const content=page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(account.role==='ronda'?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?inspectionView():
-   account.role==='operador'?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  root.innerHTML='<div class="workspace">'+nav()+'<article class="content"><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+ 
   (account.role==='ronda'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
- if(page==='routes'&&privileged())requestAnimationFrame(()=>routeBoard.mount());
+ if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(mountOperationalMap);
 }
 async function loadMessages(eventId){
