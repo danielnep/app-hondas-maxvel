@@ -1,5 +1,6 @@
 import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
+import {openConclusionDialog} from './conclusion-dialog.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
@@ -222,8 +223,12 @@ function eventView(e){
  '<div class="detail-grid">'+[['Data e hora',fmt(e.occurred_at)],['Bateria',e.battery==null?'Não informada':e.battery+'%'],['Localização',Number.isFinite(e.lat)?'Disponível no mapa':'Indisponível'],['Status',e.status]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
  (Number.isFinite(e.lat)&&Number.isFinite(e.lng)?positionMap({lat:e.lat,lng:e.lng}):'<p class="muted">Sem geolocalização confiável anexada a este registro.</p>')+
  '</section>'+
- (review()?'<section class="surface no-print"><h2>Tratamento pela equipe</h2><form id="review-event" class="stack"><div class="row"><label style="max-width:230px;flex:1">Situação<select name="status"><option value="aberta" '+(e.status==='aberta'?'selected':'')+'>Aberta</option><option value="em_analise" '+(e.status==='em_analise'?'selected':'')+'>Em análise</option><option value="resolvida" '+(e.status==='resolvida'?'selected':'')+'>Resolvida</option></select></label><button class="primary" type="submit">Salvar tratamento</button></div><label>Providência / descrição interna<textarea name="note" placeholder="O que foi verificado e qual providência foi tomada?"></textarea></label></form></section>':'')+
- '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
+ (review()?'<section class="surface no-print"><h2>Tratamento pela equipe</h2><p class="muted">Cada decisão exige uma conclusão descritiva, com responsável, horário e histórico auditável.</p>'+
+ '<div class="row treatment-actions" role="group" aria-label="Opções de tratamento">'+
+ '<button type="button" data-review-status="em_analise">Registrar análise</button>'+
+ '<button type="button" data-review-status="encaminhada">Encaminhar ao administrativo</button>'+
+ '<button type="button" class="primary" data-review-status="resolvida">Marcar como analisada</button></div></section>':'')+
+  '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
  '<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" name="file" required></label><button>Enviar mídia</button></form></section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
  '<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
@@ -357,6 +362,19 @@ document.addEventListener('click',async e=>{
    }finally{if(target.isConnected)target.disabled=false}
    return;
   }
+  if(target.dataset.reviewStatus){
+   if(!review()||!selected?.event)return;
+   const status=target.dataset.reviewStatus;
+   const titles={em_analise:'Registrar análise',encaminhada:'Encaminhar ao administrativo',resolvida:'Marcar como analisada'};
+   if(!titles[status])return;
+   const selectedEventId=selected.event.id;
+   openConclusionDialog({title:titles[status],eventLabel:(friendly[selected.event.kind]||selected.event.kind)+' · '+selected.event.description,
+    action:status,onConfirm:async({conclusion})=>{
+     await api('/events/'+selectedEventId+'/review',{method:'POST',data:{status,conclusion}});
+     await load();flash('Conclusão registrada com data, hora e responsável.');
+    }});
+   return;
+  }
   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;selected=null;page=target.dataset.page;render();return;}
   if(target.dataset.event){if(['cliente','vistoriador'].includes(account.role))return;const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
@@ -383,7 +401,7 @@ document.addEventListener('click',async e=>{
 document.addEventListener('submit',async e=>{
  const form=e.target;
  if(form.id==='route-form'){e.preventDefault();try{await routeBoard.submit(form)}catch(err){flash(err.message)}return;}
- if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','review-event','send-message','upload-evidence','inspection-form'].includes(form.id))return;
+ if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','send-message','upload-evidence','inspection-form'].includes(form.id))return;
  e.preventDefault();const d=Object.fromEntries(new FormData(form));
  try{
   if(form.id==='central-login'){const result=await api('/login',{method:'POST',data:d});token=result.token;sessionStorage.setItem('rondaspro_api_token',token);await load();return;}
@@ -407,7 +425,6 @@ document.addEventListener('submit',async e=>{
    flash(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':'Mensagem registrada na central.');
    return;
   }
-  if(form.id==='review-event'){await api('/events/'+selected.event.id+'/review',{method:'POST',data:d});flash('Tratamento registrado.');await load();return;}
   if(form.id==='send-message'){await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general'}});form.reset();await loadMessages(selected.event.id);return;}
   if(form.id==='upload-evidence'){
    const file=form.querySelector('[name=file]').files[0];if(!file)throw new Error('Selecione uma mídia');
