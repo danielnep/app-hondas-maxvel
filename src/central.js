@@ -7,7 +7,8 @@ const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'
 const id=x=>escape(x);
 const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término',inspection:'Vistoria de qualidade',patrol_interrupted:'Ronda interrompida',patrol_incomplete:'Ronda incompleta'};
 let composeKind='message';
-let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
+let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
+let occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 async function api(path,{method='GET',data,headers={},raw}={}){
@@ -69,8 +70,8 @@ async function load(){
   events=e.events||[];rounds=r.rounds||[];routes=planned.routes||[];
   if(selected?.event)selected={event:events.find(record=>record.id===selected.event.id)||selected.event};
   if(review()){
-   const [d,u,j,t]=await Promise.all([api('/dashboard'),api('/users'),api('/email-jobs'),api('/templates')]);
-   dashboard=d;users=u.users||[];emailJobs=j.jobs||[];templates=t.templates||[];mySummary=null;
+   const [d,u,j,t,tr]=await Promise.all([api('/dashboard'),api('/users'),api('/email-jobs'),api('/templates'),api('/event-treatments?limit=1500')]);
+   dashboard=d;users=u.users||[];emailJobs=j.jobs||[];templates=t.templates||[];treatments=tr.treatments||[];mySummary=null;
   }else if(account.role==='ronda'){
    const [sum,t]=await Promise.all([api('/my-summary'),api('/templates')]);
    mySummary=sum;templates=t.templates||[];dashboard=null;users=[];emailJobs=[];
@@ -173,13 +174,47 @@ function eventList(rows){
 }
 function eventsView(){
  const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
- const ordinary=events.filter(e=>!priority.includes(e)&&e.kind!=='message');
  const routineMessages=events.filter(e=>e.kind==='message');
- return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">TRATAMENTO E REGISTROS</div><h1>Ocorrências</h1><p class="muted">Prioridades, respostas da equipe, evidências e histórico.</p></div><button data-refresh>Atualizar</button></div>'+
- '<section class="surface"><h2>Exigem atenção</h2>'+eventList(priority.filter(e=>e.status!=='resolvida'))+'</section>'+
- '<details class="details-toggle"><summary>Ocorrências tratadas · '+priority.filter(e=>e.status==='resolvida').length+'</summary><div class="surface">'+eventList(priority.filter(e=>e.status==='resolvida'))+'</div></details>'+
- '<section class="surface"><h2>Mensagens à central</h2><p class="muted">Comunicações rotineiras, separadas dos alertas e ocorrências urgentes.</p>'+eventList(routineMessages)+'</section>'+ 
- '<details class="details-toggle"><summary>Histórico técnico · '+ordinary.length+' eventos</summary><div class="surface">'+eventList(ordinary)+'</div></details></section>';
+ const lastTreatment=e=>treatments.find(t=>t.event_id===e.id);
+ const option=(v,key)=>occurrenceFilters[key]===v?'selected':'';
+ const workerOptions=users.filter(u=>u.role==='ronda').map(u=>'<option value="'+id(u.id)+'" '+option(u.id,'worker')+'>'+escape(u.name)+'</option>').join('');
+ const reviewerOptions=users.filter(u=>['operador','coi','admin','master'].includes(u.role)).map(u=>'<option value="'+id(u.id)+'" '+option(u.id,'reviewer')+'>'+escape(u.name)+'</option>').join('');
+ const passed=priority.filter(e=>{
+  const t=lastTreatment(e),f=occurrenceFilters;
+  if(f.status==='pending'&&e.status==='resolvida')return false;
+  if(f.status==='resolved'&&e.status!=='resolvida')return false;
+  if(f.status==='forwarded'&&e.status!=='encaminhada')return false;
+  if(f.kind!=='all'&&e.kind!==f.kind)return false;
+  if(f.worker!=='all'&&e.user_id!==f.worker)return false;
+  if(f.reviewer!=='all'&&t?.author_id!==f.reviewer)return false;
+  if(f.dateFrom&&e.occurred_at<new Date(f.dateFrom+'T00:00:00').getTime())return false;
+  if(f.dateTo&&e.occurred_at>new Date(f.dateTo+'T23:59:59').getTime())return false;
+  if(f.query&&!String([e.description,e.id,t?.conclusion,t?.concluded_by,t?.reporter_name].join(' ')).toLocaleLowerCase('pt-BR').includes(f.query.toLocaleLowerCase('pt-BR')))return false;
+  return true;
+ });
+ const rows=passed.length?passed.map(e=>{
+  const t=lastTreatment(e),who=users.find(u=>u.id===e.user_id)?.name||'Colaborador';
+  return '<button type="button" class="list-item occurrence-row" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b>'+
+   '<small>'+fmt(e.occurred_at)+' · '+escape(who)+' · '+escape(e.description||'Sem descrição')+'</small>'+
+   (t?'<small>Último tratamento: '+escape(t.concluded_by)+' · '+fmt(t.created_at)+' · '+escape(t.conclusion.slice(0,150))+'</small>':'<small>Aguardando tratamento e conclusão</small>')+'</span>'+
+   '<span class="pill '+(e.status==='resolvida'?'':'flag')+'">'+escape(e.status.replaceAll('_',' '))+'</span></button>';
+ }).join(''):'<div class="empty">Nenhuma ocorrência corresponde aos filtros.</div>';
+ return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">HISTÓRICO AUDITÁVEL</div><h1>Ocorrências</h1>'+
+ '<p class="muted">Pendentes, encaminhadas e tratadas, com responsável, conclusão e linha do tempo.</p></div><button data-refresh>Atualizar</button></header>'+
+ '<div class="cards"><div class="metric"><strong>'+priority.filter(e=>e.status!=='resolvida').length+'</strong><span>Pendentes</span></div>'+
+ '<div class="metric"><strong>'+priority.filter(e=>e.status==='resolvida').length+'</strong><span>Tratadas</span></div>'+
+ '<div class="metric"><strong>'+priority.filter(e=>e.status==='encaminhada').length+'</strong><span>Encaminhadas</span></div></div>'+
+ '<section class="surface"><div class="toolbar"><h2>Histórico de ocorrências</h2><button type="button" data-occ-reset>Limpar filtros</button></div>'+
+ '<div class="occurrence-filters">'+
+ '<label>Situação<select data-occ-filter="status"><option value="pending" '+option('pending','status')+'>Pendentes</option><option value="resolved" '+option('resolved','status')+'>Tratadas</option><option value="forwarded" '+option('forwarded','status')+'>Encaminhadas</option><option value="all" '+option('all','status')+'>Todas</option></select></label>'+
+ '<label>Tipo<select data-occ-filter="kind"><option value="all">Todos</option>'+['incident','panic','alert','route_deviation','gps_issue'].map(k=>'<option value="'+k+'" '+option(k,'kind')+'>'+escape(friendly[k])+'</option>').join('')+'</select></label>'+
+ '<label>Quem registrou<select data-occ-filter="worker"><option value="all">Todos os vigias</option>'+workerOptions+'</select></label>'+
+ '<label>Quem concluiu<select data-occ-filter="reviewer"><option value="all">Toda a equipe</option>'+reviewerOptions+'</select></label>'+
+ '<label>De<input type="date" data-occ-filter="dateFrom" value="'+escape(occurrenceFilters.dateFrom)+'"></label>'+
+ '<label>Até<input type="date" data-occ-filter="dateTo" value="'+escape(occurrenceFilters.dateTo)+'"></label>'+
+ '<label class="occurrence-search">Busca / tratamento<input type="search" data-occ-filter="query" value="'+escape(occurrenceFilters.query)+'" placeholder="Descrição, conclusão, responsável"></label></div>'+
+ '<div class="list">'+rows+'</div><p class="muted">Exibindo '+passed.length+' de '+priority.length+' ocorrências encontradas. A conclusão fica preservada no histórico de tratamento do servidor.</p></section>'+
+ '<details class="details-toggle"><summary>Mensagens à central · '+routineMessages.length+'</summary><section class="surface">'+eventList(routineMessages)+'</section></details></section>';
 }
 function teamView(){
  return '<section class="stack"><h1>Equipe e indicadores individuais</h1><div class="surface"><div class="list">'+(dashboard?.team||[]).map(w=>'<button data-person="'+id(w.id)+'" class="list-item"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Descrição pendente')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' acionamentos</span></button>').join('')+'</div></div>'+
@@ -363,6 +398,9 @@ document.addEventListener('click',async e=>{
    }finally{if(target.isConnected)target.disabled=false}
    return;
   }
+  if(target.hasAttribute('data-occ-reset')){
+   occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};render();return;
+  }
   if(target.dataset.reviewStatus){
    if(!review()||!selected?.event)return;
    const status=target.dataset.reviewStatus;
@@ -438,6 +476,10 @@ document.addEventListener('submit',async e=>{
 // A central do operador acompanha o servidor sem depender de recarregar a página.
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
 setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
-document.addEventListener('change',e=>{routeBoard.change(e.target)});
+document.addEventListener('change',e=>{
+ const field=e.target.closest('[data-occ-filter]');
+ if(field){occurrenceFilters[field.dataset.occFilter]=field.value;render();return;}
+ routeBoard.change(e.target);
+});
 exit.addEventListener('click',async()=>{try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
