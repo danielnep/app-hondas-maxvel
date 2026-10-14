@@ -10,7 +10,7 @@ const motion=read('../src/ui-motion.js');
 
 test('guia mobile do vigia mantém cinco etapas, conteúdos e navegação guiada',()=>{
  const guide=app.slice(app.indexOf('function showGuide('),app.indexOf('function showDialog(',app.indexOf('function showGuide(')));
- assert.match(guide,/lessonNames\.map/);
+ assert.match(guide,/names\.map/);
  assert.match(guide,/ops\.guideSection\(\)/);
  assert.match(guide,/lesson\(guideStage\)/);
  assert.match(guide,/guide-shell/);
@@ -23,6 +23,7 @@ test('guia mobile do vigia mantém cinco etapas, conteúdos e navegação guiada
  assert.match(guide,/modal\.classList\.add\('guide-dialog'\)/);
  assert.match(guide,/focus\(\{preventScroll:true\}\)/);
  assert.match(app,/function lesson\(i\)/);
+ assert.match(app,/mobileGuideFor\(user\?\.role\)/);
  assert.match(app,/data-action="guide"/);
 });
 test('somente o corpo do guia rola e abas não exigem deslizar lateralmente no celular',()=>{
