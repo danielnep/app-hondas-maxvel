@@ -9,9 +9,9 @@ const refinements=load('../assets/maxvel-refinement-07.css');
 const baseline=load('../assets/maxvel-obsidian-06.css');
 const metadata=load('../package.json');
 
-test('estilos base e de perfis demonstrativos carregam sem repetição',()=>{
- const sheets=[...html.matchAll(/rel="stylesheet" href="(\\.\\/[^"?]+)/g)].map(x=>x[1]);
- assert.deepEqual(sheets,['./assets/ronda-pro.css','./assets/demo-roles.css']);
+test('as folhas de estilo de cada visão são carregadas sem repetição',()=>{
+ const sheets=[...html.matchAll(/rel="stylesheet" href="(\.\/[^"?]+)/g)].map(x=>x[1]);
+ assert.deepEqual(sheets,['./assets/ronda-pro.css','./assets/demo-roles.css','./assets/field-entry-v2.css']);
  assert.equal(new Set(sheets).size,sheets.length);
 });
 test('topo e rodapé móveis compactos preservam orientação e toque',()=>{
