@@ -85,9 +85,9 @@ try{
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
   try{
    await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:18000});
-   await capture(page,'login',width,height);
-   if(!await page.locator('.entry-screen .maxvel-only-brand').count())throw Error('Identidade Maxvel ausente na entrada');
-   await enter(page);
+   await capture(page,'entrada-direta',width,height);
+   if(!await page.locator('.dashboard .maxvel-only-brand').count())
+    throw Error('Identidade Maxvel ou tela operacional ausente no início direto');
    const gate=page.locator('.location-entry-gate');
    if(await gate.count()){
     await page.locator('.location-entry-grant').click();
@@ -192,7 +192,8 @@ try{
    await capture(page,'reopen-tour',width,height);
    await tap(page,'.app-header [data-action="profile-menu"]');
    await tap(page,'#dialog [data-action="logout"]');
-   if(!await page.locator('.entry-screen').count())throw Error('Sair não retornou ao login do app');
+   if(!await page.locator('.dashboard .maxvel-only-brand').count())
+    throw Error('Sair não retornou ao perfil de demonstração do app');
    if(errors.length)throw Error('JS: '+errors.join(' | ').slice(0,600));
   }catch(error){report.push({width,height,error:String(error),console:errors});throw error}
   finally{await context.close()}
