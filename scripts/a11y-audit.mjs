@@ -26,6 +26,7 @@ try{
   const context=await browser.newContext({viewport:{width,height:850},isMobile:width<500,hasTouch:width<500,locale:'pt-BR',reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.139,longitude:-44.885,accuracy:12}});
   const page=await context.newPage();
   await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:13000});
+  await page.locator('.dashboard .maxvel-only-brand').waitFor({timeout:12000});
   await check(page,'01-entrada-direta',width);
   await sleep(580);
   if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
