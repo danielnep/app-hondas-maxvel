@@ -10,16 +10,21 @@ const range=(source,start,end)=>{
  return source.slice(a,b);
 };
 
-test('as áreas de avaliação incluem vigia, monitoramento, COI, cliente, vistoriador e administração',()=>{
+test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
  for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])assert.match(nav,new RegExp(role+':'));
+ assert.match(app,/const coiNavigation=\[\['overview','COI · Monitoramento','map'\]/);
+ assert.match(nav,/operador:coiNavigation,coi:coiNavigation/);
  for(const obsolete of ['supervisor','gestor'])assert.doesNotMatch(nav,new RegExp(obsolete+':'));
  assert.doesNotMatch(app,/function loginDialog\(\)/,'A demonstração não deve exibir formulário de acesso');
  assert.doesNotMatch(app,/id="login-form"/,'Sem tela de login/seleção obrigatória na demo');
  assert.match(app,/if\(act==='login'\)\{beginSimulation\(/,'O primeiro acesso abre a demonstração diretamente');
  const picker=range(app,"if(act==='sim-role-picker'){","if(act==='schedule-tab')");
- for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])
+ for(const role of ['ronda','operador','cliente','vistoriador','admin'])
   assert.ok(picker.includes("['"+role+"',"),'perfil '+role+' disponível no seletor');
+ assert.doesNotMatch(picker,/\['coi','Central COI'/,'Não duplicar COI como área independente');
+ assert.match(picker,/modal\.classList\.add\('role-picker-dialog'\)/);
+ assert.match(picker,/\['operador','COI · Monitoramento','map'\]/);
  assert.match(picker,/não representa autenticação/);
 });
 
@@ -29,7 +34,7 @@ test('vigia executa ronda e consulta o próprio histórico, sem acessar relatór
  assert.doesNotMatch(nav,/ronda:\[\['relatorios'/);
  assert.match(app,/function myPatrolHistory\(\)/);
  assert.match(app,/sessionList\(\)\.filter\(x=>x.name===name\)/);
- assert.match(nav,/operador:\[\['overview','Monitoramento','map'\]/);
+ assert.match(nav,/operador:coiNavigation,coi:coiNavigation/);
  const panel=range(extra,'function decorate(){','function mediaFields(){');
  const vigia=range(panel,"if(user?.role==='ronda'){","if(user?.role==='admin'){");
  assert.doesNotMatch(vigia,/reportSmart|adminQuick|statusBanner|relatorios|view-client/);
