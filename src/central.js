@@ -14,7 +14,7 @@ async function api(path,{method='GET',data,headers={},raw}={}){
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
  return res.headers.get('content-type')?.includes('application/json')?res.json():res.blob();
 }
-const privileged=()=>account&&['admin','master'].includes(account.role);
+const privileged=()=>account&&['admin','master','coi'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
 const routeBoard=createRouteBoard({api,getContext:()=>({users,rounds,events,routes,account}),redraw:async(loadRemote=false)=>loadRemote?await load():render(),notify:flash});
 const actionGlyph={
@@ -78,7 +78,7 @@ async function load(){
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
  operador:[['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
- coi:[['monitor','Central COI','◉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
+ coi:[['dashboard','Indicadores','▥'],['monitor','Central COI','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  admin:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  master:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
@@ -234,11 +234,11 @@ const roundStatus=r=>({em_andamento:'Em andamento',concluida:'Concluída',incomp
 const guideByRole={
  ronda:[['Primeiro acesso','Confirme seu posto, faça a verificação do GPS e consulte os próximos pontos.'],['Execução','Siga a sequência obrigatória de pontos e registre evidências conforme solicitado.'],['Comunicação','Alertas, ocorrências e pânico ficam na área de comunicação com a central.'],['Histórico','Consulte suas rondas e os eventos sincronizados com data e hora.']],
  operador:[['Acompanhamento','Confira rondas ativas e concluídas, local, posição, GPS e bateria.'],['Ocorrências','Priorize avisos críticos e registre providências. Baixa precisão GPS não significa desvio comprovado.'],['Histórico','Abra cada vigia para consultar rondas anteriores.']],
- coi:[['Visão COI','Monitore simultaneamente rondas e vigias e abra os detalhes de cada execução.'],['Prioridades','Acompanhe pânicos, rondas incompletas e ocorrências em análise.'],['Histórico','Consulte últimos registros, mapa e horários disponíveis.'],['Tratamento','Registre respostas gerais e internas autorizadas na ocorrência.']],
- admin:[['Visão geral','Indicadores, prioridades, nome da unidade e operações registradas.'],['Monitoramento','Abra o mapa, estado do GPS, vigias e últimas rondas.'],['Pessoas e locais','Cadastre os perfis e associe clientes, vigias e vistoriadores aos postos.'],['Tratamento','Analise ocorrências com histórico e mensagens.'],['Relatórios','Exporte XLSX, JSON e CSV, além de conversas em PDF.']],
+ coi:[['Visão COI','Monitore simultaneamente rondas e vigias e abra os detalhes de cada execução.'],['Rotas por colaborador','Selecione o vigia e acompanhe cada rota em uma linha com mapa e detalhes. Crie novas rotas marcando pontos na ordem, com o posto vinculado.'],['Prioridades','Acompanhe pânicos, rondas incompletas e ocorrências em análise.'],['Histórico','Consulte últimos registros, mapa e horários disponíveis.'],['Tratamento','Registre respostas gerais e internas autorizadas na ocorrência.']],
+ admin:[['Visão geral','Indicadores, prioridades, nome da unidade e operações registradas.'],['Rotas por colaborador','Selecione o vigia, consulte mapa e detalhes em linhas, veja rondas em andamento e histórico e crie rotas novas marcando os pontos no mapa.'],['Monitoramento','Abra o mapa, estado do GPS, vigias e últimas rondas.'],['Pessoas e locais','Cadastre os perfis e associe clientes, vigias e vistoriadores aos postos.'],['Tratamento','Analise ocorrências com histórico e mensagens.'],['Relatórios','Exporte XLSX, JSON e CSV, além de conversas em PDF.']],
  cliente:[['Local monitorado','O acesso mostra apenas rondas da unidade autorizada à sua conta.'],['Em andamento','Veja o status atual e última posição registrada do vigia.'],['Histórico','Consulte as últimas rondas finalizadas ou pendentes do local.'],['Limites','A atualização depende de dados recebidos. O perfil não administra equipes nem ocorrências.']],
  vistoriador:[['Posto','Confira o local atribuído à conta antes de iniciar a vistoria.'],['Critérios','Verifique acessos, estrutura, equipamentos e sinalização.'],['Qualidade','O indicador resulta dos quatro critérios atendidos e não classifica colaboradores.'],['Histórico','Revise os registros datados e as observações.']],
- master:[['Gestão','Acompanhe indicadores, rondas e ocorrências.'],['Acesso','Gerencie colaboradores, perfis e vinculações por local.'],['Registros','Utilize a auditoria e os relatórios disponíveis.']]
+ master:[['Gestão','Acompanhe indicadores, rondas e ocorrências.'],['Rotas','Na Administração > Rotas por vigia, acompanhe o histórico e cadastre novas rotas no mapa.'],['Acesso','Gerencie colaboradores, perfis e vinculações por local.'],['Registros','Utilize a auditoria e os relatórios disponíveis.']]
 };
 function firstAccessGuide(){
  if(page==='guide'||localStorage.getItem('rondaspro-guide-seen-'+account.role)==='yes')return '';
@@ -270,7 +270,7 @@ function render(){
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?inspectionView():
-   ['operador','coi'].includes(account.role)?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
+   account.role==='operador'?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  root.innerHTML='<div class="workspace">'+nav()+'<article class="content">'+firstAccessGuide()+content+'</article></div>'+
   (account.role==='ronda'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
