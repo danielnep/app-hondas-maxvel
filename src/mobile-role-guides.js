@@ -17,7 +17,7 @@ export const MOBILE_GUIDES=Object.freeze({
   ['Visão da operação','<p>Abra Monitoramento para consultar as rondas do cenário, a localização indicada e o status de cada vigia.</p>'],
   ['Escolher colaborador','<p>Selecione um vigia para analisar sua rota atual ou as rondas anteriores. Veja os detalhes antes de interpretar um alerta.</p>'],
   ['Alertas e ocorrências','<p>Consulte as abas Alertas e Ocorrências para verificar os fatos, justificativas e sequência de eventos.</p>'],
-  ['Qualidade do GPS','<p>Sinal desatualizado ou impreciso não representa automaticamente uma falha do vigia. Compare horários e registros confiáveis.</p>'],
+  ['Qualidade do GPS','<p>Sinal GPS desatualizado ou impreciso não representa automaticamente uma falha do vigia. Compare horários e registros confiáveis.</p>'],
   ['Integração real','<p>Este ambiente é demonstrativo. Na central autenticada, o operador recebe apenas dados enviados ao servidor, sujeitos às permissões da conta.</p>']
  ]),
  coi:guide('COI · Central de Monitoramento','Controle visual da operação e priorização de ocorrências.',[
