@@ -235,7 +235,7 @@ try{
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="operador"]');
    await state(page,width,height,'07-central-monitoramento');
-   if(width<=900)await checkRoleGuide(page,width,height,'operador','Central de Monitoramento');
+   if(width<=900)await checkRoleGuide(page,width,height,'operador','COI · Monitoramento');
    if(!await page.locator('.operations-page').count())throw Error('Operador sem área de monitoramento.');
    if(!await page.locator('#ops-map').count())throw Error('Operador sem mapa de rondas.');
    if(await page.locator('[data-view="relatorios"]').count())throw Error('Operador recebeu menu de relatórios administrativos.');
