@@ -17,7 +17,8 @@ Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interf
 
 - **App público:** https://rondas-pro-maxvel.onrender.com/ (serviço Render `rondas-pro-maxvel`).
 - **Repositório:** `danielnep/app-hondas-maxvel`, branch `main`, com código-fonte dos três perfis. A `main` pode avançar antes de um novo deploy, portanto não presuma que o commit mais novo já está no servidor.
-- **Cópia exata da versão confirmada LIVE em 14/10/2026:** branch [`render-live-3-perfis-20261014`](../../tree/render-live-3-perfis-20261014), commit `e7b0d402b04e693b71843f77913dcd5b320b962a`. Essa referência preserva os arquivos daquele deploy, sem alterar a `main` ou o Render.
+- **Snapshot histórico de um deploy LIVE anterior:** branch [`render-live-3-perfis-20261014`](../../tree/render-live-3-perfis-20261014), commit `e7b0d402`.
+- **Snapshot do deploy LIVE verificado mais recentemente em 14/10/2026:** branch [`render-live-19176c3b-20261014`](../../tree/render-live-19176c3b-20261014), commit `19176c3b69a559d32495feaea52a81e93f36bc39`. São referências históricas do código por commit; a publicação pode avançar automaticamente sem alterar essas branches.
 - **Serviço:** Node.js, comando de compilação `npm install && npm run check && npm test`, inicialização `npm start`, porta definida pela variável `PORT` e endpoint `/health` disponibilizado pelo servidor. O serviço Render não possui healthcheck configurado neste momento.
 
 A **demonstração** usa registros locais do navegador; interface publicada não implica autenticação real, banco persistente ou sincronização entre dispositivos. O diretório do GitHub contém o projeto e suas branches, não uma segunda hospedagem automaticamente sincronizada. Dados locais de domínios diferentes não são transferidos entre eles.
