@@ -48,6 +48,8 @@ function initialize(){
   'CREATE TABLE IF NOT EXISTS event_treatments(id TEXT PRIMARY KEY,event_id TEXT NOT NULL,author_id TEXT NOT NULL,from_status TEXT NOT NULL,to_status TEXT NOT NULL,conclusion TEXT NOT NULL,created_at INTEGER NOT NULL,FOREIGN KEY(event_id) REFERENCES events(id))',
   'CREATE INDEX IF NOT EXISTS idx_treatment_event ON event_treatments(event_id,created_at)'
  ];for(const statement of ddl)db.exec(statement);
+ // Migrações aditivas: nunca substituir nem apagar evidências e registros anteriores.
+ if(!db.prepare('PRAGMA table_info(media)').all().some(x=>x.name==='evidence_view'))db.exec("ALTER TABLE media ADD COLUMN evidence_view TEXT NOT NULL DEFAULT ''");
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(events)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE events ADD COLUMN site TEXT NOT NULL DEFAULT ''");
@@ -342,6 +344,10 @@ export function createOperationalApi(){
     const mime=clean(req.headers['content-type']).split(';')[0];
     const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm','audio/webm','audio/mp4','audio/ogg'];
     if(!types.includes(mime)){resp(res,415,{error:'Formato não autorizado'});return true;}
+    const evidenceView=clean(req.headers['x-media-view']).toLowerCase();
+    if(evidenceView&&(!['front','back','left','right','selfie'].includes(evidenceView)||!mime.startsWith('image/'))){
+     resp(res,422,{error:'Identificação da foto inválida'});return true;
+    }
     const bytes=await body(req,25*1024*1024);
     const magic=bytes.subarray(0,12);
     const correct=(mime==='image/jpeg'&&magic[0]===255&&magic[1]===216)
@@ -360,9 +366,9 @@ export function createOperationalApi(){
     const hasGeo=req.headers['x-media-lat']!==undefined&&req.headers['x-media-lng']!==undefined
       &&Number.isFinite(geoLat)&&Number.isFinite(geoLng)&&Math.abs(geoLat)<=90&&Math.abs(geoLng)<=180;
     const hasBattery=batteryRaw!==undefined&&Number.isFinite(battery)&&battery>=0&&battery<=100;
-    db.prepare('INSERT INTO media(id,event_id,author_id,mimetype,filename,captured_at,latitude,longitude,battery,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)')
+    db.prepare('INSERT INTO media(id,event_id,author_id,mimetype,filename,captured_at,latitude,longitude,battery,evidence_view,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
      .run(mediaId,eid,a.id,mime,mediaId,Number.isFinite(captured)&&captured>0?captured:now(),
-       hasGeo?geoLat:null,hasGeo?geoLng:null,hasBattery?battery:null,now());
+       hasGeo?geoLat:null,hasGeo?geoLng:null,hasBattery?battery:null,evidenceView,now());
     audit(a,'media.upload',eid);resp(res,201,{id:mediaId});return true;
    }
    const mediaPath=p.match(/^\/api\/media\/([0-9a-f-]+)$/i);
@@ -378,7 +384,7 @@ export function createOperationalApi(){
     if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Evidências desabilitadas'});return true;}
     const eid=clean(u.searchParams.get('eventId')),ev=event(eid);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
-    resp(res,200,{media:db.prepare('SELECT id,mimetype,captured_at,latitude,longitude,battery FROM media WHERE event_id=? ORDER BY created_at').all(eid)});return true;
+    resp(res,200,{media:db.prepare('SELECT id,mimetype,captured_at,latitude,longitude,battery,evidence_view FROM media WHERE event_id=? ORDER BY created_at').all(eid)});return true;
    }
    if(p==='/api/export'&&m==='GET'&&reviewer(a)&&operations.allows(a,'relatorios')){
     const events=db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT 50000').all(),messages=db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id ORDER BY m.created_at DESC LIMIT 50000').all();
