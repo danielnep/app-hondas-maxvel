@@ -3,11 +3,13 @@
  * somente impede a navegação dentro da experiência de ronda até registrar a visita.
  */
 import {canCompletePoint,completePoint,currentCheckpoint,requiredDwellMs} from './domain.js';
+import {evidenceButtons,createMediaCapture} from './media-capture.js';
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createCheckpointCurtain(api){
- let key=null,root=null,torchStream=null,torchTrack=null,saving=false;
+ let key=null,root=null,torchStream=null,torchTrack=null,saving=false,evidenceFiles=[];
+ const mediaCapture=createMediaCapture({notify:api.notify});
  const closeTorch=()=>{torchStream?.getTracks().forEach(t=>t.stop());torchStream=null;torchTrack=null};
- function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;saving=false;closeTorch()}
+ function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;saving=false;evidenceFiles=[];mediaCapture.stopAll();closeTorch()}
  const status=()=>{
   if(!root)return;
   const s=api.get().session,point=s&&currentCheckpoint(s);
@@ -41,8 +43,7 @@ export function createCheckpointCurtain(api){
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
    '<div class="checkpoint-stopwatch" aria-live="polite"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message>Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
-   '<div class="checkpoint-tools"><label>📷 Foto<input type="file" accept="image/*" capture="environment" data-point-photo></label>'+
-   '<label>🎥 Vídeo<input type="file" accept="video/*" capture="environment" data-point-video></label>'+
+   '<div class="checkpoint-tools">'+evidenceButtons()+
    '<button type="button" data-curtain-torch>🔦 Lanterna</button>'+
    '<button type="button" class="checkpoint-panic" data-ops="panic-confirm">⚠ PÂNICO</button></div>'+
    '<fieldset class="checkpoint-condition" data-curtain-observation-wrap hidden><legend>Condições encontradas neste ponto</legend>'+
@@ -55,6 +56,24 @@ export function createCheckpointCurtain(api){
   document.body.append(root);root.querySelector('textarea').addEventListener('input',status);root.querySelectorAll('[name="point-state"]').forEach(input=>input.addEventListener('change',status));
   root.querySelector('[data-curtain-torch]').addEventListener('click',toggleTorch);
   root.querySelector('[data-curtain-submit]').addEventListener('click',submit);
+  root.addEventListener('click',async event=>{
+   const button=event.target.closest('[data-evidence-kind],[data-evidence-remove]');
+   if(!button)return;
+   event.preventDefault();event.stopPropagation();
+   if(button.hasAttribute('data-evidence-remove')){
+    const index=Number(button.dataset.evidenceRemove);
+    if(Number.isInteger(index))evidenceFiles.splice(index,1);
+   }else try{
+    const file=await mediaCapture.request(button.dataset.evidenceKind);
+    if(!root?.isConnected)return;
+    if(evidenceFiles.length>=3){api.notify('Limite de três evidências por ponto.');return}
+    evidenceFiles.push(file);
+   }catch(error){if(!/cancelad|Nenhuma evidência/i.test(error.message))api.notify(error.message);}
+   const list=root?.querySelector('[data-evidence-attachments]');
+   if(list)list.innerHTML=evidenceFiles.length
+    ?evidenceFiles.map((file,i)=>'<span class="attached-file">'+safe(file.name)+' <button type="button" data-evidence-remove="'+i+'" aria-label="Remover evidência">×</button></span>').join('')
+    :'Nenhuma evidência anexada.';
+  });
   status();root.querySelector('textarea').focus({preventScroll:true});
  }
  async function toggleTorch(){
@@ -78,7 +97,7 @@ export function createCheckpointCurtain(api){
   if(attention&&note.length<10){api.notify('Descreva a situação que exige atenção com pelo menos 10 caracteres.');return}
   const observation=attention?'Atenção no ponto: '+note:note?'Tudo dentro do esperado. '+note:'Tudo dentro do esperado, sem anormalidades.';
   if(saving)return;saving=true;status();
-  const files=[root.querySelector('[data-point-photo]')?.files?.[0],root.querySelector('[data-point-video]')?.files?.[0]].filter(Boolean);
+  const files=[...evidenceFiles];
   checkpoint.observation=observation;checkpoint.observedAt=Date.now();
   checkpoint.position=locationFix?{lat:locationFix.lat,lng:locationFix.lng,accuracy:locationFix.accuracy,at:locationFix.at}:null;
   try{
