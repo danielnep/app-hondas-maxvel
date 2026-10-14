@@ -1,11 +1,12 @@
 import {createXlsxReport} from './report-xlsx.js';
+import {createRouteBoard} from './route-board.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
 const id=x=>escape(x);
 const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término',inspection:'Vistoria de qualidade',patrol_interrupted:'Ronda interrompida',patrol_incomplete:'Ronda incompleta'};
 let composeKind='message';
-let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
+let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 async function api(path,{method='GET',data,headers={},raw}={}){
@@ -15,6 +16,7 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
+const routeBoard=createRouteBoard({api,getContext:()=>({users,rounds,events,routes,account}),redraw:async(loadRemote=false)=>loadRemote?await load():render(),notify:flash});
 const actionGlyph={
  alert:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 9 16H3L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>',
  incident:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/></svg>',
@@ -59,8 +61,8 @@ async function load(){
     composeKind=requestedCompose;page='send';history.replaceState(null,'',location.pathname+location.search);
    }
   }
-  const [e,r]=await Promise.all([api('/events?limit=500'),api('/rounds')]);
-  events=e.events||[];rounds=r.rounds||[];
+  const [e,r,planned]=await Promise.all([api('/events?limit=500'),api('/rounds'),api('/routes')]);
+  events=e.events||[];rounds=r.rounds||[];routes=planned.routes||[];
   if(review()){
    const [d,u,j,t]=await Promise.all([api('/dashboard'),api('/users'),api('/email-jobs'),api('/templates')]);
    dashboard=d;users=u.users||[];emailJobs=j.jobs||[];templates=t.templates||[];mySummary=null;
@@ -77,8 +79,8 @@ const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
  operador:[['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
  coi:[['monitor','Central COI','◉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['inspections','Vistorias e qualidade','▤'],['guide','Guia completo','?']]
 };
@@ -261,9 +263,10 @@ function inspectionView(){
 }
 
 function render(){
+ routeBoard.resetMaps();
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
- const content=page==='guide'?guideView():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
+ const content=page==='guide'?guideView():page==='routes'&&privileged()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?inspectionView():
@@ -273,6 +276,7 @@ function render(){
   (account.role==='ronda'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
+ if(page==='routes'&&privileged())requestAnimationFrame(()=>routeBoard.mount());
 }
 async function loadMessages(eventId){
  try{messages=(await api('/events/'+eventId+'/messages')).messages||[];const host=document.querySelector('#thread');if(!host)return;
@@ -332,6 +336,7 @@ async function printAllConversations(){
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
+  if(await routeBoard.click(target))return;
   if(target.dataset.compose){if(account?.role!=='ronda'||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;page='send';render();return;}
   if(target.id==='central-panic'){document.querySelector('#central-panic-dialog')?.showModal();return;}
   if(target.id==='panic-cancel'){document.querySelector('#central-panic-dialog')?.close();return;}
@@ -368,6 +373,7 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
  const form=e.target;
+ if(form.id==='route-form'){e.preventDefault();try{await routeBoard.submit(form)}catch(err){flash(err.message)}return;}
  if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','review-event','send-message','upload-evidence','inspection-form'].includes(form.id))return;
  e.preventDefault();const d=Object.fromEntries(new FormData(form));
  try{
@@ -402,6 +408,7 @@ document.addEventListener('submit',async e=>{
 });
 // A central do operador acompanha o servidor sem depender de recarregar a página.
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
-setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client'].includes(page)&&!document.hidden&&!selected)void load();},30000);
+setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
+document.addEventListener('change',e=>{routeBoard.change(e.target)});
 exit.addEventListener('click',async()=>{try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
