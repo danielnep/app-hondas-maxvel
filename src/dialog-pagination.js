@@ -3,6 +3,7 @@
  */
 export function installDialogPagination(dialog){
  if(!dialog?.open||window.innerWidth>900||dialog.querySelector('.round-wizard,.ux06-sheet')||dialog.classList.contains('guide-dialog'))return;
+ dialog.classList.add('ux-dialog-scroll-ready');
  const maxOuter=Math.max(230,window.innerHeight-46);
  const roots=[...dialog.children].filter(el=>!el.classList.contains('dialog-close'));
  const root=roots.length===1?roots[0]:dialog;
@@ -10,7 +11,7 @@ export function installDialogPagination(dialog){
  // Cabeçalhos permanecem visíveis; o conteúdo vira páginas de leitura/ação.
  const paginate=(host,maxHeight)=>{
   let children=[...host.children].filter(el=>!el.classList.contains('dialog-close')&&!el.matches('.ux-dialog-pagination'));
-  if(children.length<3)return false;
+  if(children.length<3){host.classList.add('ux-dialog-scroll-fallback');return false;}
   const heading=children.filter((el,i)=>i<2&&(
    el.matches('h1,h2,.eyebrow,.profile-heading,.consent-compact-head')||
    el.matches('.incident-review-tags')&&!host.querySelector('h2')));
@@ -28,7 +29,7 @@ export function installDialogPagination(dialog){
    current.push(el);used+=h;
   }
   if(current.length)chunks.push(current);
-  if(chunks.length<2)return false;
+  if(chunks.length<2){host.classList.add('ux-dialog-scroll-fallback');return false;}
   host.classList.add('ux-dialog-paging-root');
   dialog.classList.add('ux-dialog-paging');
   const navigation=document.createElement('nav');
@@ -42,11 +43,22 @@ export function installDialogPagination(dialog){
     ' aria-label="Página anterior">‹ Voltar</button><span>'+ (page+1)+' de '+chunks.length+
     '</span><button type="button" data-dialog-page="next" '+(page>=chunks.length-1?'disabled':'')+
     ' aria-label="Próxima página">Avançar ›</button>';
+   navigation.setAttribute('aria-label','Etapa '+(page+1)+' de '+chunks.length);
   };
   navigation.addEventListener('click',event=>{
    const bt=event.target.closest('[data-dialog-page]');if(!bt)return;
+   if(bt.dataset.dialogPage==='next'){
+    const fields=chunks[page].flatMap(node=>[
+     ...node.querySelectorAll('input,select,textarea'),
+     ...(node.matches('input,select,textarea')?[node]:[])
+    ]);
+    const invalid=fields.find(field=>!field.disabled&&!field.checkValidity());
+    if(invalid){invalid.reportValidity();invalid.focus({preventScroll:false});return;}
+   }
    page=Math.max(0,Math.min(chunks.length-1,page+(bt.dataset.dialogPage==='next'?1:-1)));
    paint();
+   const first=chunks[page][0];
+   if(first)first.scrollIntoView({block:'nearest',behavior:'instant'});
   });
   host.append(navigation);
   // Campo obrigatório de página anterior: revele sua página e permita correção.
@@ -56,5 +68,10 @@ export function installDialogPagination(dialog){
   },true);
   paint();return true;
  };
- paginate(root,maxOuter-12);
+ const paged=paginate(root,maxOuter-12);
+ if(!paged)dialog.classList.add('ux-dialog-scroll-fallback');
+ dialog.addEventListener('focusin',event=>{
+  if(!event.target.matches?.('input,select,textarea'))return;
+  requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest',inline:'nearest'}));
+ },{once:true});
 }
