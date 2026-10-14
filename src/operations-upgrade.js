@@ -260,11 +260,11 @@ export function createOperationsUpgrade(api){
    incident:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/></svg>',
    message:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v12H9l-5 4V5Z"/><path d="M8 10h8M8 13h6"/></svg>'
   };
-  return '<div class="patrol-communication-actions" role="group" aria-label="Comunicação com a central">'+
+  return '<section class="patrol-communication-bar" aria-label="Ações rápidas de comunicação"><div class="patrol-communication-actions" role="group" aria-label="Comunicação com a central">'+
    '<button type="button" data-ops="central-alert">'+icons.alert+'<span>Enviar alerta</span></button>'+
    '<button type="button" data-ops="incident-quick">'+icons.incident+'<span>Registrar ocorrência</span></button>'+
    '<button type="button" data-ops="central-message">'+icons.message+'<span>Enviar mensagem</span></button></div>'+
-   '<p class="patrol-communication-note">Alertas e mensagens à central exigem acesso autenticado. A ocorrência durante a ronda demonstrativa é registrada neste aparelho.</p>';
+   '<p class="patrol-communication-note">Para enviar à central, use seu acesso autenticado. Ocorrências da demonstração ficam neste dispositivo.</p></section>';
  }
  function gpsQrRow(){
   const {session:s,operationalSettings:settings}=current();
@@ -307,8 +307,15 @@ export function createOperationsUpgrade(api){
   if(!main)return;
   if(user?.role==='ronda'){
    dashboard.insertAdjacentHTML('beforeend',panicButton());
+   if(view==='minha-ronda'){
+    // Os três comandos são sempre visíveis na tela inicial, mesmo antes de iniciar a ronda.
+    // No desktop acompanham as ações; no celular ficam logo após a ação principal.
+    const primaryTarget=window.innerWidth<=900
+     ?main.querySelector('.patrol-actions'):main.querySelector('.patrol-primary-flow');
+    primaryTarget?.insertAdjacentHTML('afterend',communicationActions());
+   }
    if(canShowPatrolVerification(context))
-    main.querySelector('.patrol-verification-pane')?.insertAdjacentHTML('beforeend',gpsQrRow()+communicationActions());
+    main.querySelector('.patrol-verification-pane')?.insertAdjacentHTML('beforeend',gpsQrRow());
   }
   if(user?.role==='admin'){
    if(view==='relatorios'){

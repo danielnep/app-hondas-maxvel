@@ -180,3 +180,63 @@ html,body,#app{background:var(--mx-bg)!important}
 @media(max-width:900px){.patrol-communication-actions{gap:6px}.patrol-communication-actions button{font-size:11px;padding:9px 3px;min-height:86px}.ops-panic{width:84px!important;height:84px!important;min-height:84px!important;right:max(12px,env(safe-area-inset-right))!important;bottom:max(13px,env(safe-area-inset-bottom))!important}.patrol-workspace{padding-bottom:88px}}
 @media(max-width:350px){.patrol-communication-actions{grid-template-columns:1fr}.patrol-communication-actions button{flex-direction:row;justify-content:flex-start;min-height:52px;gap:12px;padding:10px 14px}}
 @media print{.patrol-communication-actions,.patrol-communication-note,.ops-panic{display:none!important}}
+
+/* 14-10-2026 · vigia mobile: mapa equilibrado e comunicação sempre acessível.
+   A vista de ferramentas expandida mantém seu fluxo próprio e o mapa continua interativo. */
+@media screen and (max-width:900px){
+ .dashboard .app-content.ronda-page{
+   display:block!important;overflow-y:auto!important;overflow-x:hidden!important;
+   overscroll-behavior-y:contain;scroll-padding-bottom:115px;
+   padding:6px 8px calc(110px + env(safe-area-inset-bottom,0px))!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed{
+   display:flex!important;flex-direction:column!important;align-items:stretch!important;
+   gap:8px!important;width:100%!important;height:auto!important;min-height:0!important;
+   overflow:visible!important;padding:0!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-map-panel{
+   height:clamp(205px,40dvh,330px)!important;min-height:205px!important;max-height:330px!important;
+   flex:0 0 auto!important;overflow:hidden!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+   flex:0 0 auto!important;height:auto!important;min-height:0!important;
+   max-height:none!important;overflow:visible!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-body{
+   height:auto!important;max-height:none!important;overflow:visible!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed>.patrol-communication-bar{
+   display:block!important;flex:0 0 auto!important;order:2!important;
+   width:100%!important;min-width:0!important;max-height:none!important;
+   margin:0!important;padding:2px 0 4px!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions{
+   display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+   align-items:stretch!important;gap:7px!important;margin:0!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button{
+   display:flex!important;flex-direction:column!important;align-items:center!important;
+   justify-content:center!important;gap:5px!important;width:100%!important;
+   height:auto!important;min-height:72px!important;padding:9px 4px!important;
+   font-size:11px!important;line-height:1.25!important;white-space:normal!important;
+   overflow-wrap:anywhere!important;
+ }
+ .dashboard .ronda-page .patrol-communication-actions svg{
+   width:23px!important;height:23px!important;flex:0 0 23px!important;
+ }
+ .dashboard .ronda-page .patrol-communication-note{
+   margin:7px 2px 0!important;font-size:10px!important;line-height:1.35!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed)>.patrol-communication-bar{
+   display:none!important;
+ }
+}
+@media screen and (max-width:900px) and (max-height:620px){
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-map-panel{
+   height:clamp(170px,34dvh,240px)!important;min-height:170px!important;max-height:240px!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button{
+   min-height:64px!important;padding:6px 4px!important;
+ }
+}
+@media print{.patrol-communication-bar{display:none!important}}

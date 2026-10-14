@@ -16,12 +16,25 @@ export function createInstallManager(){
    :'No navegador: abra o menu e escolha Instalar aplicativo ou Adicionar à tela inicial. A opção depende do navegador e da instalação compatível.';
   window.alert(message);
  });
- return {decorate(){
-  const host=document.querySelector('.nav-actions, .header-actions');
+ // No celular, a instalação aparece em Navegação, não sobre a marca da Maxvel.
+ // O diálogo é criado pelo app no mesmo clique; esperar o final do evento.
+ const decorate=()=>{
+  const inMobileDashboard=window.matchMedia?.('(max-width:900px)')?.matches&&!!document.querySelector('.dashboard');
+  const host=inMobileDashboard
+   ?document.querySelector('.ux-access-menu')
+   :document.querySelector('.nav-actions, .header-actions');
   if(!host||host.querySelector('[data-install-app]')||installed)return;
   const button=document.createElement('button');
   button.type='button';button.className='button small install-app-btn';
-  button.setAttribute('data-install-app','');button.textContent='↓ Instalar aplicativo';
-  host.prepend(button);show();
- }};
+  button.setAttribute('data-install-app','');
+  button.textContent='↓ Instalar aplicativo';
+  button.setAttribute('aria-label','Instalar Rondas Pro no dispositivo');
+  if(inMobileDashboard)host.append(button);
+  else host.prepend(button);
+  show();
+ };
+ document.addEventListener('click',event=>{
+  if(event.target.closest('[data-action="open-mobile-menu"]'))queueMicrotask(decorate);
+ });
+ return {decorate};
 }
