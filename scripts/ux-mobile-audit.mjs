@@ -48,6 +48,17 @@ async function checkInteractiveBounds(page,label){
 }
 async function state(page,width,height,name){
  await page.evaluate(()=>document.fonts.ready);
+ // Aguarda a marca assumir dimensões reais antes de medir a interface animada.
+ // Se continuar invisível/cortada, o teste falhará em vez de ignorar o problema.
+ await page.waitForFunction(()=>{
+  const candidates=[...document.querySelectorAll('.brand.maxvel-only-brand')]
+   .filter(node=>{const style=getComputedStyle(node);return style.display!=='none'&&style.visibility!=='hidden';});
+  return candidates.some(node=>{
+   const mark=node.querySelector('.ronda-pro-wordmark');
+   return node.getBoundingClientRect().width>40&&node.getBoundingClientRect().height>10
+    &&mark?.getBoundingClientRect().width>8;
+  });
+ },null,{timeout:8000});
  const branding=await page.locator('.brand.maxvel-only-brand:visible').evaluateAll(nodes=>nodes.map(node=>{
   const box=element=>{const r=element.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,centerY:r.top+r.height/2};};
   return {outer:box(node),product:box(node.querySelector('.ronda-pro-wordmark')),divider:box(node.querySelector('.brand-divider')),partner:box(node.querySelector('.brand-partner')),image:box(node.querySelector('img'))};
