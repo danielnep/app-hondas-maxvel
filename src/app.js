@@ -139,6 +139,7 @@ function installUX06(){
 /** UX viewport: no document scroll, panels and list page controls remain reachable. */
 let uxOverviewPanel='mapa', uxDialogPage=0,uxReportPage='resumo',uxRondaPane='mapa';
 const uxDashboardPane={admin:'resumo'};
+let cleanupLayoutBreakpoint=()=>{};
 const uxListSizes=()=>8; // Listas roláveis: não fragmentar três itens em páginas artificiais.
 function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
  if(!container)return;
@@ -165,18 +166,22 @@ function paginateRows(container,selector,groupKey,pageSize=uxListSizes()){
  host.append(bar);paint();
 }
 function installViewportViews(){
- if(screen==='landing')return; // Desktop também usa janelas, não colunas simultâneas comprimidas.
+ cleanupLayoutBreakpoint();cleanupLayoutBreakpoint=()=>{};
+ if(screen==='landing')return; // A página de entrada mantém a estrutura própria.
  const main=document.querySelector('.dashboard .app-content');
  if(!main)return;
  if(view==='overview'&&main.querySelector('.dashboard-v4')){
   const shell=main.querySelector('.dashboard-v4'),tabs=[...shell.querySelectorAll('[data-v4-tab]')];
   const paneMap=new Map([...shell.querySelectorAll('[data-v4-pane]')].map(p=>[p.dataset.v4Pane,p]));
+  const wideDesktop=window.matchMedia('(min-width:1280px)');
   const show=key=>{
    const selected=paneMap.has(key)?key:tabs[0]?.dataset.v4Tab;
    uxDashboardPane[user.role]=selected;
-   for(const [id,node] of paneMap){node.hidden=id!==selected;node.id='v4-'+id;}
-   for(const bt of tabs){const active=bt.dataset.v4Tab===selected;bt.setAttribute('aria-selected',String(active));bt.tabIndex=active?0:-1;}
-   if(selected==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
+   const multiple=wideDesktop.matches;
+   shell.classList.toggle('v4-wide-workspace',multiple);
+   for(const [id,node] of paneMap){node.hidden=!multiple&&id!==selected;node.id='v4-'+id;}
+   for(const bt of tabs){const active=bt.dataset.v4Tab===selected;bt.setAttribute('aria-selected',String(active));bt.tabIndex=multiple||active?0:-1;}
+   if(multiple||selected==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
   };
   shell.querySelector('.v4-dashboard-tabs')?.addEventListener('click',event=>{
    const bt=event.target.closest('[data-v4-tab]');if(bt)show(bt.dataset.v4Tab);
@@ -193,6 +198,9 @@ function installViewportViews(){
   paginateRows(shell.querySelector('.v4-alerts-list'),'.event-item','V4Alerts',uxListSizes());
   paginateRows(shell.querySelector('.v4-history-list'),'.v4-history-row','V4History',uxListSizes());
   paginateRows(shell.querySelector('.v4-insights-list'),'.v4-insight-row','V4Insights',uxListSizes());
+  const onDesktopChange=()=>show(uxDashboardPane[user.role]);
+  wideDesktop.addEventListener('change',onDesktopChange);
+  cleanupLayoutBreakpoint=()=>wideDesktop.removeEventListener('change',onDesktopChange);
   show(uxDashboardPane[user.role]);
   return;
  }
@@ -206,18 +214,24 @@ function installViewportViews(){
     historico:root.querySelector('.ops-recent'),indicadores:root.querySelector('.ops-metrics')};
    const surface=document.createElement('div');surface.className='ux-operations-surface';
    for(const [key] of tabs){if(nodes[key]){nodes[key].dataset.uxPane=key;surface.append(nodes[key]);}}
+   const wideDesktop=window.matchMedia('(min-width:1280px)');
    const selected=()=>tabs.some(x=>x[0]===uxOverviewPanel)?uxOverviewPanel:'mapa';
    const paint=()=>{
-    for(const [key] of tabs){if(nodes[key])nodes[key].hidden=selected()!==key;}
+    const multiple=wideDesktop.matches;
+    root.classList.toggle('ux-wide-workspace',multiple);
+    for(const [key] of tabs){if(nodes[key])nodes[key].hidden=!multiple&&selected()!==key;}
     [...nav.querySelectorAll('button')].forEach(b=>{b.setAttribute('aria-selected',String(b.dataset.uxTab===selected()));});
-    if(selected()==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
+    if(multiple||selected()==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
    };
    nav.innerHTML=tabs.map(([k,label])=>'<button type="button" role="tab" data-ux-tab="'+k+'">'+label+'</button>').join('');
    nav.addEventListener('click',e=>{const b=e.target.closest('[data-ux-tab]');if(b){uxOverviewPanel=b.dataset.uxTab;paint();}});
    const selector=root.querySelector('.supervision-context');
    if(selector)selector.after(nav,surface);else root.prepend(nav,surface);
    paginateRows(nodes.alertas,'.event-item','Alerts',3);
-   paginateRows(nodes.historico,'tbody tr','Patrols',3);
+   paginateRows(nodes.historico,'tbody tr','Patrols',wideDesktop.matches?8:3);
+   const onDesktopChange=()=>paint();
+   wideDesktop.addEventListener('change',onDesktopChange);
+   cleanupLayoutBreakpoint=()=>wideDesktop.removeEventListener('change',onDesktopChange);
    paint();
   }
  }
