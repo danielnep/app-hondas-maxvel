@@ -152,7 +152,7 @@ export function createOperationalApi(){
    if(p==='/api/users'&&m==='GET'&&reviewer(a)&&operations.allows(a,'rondas')){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,created_at,active FROM users').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
     const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),description=clean(d.description),site=clean(d.site).slice(0,100);
-    if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10||['cliente','vistoriador','ronda'].includes(d.role)&&site.length<2){resp(res,422,{error:'Cadastro inválido: informe local/posto; vigia exige descrição da supervisão'});return true;}
+    if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10||['cliente','ronda'].includes(d.role)&&site.length<2){resp(res,422,{error:'Cadastro inválido: informe local/posto; vigia exige descrição da supervisão'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
     db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at,site) VALUES(?,?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now(),site);
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
