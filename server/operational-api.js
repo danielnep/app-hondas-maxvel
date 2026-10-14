@@ -132,7 +132,7 @@ export function createOperationalApi(){
  }
  return async(req,res)=>{
   if(!new URL(req.url,'http://local').pathname.startsWith('/api/'))return false;
-  if(!db){resp(res,503,{error:'API operacional desativada: configurar banco persistente e conta Master no Railway'});return true;}
+  if(!db){resp(res,503,{error:'API operacional não configurada: defina banco persistente e credenciais Master no servidor de hospedagem'});return true;}
   const u=new URL(req.url,'http://local'),p=u.pathname,m=req.method,origin=req.headers.origin;
   if(origin&&!['https://'+req.headers.host,'http://'+req.headers.host].includes(origin)){resp(res,403,{error:'Origem inválida'});return true;}
   try{
@@ -237,13 +237,16 @@ export function createOperationalApi(){
    const messages=p.match(/^\/api\/events\/([0-9a-z-]+)\/messages$/i);
    if(messages){
     const ev=event(messages[1]);if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
+    if(m==='GET'&&reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas'});return true;}
     if(m==='GET'){const rows=reviewer(a)?db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? ORDER BY created_at').all(ev.id):db.prepare("SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? AND audience='general' ORDER BY created_at").all(ev.id);resp(res,200,{messages:rows});return true;}
     if(m==='POST'){
      if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente não envia mensagens'});return true;}
      const d=serialize((await body(req)).toString())||{},b=clean(d.body),audience=d.audience||'general';
      if(b.length<1||b.length>4000||!['general','system'].includes(audience)||audience==='system'&&!reviewer(a)){resp(res,422,{error:'Mensagem inválida'});return true;}
      const mid=id();db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(mid,ev.id,a.id,audience,b,now());
-     audit(a,'message.create',ev.id);resp(res,201,{id:mid});return true;
+     audit(a,'message.create',ev.id);
+    operations.notifyMessage(a,ev,audience,b);
+    resp(res,201,{id:mid});return true;
     }
    }
    const review=p.match(/^\/api\/events\/([0-9a-z-]+)\/review$/i);
@@ -302,6 +305,7 @@ export function createOperationalApi(){
     audit(a,'email.retry',ev.id);resp(res,200,{status:db.prepare('SELECT status FROM email_jobs WHERE event_id=?').get(ev.id)?.status});return true;
    }
    if(p==='/api/rounds'&&m==='GET'){
+    if(reviewer(a)&&!operations.allows(a,'rondas')){resp(res,403,{error:'Consulta de rondas desabilitada'});return true;}
     // Vigias consultam EXCLUSIVAMENTE suas próprias rondas. Operadores e adm têm acesso às rondas da operação.
     const query='SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery,details FROM events WHERE round_id IS NOT NULL ';
     const rows=['ronda','vistoriador'].includes(a.role)
