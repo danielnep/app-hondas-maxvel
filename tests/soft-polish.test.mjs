@@ -32,10 +32,10 @@ test('abreviações preservam a descrição acessível e não interceptam açõe
 
 test('as duas interfaces carregam a camada e a PWA atualiza seus arquivos',()=>{
  const app=read('../index.html'),central=read('../central.html'),sw=read('../sw.js');
- for(const html of [app,central]){
-  assert.match(html,/soft-polish\.css/);
-  assert.match(html,/soft-polish\.js/);
- }
+ assert.match(app,/soft-polish\.js/);
+ assert.match(central,/soft-polish\.css/);
+ assert.match(central,/soft-polish\.js/);
+ assert.match(read('../assets/ronda-pro.css'),/rp-soft-view-in/);
  assert.match(sw,/rondas-pro-interface-v6/);
  assert.match(sw,/soft-polish\.css/);
  assert.match(sw,/soft-polish\.js/);
