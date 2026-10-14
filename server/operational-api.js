@@ -111,7 +111,7 @@ export function createOperationalApi(){
   return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active,u.site FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
  };
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
- const visible=(u,e)=>u.role==='cliente'?false:['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
+ const visible=(u,e)=>u.role==='cliente'?Boolean(u.site&&e.site===u.site&&['inspection','checkpoint','patrol_start','patrol_end'].includes(e.kind)):['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
  const criteriaKeys=['acessos','estrutura','equipamentos','sinalizacao'];
  const operations=db?createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}):null;
  async function notifyEmail(record,template){
@@ -230,12 +230,13 @@ export function createOperationalApi(){
     if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas pelo administrador'});return true;}
     const limit=Math.min(500,Math.max(1,Number(u.searchParams.get('limit'))||100));
     const rows=['ronda','vistoriador'].includes(a.role)?db.prepare('SELECT * FROM events WHERE user_id=? ORDER BY occurred_at DESC LIMIT ?').all(a.id,limit):
-     a.role==='cliente'?(a.site?db.prepare("SELECT * FROM events WHERE site=? AND kind IN ('patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted') ORDER BY occurred_at DESC LIMIT ?").all(a.site,limit):[]):
+     a.role==='cliente'?(a.site?db.prepare("SELECT * FROM events WHERE site=? AND kind IN ('patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted','inspection') ORDER BY occurred_at DESC LIMIT ?").all(a.site,limit):[]):
      db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT ?').all(limit);
     resp(res,200,{events:rows.map(x=>({...x,details:serialize(x.details),position:x.lat==null?null:{lat:x.lat,lng:x.lng,accuracy:x.accuracy}}))});return true;
    }
    const messages=p.match(/^\/api\/events\/([0-9a-z-]+)\/messages$/i);
    if(messages){
+    if(a.role==='cliente'){resp(res,403,{error:'Conversa operacional não disponível no Portal do Cliente'});return true;}
     if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Mensagens de ocorrências desabilitadas'});return true;}
     const ev=event(messages[1]);if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     if(m==='GET'&&reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas'});return true;}
