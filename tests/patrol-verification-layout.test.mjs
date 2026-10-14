@@ -36,7 +36,11 @@ test('Ações rápidas aparecem na tela inicial antes da ronda e preservam Inici
  assert.ok(ops.includes('data-ops="central-alert"'));
  assert.ok(ops.includes('data-ops="central-message"'));
  assert.ok(css.includes('.patrol-workspace.sheet-collapsed>.patrol-communication-bar'));
- assert.ok(css.includes('height:clamp(205px,40dvh,330px)!important'),'Mapa mobile não deve ocupar toda a tela');
+ assert.ok(css.includes('position:absolute!important;inset:0!important;z-index:0!important'),'O mapa deve preencher o fundo do vigia');
+ assert.ok(css.includes('grid-template-columns:78px 52px 52px!important'),'Ações compactas ficam no canto oposto ao pânico');
+ assert.ok(css.includes('calc(118px + env(safe-area-inset-bottom,0px))'),'Painel principal fica sobre o mapa, acima dos atalhos');
+ assert.ok(css.includes('@keyframes rp-dock-reveal'),'Ações oferecem resposta visual');
+ assert.ok(css.includes('@media(prefers-reduced-motion:reduce)'),'Animações respeitam acessibilidade');
 });
 
 test('Aba Ponto ocupa o painel de ferramentas apenas durante a ronda',()=>{
