@@ -236,6 +236,7 @@ export function createOperationalApi(){
    }
    const messages=p.match(/^\/api\/events\/([0-9a-z-]+)\/messages$/i);
    if(messages){
+    if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Mensagens de ocorrências desabilitadas'});return true;}
     const ev=event(messages[1]);if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     if(m==='GET'&&reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas'});return true;}
     if(m==='GET'){const rows=reviewer(a)?db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? ORDER BY created_at').all(ev.id):db.prepare("SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? AND audience='general' ORDER BY created_at").all(ev.id);resp(res,200,{messages:rows});return true;}
@@ -276,7 +277,9 @@ export function createOperationalApi(){
     const rows=db.prepare('SELECT t.*,reviewer.name concluded_by,worker.name reporter_name,e.kind,e.description,e.occurred_at,e.site,e.user_id FROM event_treatments t JOIN events e ON e.id=t.event_id JOIN users reviewer ON reviewer.id=t.author_id JOIN users worker ON worker.id=e.user_id ORDER BY t.created_at DESC LIMIT ?').all(limit);
     resp(res,200,{treatments:rows});return true;
    }
-   if(p==='/api/templates'&&m==='GET'){const rows=reviewer(a)?db.prepare('SELECT * FROM templates').all():db.prepare("SELECT id,title,trigger,priority,enabled,cooldown_min FROM templates WHERE enabled=1 AND trigger='manual'").all();resp(res,200,{templates:rows});return true;}
+   if(p==='/api/templates'&&m==='GET'){
+    if(reviewer(a)&&!operations.allows(a,'alertas')){resp(res,403,{error:'Modelos de alerta desabilitados'});return true;}
+    const rows=reviewer(a)?db.prepare('SELECT * FROM templates').all():db.prepare("SELECT id,title,trigger,priority,enabled,cooldown_min FROM templates WHERE enabled=1 AND trigger='manual'").all();resp(res,200,{templates:rows});return true;}
    if(p==='/api/templates'&&m==='POST'&&manager(a)){
     const d=serialize((await body(req)).toString())||{},tid=clean(d.id)||id();
     if(!/^[\w-]{3,70}$/.test(tid)||clean(d.title).length<3||!['manual','automatic'].includes(d.trigger)||!['low','medium','high'].includes(d.priority)||!Number.isInteger(d.cooldownMin)||d.cooldownMin<0||d.cooldownMin>10080||!Array.isArray(d.recipients)){resp(res,422,{error:'Modelo inválido'});return true;}
@@ -326,6 +329,7 @@ export function createOperationalApi(){
     resp(res,200,{source:'sqlite',metrics:db.prepare('SELECT kind,COUNT(*) count FROM events GROUP BY kind').all(),team:db.prepare("SELECT u.id,u.name,u.description,COUNT(e.id) events,SUM(CASE WHEN e.kind='panic' THEN 1 ELSE 0 END) panics FROM users u LEFT JOIN events e ON e.user_id=u.id WHERE u.role='ronda' GROUP BY u.id").all(),rounds,updatedAt:now()});return true;
    }
    if(p==='/api/media'&&m==='POST'){
+    if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Evidências desabilitadas'});return true;}
     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente não envia evidências'});return true;}
     const eid=clean(req.headers['x-ronda-event-id']),ev=event(eid);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
@@ -355,6 +359,7 @@ export function createOperationalApi(){
    }
    const mediaPath=p.match(/^\/api\/media\/([0-9a-f-]+)$/i);
    if(mediaPath&&m==='GET'){
+    if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Evidências desabilitadas'});return true;}
     const item=db.prepare('SELECT * FROM media WHERE id=?').get(mediaPath[1]),ev=item&&event(item.event_id);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Mídia não encontrada'});return true;}
     const bytes=readFileSync(join(resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media'),item.filename));
@@ -362,11 +367,12 @@ export function createOperationalApi(){
     res.end(bytes);return true;
    }
    if(p==='/api/events/media'&&m==='GET'){
+    if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Evidências desabilitadas'});return true;}
     const eid=clean(u.searchParams.get('eventId')),ev=event(eid);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     resp(res,200,{media:db.prepare('SELECT id,mimetype,captured_at,latitude,longitude,battery FROM media WHERE event_id=? ORDER BY created_at').all(eid)});return true;
    }
-   if(p==='/api/export'&&m==='GET'&&manager(a)){
+   if(p==='/api/export'&&m==='GET'&&reviewer(a)&&operations.allows(a,'relatorios')){
     const events=db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT 50000').all(),messages=db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id ORDER BY m.created_at DESC LIMIT 50000').all();
     audit(a,'export',null);resp(res,200,{source:'sqlite',at:now(),events,messages,rondas:aggregateOperationalRounds(events),limit:50000});return true;
    }
