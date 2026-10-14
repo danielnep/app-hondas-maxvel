@@ -354,7 +354,11 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda')curtain?.close()
  if(screen==='landing')root.innerHTML=entryScreen();
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
- installViewportViews();installUX06();attachMaps();ops.decorate();installManager.decorate();uiMotion.enterView();justRendered=Date.now();
+ installViewportViews();installUX06();
+ const workspace=document.querySelector('.patrol-workspace');
+ const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
+ if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
+ attachMaps();ops.decorate();installManager.decorate();uiMotion.enterView();justRendered=Date.now();
  if(user?.role==='ronda'&&view==='minha-ronda'&&screen!=='landing'&&!locationGate.isGranted())locationGate.open({demo:presentation});
  else if(user?.role!=='ronda'||view!=='minha-ronda')locationGate.close();
 }
@@ -419,7 +423,7 @@ function simRoleBar(){
  if(!presentation)return '';
  const roles=[['ronda','Operação de Ronda','compass','Ronda'],['operador','Monitoramento','map','Operador'],['coi','COI','map','COI'],['cliente','Cliente','eye','Cliente'],['vistoriador','Vistoriador','clipboard','Vistoria'],['admin','Administração','settings','Admin']];
  const currentRole=user?.role??'ronda',point=session?.status==='active'?session.index+1:0,total=session?.route?.points.length??4;
- return `<div class="simulation-rolebar" aria-label="Ambiente interativo do aplicativo"><div class="simulation-caption"><span class="simulation-signal"></span><strong>Rondas Pro</strong><small>Dados locais de avaliação</small></div><nav class="simulation-roles" aria-label="Alternar perfis do aplicativo">${roles.map(([role,label,icon,short])=>`<button type="button" data-action="sim-role" data-role="${role}" aria-label="${label}" aria-pressed="${currentRole===role}" class="${currentRole===role?'selected':''}">${ic(icon)}<span class="role-long">${label}</span><span class="role-short" aria-hidden="true">${short}</span></button>`).join('')}</nav><div class="simulation-actions">${helpButton('profiles','perfil de acesso')}<span class="simulation-progress">${session?`Ponto ${Math.min(point,total)} / ${total}`:'Pronto para iniciar'}</span><button type="button" data-action="end-presentation" aria-label="Sair da simulação" title="Sair da simulação">${ic('close')}<span> Sair</span></button></div></div>`;
+ return `<div class="simulation-rolebar" aria-label="Ambiente interativo do aplicativo"><div class="simulation-caption"><span class="simulation-signal"></span><strong>Rondas Pro</strong><small>Demonstração sem login · cada usuário terá acesso e senha individuais cadastrados pelo administrador na implantação</small></div><nav class="simulation-roles" aria-label="Alternar perfis do aplicativo">${roles.map(([role,label,icon,short])=>`<button type="button" data-action="sim-role" data-role="${role}" aria-label="${label}" aria-pressed="${currentRole===role}" class="${currentRole===role?'selected':''}">${ic(icon)}<span class="role-long">${label}</span><span class="role-short" aria-hidden="true">${short}</span></button>`).join('')}</nav><div class="simulation-actions">${helpButton('profiles','perfil de acesso')}<span class="simulation-progress">${session?`Ponto ${Math.min(point,total)} / ${total}`:'Pronto para iniciar'}</span><button type="button" data-action="end-presentation" aria-label="Sair da simulação" title="Sair da simulação">${ic('close')}<span> Sair</span></button></div></div>`;
 }
 function beginSimulation(name,autoStart=false,startRole='ronda'){
  if(!presentation)priorSimulation={user:user?{...user}:null,view,session,mode};
@@ -476,7 +480,7 @@ function featureHelp(topic){
 
 function pageTitle(title,sub,extra=''){return `<div class="page-title"><div><div class="eyebrow">RONDAS PRO · ${esc(roleName[user.role])}</div><h1>${title}</h1><p>${sub}</p></div>${extra}</div>`}
 function appShell(){const entries=allNav[user.role];let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
- return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Avaliação · dados locais</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><a class="foot-link" href="/central.html">Central operacional segura</a><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker desktop-only"):""}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${viewContent()}</main><footer class="footer-app">Ambiente de avaliação · dados locais · Grupo Maxvel</footer></div></div></div>`}
+ return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Demo sem login. Na implantação, o administrador cadastra os profissionais e seus logins/senhas individuais.</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><a class="foot-link" href="/central.html">Central operacional segura</a><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker desktop-only"):""}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${viewContent()}</main><footer class="footer-app">Ambiente de avaliação · dados locais · Grupo Maxvel</footer></div></div></div>`}
 function myPatrolHistory(){
  const name=user?.name||'',mine=sessionList().filter(x=>x.name===name),events=ops.allEvents();
  const item=x=>{
@@ -981,7 +985,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   if(name.length<2){notify('Informe um nome com pelo menos duas letras.');return;}
   beginSimulation(name,false,'ronda');return;
  }
- if(act==='end-presentation'){locationGate.reset();endSimulation();return;}
+ if(act==='end-presentation'){locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
  if(act==='launch-scenario'){
   beginSimulation('Administrador',true,'admin');
   notify('Cenário ativo. Alterne para Ronda para mover o marcador e gerar eventos.');return;
@@ -1079,8 +1083,8 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
  }
 if(act==='profile-menu'){profileDialog();return;}
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'&&presentation){tour.close();endSimulation();return;}
- if(act==='logout'){stopLocation();user=null;session=null;mode='simulation';screen='landing';locationFix=null;movement=null;render();return;}
+ if(act==='logout'&&presentation){tour.close();locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
+ if(act==='logout'){stopLocation();locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
  if(act==='privacy'){privacy();return;}
  if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
@@ -1277,7 +1281,7 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  const map=liveMaps.find(x=>x?.container?.id==='mobile-map');
  if(map?.instance){map.instance.flyTo([fix.lat,fix.lng],17,{animate:true,duration:.8});setTimeout(()=>map.fit(),1800)}
  notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
- if(!tour.hasSeen())setTimeout(()=>tour.open(),1900);
+ // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
-render();
+beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
