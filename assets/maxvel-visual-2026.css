@@ -131,7 +131,7 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
 
 /* Ajuda do mapa permanece acionável acima do cockpit sem interceptação dos controles. */
 @media screen and (max-width:900px){
- .dashboard .ronda-page .patrol-map-canvas .ux06-map-help{
+ .dashboard .ronda-page .patrol-workspace>.ux06-map-help{
   position:absolute!important;top:72px!important;right:12px!important;left:auto!important;
   z-index:660!important;min-width:36px!important;min-height:36px!important;
   background:rgba(16,21,28,.9)!important;border:1px solid rgba(98,195,232,.75)!important;
