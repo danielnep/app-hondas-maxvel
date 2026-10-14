@@ -2,6 +2,7 @@ import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
 import {openConclusionDialog} from './conclusion-dialog.js';
 import {createOpsCenterUI} from './ops-center-ui.js';
+import {createMediaCapture,evidenceButtons} from './media-capture.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
@@ -12,6 +13,7 @@ let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='d
 let occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
+const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[];
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
@@ -441,7 +443,7 @@ function inspectionView(){
  const entries=events.filter(e=>e.kind==='inspection'),scored=entries.filter(e=>Number.isFinite(e.details?.qualityPercent));
  const avg=scored.length?Math.round(scored.reduce((n,e)=>n+e.details.qualityPercent,0)/scored.length):null;
  const criteria=[['acessos','Acessos verificados'],['estrutura','Estrutura em conformidade'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização em conformidade']];
- return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?'<div class="surface"><h2>Destino atribuído pelo COI</h2><p>'+escape(assignment.site||assignment.address)+' · '+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><h2>Nova vistoria</h2><p class="muted">Informe o resultado de cada critério verificado. Nenhum item é considerado irregular por falta de resposta.</p>'+criteria.map(([key,label])=>'<label class="inspection-check"><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Selecione o resultado</option><option value="ok">Conforme</option><option value="no">Não conforme</option></select></label>').join('')+'<label>Observações<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Descreva objetivamente o que foi verificado"></textarea></label><button class="primary">Registrar vistoria</button></form>':'<div class="surface"><h2>Aguardando despacho do COI</h2><p>O COI escolhe o destino autorizado. Consulte <button type="button" data-page="dispatches">Meus despachos</button>.</p></div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
+ return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?'<div class="surface"><h2>Destino atribuído pelo COI</h2><p>'+escape(assignment.site||assignment.address)+' · '+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><h2>Nova vistoria</h2><p class="muted">Informe o resultado de cada critério verificado. Nenhum item é considerado irregular por falta de resposta.</p>'+criteria.map(([key,label])=>'<label class="inspection-check"><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Selecione o resultado</option><option value="ok">Conforme</option><option value="no">Não conforme</option></select></label>').join('')+'<label>Observações<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Descreva objetivamente o que foi verificado"></textarea></label><h3>Registrar evidências</h3>'+evidenceButtons()+'<button class="primary">Registrar vistoria e evidências</button></form>':'<div class="surface"><h2>Aguardando despacho do COI</h2><p>O COI escolhe o destino autorizado. Consulte <button type="button" data-page="dispatches">Meus despachos</button>.</p></div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
 }
 
 function render(){
@@ -522,6 +524,17 @@ async function printAllConversations(){
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
+  if(target.dataset.evidenceKind&&account?.role==='vistoriador'&&page==='inspections'){
+   try{
+    const file=await inspectorCapture.request(target.dataset.evidenceKind);
+    if(!document.querySelector('#inspection-form'))return;
+    if(inspectorEvidence.length>=8){flash('Máximo de oito evidências por laudo.');return}
+    inspectorEvidence.push(file);
+    const holder=document.querySelector('#inspection-form [data-evidence-attachments]');
+    if(holder)holder.textContent=inspectorEvidence.map(x=>x.name).join(' · ');
+   }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
+   return;
+  }
   if(await ops.click(target))return;
   if(await routeBoard.click(target))return;
   if(target.dataset.compose){if(!['ronda','vistoriador'].includes(account?.role)||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;page='send';render();return;}
@@ -587,8 +600,14 @@ document.addEventListener('submit',async e=>{
    if(!ops.activeInspection()||d.dispatchId!==ops.activeInspection().id)throw Error('Inicie o despacho autorizado pelo COI antes de registrar vistoria.');
    if(keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Avalie todos os quatro critérios da vistoria.');
    const criteria=Object.fromEntries(keys.map(k=>[k,d[k]==='ok']));
-   await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
-   flash('Vistoria salva no servidor.');await load();return;
+   const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
+   const files=[...inspectorEvidence];inspectorEvidence=[];let uploaded=0;
+   for(const file of files){
+    try{await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':record.id,'X-Captured-At':String(file.lastModified||Date.now())}});uploaded++}
+    catch(err){console.warn('Evidência não enviada',err)}
+   }
+   flash(files.length&&uploaded!==files.length?'Laudo salvo; '+uploaded+' de '+files.length+' evidências enviadas.':'Vistoria e '+uploaded+' evidência(s) salvas.');
+   await load();return;
   }
   if(form.id==='new-user'){await api('/users',{method:'POST',data:d});flash('Colaborador cadastrado.');await load();return;}
   if(form.id==='save-template'){const f=new FormData(form);const recipients=f.getAll('recipients');if(!recipients.length)throw Error('Escolha ao menos um grupo destinatário.');await api('/templates',{method:'POST',data:{...d,enabled:f.has('enabled'),cooldownMin:Number(d.cooldownMin),recipients}});flash('Modelo salvo no banco.');await load();return;}
