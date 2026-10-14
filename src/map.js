@@ -43,14 +43,23 @@ const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${k
 export class PatrolMap{
  constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false}={}){
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;this.standbyClean=standbyClean;
-  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.tracePositions=[this.position];this.traceLayer=null;
+  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.tracePositions=[this.position];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
   this.showFallback();this.setup();
  }
  showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
  async setup(){try{
   const L=await loadLeaflet();if(this.destroyed)return;
-  this.leaflet=L;this.container.innerHTML='';
-  const m=L.map(this.container,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:true});this.instance=m;
+  this.leaflet=L;
+  // Preserve a useful schematic map until online tiles actually arrive.
+  // Otherwise a loaded Leaflet script with a failing tile provider leaves a black panel.
+  const staged=typeof document.createElement==='function'&&typeof this.container.appendChild==='function';
+  const mount=staged?document.createElement('div'):this.container;
+  if(staged){
+   mount.className='map-live-layer';
+   mount.style.cssText='position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .2s ease';
+   this.container.appendChild(mount);this.liveLayer=mount;
+  }else this.container.innerHTML='';
+  const m=L.map(mount,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:true});this.instance=m;
   if(typeof this.onMapClick==='function')m.on('click',event=>this.onMapClick({lat:event.latlng.lat,lng:event.latlng.lng}));
   const credit='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
   // CARTO can return an HTTP-200 image saying API KEY REQUIRED, which tileerror cannot detect.
@@ -59,10 +68,23 @@ export class PatrolMap{
    maxZoom:19,minZoom:3,attribution:credit,crossOrigin:true,className:'maxvel-osm-dark-adapted'
   });
   let osmErrors=0;
+  osm.on('tileload',()=>{
+   if(this.destroyed||this.instance!==m||!staged||this.tileVisible)return;
+   this.tileVisible=true;clearTimeout(this.tileFallbackTimer);
+   mount.style.opacity='1';mount.style.pointerEvents='auto';
+   this.container.querySelector('.map-fallback')?.remove();
+   this.container.querySelector('.map-attribution-local')?.remove();
+   this.container.removeAttribute('data-map-fallback');
+  });
+  if(staged)this.tileFallbackTimer=setTimeout(()=>{
+   if(this.destroyed||this.instance!==m||this.tileVisible)return;
+   m.remove();this.instance=null;mount.remove();this.liveLayer=null;
+   this.showFallback();this.container.setAttribute('data-map-fallback','true');
+  },12000);
   osm.on('tileerror',()=>{
    if(this.destroyed||this.instance!==m)return;
    if(++osmErrors>=5&&m.hasLayer(osm)){
-    m.remove();this.instance=null;this.showFallback();
+    clearTimeout(this.tileFallbackTimer);m.remove();this.instance=null;mount!==this.container&&mount.remove();this.liveLayer=null;this.showFallback();
     this.container.setAttribute('data-map-fallback','true');
    }
   });
@@ -138,5 +160,5 @@ const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado'
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
  fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
  invalidate(){this.instance?.invalidateSize(false)}
- destroy(){this.destroyed=true;this.instance?.remove();this.instance=null;if(this.container)this.container.innerHTML=''}
+ destroy(){this.destroyed=true;clearTimeout(this.tileFallbackTimer);this.instance?.remove();this.instance=null;this.liveLayer=null;if(this.container)this.container.innerHTML=''}
 }
