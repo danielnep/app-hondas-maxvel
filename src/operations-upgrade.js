@@ -1,3 +1,4 @@
+import {evidenceButtons} from './media-capture.js';
 /** Rondas Pro: ampliação aditiva da demonstração operacional.
  * Persistência em IndexedDB no dispositivo; em Android o trajeto também usa SQLite nativo.
  * Sem API de produção, "pendente de envio" nunca significa entregue remotamente.
@@ -330,17 +331,9 @@ export function createOperationsUpgrade(api){
   }
   
  }
- function mediaFields(){
-  return '<details class="ops-media-fields"><summary>Evidências contextuais (opcionais): foto, áudio ou vídeo</summary>'+
-   '<p>Adicione foto, áudio ou vídeo. Os arquivos ficam na memória local do dispositivo até integração com servidor. Não é exigida selfie.</p>'+
-   '<div class="ops-media-choices">'+
-   '<label>📷 Tirar foto<input type="file" name="ops-photo" accept="image/*" capture="environment"></label>'+
-   '<label>🎙 Gravar áudio<input type="file" name="ops-audio" accept="audio/*" capture="microphone"></label>'+
-   '<label>🎥 Filmar<input type="file" name="ops-video" accept="video/*" capture="environment"></label>'+
-   '</div></details>';
- }
+ function mediaFields(){return '<section class="ops-media-fields" data-evidence-host><strong>Evidências contextuais (opcionais)</strong><p>Capture e anexe diretamente foto, vídeo ou áudio, sem selecionar arquivos manualmente.</p>'+evidenceButtons()+'</section>';}
  async function attachIncidentMedia(incident,form){
-  const files=[...form.querySelectorAll('[name="ops-photo"],[name="ops-audio"],[name="ops-video"]')].flatMap(i=>[...(i.files??[])]);
+  const files=Array.isArray(form.__evidenceFiles)?form.__evidenceFiles:[];
   incident.media??=[];
   for(const file of files.slice(0,3)){
    if(!file.size||file.size>25*1024*1024){api.notify('Arquivo ignorado: máximo de 25 MB por evidência.');continue;}
