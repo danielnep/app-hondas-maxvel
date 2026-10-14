@@ -39,7 +39,7 @@ test('API: senha, perfis, mensagens internas, idempotência e upload reservado',
   assert.equal(restricted.length,1);assert.equal(restricted[0].audience,'general');
   const all=(await (await get('/events/'+eventId+'/messages',master)).json()).messages;assert.equal(all.length,2);
   assert.equal((await post('/events/'+eventId+'/review',{status:'resolvida',note:'Foi realizado acompanhamento no posto.'},guard)).status,404);
-  assert.equal((await post('/events/'+eventId+'/review',{status:'resolvida',note:'Providência verificada em campo.'},master)).status,200);
+  assert.equal((await post('/events/'+eventId+'/review',{status:'resolvida',note:'Conferi o registro da ocorrência, validei os horários e encaminhei as providências à equipe responsável.'},master)).status,200);
   assert.equal((await get('/dashboard',master)).status,200);
   assert.equal((await get('/export',guard)).status,404);
   const meta=await post('/media',{anything:true},guard);assert.equal(meta.status,404);
