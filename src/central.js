@@ -224,6 +224,8 @@ function monitorView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),
   open=events.filter(e=>['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message'].includes(e.kind)&&e.status!=='resolvida'),
   urgent=open.filter(e=>e.kind==='panic');
+ const priorityRank={panic:0,route_deviation:1,incident:2,gps_issue:3,patrol_interrupted:4,patrol_incomplete:5,alert:6,message:7};
+ const triage=open.slice().sort((a,b)=>(priorityRank[a.kind]??9)-(priorityRank[b.kind]??9)||(b.occurred_at||0)-(a.occurred_at||0));
  const agenda=routes.slice(0,9).map(route=>{
   const item=rounds.find(r=>r.routeId===route.id)||null;
   return {route,round:item};
@@ -242,10 +244,11 @@ function monitorView(){
  '<p class="muted">Local / posto: '+escape(account.site||'Todos os locais autorizados')+'</p></div>'+
  '<div class="ops-agenda-live"><span class="ops-live-led"></span><span>Monitoramento ativo</span><strong data-ops-live-clock>'+escape(new Date().toLocaleTimeString('pt-BR'))+'</strong></div></header>'+
  '<div class="ops-monitor-kpis">'+[['Em ronda',active.length],['Pendentes',open.length],['Pânicos',urgent.length],['Vigias',users.filter(w=>w.role==='ronda').length]].map(([label,num],i)=>'<div class="ops-monitor-kpi'+(i===2&&num?' critical':'')+'"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
+ '<section class="surface rp2-attention-queue" aria-label="Pendências em prioridade"><div class="toolbar"><div><h2>Fila de atenção</h2><p class="muted">Pânicos e ocorrências no topo; GPS sem leitura não prova desvio.</p></div><button data-page="events">Abrir triagem</button></div>'+(triage.length?eventList(triage.slice(0,5)):'<p class="empty">Nenhuma pendência registrada.</p>')+'</section>'+
  '<section class="surface ops-agenda-surface"><div class="toolbar"><div><h2>Agenda de Rondas</h2><p class="muted">Mapa compacto, horários e verificação por local</p></div><button data-page="routes">Programar / consultar</button></div>'+
  '<div class="ops-agenda-list">'+(rows||'<p class="empty">Nenhuma rota cadastrada. A Administração pode preparar os percursos.</p>')+'</div></section>'+
  '<section class="surface"><div class="toolbar"><div><h2>Vigias e localização</h2><p class="muted">A última leitura GPS não comprova presença contínua.</p></div><button data-page="dispatches">Despachar vigia</button></div>'+monitorRows(active.length?active:rounds.slice(0,6))+'</section>'+
- '<section class="ops-monitor-footer"><div class="toolbar"><div><h2>Alertas e ocorrências</h2><p class="muted">'+open.length+' registro(s) para triagem prioritária pelo COI</p></div><button data-page="events">Abrir e tratar</button></div>'+eventList(open.slice(0,6))+'</section></section>';
+ '<div class="rp2-monitor-footnote">As informações são de eventos recebidos pelo servidor. A ausência de atualização não confirma ausência de atividade.</div></section>';
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -426,7 +429,7 @@ function staticClientMap(fix){
 function clientView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),past=rounds.filter(r=>r.status!=='em_andamento');
  const inspections=events.filter(e=>e.kind==='inspection').slice(0,12);
- const item=r=>'<details class="details-toggle"><summary>'+escape(roundStatus(r))+' · '+clientDate(r.start)+' · '+escape(r.site||account.site)+'</summary>'+
+ const item=r=>'<details class="details-toggle rp2-timeline-entry"><summary>'+escape(roundStatus(r))+' · '+clientDate(r.start)+' · '+escape(r.site||account.site)+'</summary>'+
   '<div class="surface"><div class="detail-grid">'+[['Local',r.site||account.site],['Situação',roundStatus(r)],
   ['Hora de início',clientDate(r.start)],['Hora de término',clientDate(r.end)],['Pontos verificados',r.checkpoints],
   ['Distância estimada',Number(r.km||0).toFixed(2)+' km'],['Última posição recebida',clientDate(r.lastFixAt)]]
@@ -439,7 +442,7 @@ function clientView(){
   '<p>'+escape(e.description||'Sem descrição')+'</p>'+
   '<div class="client-inspection-media" data-client-inspection="'+escape(e.id)+'"><small>Carregando evidências autorizadas…</small></div></article>';
  return '<section class="stack ops-client-portal"><header class="ops-agenda-header"><div><div class="eyebrow">PATRIMÔNIO PROTEGIDO · PORTAL DO CLIENTE</div>'+
-  '<h1>'+siteLabel()+'</h1><p class="muted">Dados restritos ao local autorizado à sua conta.</p></div>'+
+  '<h1>'+siteLabel()+'</h1><p class="muted">Acompanhamento do local autorizado à sua conta · Atualizações registradas no servidor.</p></div>'+
   '<button data-refresh>Atualizar</button></header>'+
   '<div class="cards"><div class="metric"><strong>'+active.length+'</strong><span>Rondas em andamento</span></div>'+
   '<div class="metric"><strong>'+past.filter(r=>r.status==='concluida').length+'</strong><span>Rondas concluídas</span></div>'+
@@ -450,7 +453,7 @@ function clientView(){
   '<section class="surface"><h2>Rondas atuais</h2>'+(active.length?active.map(item).join(''):'<p class="empty">Nenhuma ronda ativa neste local.</p>')+'</section>'+
   '<section class="surface"><h2>Vistorias e evidências</h2><p class="muted">Laudos e fotos, vídeos ou áudios vinculados ao seu local.</p>'+
   (inspections.length?inspections.map(inspectionRow).join(''):'<p class="empty">Nenhum laudo disponível para este local.</p>')+'</section>'+
-  '<section class="surface"><h2>Histórico de rondas</h2>'+(past.length?past.slice(0,40).map(item).join(''):'<p class="empty">Sem rondas anteriores registradas.</p>')+'</section></section>';
+  '<section class="surface"><h2>Linha do tempo das rondas</h2><p class="muted">Toque em um registro para ver os pontos e a última posição disponível.</p><div class="rp2-client-timeline">'+(past.length?past.slice(0,40).map(item).join(''):'<p class="empty">Sem rondas anteriores registradas.</p>')+'</div></section></section>';
 }
 async function loadClientInspectionMedia(){
  const nodes=[...document.querySelectorAll('[data-client-inspection]')];
