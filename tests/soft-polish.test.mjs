@@ -36,7 +36,7 @@ test('as duas interfaces carregam a camada e a PWA atualiza seus arquivos',()=>{
  assert.match(central,/soft-polish\.css/);
  assert.match(central,/soft-polish\.js/);
  assert.match(read('../assets/ronda-pro.css'),/rp-soft-view-in/);
- assert.match(sw,/rondas-pro-interface-v7/);
+ assert.match(sw,/rondas-pro-interface-v8/);
  assert.match(sw,/soft-polish\.css/);
  assert.match(sw,/soft-polish\.js/);
 });
@@ -53,6 +53,6 @@ test('V3 adiciona resposta visual em ambos os acessos sem ciclos infinitos',()=>
   assert.doesNotMatch(v3,/animation:[^;}\n]*infinite/);
  }
  const app=read('../index.html'),central=read('../central.html');
- assert.match(app,/ronda-pro\.css\?v=14/);
+ assert.match(app,/ronda-pro\.css\?v=15/);
  assert.match(central,/soft-polish\.css\?v=2/);
 });

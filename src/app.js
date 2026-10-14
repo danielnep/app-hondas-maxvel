@@ -734,7 +734,50 @@ function phoneContent(){
 /* A demonstração não cria uma segunda interface: usa appShell + phoneContent + viewContent. */
 const lessonNames=['O que você verá','Início e percurso','Desvios e justificativa','Supervisão e resultado','Limites e implantação'];
 function lesson(i){const stages=[`<p>Você acompanhará a mesma ronda dentro do aplicativo. Use o seletor de áreas para alternar entre Operação de Ronda e Administração, sem perder o progresso nem os alertas locais.</p><ol><li>Inicie a ronda e veja a localização no mapa.</li><li>Percorra os pontos na ordem e aguarde os 30 segundos.</li><li>Simule um desvio ou registre uma ocorrência.</li><li>Consulte a notificação e a justificativa no painel.</li></ol>`,`<p>O deslocamento usa posições intermediárias sobre a cartografia real, mas o trajeto de exemplo não é uma rota de trânsito oficial.</p><ol><li>Clique em <strong>Iniciar ronda</strong> e aceite as regras.</li><li>No painel da ronda, use <strong>Ir ao próximo ponto</strong> nos comandos do cenário.</li><li>Aguarde a chegada dentro do raio de 25 m.</li><li>Espere 30 segundos reais e confirme a conclusão para liberar o próximo.</li></ol>`,`<p>A progressão para quando a posição sai do corredor da rota simulada ou tenta avançar fora da sequência.</p><ol><li>Use <strong>Sair da rota</strong> nos comandos do cenário.</li><li>O ronda verá a solicitação de justificativa.</li><li>Escreva o motivo e confirme o envio local simulado.</li><li>Use <strong>Ir ao próximo ponto</strong> para voltar ao ponto pendente e cumpra 30 segundos novamente: justificar não substitui a visita.</li></ol>`,`<p>Alterne para <strong>Administração</strong> na barra superior do próprio aplicativo. Os avisos reúnem nome, rota, ponto, horário, posição ilustrativa e explicação. O administrador pode abrir o aviso e marcá-lo como analisado.</p><p style="margin-top:12px"><strong>Benefício proposto:</strong> facilitar conferências, histórico e tratamento de exceções. A eficiência só pode ser medida numa operação piloto.</p>`,`<p><strong>Protótipo, não produção.</strong> As notificações são locais, os usuários não possuem autenticação real e os registros ficam neste navegador. O mapa usa ruas reais, mas as rotas da Maxvel foram substituídas por pontos fictícios.</p><ol><li>No piloto: validar precisão GPS, rede, bateria, duração e acessibilidade.</li><li>Na implantação: servidor, autenticação, auditoria, permissões, mapas e notificações reais.</li><li>Na privacidade: documentar finalidade, acesso, retenção e tratamento conforme a LGPD.</li></ol>`];return stages[i]||stages[0]}
-function showGuide(forPresentation=false,step=0){guideStage=Math.max(0,Math.min(4,step));const isLaunching=forPresentation||screen==='landing';showDialog(`<div class="eyebrow">GUIA INTERATIVO · GRUPO MAXVEL</div><h2>Conheça o sistema sem decorar instruções.</h2><p style="font-size:12px;margin-bottom:12px">Cada tema explica o que fazer, o que observar e o valor para a empresa. A ajuda continuará acessível durante a operação.</p><nav class="guide-tabs" aria-label="Etapas do guia">${lessonNames.map((t,i)=>`<button type="button" data-action="guide-stage" data-stage="${i}" aria-current="${i===guideStage?'step':'false'}" class="${i===guideStage?'active':''}">${i+1} · ${t}</button>`).join('')}</nav><div class="guide-pan"><h3>${esc(lessonNames[guideStage])}</h3>${lesson(guideStage)}</div>${ops.guideSection()}<div class="modal-actions">${guideStage>0?btn(ic('arrowleft')+' Anterior','guide-back',''):''}${guideStage<4?btn('Próximo assunto '+ic('arrow'),'guide-forward',''):''}</div>${isLaunching?`<div class="guide-pan" style="margin-top:18px"><h3>Pronto para testar?</h3><label class="field">Nome do ronda na apresentação<input id="presentation-name" maxlength="60" minlength="2" value="${esc(presentationName)}"></label>${btn('Abrir apresentação guiada '+ic('arrow'),'launch-presentation','primary full')}</div>`:btn('Voltar ao aplicativo','close-dialog','primary full')}`,true);modal.dataset.guideLaunch=isLaunching?'true':'false';}
+function showGuide(forPresentation=false,step=0){
+ const changingStep=modal.open&&modal.classList.contains('guide-dialog');
+ guideStage=Math.max(0,Math.min(lessonNames.length-1,Number(step)||0));
+ const isLaunching=forPresentation||screen==='landing';
+ const steps=lessonNames.map((title,i)=>
+  '<button type="button" data-action="guide-stage" data-stage="'+i+'"'+
+  ' aria-current="'+(i===guideStage?'step':'false')+'" class="'+(i===guideStage?'active':'')+'">'+
+  '<span class="guide-step-number">'+(i+1)+'</span><span>'+esc(title)+'</span></button>').join('');
+ const last=guideStage===lessonNames.length-1;
+ const actions=[
+  guideStage>0?btn(ic('arrowleft')+' Anterior','guide-back','guide-prev'):'',
+  !last?btn('Próxima etapa '+ic('arrow'),'guide-forward','primary guide-next'):
+   isLaunching?btn('Abrir apresentação guiada '+ic('arrow'),'launch-presentation','primary guide-next'):
+   btn('Voltar ao aplicativo','close-dialog','primary guide-next')
+ ].join('');
+ showDialog('<div class="guide-shell">'+
+  '<header class="guide-header"><div class="eyebrow">GUIA INTERATIVO · GRUPO MAXVEL</div>'+
+  '<h2 id="guide-title">Conheça o sistema sem decorar instruções.</h2>'+
+  '<div class="guide-stage-progress"><span>Etapa '+(guideStage+1)+' de '+lessonNames.length+'</span>'+
+  '<div class="guide-progress-track" role="progressbar" aria-label="Progresso no guia"'+
+  ' aria-valuemin="0" aria-valuemax="'+lessonNames.length+'" aria-valuenow="'+(guideStage+1)+'">'+
+  '<span style="width:'+((guideStage+1)/lessonNames.length*100)+'%"></span></div></div></header>'+
+  '<div class="guide-scroll" id="guide-scroll" aria-labelledby="guide-current-heading" tabindex="0">'+
+  '<p class="guide-description">Cada tema explica o que fazer, o que observar e o valor para a empresa. A ajuda continuará acessível durante a operação.</p>'+
+  '<details class="guide-step-picker"><summary>Escolher etapa <span>'+esc(lessonNames[guideStage])+'</span></summary>'+
+  '<nav class="guide-tabs" aria-label="Etapas do guia">'+steps+'</nav></details>'+
+  '<section class="guide-pan" aria-labelledby="guide-current-heading"><h3 id="guide-current-heading" tabindex="-1">'+
+  esc(lessonNames[guideStage])+'</h3>'+lesson(guideStage)+'</section>'+
+  ops.guideSection()+
+  (isLaunching&&last?'<section class="guide-pan guide-launch"><h3>Pronto para testar?</h3>'+
+  '<label class="field">Nome do ronda na apresentação'+
+  '<input id="presentation-name" maxlength="60" minlength="2" value="'+esc(presentationName)+'"></label></section>':'')+
+  '</div><footer class="guide-footer"><span class="guide-footer-step">'+
+  (guideStage+1)+' / '+lessonNames.length+'</span><div class="guide-footer-actions">'+actions+
+  '</div></footer></div>',true);
+ modal.classList.add('guide-dialog');
+ modal.dataset.guideLaunch=isLaunching?'true':'false';
+ // A rolagem fica exclusivamente no conteúdo. Ao mudar de etapa,
+ // reiniciamos a leitura e oferecemos foco correto para teclado/leitor de tela.
+ if(changingStep)requestAnimationFrame(()=>{
+  modal.querySelector('#guide-scroll')?.scrollTo(0,0);
+  modal.querySelector('#guide-current-heading')?.focus({preventScroll:true});
+ });
+}
 function showDialog(html,wide=false){modal.className=wide?'wide':'';modal.innerHTML=`<button type="button" class="dialog-close" aria-label="Fechar janela" data-action="close-dialog">${ic('close')}</button>${html}`;if(!modal.open)modal.showModal();requestAnimationFrame(()=>installDialogPagination(modal));}
 function privacy(){showDialog(`<div class="eyebrow">PRIVACIDADE E TRANSPARÊNCIA</div><h2>Uso responsável dos dados de ronda</h2><p>Este protótipo guarda nomes informados, horários, coordenadas simuladas ou dados de teste autorizados, desvios, justificativas e ocorrências somente no navegador atual.</p><div class="rules"><li><div><strong>Cartografia</strong><p>Quando online, os mapas carregam imagens do OpenStreetMap. Os pontos de ronda são fictícios; o provedor pode receber informações técnicas da visualização da região do mapa.</p></div></li><li><div><strong>Localização</strong><p>O modo GPS pede autorização do aparelho. No navegador, só funciona enquanto a página estiver ativa; o aplicativo nativo Android pode continuar com um serviço em primeiro plano e notificação visível, conforme permissões e condições do sistema. O serviço não sobrevive a uma parada forçada. Falhas ou imprecisões não são prova de irregularidade.</p></div></li><li><div><strong>Supervisão e alertas</strong><p>O recebimento nesta versão é simulado e local. Nenhum supervisor real recebe automaticamente avisos.</p></div></li><li><div><strong>Próximas etapas</strong><p>Antes do uso operacional: autenticação, infraestrutura, controle de acesso, segurança, política de retenção e documentação LGPD.</p></div></li></div>${btn('Entendi','close-dialog','primary full')}`,true)}
 function trackingIntroduction(){

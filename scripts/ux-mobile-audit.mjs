@@ -113,6 +113,57 @@ try{
     });
     if(sizes.center>10||sizes.y<0||sizes.bottom>sizes.height+2)throw Error('Aviso fora da área visível: '+JSON.stringify(sizes));
    }
+   if(width<=900){
+    // O guia completo de Vigia usa exclusivamente rolagem vertical dentro do modal.
+    await page.locator('.app-header [data-action="profile-menu"]:visible').click();
+    await page.locator('#dialog [data-action="guide"]:visible').click();
+    const guide=page.locator('#dialog.guide-dialog[open]');
+    await guide.waitFor({timeout:8000});
+    const geometry=await guide.evaluate(dialog=>{
+      const scroller=dialog.querySelector('.guide-scroll');
+      const footer=dialog.querySelector('.guide-footer');
+      const sr=scroller.getBoundingClientRect(),dr=dialog.getBoundingClientRect(),fr=footer.getBoundingClientRect();
+      return {dialogWidth:dr.width,dialogHeight:dr.height,dialogRight:dr.right,
+        dialogBottom:dr.bottom,scrollHeight:scroller.scrollHeight,clientHeight:scroller.clientHeight,
+        scrollWidth:scroller.scrollWidth,clientWidth:scroller.clientWidth,scrollBottom:sr.bottom,
+        footerTop:fr.top,footerBottom:fr.bottom,bodyOverflow:getComputedStyle(scroller).overflowY,
+        tabsOverflow:getComputedStyle(dialog.querySelector('.guide-tabs')).overflowX,
+        hasGenericPages:!!dialog.querySelector('.ux-dialog-pagination')};
+    });
+    if(geometry.dialogWidth>width+2||geometry.dialogHeight>height+2||
+       geometry.dialogRight>width+3||geometry.dialogBottom>height+3||
+       geometry.scrollWidth>geometry.clientWidth+2||
+       geometry.scrollBottom>geometry.footerTop+2||geometry.footerBottom>height+3||
+       !['auto','scroll'].includes(geometry.bodyOverflow)||geometry.hasGenericPages)
+      throw Error('Guia do vigia não cabe ou não rola verticalmente em '+width+': '+JSON.stringify(geometry));
+    if(await page.locator('#dialog .guide-tabs button').count()!==5)
+      throw Error('Guia perdeu as cinco etapas em '+width);
+    await page.locator('#dialog .guide-step-picker > summary').click();
+    const nav=await page.locator('#dialog .guide-tabs').evaluate(el=>{
+      const buttons=[...el.querySelectorAll('button')].map(x=>x.getBoundingClientRect());
+      return {w:el.scrollWidth,clientW:el.clientWidth,
+        vertical:buttons.every((r,i)=>!i||r.top>=buttons[i-1].bottom-1)};
+    });
+    if(nav.w>nav.clientW+2||!nav.vertical)throw Error('Etapas do guia não são verticais: '+JSON.stringify(nav));
+    await page.locator('#dialog .guide-step-picker > summary').click();
+    const content=page.locator('#dialog .guide-scroll');
+    if(geometry.scrollHeight>geometry.clientHeight+10){
+      await content.evaluate(el=>{el.scrollTop=el.scrollHeight});
+      const reached=await content.evaluate(el=>el.scrollTop);
+      if(reached<10)throw Error('Não é possível rolar o conteúdo do guia verticalmente: '+reached);
+    }
+    for(let step=2;step<=5;step++){
+      await page.locator('#dialog [data-action="guide-forward"]:visible').click();
+      const text=await page.locator('#dialog .guide-stage-progress > span').innerText();
+      if(!text.includes('Etapa '+step+' de 5'))
+        throw Error('Guia não avançou à etapa '+step+' em '+width+': '+text);
+      if(await page.locator('#dialog .guide-scroll').evaluate(el=>el.scrollLeft>1))
+        throw Error('O guia deslizou horizontalmente');
+    }
+    await page.locator('#dialog [data-action="close-dialog"]:visible').last().click();
+    if(await page.locator('#dialog').evaluate(el=>el.open))
+      throw Error('Guia não fecha após a última etapa');
+   }
    await click(page,'.patrol-actions [data-action="start"]');
    await (await revealDialogControl(page,'#dialog #declaration-check')).check();
    await revealDialogControl(page,'#dialog [data-action="confirm-start"]');
