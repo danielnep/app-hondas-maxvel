@@ -64,3 +64,12 @@ test('Janelas móveis apresentam avanço, rolagem e revisão de campos obrigató
  assert.ok(css.includes('dialog[open].ux-dialog-paging .ux-dialog-pagination'));
  assert.ok(css.includes('dialog[open]:not(.guide-dialog):not(.ux06-fullscreen)'),'Janelas comuns não podem ser cortadas');
 });
+
+
+test('Desvio confirmado encerra cortina do ponto e libera justificativa',()=>{
+ const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+ const curtain=readFileSync(new URL('../src/checkpoint-curtain.js',import.meta.url),'utf8');
+ assert.ok(app.includes("(session&&hasBlock(session)))curtain?.close()"),'Ao bloquear uma ronda a tela principal volta a ficar interativa');
+ assert.ok(curtain.includes("key!==s.id+':'+s.index||hasBlock(s)"),'Conferência não permanece aberta durante desvio');
+ assert.ok(curtain.includes("if(s?.status==='active'&&hasBlock(s)){close();return}"),'Cortina não reabre durante exigência de justificativa');
+});
