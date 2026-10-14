@@ -928,3 +928,51 @@ body:has(#central-root) main{max-width:1600px}
     transition:none!important;animation:none!important
   }
 }
+
+/* Rondas Pro 2.0 · entrada GPS: ícone vetorial e assinatura Maxvel */
+.location-entry-gate .location-entry-panel{
+  background:var(--mxp-canvas)!important;
+  border:1px solid var(--mxp-rule-strong)!important;
+  border-radius:var(--mxp-r-lg)!important;
+  padding:clamp(18px,4vw,26px)!important;
+  gap:12px;
+}
+.location-entry-gate .rp2-gate-brand{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;border-bottom:1px solid var(--mxp-rule);
+  padding-bottom:12px;margin-bottom:2px;
+}
+.location-entry-gate .rp2-gate-brand img{
+  width:116px;height:auto;max-height:38px;object-fit:contain;
+}
+.location-entry-gate .rp2-gate-brand span{
+  font-size:10px;color:var(--mxp-muted);text-align:right;
+  font-weight:700;letter-spacing:.06em;
+}
+.location-entry-gate .location-entry-icon{
+  display:grid;place-items:center;
+  width:48px;height:48px;margin-top:3px;
+  color:var(--mxp-cyan);
+  background:rgba(56,189,248,.09);
+  border:1px solid rgba(56,189,248,.45);
+  border-radius:var(--mxp-r-md);
+}
+.location-entry-gate .location-entry-icon svg{width:26px;height:26px}
+.location-entry-gate .location-entry-panel h2{
+  font-size:clamp(23px,5vw,28px);line-height:1.17;
+  letter-spacing:-.025em;
+}
+.location-entry-gate .location-entry-state{color:var(--mxp-ink)!important}
+.location-entry-gate .location-entry-grant{
+  min-height:52px;outline-offset:3px;
+}
+.location-entry-gate :is(.location-entry-grant,.location-entry-panic,.location-entry-contact):focus-visible{
+  outline:2px solid var(--mxp-cyan)!important;outline-offset:3px;
+}
+@media(max-width:380px){
+  .location-entry-gate .rp2-gate-brand{align-items:flex-start;flex-direction:column}
+  .location-entry-gate .rp2-gate-brand span{text-align:left}
+  .location-entry-gate .location-entry-emergency{
+    flex-direction:column;align-items:stretch;
+  }
+}
