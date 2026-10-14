@@ -42,6 +42,6 @@ test('Administrativo recebe painel, ocorrências, relatórios e informações de
 test('aplicativo e PWA incluem conteúdo dos perfis na mesma publicação',()=>{
  assert.match(read('../index.html'),/src\/app\.js\?v=35/);
  const sw=read('../sw.js');
- assert.match(sw,/rondas-pro-interface-v11/);
+ assert.match(sw,/rondas-pro-interface-v12/);
  assert.match(sw,/\.\/src\/mobile-role-guides\.js/);
 });
