@@ -23,26 +23,26 @@ async function click(page,selector){await page.locator(selector).first().click({
 try{
  await sleep(800);
  for(const width of [390,1440]){
-  const context=await browser.newContext({viewport:{width,height:850},isMobile:width<500,hasTouch:width<500,locale:'pt-BR',reducedMotion:'reduce'});
+  const context=await browser.newContext({viewport:{width,height:850},isMobile:width<500,hasTouch:width<500,locale:'pt-BR',reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.1402,longitude:-44.8837,accuracy:8}});
   const page=await context.newPage();
   await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:13000});
-  await check(page,'01-entrada',width);
-  await click(page,'[data-action="login"]:visible');
-  await check(page,'02-seletor-perfil',width);
-  await page.locator('#login-form input[name="role"][value="ronda"]').check();
-  await click(page,'#login-form button[type="submit"]');
-  await sleep(580);
+  await page.locator('.location-entry-gate').waitFor({timeout:9000});
+  await check(page,'01-primeiro-acesso-gps',width);
+  await click(page,'.location-entry-grant');
+  await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:11000});
+  await sleep(450);
   if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
   await check(page,'03-ronda',width);
+  // Alternância entre perfis acontece diretamente no demonstrativo, sem login.
   if(width<=900){
-   await click(page,'[data-action="profile-menu"]');
-   await click(page,'#dialog [data-action="logout"]');
-  }else await click(page,'[data-action="logout"]');
-  await click(page,'[data-action="login"]:visible');
-  await page.locator('#login-form input[name="role"][value="admin"]').check();
-  await click(page,'#login-form button[type="submit"]');
-  await sleep(580);
-  if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
+   await click(page,'[data-action="sim-role-picker"]');
+   await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
+  }else{
+   const role=page.locator('.simulation-rolebar [data-action="sim-role"][data-role="admin"]:visible');
+   if(await role.count())await role.click();
+   else{await click(page,'[data-action="sim-role-picker"]');await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');}
+  }
+  await sleep(400);
   await check(page,'04-administracao',width);
   if(width<=900)await click(page,'[data-action="open-mobile-menu"]');
   await page.locator(width<=900?'#dialog [data-view="rondas"]':'.sidebar [data-view="rondas"]').click();
