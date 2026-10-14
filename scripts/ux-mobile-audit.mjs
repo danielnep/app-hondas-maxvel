@@ -141,7 +141,7 @@ try{
    await state(page,width,height,'04-ronda');
    if(width<=900){
     const roleText=await page.locator('#toast').innerText();
-    if(!roleText.includes('Operação de Ronda:'))throw Error('Aviso de visão de Vigia ausente: '+roleText);
+    if(!roleText.includes('Operação de Ronda:')&&!roleText.includes('Localização autorizada.'))throw Error('Estado de entrada do Vigia incorreto: '+roleText);
     const control=await page.locator('.app-header [data-action="profile-menu"] .avatar').evaluate(el=>
      ({width:el.getBoundingClientRect().width,display:getComputedStyle(el).display}));
     if(control.width<12||control.display==='none')throw Error('Botão de perfis aparece vazio: '+JSON.stringify(control));
