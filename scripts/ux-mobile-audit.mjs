@@ -113,7 +113,7 @@ async function state(page,width,height,name){
  metrics.push({width,height,name,...data});
  await page.screenshot({path:out+'/'+width+'-'+name+'.png',animations:'disabled',timeout:14000});
  if(width<=900&&name==='ronda'&&data.cta&&data.map&&data.nav){
-   if(data.map.bottom>data.cta.y+2||data.cta.bottom>data.nav.y+2||data.cta.h<25)
+   if((data.map.y<data.cta.bottom-2&&data.cta.y<data.map.bottom-2)||data.cta.bottom>data.nav.y+2||data.cta.h<25)
     throw Error('Mapa ou ação de iniciar ronda sobrepostos/cortados: '+JSON.stringify(data));
  }
  if(data.actualWidth>width+2||data.documentWidth>width+3)throw Error('Overflow horizontal em '+width+' '+name+': '+JSON.stringify(data));
@@ -123,21 +123,16 @@ async function state(page,width,height,name){
 try{
  await wait(900);
  for(const [width,height] of sizes){
-  const context=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce'});
+  const context=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.1402,longitude:-44.8837,accuracy:8}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
   try{
    await page.goto('http://127.0.0.1:'+base,{waitUntil:'domcontentloaded',timeout:16000});
-   await state(page,width,height,'01-login');
-   const clicked=await page.locator('.entry-screen [data-action="login"]:visible').last();
-   await clicked.click({timeout:8000});
-   await state(page,width,height,'02-escolher-perfil');
-   await page.locator('#login-form [name="role"][value="ronda"]').check();
-   await click(page,'#login-form button[type="submit"]');
-   await wait(600);
-   if(await page.locator('#horizon-tour [data-tour="close"]').count()){
-    await state(page,width,height,'03-tutorial');
-    await click(page,'#horizon-tour [data-tour="close"]');
-   }
+   await page.locator('.location-entry-gate').waitFor({timeout:9000});
+   await state(page,width,height,'01-gps-primeiro-acesso');
+   await click(page,'.location-entry-grant');
+   await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:11000});
+   await wait(450);
+   if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
    await state(page,width,height,'04-ronda');
    if(width<=900){
     const roleText=await page.locator('#toast').innerText();
