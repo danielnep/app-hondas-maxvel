@@ -142,3 +142,62 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
   outline:3px solid #62c3e8!important;outline-offset:2px!important;
  }
 }
+
+/* SPEC V2 · campo PWA | cápsulas, luz, respostas luminosas. */
+.field-torch-fab{
+ position:fixed;z-index:855;right:12px;top:clamp(158px,27dvh,235px);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+ width:66px;height:66px;border:1px solid #9bb1bc70;border-radius:50%;
+ background:rgba(18,22,28,.84);color:#e9f4f9;cursor:pointer;
+ -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px);
+ box-shadow:inset 0 1px #ffffff33,0 7px 21px #0008;
+ transition:transform .22s cubic-bezier(.2,.8,.2,1.25),background .22s,box-shadow .22s;
+}
+.field-torch-fab svg{width:25px;height:25px;filter:drop-shadow(0 0 2px #7cdcff66);transition:filter .23s,transform .23s}
+.field-torch-fab span{font-size:9px;font-weight:800;letter-spacing:.1px}
+.field-torch-fab.is-lit{
+ color:#fff7cc;background:rgba(90,52,5,.9);border-color:#ffcf7d;
+ box-shadow:0 0 0 5px #ffba4628,0 0 25px #ffc76e80,inset 0 1px #ffe7ac88;
+}
+.field-torch-fab.is-lit svg{color:#ffda8b;filter:drop-shadow(0 0 9px #ffd173);transform:rotate(-13deg)}
+.field-torch-fab:active{transform:scale(.88)}
+.field-torch-fab:focus-visible{outline:3px solid #7ad7f1;outline-offset:3px}
+.dashboard .ronda-page .patrol-primary-flow>[data-action="start"]{
+ display:flex!important;align-items:center;justify-content:center!important;gap:9px;
+ width:min(100%,340px)!important;min-height:52px!important;margin:6px auto!important;
+ border:1px solid #96ffce8c!important;border-radius:999px!important;
+ background:linear-gradient(125deg,#078755,#10b981,#08734c)!important;
+ box-shadow:0 0 0 3px #10b98124,0 10px 28px #061b1391,inset 0 1px #ffffff66!important;
+ color:#fff!important;font-weight:850!important;font-size:14px!important;
+ transition:transform .2s,box-shadow .2s!important;
+}
+.dashboard .ronda-page .patrol-primary-flow>[data-action="start"]:active{transform:scale(.95)}
+.dashboard .ronda-page .patrol-primary-flow>[data-action="start"] svg{width:18px;height:18px}
+.dashboard .ronda-page .patrol-primary-flow>[data-action="checkin-now"],
+.dashboard .ronda-page .patrol-primary-flow>[data-action="demo-arrive"]{
+ border-radius:999px!important;background:rgba(11,36,42,.90)!important;color:#e5faff!important;
+ border:1px solid #5bcbf8b8!important;box-shadow:0 0 14px #38bdf82d!important;
+}
+.dashboard .ronda-page .patrol-communication-actions button{
+ border-radius:999px!important;
+ transition:transform .21s,filter .21s,box-shadow .21s!important;
+}
+.dashboard .ronda-page .patrol-communication-actions button:active{
+ transform:translateY(2px) scale(.88)!important;filter:brightness(1.22)!important;
+}
+.dashboard .ronda-page .patrol-communication-actions button:focus-visible{outline:3px solid #a0e8ff!important;outline-offset:3px}
+.dashboard .ronda-page .ops-panic{border-radius:50%!important;animation:mxv2-panic-glow 3.1s ease-in-out infinite}
+@keyframes mxv2-panic-glow{
+ 0%,100%{box-shadow:0 0 0 4px #ff31502b,0 0 16px #e11c414f}
+ 50%{box-shadow:0 0 0 9px #ff315019,0 0 29px #f5223d94}
+}
+@media(max-width:900px){
+ .field-torch-fab{top:143px;right:12px;width:57px;height:57px}
+ .field-torch-fab svg{width:23px;height:23px}
+ .dashboard .ronda-page .patrol-primary-flow>[data-action="start"]{min-height:48px!important}
+}
+@media(max-height:620px) and (max-width:900px){.field-torch-fab{top:104px}}
+@media(prefers-reduced-motion:reduce){
+ .field-torch-fab,.field-torch-fab svg,.dashboard .ronda-page .ops-panic,
+ .dashboard .ronda-page .patrol-communication-actions button{animation:none!important;transition:none!important}
+}

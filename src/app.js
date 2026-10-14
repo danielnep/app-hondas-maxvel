@@ -14,6 +14,7 @@ import {createOperationsUpgrade} from './operations-upgrade.js';
 import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
 import {createLocationEntryGate} from './location-entry-gate.js';
+import {createFieldTorch} from './field-torch.js';
 import {mobileGuideFor} from './mobile-role-guides.js';
 import {summarizePatrol} from './field-intelligence.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
@@ -93,7 +94,7 @@ const ux06RoleTips={
 };
 function notifyRoleView(role){notify('Visão de demonstração: '+ux06RoleTips[role]);}
 function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
-function registerMap(id,route,sessionRef=null,position=null,compact=false){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true}))}
+function registerMap(id,route,sessionRef=null,position=null,compact=false){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true,standbyClean:id==='mobile-map'}))}
 
 
 /** MAXVEL-06 · details in modal, fixed viewport and scroll only inside a bounded list. */
@@ -359,6 +360,9 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBl
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
  attachMaps();ops.decorate();
+ const dash=document.querySelector('.dashboard');
+ if(dash)dash.dataset.torchRole=user?.role||'';
+ torch.decorate();
  // Ajuda da cartografia pertence ao nível do cockpit: atrás do painel o ícone
  // fica visível mas não recebe clique, mesmo com z-index elevado no filho.
  if(window.innerWidth<=900&&workspace){
@@ -742,8 +746,10 @@ function patrolActionContent(){
   const secs=Math.floor(s.checkpoints[s.index].dwellMs/1000),required=Math.round(requiredDwellMs(s)/1000),ready=canCompletePoint(s);
   const label=ready?'Tempo concluído · Confirmar ponto e seguir '+ic('arrow'):s.insideSince!==null?`Aguarde ${Math.max(0,required-secs)} s no local`:'Aguardando chegada ao ponto';
   const action=mode==='simulation'&&s.insideSince===null&&!ready
-   ?btn(movement?'Em deslocamento…':'Ir ao ponto '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':'')
-   :btn(label,'complete-point','primary full',ready?'':'disabled');
+   ?btn(movement?'A caminho do ponto…':'📍 Estou no Local','demo-arrive','primary full',movement?'disabled':'')
+   :mode==='real'&&s.insideSince===null&&!ready
+    ?btn('📍 Estou no Local','checkin-now','primary full')
+    :btn(label,'complete-point','primary full',ready?'':'disabled');
   return `<div class="patrol-stage-intro"><span class="patrol-stage-index">PONTO ${s.index+1} / ${route.points.length}</span><h2>${esc(p.name)}</h2><p>${esc(p.instruction)}</p></div>${action}`;
  }
  return `<div class="patrol-stage-intro"><span class="patrol-stage-index">TODOS OS PONTOS VERIFICADOS</span><h2>Retorne à base</h2><p>A ronda só termina após o retorno ser confirmado pela localização.</p></div>${mode==='simulation'&&!s.returnConfirmed?btn(movement?'Retornando à base…':'Simular retorno à base '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':''):btn('Finalizar ronda '+ic('check'),'finish','primary full',s.returnConfirmed&&!hasBlock(s)?'':'disabled')}`;
@@ -1096,6 +1102,19 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
  if(act==='mode-real'||act==='mode-simulation'){if(presentation&&act==='mode-real'){notify('Neste cenário você não precisa ativar GPS.');return;}if(session?.status==='active')return;mode=act==='mode-real'?'real':'simulation';render();return;}
+ if(act==='checkin-now'){
+  if(!session||session.status!=='active'||mode!=='real')return;
+  if(!navigator.geolocation){notify('GPS indisponível neste dispositivo.');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+   locationFix={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:pos.timestamp||Date.now()};
+   processPosition();
+   if(!accurateFix(locationFix,Date.now()))notify('GPS sem precisão suficiente. A checagem não foi confirmada.');
+   else if(session.insideSince!==null)notify('Presença confirmada. A contagem de permanência iniciou.');
+   else notify('Você ainda não está dentro da margem validada do ponto.');
+  },()=>notify('Não foi possível confirmar a posição. Revise a permissão e o sinal GPS.'),
+   {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+  return;
+ }
  if(act==='demo-arrive'||act==='demo-leave'||act==='demo-skip'){startMove(act);return;}
  if(act==='justify'){justificationDialog();return;}
  if(act==='incident-form'){incidentDialog();return;}
@@ -1283,6 +1302,7 @@ const ops=createOperationsUpgrade({
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });
 const curtain=createCheckpointCurtain({get:()=>({user,view,session,locationFix}),recordCheckpoint:(checkpoint,files,point)=>ops.recordCheckpoint(checkpoint,files,point),save,render,notify});
+const torch=createFieldTorch({notify});
 const locationGate=createLocationEntryGate({onGranted:fix=>{
  if(!presentation)locationFix=fix;
  const map=liveMaps.find(x=>x?.container?.id==='mobile-map');

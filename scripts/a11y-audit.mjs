@@ -26,10 +26,12 @@ try{
   const context=await browser.newContext({viewport:{width,height:850},isMobile:width<500,hasTouch:width<500,locale:'pt-BR',reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.1402,longitude:-44.8837,accuracy:8}});
   const page=await context.newPage();
   await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:13000});
-  await page.locator('.location-entry-gate').waitFor({timeout:9000});
+  await page.locator('.dashboard').waitFor({timeout:12000});
   await check(page,'01-primeiro-acesso-gps',width);
-  await click(page,'.location-entry-grant');
-  await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:11000});
+  if(await page.locator('.location-entry-gate').count()){
+   await click(page,'.location-entry-grant');
+   await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:11000});
+  }
   await sleep(450);
   if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
   await check(page,'03-ronda',width);
