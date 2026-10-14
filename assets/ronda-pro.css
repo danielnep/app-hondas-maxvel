@@ -3940,3 +3940,34 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
  #central-root form.surface input,#central-root form.surface select,
  #central-root form.surface textarea{font-size:16px;scroll-margin:105px}
 }
+
+/* Mobile: o rodapé de navegação não rola para fora da janela. */
+@media screen and (max-width:900px){
+ dialog[open].ux-dialog-paging.ux-dialog-paging-root,
+ dialog[open].ux-dialog-paging .ux-dialog-paging-root{
+   overflow:hidden!important;display:flex!important;flex-direction:column!important;
+   min-height:0!important;max-height:calc(100dvh - 44px)!important;
+ }
+ dialog[open].ux-dialog-paging .ux-dialog-page-scroll{
+   flex:1 1 auto!important;min-height:0!important;width:100%!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   overscroll-behavior:contain!important;scrollbar-width:thin;
+   padding:5px 2px 14px!important;-webkit-overflow-scrolling:touch;
+ }
+ dialog[open].ux-dialog-paging .ux-dialog-page-scroll>[hidden]{display:none!important}
+ dialog[open].ux-dialog-paging .ux-dialog-pagination{
+   position:relative!important;bottom:auto!important;
+   display:flex!important;flex:0 0 auto!important;
+   margin-top:4px!important;margin-bottom:0!important;
+   justify-content:space-between!important;min-height:54px!important;
+   max-height:none!important;background:#101f2df8!important;
+   box-shadow:0 -8px 20px #06131e80;
+ }
+ dialog[open].ux-dialog-paging .ux-dialog-pagination button{
+   display:inline-flex!important;align-items:center;justify-content:center!important;
+   min-width:82px!important;min-height:44px!important;
+ }
+ dialog[open].ux-dialog-paging.ux-dialog-scroll-fallback{
+   overflow-y:auto!important;
+ }
+}
