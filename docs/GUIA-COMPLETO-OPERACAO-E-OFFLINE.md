@@ -5,7 +5,17 @@
 
 > **Leia primeiro:** a avaliação no navegador usa pessoas, percursos e registros simulados ou locais. A **Central autenticada** consulta registros reais recebidos pelo servidor. Não confundir tela demonstrativa, funcionalidade codificada, serviço configurado e recurso homologado em campo.
 
-## 1. Primeira entrada: escolha a área certa
+## 1. Primeira entrada: demonstração sem login e autenticação operacional
+
+**Na apresentação:** toque em **Explorar demonstração** para abrir diretamente o painel do vigia, sem formulário de acesso, login ou senha. A opção **Áreas** permite alternar entre Vigia, Monitoramento, COI, Cliente, Vistoriador e Administração com registros ilustrativos, sem fingir autenticação.
+
+**Na operação real:** o administrador cadastra cada colaborador ou vigia com perfil, unidade, login individual e senha. O usuário entra pela **Central operacional autenticada** e vê apenas o painel e os recursos permitidos à sua conta.
+
+**Ao entrar como Vigia:** uma cortina escura e translúcida solicita ativação da localização. Se a permissão for recusada ou o GPS falhar, as instruções continuam visíveis e há opção de tentar novamente; não é possível ignorar o bloqueio para executar uma ronda com GPS. O navegador pode exigir reativar o acesso nas configurações. Depois da autorização, o mapa aproxima o ponto recebido e enquadra o percurso. Na apresentação, o percurso permanece simulado. A opção **Iniciar ronda** já fica disponível na própria tela.
+
+**Nos pontos:** ao chegar ao ponto previsto, começa a contagem de permanência de 30 segundos, com cortina de verificação. Após o tempo, selecione **Tudo dentro do esperado** (observação opcional) ou **Situação que exige atenção** (descrição obrigatória). Finalize a verificação antes de avançar. Foto, Vídeo e Áudio aparecem como ações diretas de captura. O vermelho do botão de pânico não é modificado.
+
+**Ações rápidas:** Alerta em amarelo, Ocorrência em azul e Mensagem em branco. As três ações ficam separadas da prioridade Pânico, que permanece vermelha.
 
 - **Vigia / Operação de Ronda:** executa a sequência autorizada, registra eventos, consulta suas rondas e pode comunicar à central.
 - **Monitoramento (Operador):** acompanha vigias, rondas em execução, últimas posições recebidas, ocorrências e comunicações.
