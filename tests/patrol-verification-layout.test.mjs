@@ -22,7 +22,8 @@ test('Card de comprovação não é injetado sob o botão Iniciar ronda',()=>{
  const ops=readFileSync(new URL('../src/operations-upgrade.js',import.meta.url),'utf8');
  assert.doesNotMatch(ops,/querySelector\('\.patrol-action-body'\)\?\.insertAdjacentHTML\('beforeend',gpsQrRow\(\)\)/);
  assert.match(ops,/if\(canShowPatrolVerification\(context\)\)/);
- assert.match(ops,/querySelector\('\.patrol-verification-pane'\)\?\.insertAdjacentHTML\('beforeend',gpsQrRow\(\)\)/);
+ assert.match(ops,/querySelector\('\.patrol-verification-pane'\)\?\.insertAdjacentHTML\('beforeend',gpsQrRow\(\)\+communicationActions\(\)\)/);
+ assert.doesNotMatch(ops,/querySelector\('\.patrol-action-heading'\)\?\.insertAdjacentHTML\('afterend',communicationActions\(\)\)/);
 });
 
 test('Aba Ponto ocupa o painel de ferramentas apenas durante a ronda',()=>{

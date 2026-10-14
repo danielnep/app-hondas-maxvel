@@ -307,11 +307,8 @@ export function createOperationsUpgrade(api){
   if(!main)return;
   if(user?.role==='ronda'){
    dashboard.insertAdjacentHTML('beforeend',panicButton());
-   if(view==='minha-ronda'){
-    main.querySelector('.patrol-action-heading')?.insertAdjacentHTML('afterend',communicationActions());
-    if(canShowPatrolVerification(context))
-     main.querySelector('.patrol-verification-pane')?.insertAdjacentHTML('beforeend',gpsQrRow());
-   }
+   if(canShowPatrolVerification(context))
+    main.querySelector('.patrol-verification-pane')?.insertAdjacentHTML('beforeend',gpsQrRow()+communicationActions());
   }
   if(user?.role==='admin'){
    if(view==='relatorios'){
