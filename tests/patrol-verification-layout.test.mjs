@@ -51,3 +51,16 @@ test('Aba Ponto ocupa o painel de ferramentas apenas durante a ronda',()=>{
  const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
  assert.match(css,/\.ux-patrol-stage>\.patrol-verification-pane\[data-ux-tools-pane\]\{overflow-y:auto!important/);
 });
+
+
+test('Janelas móveis apresentam avanço, rolagem e revisão de campos obrigatórios',()=>{
+ const pagination=readFileSync(new URL('../src/dialog-pagination.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
+ assert.ok(pagination.includes('ux-dialog-page-scroll'),'Conteúdo da etapa deve ter scroll próprio');
+ assert.ok(pagination.includes('checkValidity()'),'Avançar valida os campos da etapa atual');
+ assert.ok(pagination.includes('Avançar ›'),'Etapas longas devem ter avançar');
+ assert.ok(pagination.includes('‹ Voltar'),'Etapas longas devem ter voltar');
+ assert.ok(css.includes('dialog[open].ux-dialog-paging .ux-dialog-page-scroll'));
+ assert.ok(css.includes('dialog[open].ux-dialog-paging .ux-dialog-pagination'));
+ assert.ok(css.includes('dialog[open]:not(.guide-dialog):not(.ux06-fullscreen)'),'Janelas comuns não podem ser cortadas');
+});
