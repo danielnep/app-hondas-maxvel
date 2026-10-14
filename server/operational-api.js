@@ -194,12 +194,15 @@ export function createOperationalApi(){
     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente tem acesso somente de leitura'});return true;}
     const d=serialize((await body(req)).toString())||{},position=d.position??null,battery=d.battery??null,
     templateKey=d.kind==='gps_issue'?'gps_unreliable':d.kind==='patrol_end'?'patrol_completed':null,
-    inspection=d.kind==='inspection'?d.details?.criteria:null;
+    inspection=d.kind==='inspection'?d.details?.criteria:null,
+    dispatchId=d.kind==='inspection'?clean(d.details?.dispatchId):'',
+    inspectionAssignment=dispatchId?db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria' AND started_at IS NOT NULL AND completed_at IS NULL").get(dispatchId,a.id):null;
     if(d.kind==='inspection'&&(a.role!=='vistoriador'||!a.site||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
      resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
     }
+    if(dispatchId&&!inspectionAssignment){resp(res,422,{error:'Vistoria exige despacho válido iniciado e atribuído ao profissional'});return true;}
     const validCriteria=d.kind==='inspection'?Object.fromEntries(criteriaKeys.map(key=>[key,inspection[key]])):null;
-    const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length)}:
+    const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length),...(inspectionAssignment?{dispatchId,destinationId:inspectionAssignment.destination_id}: {})}:
      {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
     if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','patrol_incomplete','patrol_interrupted','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
@@ -212,7 +215,7 @@ export function createOperationalApi(){
     const existing=event(eid);
     if(existing){resp(res,existing.user_id===a.id?200:409,{id:eid,duplicate:true});return true;}
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details,a.site||'');
+      .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details,inspectionAssignment?.site||a.site||'');
     audit(a,'event.create',eid);
     operations.notifyEvent(a,event(eid));
     if(['alert','gps_issue','patrol_end'].includes(d.kind)){
