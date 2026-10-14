@@ -251,7 +251,8 @@ export function createOperationalApi(){
     }
    }
    const review=p.match(/^\/api\/events\/([0-9a-z-]+)\/review$/i);
-   if(review&&m==='POST'&&reviewer(a)){
+   if(review&&m==='POST'){
+    if(!['coi','operador','master'].includes(a.role)){resp(res,403,{error:'Tratamento reservado ao COI; Administração acompanha a conclusão.'});return true;}
     if(!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Tratamento desabilitado pelo administrador'});return true;}
     const ev=event(review[1]),d=serialize((await body(req)).toString())||{};
     if(!ev){resp(res,404,{error:'Não encontrado'});return true;}
