@@ -84,3 +84,14 @@ main{max-width:1420px;margin:auto;padding:24px clamp(14px,3vw,30px)}.workspace{d
 .treatment-actions button{flex:1 1 170px;min-height:43px}
 @media(max-width:420px){.conclusion-dialog{padding:19px}.conclusion-buttons{grid-template-columns:1fr 1fr}}
 @media(prefers-reduced-motion:reduce){.conclusion-overlay *{transition:none!important;animation:none!important}}
+
+
+/* Histórico operacional: densidade adequada no computador e filtros legíveis no telefone. */
+.occurrence-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;margin:15px 0 18px}
+.occurrence-filters label{display:grid;align-content:start;gap:5px;font-size:11px;font-weight:750;color:#c9dce9}
+.occurrence-filters select,.occurrence-filters input{min-width:0;width:100%;height:43px;padding:8px 10px;background:#121f2b;border:1px solid #52718a;border-radius:7px;color:#f3f9ff}
+.occurrence-filters .occurrence-search{grid-column:span 2}
+.occurrence-row{gap:12px;text-align:left}
+.occurrence-row small{display:block;line-height:1.4;margin-top:6px}
+.occurrence-row .pill{flex-shrink:0;white-space:nowrap}
+@media(max-width:580px){.occurrence-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.occurrence-filters .occurrence-search{grid-column:span 2}.occurrence-row{align-items:flex-start;flex-direction:column}}
