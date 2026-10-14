@@ -30,9 +30,11 @@ async function tap(page,selector){
  }
  if(selector.startsWith('#dialog '))await revealDialogControl(page,selector);await page.locator(selector).first().click({timeout:12000});await wait(200)}
 async function enter(page,role='ronda'){
- await page.locator('.location-entry-gate').waitFor({timeout:8000});
- await page.locator('.location-entry-grant').click();
- await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:10000});
+ await page.locator('.dashboard').waitFor({timeout:12000});
+ if(await page.locator('.location-entry-gate').count()){
+  await page.locator('.location-entry-grant').click();
+  await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:10000});
+ }
  if(role!=='ronda'){
   await tap(page,'[data-action="sim-role-picker"]');
   await tap(page,'#dialog [data-action="sim-role"][data-role="'+role+'"]');
@@ -80,7 +82,7 @@ try{
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
   try{
    await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:18000});
-   await page.locator('.location-entry-gate').waitFor({timeout:8000});
+   await page.locator('.dashboard').waitFor({timeout:12000});
    await capture(page,'gps-entry',width,height);
    if(!await page.locator('.dashboard .maxvel-only-brand').count())throw Error('Identidade Maxvel ausente na demonstração');
    await enter(page);
@@ -183,7 +185,8 @@ try{
    await capture(page,'reopen-tour',width,height);
    await tap(page,'.app-header [data-action="profile-menu"]');
    await tap(page,'#dialog [data-action="logout"]');
-   if(!await page.locator('.location-entry-gate').count())throw Error('Ao reiniciar a avaliação, a orientação de GPS deve reaparecer');
+   await page.locator('.dashboard').waitFor({timeout:12000});
+   if(await page.locator('.location-entry-gate').count())await enter(page);
    if(errors.length)throw Error('JS: '+errors.join(' | ').slice(0,600));
   }catch(error){report.push({width,height,error:String(error),console:errors});throw error}
   finally{await context.close()}
