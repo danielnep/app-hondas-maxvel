@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 
 const load=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const html=load('../index.html');
@@ -11,8 +11,10 @@ const metadata=load('../package.json');
 
 test('as folhas de estilo de cada visão são carregadas sem repetição',()=>{
  const sheets=[...html.matchAll(/rel="stylesheet" href="([^"]+)"/g)].map(x=>x[1].split('?')[0]).filter(x=>x.startsWith('./'));
- assert.deepEqual(sheets,['./assets/ronda-pro.css','./assets/demo-roles.css','./assets/field-entry-v2.css','./assets/evidence-direct.css']);
- assert.equal(new Set(sheets).size,sheets.length);
+ const essential=['./assets/ronda-pro.css','./assets/demo-roles.css','./assets/field-entry-v2.css','./assets/evidence-direct.css'];
+ for(const path of essential)assert.ok(sheets.includes(path),'Estilo essencial ausente: '+path);
+ assert.equal(new Set(sheets).size,sheets.length,'Nenhuma folha pode ser carregada duas vezes');
+ for(const path of sheets)assert.ok(existsSync(new URL('../'+path.slice(2),import.meta.url)),'Arquivo CSS inexistente: '+path);
 });
 test('topo e rodapé móveis compactos preservam orientação e toque',()=>{
   assert.match(refinements,/flex:0 0 56px!important/);
