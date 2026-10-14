@@ -505,7 +505,7 @@ body:has(#central-root) main{max-width:1600px}
 }
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 :is(
   .v4-team-row,.v4-history-row,.v4-insight-row,.event-item){
-  display:flex!important;align-items:center!important;
+  align-items:center!important;
   padding:11px 3px!important;min-height:66px!important;margin:0!important;
   border:0!important;border-bottom:1px solid var(--mxp-rule)!important;
   border-radius:0!important;background:transparent!important;
@@ -515,6 +515,9 @@ body:has(#central-root) main{max-width:1600px}
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 :is(
   .v4-team-row,.v4-history-row,.v4-insight-row,.event-item):hover{
   background:rgba(144,160,180,.075)!important;box-shadow:none!important;
+}
+.dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-team-row{
+  display:flex!important;justify-content:space-between!important;
 }
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-team-avatar{
   display:grid!important;place-items:center!important;
