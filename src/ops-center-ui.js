@@ -4,11 +4,16 @@ const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle
 const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
 const activeKinds=new Set(['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message']);
 export function createOpsCenterUI({api,flash,openNotice}){
- let notifications=[],dispatches=[],modules=[],current=null,seen=new Set(),lastReminder=0,initialized=false;
+ let notifications=[],dispatches=[],modules=[],availability=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null;
  const manager=()=>['admin','master'].includes(current?.role);
  const reviewer=()=>['admin','master','operador','coi'].includes(current?.role);
  const allowed=key=>manager()||!!modules.find(x=>x.module===key)?.enabled;
  const unread=()=>notifications.filter(x=>!x.read_at);
+ const pendingActions=()=>notifications.filter(x=>activeKinds.has(x.kind)&&(
+  x.dispatch_id?!x.dispatch_completed_at:
+  x.event_id?x.event_status!=='resolvida':
+  !x.read_at
+  ));
  const permissionRows=()=>modules.map(x=>'<label class="permission-switch"><span><strong>'+esc(labels[x.module]||x.module)+'</strong><small>'+esc(x.enabled?'Habilitado':'Desabilitado')+'</small></span><input type="checkbox" data-coi-toggle="'+esc(x.module)+'" '+(x.enabled?'checked':'')+' aria-label="Habilitar '+esc(labels[x.module]||x.module)+'"></label>').join('');
  function showPopup(n,reminder=false){
   const existing=document.querySelector('#ops-priority-toast');existing?.remove();
@@ -27,7 +32,7 @@ export function createOpsCenterUI({api,flash,openNotice}){
    seen.add(candidate.id);if(activeKinds.has(candidate.kind))showPopup(candidate);
    return;
   }
-  const pending=unread().filter(x=>activeKinds.has(x.kind));
+  const pending=pendingActions();
   if(pending.length&&Date.now()-lastReminder>=60*60000){
    lastReminder=Date.now();
    showPopup(pending[0],true);
@@ -39,6 +44,7 @@ export function createOpsCenterUI({api,flash,openNotice}){
   if(reviewer()){
    requests.push(api('/coi-permissions'));
    requests.push(api('/dispatches'));
+   requests.push(api('/availability'));
   }else if(user.role==='ronda'){
    requests.push(Promise.resolve(null));
    requests.push(api('/dispatches'));
@@ -47,13 +53,54 @@ export function createOpsCenterUI({api,flash,openNotice}){
   if(results[0].status==='fulfilled'){
    notifications=results[0].value.notifications||[];
    // Notificações antigas não devem gerar um popup novo a cada atualização.
-   if(!initialized){seen=new Set(notifications.map(item=>item.id));initialized=true;}
+   if(!initialized){seen=new Set(notifications.map(item=>item.id));initialized=true;lastReminder=Date.now();}
    const bell=document.querySelector('.ops-bell-bar');
    if(bell)bell.innerHTML=badge();
   }
   if(reviewer()&&results[1]?.status==='fulfilled')modules=results[1].value.modules||[];
   if(results[2]?.status==='fulfilled')dispatches=results[2].value.dispatches||[];
+  if(results[3]?.status==='fulfilled')availability=results[3].value.guards||[];
   if(withPopup)present();
+ }
+ function connectLive(token){
+  if(streamController||!token)return;
+  const ctl=new AbortController();streamController=ctl;
+  void (async()=>{
+   while(!ctl.signal.aborted){
+    try{
+     const response=await fetch('/api/notifications/stream',{headers:{Authorization:'Bearer '+token,Accept:'text/event-stream'},cache:'no-store',signal:ctl.signal});
+     if(!response.ok||!response.body)break;
+     const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';
+     while(!ctl.signal.aborted){
+      const chunk=await reader.read();if(chunk.done)break;
+      buffer+=decoder.decode(chunk.value,{stream:true});let idx;
+      while((idx=buffer.indexOf('\n\n'))>=0){
+       const packet=buffer.slice(0,idx);buffer=buffer.slice(idx+2);
+       if(packet.includes('event: change')&&current)void refresh(current,true).catch(()=>{});
+      }
+      if(buffer.length>8192)buffer=buffer.slice(-1024);
+     }
+    }catch(error){if(ctl.signal.aborted)break}
+    if(!ctl.signal.aborted)await new Promise(resolve=>setTimeout(resolve,3500));
+   }
+  })();
+ }
+ function stopLive(){
+  streamController?.abort();streamController=null;initialized=false;seen.clear();notifications=[];dispatches=[];availability=[];modules=[];
+  document.querySelector('#ops-priority-toast')?.remove();
+ }
+ async function requireLocation(){
+  if(!navigator.geolocation)throw Error('Localização indisponível no navegador. Ative o GPS.');
+  return new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(
+   position=>resolve({lat:position.coords.latitude,lng:position.coords.longitude,accuracy:position.coords.accuracy}),
+   ()=>reject(Error('Ative a localização para iniciar ou concluir o atendimento.')),
+   {enableHighAccuracy:true,timeout:10000,maximumAge:0}
+  ));
+ }
+ function assignmentBanner(){
+  if(current?.role!=='ronda')return '';
+  const active=dispatches.find(d=>!d.completed_at);
+  return active?'<button type="button" class="ops-assignment-banner" data-ops-page="dispatches"><span>⌖ NOVA ATRIBUIÇÃO</span><strong>'+esc(active.address)+'</strong><small>'+(active.started_at?'Atendimento em andamento':'Toque para visualizar e iniciar')+'</small></button>':'';
  }
  function badge(){
   const count=unread().length;
