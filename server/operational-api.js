@@ -40,7 +40,9 @@ function initialize(){
   'CREATE TABLE IF NOT EXISTS templates(id TEXT PRIMARY KEY,title TEXT NOT NULL,trigger TEXT NOT NULL,priority TEXT NOT NULL,enabled INTEGER NOT NULL,cooldown_min INTEGER NOT NULL,recipients TEXT NOT NULL DEFAULT "[]",subject TEXT NOT NULL DEFAULT "",message TEXT NOT NULL DEFAULT "")',
   'CREATE TABLE IF NOT EXISTS recipients(email TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1,group_name TEXT NOT NULL DEFAULT "operations")',
   'CREATE TABLE IF NOT EXISTS email_jobs(event_id TEXT PRIMARY KEY,status TEXT NOT NULL,last_error TEXT,at INTEGER NOT NULL)',
-  'CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,action TEXT NOT NULL,subject_id TEXT,at INTEGER NOT NULL)'
+  'CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,action TEXT NOT NULL,subject_id TEXT,at INTEGER NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS planned_routes(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,site TEXT NOT NULL,name TEXT NOT NULL,points TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,created_by TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))',
+  'CREATE INDEX IF NOT EXISTS idx_planned_routes_user ON planned_routes(user_id,updated_at)'
  ];for(const statement of ddl)db.exec(statement);
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
@@ -65,9 +67,9 @@ export function aggregateOperationalRounds(events=[]){
  for(const e of events){
   if(!e.round_id)continue;
   if(!groups.has(e.round_id))groups.set(e.round_id,{id:e.round_id,userId:e.user_id,site:e.site||'',
-   start:null,end:null,incomplete:false,interrupted:false,deviations:0,gpsIssues:0,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,lastFix:null,lastFixAt:null,started:0});
+   start:null,end:null,routeId:null,incomplete:false,interrupted:false,deviations:0,gpsIssues:0,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,lastFix:null,lastFixAt:null,started:0});
   const r=groups.get(e.round_id);
-  if(e.kind==='patrol_start'){r.start=e.occurred_at;r.started++;}
+  if(e.kind==='patrol_start'){r.start=e.occurred_at;r.started++;r.routeId=serialize(e.details)?.routeId||null;}
   if(e.kind==='patrol_end')r.end=e.occurred_at;
   if(e.kind==='patrol_interrupted')r.interrupted=true;
   if(e.kind==='patrol_incomplete')r.incomplete=true;
@@ -88,7 +90,7 @@ export function aggregateOperationalRounds(events=[]){
   if(e.battery!=null)r.lastBattery=e.battery;
  }
  return [...groups.values()].map(r=>({
-  id:r.id,userId:r.userId,site:r.site,start:r.start,end:r.end,
+  id:r.id,userId:r.userId,site:r.site,routeId:r.routeId,start:r.start,end:r.end,
   status:r.incomplete?'incompleta':r.interrupted?'interrompida':r.end?'concluida':r.start?'em_andamento':'sem_inicio',
   routeStatus:r.deviations?'Percurso a verificar':r.gpsIssues?'GPS com falha técnica':!r.gpsSamples?'Sem dados GPS':'Sem desvio registrado',
   minutes:r.start?Math.max(0,Math.round(((r.end||Date.now())-r.start)/60000)):null,
@@ -149,6 +151,38 @@ export function createOperationalApi(){
     db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at,site) VALUES(?,?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now(),site);
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
+   if(p==='/api/routes'&&m==='GET'){
+    if(a.role==='vistoriador'){resp(res,200,{routes:[]});return true;}
+    const sql='SELECT r.*,u.name worker_name FROM planned_routes r JOIN users u ON u.id=r.user_id ';
+    const rows=a.role==='ronda'?db.prepare(sql+'WHERE r.user_id=? ORDER BY r.updated_at DESC').all(a.id):
+     a.role==='cliente'?a.site?db.prepare(sql+'WHERE r.site=? ORDER BY r.updated_at DESC').all(a.site):[]:
+     reviewer(a)?db.prepare(sql+'ORDER BY r.updated_at DESC LIMIT 1000').all():[];
+    resp(res,200,{routes:rows.map(r=>({id:r.id,userId:r.user_id,workerName:r.worker_name,site:r.site,name:r.name,points:serialize(r.points)||[],createdAt:r.created_at,updatedAt:r.updated_at}))});return true;
+   }
+   const routeMatch=p.match(/^\/api\/routes\/([0-9a-f-]{36})$/i);
+   if((p==='/api/routes'&&m==='POST')||(routeMatch&&m==='PUT')){
+    if(!manager(a)){resp(res,403,{error:'Somente administração cria ou altera rotas'});return true;}
+    const d=serialize((await body(req)).toString())||{};
+    const user=db.prepare("SELECT id,site FROM users WHERE id=? AND role='ronda' AND active=1").get(clean(d.userId));
+    const title=clean(d.name).slice(0,120);
+    const points=d.points;
+    if(!user||!user.site||title.length<3||!Array.isArray(points)||points.length<2||points.length>30||
+      !points.every(p=>p&&typeof p==='object'&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&Number.isFinite(p.lng)&&Math.abs(p.lng)<=180&&clean(p.name).length>0&&clean(p.name).length<=100)){
+      resp(res,422,{error:'Selecione um vigia com posto e informe nome e 2 a 30 pontos válidos'});return true;
+    }
+    const safe=points.map(p=>({name:clean(p.name).slice(0,100),lat:p.lat,lng:p.lng}));
+    if(routeMatch){
+     const existing=db.prepare('SELECT * FROM planned_routes WHERE id=?').get(routeMatch[1]);
+     if(!existing){resp(res,404,{error:'Rota não encontrada'});return true;}
+     db.prepare('UPDATE planned_routes SET user_id=?,site=?,name=?,points=?,updated_at=? WHERE id=?')
+      .run(user.id,user.site,title,JSON.stringify(safe),now(),existing.id);
+     audit(a,'route.update',existing.id);resp(res,200,{id:existing.id,updated:true});return true;
+    }
+    const rid=id();
+    db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?)')
+     .run(rid,user.id,user.site,title,JSON.stringify(safe),now(),now(),a.id);
+    audit(a,'route.create',rid);resp(res,201,{id:rid,created:true});return true;
+   }
    if(p==='/api/events'&&m==='POST'){
     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente tem acesso somente de leitura'});return true;}
     const d=serialize((await body(req)).toString())||{},position=d.position??null,battery=d.battery??null,
@@ -162,6 +196,10 @@ export function createOperationalApi(){
      {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
     if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','patrol_incomplete','patrol_interrupted','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
+    }
+    if(d.kind==='patrol_start'&&d.details?.routeId){
+     const valid=db.prepare('SELECT id FROM planned_routes WHERE id=? AND user_id=?').get(clean(d.details.routeId),a.id);
+     if(!valid){resp(res,403,{error:'Rota não atribuída a este vigia'});return true;}
     }
     const eid=/^[0-9a-z-]{8,80}$/i.test(d.id||'')?d.id:id();
     const existing=event(eid);
@@ -238,7 +276,7 @@ export function createOperationalApi(){
    }
    if(p==='/api/rounds'&&m==='GET'){
     // Vigias consultam EXCLUSIVAMENTE suas próprias rondas. Operadores e adm têm acesso às rondas da operação.
-    const query='SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ';
+    const query='SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery,details FROM events WHERE round_id IS NOT NULL ';
     const rows=['ronda','vistoriador'].includes(a.role)
       ?db.prepare(query+'AND user_id=? ORDER BY occurred_at').all(a.id)
       :a.role==='cliente'?(a.site?db.prepare(query+'AND site=? ORDER BY occurred_at').all(a.site):[])
@@ -247,13 +285,13 @@ export function createOperationalApi(){
    }
    if(p==='/api/my-summary'&&m==='GET'&&a.role!=='cliente'){
     const mine=db.prepare('SELECT kind,COUNT(*) count FROM events WHERE user_id=? GROUP BY kind').all(a.id);
-    const items=db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE user_id=? AND round_id IS NOT NULL ORDER BY occurred_at').all(a.id);
+    const items=db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery,details FROM events WHERE user_id=? AND round_id IS NOT NULL ORDER BY occurred_at').all(a.id);
     const rounds=aggregateOperationalRounds(items);
     resp(res,200,{rounds,metrics:mine,totalKm:Math.round(rounds.reduce((n,r)=>n+r.km,0)*100)/100,
       totalMinutes:rounds.reduce((n,r)=>n+(r.minutes||0),0),updatedAt:now(),scope:'own'});return true;
    }
    if(p==='/api/dashboard'&&m==='GET'&&reviewer(a)){
-    const rounds=aggregateOperationalRounds(db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ORDER BY occurred_at').all());
+    const rounds=aggregateOperationalRounds(db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery,details FROM events WHERE round_id IS NOT NULL ORDER BY occurred_at').all());
     resp(res,200,{source:'sqlite',metrics:db.prepare('SELECT kind,COUNT(*) count FROM events GROUP BY kind').all(),team:db.prepare("SELECT u.id,u.name,u.description,COUNT(e.id) events,SUM(CASE WHEN e.kind='panic' THEN 1 ELSE 0 END) panics FROM users u LEFT JOIN events e ON e.user_id=u.id WHERE u.role='ronda' GROUP BY u.id").all(),rounds,updatedAt:now()});return true;
    }
    if(p==='/api/media'&&m==='POST'){
