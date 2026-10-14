@@ -53,6 +53,6 @@ test('V3 adiciona resposta visual em ambos os acessos sem ciclos infinitos',()=>
   assert.doesNotMatch(v3,/animation:[^;}\n]*infinite/);
  }
  const app=read('../index.html'),central=read('../central.html');
- assert.match(app,/ronda-pro\.css\?v=14/);
+ assert.match(app,/ronda-pro\.css\?v=15/);
  assert.match(central,/soft-polish\.css\?v=2/);
 });
