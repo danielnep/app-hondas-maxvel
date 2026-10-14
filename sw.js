@@ -1,7 +1,7 @@
 /* Cache da interface para a demonstração Web/PWA. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v19';
+const CACHE='rondas-pro-interface-v20';
 const CORE=[
  './','./index.html','./manifest.webmanifest',
  './assets/ronda-pro.css','./assets/maxvel-visual-2026.css','./assets/field-entry-v2.css','./assets/evidence-direct.css','./assets/demo-roles.css','./assets/ronda-pro-upgrade.css','./assets/soft-polish.css',
@@ -38,8 +38,15 @@ self.addEventListener('fetch',event=>{
   }).catch(async()=>await caches.match(request,{ignoreSearch:true})||await caches.match('./index.html')));
   return;
  }
- event.respondWith(caches.match(request,{ignoreSearch:true}).then(hit=>hit||fetch(request).then(response=>{
-  if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{});}
+ // Scripts e estilos: rede primeiro, para não servir um menu antigo após o deploy.
+ // O cache só entra quando o dispositivo estiver realmente sem conexão.
+ event.respondWith(fetch(request).then(response=>{
+  if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{}));}
   return response;
- })).catch(()=>caches.match('./index.html')));
+ }).catch(async()=>{
+  const exact=await caches.match(request);
+  if(exact)return exact;
+  const fallback=await caches.match(request,{ignoreSearch:true});
+  return fallback||Response.error();
+ }));
 });
