@@ -20,7 +20,7 @@ test('entrada mostra plataforma com acesso à operação e mapa cartográfico',(
  assert.match(app,/product-hero/);
  assert.match(app,/Experimentar o aplicativo/);
  assert.match(app,/simulationIntro\(/);
- assert.match(app,/Acessar minha área/);
+ assert.match(app,/Demonstração sem login|Demonstração sem senha|Demonstração livre/);
  assert.match(app,/id="hero-map"/);
  assert.match(app,/Pontos e trajeto de demonstração|cenário operacional|cenário operacional fictício/);
  assert.match(css,/product-showcase/);
