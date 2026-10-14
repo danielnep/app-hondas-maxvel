@@ -17,7 +17,7 @@ test('os perfis recebem guias móveis completos sem confundir avaliação com da
   }
  }
  const app=read('../src/app.js');
- assert.match(app,/window\.innerWidth<=900&&!isLaunching\?mobileGuideFor\(user\?\.role\):null/);
+ assert.ok(app.includes('const mobileGuide=!isLaunching?mobileGuideFor(user?.role):null'));
  assert.match(app,/mobileGuide\?mobileGuide\.stages\.map/);
  assert.match(app,/mobileGuide\?mobileGuide\.stages\[guideStage\]\.body:lesson\(guideStage\)/);
  assert.match(app,/mobileGuide\?'':ops\.guideSection\(\)/);
