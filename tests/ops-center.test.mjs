@@ -1,0 +1,83 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createAppServer} from '../server.js';
+
+test('COI: presença, despacho, início e conclusão auditáveis, alertas e permissões reais',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'rondas-coi-'));
+ process.env.RONDA_PRO_DB_PATH=join(dir,'operacao.sqlite');
+ process.env.RONDA_PRO_MASTER_EMAIL='master-coi@example.test';
+ process.env.RONDA_PRO_MASTER_PASSWORD='MasterSenhaForteTeste2026!!';
+ const server=createAppServer();
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const base='http://127.0.0.1:'+server.address().port;
+ const request=(url,{method='GET',token,data,signal}={})=>fetch(base+'/api'+url,{method,signal,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data?{'Content-Type':'application/json'}:{})},body:data===undefined?undefined:JSON.stringify(data)});
+ const post=(path,data,token)=>request(path,{method:'POST',data:data??{},token});
+ const get=(path,token)=>request(path,{token});
+ const put=(path,data,token)=>request(path,{method:'PUT',data,token});
+ try{
+  const auth=await post('/login',{email:process.env.RONDA_PRO_MASTER_EMAIL,password:process.env.RONDA_PRO_MASTER_PASSWORD});
+  assert.equal(auth.status,200);
+  const {token:master}=await auth.json();
+  const createGuard=await post('/users',{name:'Vigia Presença',email:'vigia-coi@example.test',password:'SenhaForteTeste2026!',role:'ronda',site:'Unidade Centro',description:'Ronda na unidade principal, turno diurno'},master);
+  assert.equal(createGuard.status,201);
+  const workerId=(await createGuard.json()).id;
+  assert.equal((await post('/users',{name:'Operador COI',email:'operador-coi@example.test',password:'SenhaForteTeste2026!',role:'operador',description:'Operador de monitoramento'},master)).status,201);
+  const guard=(await (await post('/login',{email:'vigia-coi@example.test',password:'SenhaForteTeste2026!'})).json()).token;
+  const operator=(await (await post('/login',{email:'operador-coi@example.test',password:'SenhaForteTeste2026!'})).json()).token;
+  assert.equal((await get('/availability',guard)).status,403);
+  const before=(await (await get('/availability',operator)).json()).guards;
+  assert.equal(before.find(x=>x.id===workerId).status,'Fora de serviço');
+  assert.equal((await post('/presence',{},guard)).status,200);
+  const available=(await (await get('/availability',operator)).json()).guards.find(x=>x.id===workerId);
+  assert.equal(available.status,'Disponível');
+  assert.equal((await post('/dispatches',{workerId,address:'Portaria da unidade Centro',reason:'curto'},operator)).status,422);
+  const created=await post('/dispatches',{workerId,address:'Portaria da unidade Centro',reason:'Verificar chamado de apoio na portaria'},operator);
+  assert.equal(created.status,201);
+  const {id:dispatchId}=await created.json();
+  const inbox=(await (await get('/notifications',guard)).json()).notifications;
+  assert.ok(inbox.find(n=>n.dispatch_id===dispatchId&&n.kind==='dispatch'&&!n.read_at));
+  assert.equal((await post('/notifications/'+inbox[0].id+'/read',{},guard)).status,200);
+  const opened=(await (await get('/notifications',guard)).json()).notifications.find(n=>n.id===inbox[0].id);
+  assert.equal(opened.dispatch_completed_at,null,'marcar como lido não conclui atendimento');
+  assert.equal((await post('/dispatches/'+dispatchId+'/start',{position:{lat:-20.14,lng:-44.89,accuracy:9}},operator)).status,403);
+  assert.equal((await post('/dispatches/'+dispatchId+'/start',{position:{lat:-20.14,lng:-44.89,accuracy:9}},guard)).status,200);
+  const active=(await (await get('/rounds',operator)).json()).rounds;
+  assert.ok(active.some(r=>r.id===dispatchId&&r.status==='em_andamento'));
+  assert.equal((await post('/dispatches',{workerId,address:'Pátio',reason:'Segundo atendimento no mesmo turno'},operator)).status,409);
+  assert.equal((await post('/dispatches/'+dispatchId+'/complete',{note:'curto'},guard)).status,422);
+  const done=await post('/dispatches/'+dispatchId+'/complete',{note:'Portaria inspecionada e situação comunicada à central.',position:{lat:-20.14,lng:-44.89,accuracy:9}},guard);
+  assert.equal(done.status,200);
+  const completed=(await (await get('/dispatches',guard)).json()).dispatches.find(d=>d.id===dispatchId);
+  assert.ok(completed.started_at&&completed.completed_at&&completed.completion_note);
+  assert.equal((await (await get('/rounds',operator)).json()).rounds.find(r=>r.id===dispatchId).status,'concluida');
+  assert.ok((await (await get('/notifications',guard)).json()).notifications.find(n=>n.id===inbox[0].id).dispatch_completed_at);
+
+  const incident=await post('/events',{kind:'incident',occurredAt:Date.now(),description:'Portão apresentando condição que exige análise'},guard);
+  assert.equal(incident.status,201);const {id:eventId}=await incident.json();
+  const operatorNotices=(await (await get('/notifications',operator)).json()).notifications;
+  assert.ok(operatorNotices.find(n=>n.event_id===eventId&&n.event_status==='aberta'));
+  assert.equal((await post('/events/'+eventId+'/messages',{audience:'general',body:'Vamos conferir este atendimento.'},operator)).status,201);
+  assert.ok((await (await get('/notifications',guard)).json()).notifications.some(n=>n.event_id===eventId&&n.kind==='message'));
+  const review=await post('/events/'+eventId+'/review',{status:'resolvida',conclusion:'Conferi as informações da portaria e registrei as providências necessárias com a equipe responsável.'},operator);
+  assert.equal(review.status,200);
+  assert.equal((await (await get('/notifications',operator)).json()).notifications.find(n=>n.event_id===eventId).event_status,'resolvida');
+
+  assert.equal((await put('/coi-permissions',{module:'despachos',enabled:false},operator)).status,403);
+  assert.equal((await put('/coi-permissions',{module:'despachos',enabled:false},master)).status,200);
+  assert.equal((await get('/dispatches',operator)).status,403);
+  assert.equal((await get('/dispatches',master)).status,200);
+  assert.equal((await put('/coi-permissions',{module:'ocorrencias',enabled:false},master)).status,200);
+  assert.equal((await get('/events',operator)).status,403);
+  assert.equal((await post('/events/'+eventId+'/review',{status:'em_analise',conclusion:'Nova avaliação detalhada pela equipe de monitoramento.'},operator)).status,403);
+  assert.equal((await get('/events',master)).status,200);
+  assert.equal((await post('/presence/off',{},guard)).status,200);
+  const loggedOut=(await (await get('/availability',master)).json()).guards.find(x=>x.id===workerId);
+  assert.equal(loggedOut.status,'Fora de serviço');
+ }finally{
+  await new Promise(resolve=>server.close(resolve));
+  rmSync(dir,{recursive:true,force:true});
+ }
+});
