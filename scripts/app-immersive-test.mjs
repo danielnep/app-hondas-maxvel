@@ -30,11 +30,13 @@ async function tap(page,selector){
  }
  if(selector.startsWith('#dialog '))await revealDialogControl(page,selector);await page.locator(selector).first().click({timeout:12000});await wait(200)}
 async function enter(page,role='ronda'){
- await tap(page,'[data-action="login"]:visible');
- await page.locator('#dialog[open]').waitFor({timeout:8000});
- await page.locator('#login-form [name="role"][value="'+role+'"]').check();
- await tap(page,'#login-form button[type="submit"]');
- await wait(560);
+ await page.locator('.location-entry-gate').waitFor({timeout:8000});
+ await page.locator('.location-entry-grant').click();
+ await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:10000});
+ if(role!=='ronda'){
+  await tap(page,'[data-action="sim-role-picker"]');
+  await tap(page,'#dialog [data-action="sim-role"][data-role="'+role+'"]');
+ }
  const tourClose=page.locator('#horizon-tour [data-tour="close"]');
  if(await tourClose.count())await tap(page,'#horizon-tour [data-tour="close"]');
 }
@@ -74,12 +76,13 @@ async function capture(page,name,width,height){
 try{
  await wait(850);
  for(const [width,height] of sizes){
-  const context=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce'});
+  const context=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.1402,longitude:-44.8837,accuracy:8}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
   try{
    await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:18000});
-   await capture(page,'login',width,height);
-   if(!await page.locator('.entry-screen .maxvel-only-brand').count())throw Error('Identidade Maxvel ausente na entrada');
+   await page.locator('.location-entry-gate').waitFor({timeout:8000});
+   await capture(page,'gps-entry',width,height);
+   if(!await page.locator('.dashboard .maxvel-only-brand').count())throw Error('Identidade Maxvel ausente na demonstração');
    await enter(page);
    await capture(page,'ronda',width,height);
    if(!await page.locator('.my-schedule').count())throw Error('Página do vigia sem rondas programadas');
@@ -180,7 +183,7 @@ try{
    await capture(page,'reopen-tour',width,height);
    await tap(page,'.app-header [data-action="profile-menu"]');
    await tap(page,'#dialog [data-action="logout"]');
-   if(!await page.locator('.entry-screen').count())throw Error('Sair não retornou ao login do app');
+   if(!await page.locator('.location-entry-gate').count())throw Error('Ao reiniciar a avaliação, a orientação de GPS deve reaparecer');
    if(errors.length)throw Error('JS: '+errors.join(' | ').slice(0,600));
   }catch(error){report.push({width,height,error:String(error),console:errors});throw error}
   finally{await context.close()}
