@@ -27,6 +27,13 @@ test('COI: presença, despacho, início e conclusão auditáveis, alertas e perm
   assert.equal((await post('/users',{name:'Operador COI',email:'operador-coi@example.test',password:'SenhaForteTeste2026!',role:'operador',description:'Operador de monitoramento'},master)).status,201);
   const guard=(await (await post('/login',{email:'vigia-coi@example.test',password:'SenhaForteTeste2026!'})).json()).token;
   const operator=(await (await post('/login',{email:'operador-coi@example.test',password:'SenhaForteTeste2026!'})).json()).token;
+  const streamController=new AbortController();
+  const stream=await request('/notifications/stream',{token:operator,signal:streamController.signal});
+  assert.equal(stream.status,200);
+  assert.match(stream.headers.get('content-type')||'',/text\/event-stream/);
+  const reader=stream.body.getReader(),hello=await reader.read();
+  assert.match(new TextDecoder().decode(hello.value),/conectado/);
+  streamController.abort();
   assert.equal((await get('/availability',guard)).status,403);
   const before=(await (await get('/availability',operator)).json()).guards;
   assert.equal(before.find(x=>x.id===workerId).status,'Fora de serviço');
@@ -65,12 +72,16 @@ test('COI: presença, despacho, início e conclusão auditáveis, alertas e perm
   assert.equal(review.status,200);
   assert.equal((await (await get('/notifications',operator)).json()).notifications.find(n=>n.event_id===eventId).event_status,'resolvida');
 
+  assert.equal((await get('/export',operator)).status,200,'COI autorizado deve conseguir exportar relatórios');
+  assert.equal((await put('/coi-permissions',{module:'relatorios',enabled:false},master)).status,200);
+  assert.equal((await get('/export',operator)).status,404,'Desabilitar relatórios bloqueia também a API');
   assert.equal((await put('/coi-permissions',{module:'despachos',enabled:false},operator)).status,403);
   assert.equal((await put('/coi-permissions',{module:'despachos',enabled:false},master)).status,200);
   assert.equal((await get('/dispatches',operator)).status,403);
   assert.equal((await get('/dispatches',master)).status,200);
   assert.equal((await put('/coi-permissions',{module:'ocorrencias',enabled:false},master)).status,200);
   assert.equal((await get('/events',operator)).status,403);
+  assert.equal((await get('/events/'+eventId+'/messages',operator)).status,403);
   assert.equal((await post('/events/'+eventId+'/review',{status:'em_analise',conclusion:'Nova avaliação detalhada pela equipe de monitoramento.'},operator)).status,403);
   assert.equal((await get('/events',master)).status,200);
   assert.equal((await post('/presence/off',{},guard)).status,200);
