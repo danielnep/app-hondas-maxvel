@@ -28,15 +28,17 @@ test('migração mantém mídias anteriores e API armazena categoria da foto',as
   const created=await json('/events',{id:'photo-event-01',kind:'checkpoint',occurredAt:Date.now(),description:'Conferência do ponto de ronda'},token);
   assert.equal(created.status,201);
   const upload=async view=>fetch(base+'/media',{method:'POST',headers:{
-   'Authorization':'Bearer '+token,'Content-Type':'image/jpeg','X-Ronda-Event-Id':'photo-event-01','X-Media-View':view,
+   'Authorization':'Bearer '+token,'Content-Type':'image/jpeg','X-Ronda-Event-Id':'photo-event-01','X-Media-View':view,'X-Ronda-Media-Id':'b3d37d2f-cd32-4c3d-bbac-73a7acc13601',
   },body:Buffer.from([255,216,255,224,0,16,74,70,73,70])});
   assert.equal((await upload('unknown')).status,422);
   const uploaded=await upload('selfie');
   assert.equal(uploaded.status,201);
+  assert.equal((await upload('selfie')).status,200,'Reenvio idempotente não cria cópia da imagem');
   const resp=await fetch(base+'/events/media?eventId=photo-event-01',{headers:{Authorization:'Bearer '+token}});
   assert.equal(resp.status,200);
   const payload=await resp.json();
   assert.equal(payload.media[0].evidence_view,'selfie');
+  assert.equal(payload.media.length,1);
  }finally{
   await new Promise(resolve=>server.close(resolve));
   const check=new DatabaseSync(dbPath);
