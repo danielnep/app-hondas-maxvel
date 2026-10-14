@@ -40,5 +40,8 @@ test('cinco perspectivas independentes, anexos adicionais e rollback permanecem 
  assert.match(curtain,/previousCheckpoint/);
  assert.match(curtain,/s\.index=previousIndex/);
  assert.match(operations,/mediaViews:saved\.filter/);
+ assert.match(operations,/mediaSyncedAt/);
+ assert.match(operations,/e\.status==='synced'/);
+ assert.match(operations,/X-Ronda-Media-Id/);
  assert.match(curtain,/data-evidence-kind/);
 });
