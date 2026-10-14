@@ -97,8 +97,47 @@ const roleMenus={
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Notificações','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
-const nav=()=>'<nav class="side" aria-label="Navegação do '+escape(roles[account.role])+'">'+
- (roleMenus[account.role]||[]).filter(([key])=>!review()||!({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'}[key])||ops.allowed(({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[key])).map(([key,label,icon])=>'<button type="button" data-page="'+key+'" class="'+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+icon+'</span>'+escape(label)+'</button>').join('')+'</nav>';
+const rp2Priority={
+ ronda:['dashboard','dispatches','notifications','send'],
+ operador:['monitor','notifications','dispatches','events'],
+ coi:['monitor','notifications','dispatches','events'],
+ admin:['dashboard','monitor','notifications','dispatches'],
+ master:['dashboard','monitor','notifications','dispatches'],
+ cliente:['client'],
+ vistoriador:['inspections','dispatches','notifications','send']
+};
+const rp2GlyphPaths={
+ dashboard:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
+ monitor:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 22h8M12 18v4M6 13l3-4 3 2 5-5"/>',
+ dispatches:'<path d="m3 7 8-4 10 6-8 4zM3 7v10l10 5V13M13 22l8-5V9"/>',
+ notifications:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/>',
+ history:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/>',
+ send:'<path d="M3 11 21 3l-7 18-3-8-8-2zM11 13l10-10"/>',
+ guide:'<circle cx="12" cy="12" r="9"/><path d="M10 9a2.5 2.5 0 0 1 5 1c0 2-3 2-3 4M12 17h.01"/>',
+ routes:'<path d="M3 6 9 3l6 3 6-3v15l-6 3-6-3-6 3V6zM9 3v15M15 6v15"/>',
+ events:'<path d="m12 3 10 18H2zM12 9v5M12 18h.01"/>',
+ team:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2H3zM17 7a3 3 0 0 1 0 6M18 16a4 4 0 0 1 3 4"/>',
+ alerts:'<path d="M3 6h18v12H3zM3 7l9 7 9-7"/>',
+ export:'<path d="M12 3v12m-5-5 5 5 5-5M4 18v3h16v-3"/>',
+ permissions:'<circle cx="8" cy="10" r="4"/><path d="M12 10h9v3h-3v3h-3v-3h-3"/>',
+ inspections:'<rect x="5" y="3" width="14" height="19" rx="2"/><path d="M9 3V2h6v2M9 10l2 2 4-4M9 17h6"/>',
+ client:'<path d="M3 20V6l9-4 9 4v14H3zM9 20v-7h6v7M8 8h.01M16 8h.01"/>'
+};
+const rp2Glyph=key=>'<svg viewBox="0 0 24 24" class="rp2-nav-svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(rp2GlyphPaths[key]||rp2GlyphPaths.guide)+'</svg>';
+function nav(){
+ const role=account.role,permitted=(roleMenus[role]||[]).filter(([key])=>!review()||!({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'}[key])||ops.allowed(({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[key]));
+ const priority=rp2Priority[role]||[];
+ const primaries=permitted.filter(([key])=>priority.includes(key));
+ const secondary=permitted.filter(([key])=>!priority.includes(key));
+ const node=([key,label])=>'<button type="button" data-page="'+key+'" class="rp2-nav-item '+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'>'+rp2Glyph(key)+'<span>'+escape(label)+'</span></button>';
+ const moreActive=secondary.some(([key])=>key===page);
+ const wide=typeof window!=='undefined'&&window.matchMedia('(min-width:761px)').matches;
+ return '<nav class="side rp2-role-nav" aria-label="Navegação do '+escape(roles[role])+'">'+
+  '<span class="rp2-nav-eyebrow">TRABALHO · '+escape(roles[role])+'</span>'+
+  '<div class="rp2-nav-primary">'+primaries.map(node).join('')+'</div>'+
+  (secondary.length?'<details class="rp2-nav-secondary" '+(wide||moreActive?'open':'')+'><summary>Mais áreas <span aria-hidden="true">'+(moreActive?'●':'⌄')+'</span></summary><div class="rp2-nav-secondary-items">'+secondary.map(node).join('')+'</div></details>':'')+
+  '</nav>';
+}
 function kpis(){
  const kinds=Object.fromEntries((dashboard?.metrics||[]).map(x=>[x.kind,x.count]));
  return '<div class="cards">'+[['Eventos',events.length],['Pânicos',kinds.panic||0],['Ocorrências',kinds.incident||0],['Amostras GPS',kinds.gps||0],['Alertas de e-mail',kinds.alert||0],['Baterias monitoradas',kinds.battery||0]].map(([label,num])=>'<div class="metric"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>';
@@ -458,7 +497,8 @@ function render(){
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?(page==='send'?sendView():inspectionView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
- root.innerHTML='<div class="workspace">'+nav()+'<article class="content"><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+ 
+ const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
+ root.innerHTML='<div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+ 
   (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
