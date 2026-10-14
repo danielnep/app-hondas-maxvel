@@ -443,7 +443,7 @@ document.addEventListener('click',async e=>{
    occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};render();return;
   }
   if(target.dataset.reviewStatus){
-   if(!review()||!selected?.event)return;
+   if(!['coi','operador','master'].includes(account?.role)||!selected?.event)return;
    const status=target.dataset.reviewStatus;
    const titles={em_analise:'Registrar análise',encaminhada:'Encaminhar ao administrativo',resolvida:'Marcar como analisada'};
    if(!titles[status])return;
