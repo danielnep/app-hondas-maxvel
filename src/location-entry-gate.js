@@ -19,6 +19,9 @@ export function createLocationEntryGate({onGranted=()=>{},onUnavailable=()=>{}}=
     '<p>O aplicativo só funciona com permissão de localização.</p>'+
     '<p class="location-entry-state" role="status" aria-live="polite">Permita o acesso ao GPS para continuar.</p>'+
     '<button type="button" class="location-entry-grant">Ativar localização</button>'+
+    '<div class="location-entry-emergency" aria-label="Comunicação de emergência sem GPS">'+
+    '<button type="button" class="location-entry-panic" data-ops="panic-confirm">🚨 Pânico · sem GPS</button>'+
+    '<a class="location-entry-contact" href="/central.html#message">Mensagens à central ↗</a></div>'+
     '<small>Se estiver bloqueada, libere a permissão nas configurações do navegador. O GPS pode precisar de alguns segundos para obter sinal.</small></div>';
   document.body.append(root);
   root.querySelector('.location-entry-grant').addEventListener('click',request);

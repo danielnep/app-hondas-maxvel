@@ -46,7 +46,7 @@ export function createCheckpointCurtain(api){
    '<div class="checkpoint-stopwatch" aria-live="polite"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message>Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
    '<div class="checkpoint-evidence-title">Evidências <small>Registre quando necessário</small></div>'+
    '<div class="checkpoint-tools">'+evidenceButtons()+'</div>'+
-   '<div class="checkpoint-utility-row"><button type="button" data-curtain-torch>🔦 Lanterna</button>'+
+   '<div class="checkpoint-utility-row"><button type="button" data-curtain-torch aria-label="Autorizar câmera e ativar lanterna"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-2 7 4 4-6 8-6-8 4-4-2-7Z"/><path d="M11 11l2 2M18 18h3M3 18h3"/></svg> <span>Lanterna</span></button>'+
    '<button type="button" class="checkpoint-panic" data-ops="panic-confirm">⚠ PÂNICO</button></div>'+
    '<fieldset class="checkpoint-condition" data-curtain-observation-wrap hidden><legend>Condições encontradas neste ponto</legend>'+
    '<label><input type="radio" name="point-state" value="ok" checked> Tudo dentro do esperado</label>'+
@@ -80,7 +80,7 @@ export function createCheckpointCurtain(api){
  }
  async function toggleTorch(){
   const el=root?.querySelector('[data-curtain-torch]');if(!el)return;
-  if(torchTrack){try{await torchTrack.applyConstraints({advanced:[{torch:false}]})}catch{}closeTorch();el.textContent='🔦 Lanterna';return}
+  if(torchTrack){try{await torchTrack.applyConstraints({advanced:[{torch:false}]})}catch{}closeTorch();el.querySelector('span').textContent='Lanterna';return}
   try{
    if(!navigator.mediaDevices?.getUserMedia)throw Error('Indisponível');
    torchStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
@@ -88,8 +88,8 @@ export function createCheckpointCurtain(api){
    const support=torchTrack.getCapabilities?.();
    if(!support?.torch)throw Error('Sem lanterna controlável no navegador');
    await torchTrack.applyConstraints({advanced:[{torch:true}]});
-   el.textContent='🔦 Desligar lanterna';
-  }catch(e){closeTorch();api.notify('Lanterna indisponível neste aparelho ou navegador.')}
+   el.querySelector('span').textContent='Desligar lanterna';
+  }catch(e){closeTorch();api.notify(['NotAllowedError','PermissionDeniedError','SecurityError'].includes(e?.name)?'Autorize a câmera para ligar a lanterna.':'Este navegador ou dispositivo não disponibiliza controle da lanterna.')}
  }
  async function submit(){
   const {session:s,locationFix}=api.get(),p=currentCheckpoint(s),checkpoint=s?.checkpoints[s.index];

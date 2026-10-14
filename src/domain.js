@@ -74,7 +74,7 @@ export function updateLocation(s,fix,now=Date.now()){
   if(!accurateFix(fix,now)){
     s.gpsOutsideEvidence=null;
     s.insideSince=null;
-    if(currentCheckpoint(s))s.checkpoints[s.index].dwellMs=0;
+    if(currentCheckpoint(s)){s.checkpoints[s.index].dwellMs=0;if(s.requiresManualCheckin)s.checkpoints[s.index].checkedInAt=null;}
     return {valid:false,reason:'gps-unreliable'};
   }
   // Amostras antigas ou grandes lacunas não comprovam permanência contínua.
@@ -88,13 +88,13 @@ export function updateLocation(s,fix,now=Date.now()){
     // Exigir no mínimo três amostras espaçadas; não confundir oscilação com desvio.
     s.gpsOutsideEvidence=(!e||now-e.lastAt>30000)?{count:1,firstAt:now,lastAt:now}:{count:e.count+(now-e.lastAt>=2500?1:0),firstAt:e.firstAt,lastAt:now-e.lastAt>=2500?now:e.lastAt};
     if(s.gpsOutsideEvidence.count<3||now-s.gpsOutsideEvidence.firstAt<7000){
-      s.insideSince=null;if(point)s.checkpoints[s.index].dwellMs=0;
+      s.insideSince=null;if(point){s.checkpoints[s.index].dwellMs=0;if(s.requiresManualCheckin)s.checkpoints[s.index].checkedInAt=null;}
       return {valid:true,inside:false,outside:false,suspected:true,reason:'confirming-gps'};
     }
   } else s.gpsOutsideEvidence=null;
   if(outside){
     s.insideSince=null;
-    if(point)s.checkpoints[s.index].dwellMs=0;
+    if(point){s.checkpoints[s.index].dwellMs=0;if(s.requiresManualCheckin)s.checkpoints[s.index].checkedInAt=null;}
     if(s.route.rules?.logDeviations!==false&&!hasBlock(s)&&!s.deviations.some(d=>!d.returnedAt)){
       const d={id:id(),at:now,pointId:point?.id??s.route.base.id,pointName:point?.name??s.route.base.name,
        reason:'Saída do corredor confirmada por amostras GPS',distance:Math.round(corridorM),position:{lat:fix.lat,lng:fix.lng},
@@ -107,17 +107,34 @@ export function updateLocation(s,fix,now=Date.now()){
   const awaiting=s.deviations.filter(d=>!d.returnedAt);
   if(awaiting.length&&point&&distanceMeters(fix,point)<=point.radius){
     for(const d of awaiting){d.returnedAt=now;note(s,'return',`Retorno ao ${point.name} registrado`,now,{deviationId:d.id});}
-    s.insideSince=null;s.checkpoints[s.index].dwellMs=0;
+    s.insideSince=null;s.checkpoints[s.index].dwellMs=0;if(s.requiresManualCheckin)s.checkpoints[s.index].checkedInAt=null;
   }
   if(!point){
     if(distanceMeters(fix,s.route.base)<=RADIUS_METERS){s.returnConfirmed=true;}
     return {valid:true,inside:s.returnConfirmed,outside:false};
   }
   const inside=distanceMeters(fix,point)<=point.radius;
-  if(!inside){s.insideSince=null;s.checkpoints[s.index].dwellMs=0;return {valid:true,inside:false,outside:false};}
+  if(!inside){s.insideSince=null;s.checkpoints[s.index].dwellMs=0;if(s.requiresManualCheckin)s.checkpoints[s.index].checkedInAt=null;return {valid:true,inside:false,outside:false};}
+  // Geofence is observation only. The employee must explicitly tap "Estou Aqui".
+  if(s.requiresManualCheckin&&!s.checkpoints[s.index].checkedInAt)return {valid:true,inside:true,awaitingCheckin:true,outside:false};
   if(s.insideSince===null)s.insideSince=now;
-  s.checkpoints[s.index].dwellMs=Math.max(0,Math.min(requiredDwellMs(s),now-s.insideSince));
+  const multiplier=s.mode==='simulation'&&s.fastDemoClock?6:1;
+  s.checkpoints[s.index].dwellMs=Math.max(0,Math.min(requiredDwellMs(s),(now-s.insideSince)*multiplier));
   return {valid:true,inside:true,outside:false};
+}
+/** An explicit, accurately geofenced action is required before the dwell clock starts. */
+export function checkInAtPoint(s,fix,at=Date.now()){
+  const target=currentCheckpoint(s);
+  if(!s||s.status!=='active'||!target||hasBlock(s))return {ok:false,reason:'Ronda ou ponto indisponível.'};
+  if(!accurateFix(fix,at))return {ok:false,reason:'GPS com precisão insuficiente. Aproxime-se do local e tente novamente.'};
+  if(distanceMeters(fix,target)>target.radius)return {ok:false,reason:'Você ainda está fora do raio permitido deste ponto.'};
+  const quality=updateLocation(s,fix,at);
+  if(!quality.valid||!quality.inside||quality.outside)return {ok:false,reason:'Localização sem confirmação confiável.'};
+  s.checkpoints[s.index].checkedInAt=at;
+  s.checkpoints[s.index].dwellMs=0;
+  s.insideSince=at;
+  note(s,'manual-checkin',target.name+' · Estou Aqui confirmado',at,{pointId:target.id});
+  return {ok:true};
 }
 /** Controle por ponto: GPS, QR ou combinação, sempre na ordem programada.
  * Leitura QR real deverá ter autenticação e validação do código no servidor.

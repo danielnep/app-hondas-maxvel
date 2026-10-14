@@ -111,7 +111,7 @@ export function createOperationalApi(){
   return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active,u.site FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
  };
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
- const visible=(u,e)=>u.role==='cliente'?false:['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
+ const visible=(u,e)=>u.role==='cliente'?Boolean(u.site&&e.site===u.site&&['inspection','checkpoint','patrol_start','patrol_end'].includes(e.kind)):['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
  const criteriaKeys=['acessos','estrutura','equipamentos','sinalizacao'];
  const operations=db?createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}):null;
  async function notifyEmail(record,template){
@@ -152,7 +152,7 @@ export function createOperationalApi(){
    if(p==='/api/users'&&m==='GET'&&reviewer(a)&&operations.allows(a,'rondas')){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,created_at,active FROM users').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
     const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),description=clean(d.description),site=clean(d.site).slice(0,100);
-    if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10||['cliente','vistoriador','ronda'].includes(d.role)&&site.length<2){resp(res,422,{error:'Cadastro inválido: informe local/posto; vigia exige descrição da supervisão'});return true;}
+    if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10||['cliente','ronda'].includes(d.role)&&site.length<2){resp(res,422,{error:'Cadastro inválido: informe local/posto; vigia exige descrição da supervisão'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
     db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at,site) VALUES(?,?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now(),site);
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
@@ -194,12 +194,15 @@ export function createOperationalApi(){
     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente tem acesso somente de leitura'});return true;}
     const d=serialize((await body(req)).toString())||{},position=d.position??null,battery=d.battery??null,
     templateKey=d.kind==='gps_issue'?'gps_unreliable':d.kind==='patrol_end'?'patrol_completed':null,
-    inspection=d.kind==='inspection'?d.details?.criteria:null;
-    if(d.kind==='inspection'&&(a.role!=='vistoriador'||!a.site||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
+    inspection=d.kind==='inspection'?d.details?.criteria:null,
+    dispatchId=d.kind==='inspection'?clean(d.details?.dispatchId):'',
+    inspectionAssignment=dispatchId?db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria' AND started_at IS NOT NULL AND completed_at IS NULL").get(dispatchId,a.id):null;
+    if(d.kind==='inspection'&&(a.role!=='vistoriador'||(!a.site&&!inspectionAssignment)||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
      resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
     }
+    if(dispatchId&&!inspectionAssignment){resp(res,422,{error:'Vistoria exige despacho válido iniciado e atribuído ao profissional'});return true;}
     const validCriteria=d.kind==='inspection'?Object.fromEntries(criteriaKeys.map(key=>[key,inspection[key]])):null;
-    const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length)}:
+    const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length),...(inspectionAssignment?{dispatchId,destinationId:inspectionAssignment.destination_id}: {})}:
      {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
     if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','patrol_incomplete','patrol_interrupted','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
@@ -212,7 +215,7 @@ export function createOperationalApi(){
     const existing=event(eid);
     if(existing){resp(res,existing.user_id===a.id?200:409,{id:eid,duplicate:true});return true;}
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details,a.site||'');
+      .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details,inspectionAssignment?.site||a.site||'');
     audit(a,'event.create',eid);
     operations.notifyEvent(a,event(eid));
     if(['alert','gps_issue','patrol_end'].includes(d.kind)){
@@ -230,18 +233,19 @@ export function createOperationalApi(){
     if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas pelo administrador'});return true;}
     const limit=Math.min(500,Math.max(1,Number(u.searchParams.get('limit'))||100));
     const rows=['ronda','vistoriador'].includes(a.role)?db.prepare('SELECT * FROM events WHERE user_id=? ORDER BY occurred_at DESC LIMIT ?').all(a.id,limit):
-     a.role==='cliente'?(a.site?db.prepare("SELECT * FROM events WHERE site=? AND kind IN ('patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted') ORDER BY occurred_at DESC LIMIT ?").all(a.site,limit):[]):
+     a.role==='cliente'?(a.site?db.prepare("SELECT * FROM events WHERE site=? AND kind IN ('patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted','inspection') ORDER BY occurred_at DESC LIMIT ?").all(a.site,limit):[]):
      db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT ?').all(limit);
     resp(res,200,{events:rows.map(x=>({...x,details:serialize(x.details),position:x.lat==null?null:{lat:x.lat,lng:x.lng,accuracy:x.accuracy}}))});return true;
    }
    const messages=p.match(/^\/api\/events\/([0-9a-z-]+)\/messages$/i);
    if(messages){
+    if(a.role==='cliente'){resp(res,403,{error:'Conversa operacional não disponível no Portal do Cliente'});return true;}
     if(reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Mensagens de ocorrências desabilitadas'});return true;}
     const ev=event(messages[1]);if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     if(m==='GET'&&reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas'});return true;}
     if(m==='GET'){const rows=reviewer(a)?db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? ORDER BY created_at').all(ev.id):db.prepare("SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? AND audience='general' ORDER BY created_at").all(ev.id);resp(res,200,{messages:rows});return true;}
     if(m==='POST'){
-     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente não envia mensagens'});return true;}
+     if(['cliente','admin'].includes(a.role)){resp(res,403,{error:'Apenas COI e equipe responsável podem responder; Administração acompanha a tratativa.'});return true;}
      const d=serialize((await body(req)).toString())||{},b=clean(d.body),audience=d.audience||'general';
      if(b.length<1||b.length>4000||!['general','system'].includes(audience)||audience==='system'&&!reviewer(a)){resp(res,422,{error:'Mensagem inválida'});return true;}
      const mid=id();db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(mid,ev.id,a.id,audience,b,now());
@@ -252,9 +256,11 @@ export function createOperationalApi(){
    }
    const review=p.match(/^\/api\/events\/([0-9a-z-]+)\/review$/i);
    if(review&&m==='POST'&&reviewer(a)){
-    if(!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Tratamento desabilitado pelo administrador'});return true;}
-    const ev=event(review[1]),d=serialize((await body(req)).toString())||{};
+    const ev=event(review[1]);
     if(!ev){resp(res,404,{error:'Não encontrado'});return true;}
+    if(!['coi','operador','master'].includes(a.role)){resp(res,403,{error:'Tratamento reservado ao COI; Administração acompanha a conclusão.'});return true;}
+    if(!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Tratamento desabilitado pelo administrador'});return true;}
+    const d=serialize((await body(req)).toString())||{};
     const status=clean(d.status),validation=validateConclusion(d.conclusion??d.note);
     if(!['aberta','em_analise','resolvida','encaminhada'].includes(status)||!validation.ok){resp(res,422,{error:validation.reason||'Situação inválida'});return true;}
     if(status==='encaminhada'&&a.role==='ronda'){resp(res,403,{error:'Sem permissão para encaminhar'});return true;}

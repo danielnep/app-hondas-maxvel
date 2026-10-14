@@ -1,0 +1,40 @@
+:root{--rp-dark:#09090b;--rp-ice:#bae6fd}
+body{background:#09090b!important;color:#f4f4f5}
+.ops-agenda-header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:18px;border-radius:22px;border:1px solid #52525b;background:linear-gradient(120deg,rgba(40,40,44,.9),rgba(9,9,11,.9));backdrop-filter:blur(18px)}
+.ops-agenda-header h1{font-size:clamp(22px,3vw,32px);margin:5px 0}
+.ops-agenda-live{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid #52525b;padding:8px 12px;border-radius:999px;font-size:12px}
+.ops-agenda-live strong{font-variant-numeric:tabular-nums;font-size:16px}
+.ops-live-led{height:8px;width:8px;border-radius:50%;background:#34d399;box-shadow:0 0 13px #34d399}
+.ops-agenda-surface{background:linear-gradient(130deg,rgba(39,39,42,.9),rgba(9,9,11,.94))!important;border:1px solid #52525b!important;border-radius:19px!important}
+.ops-agenda-list{display:grid;gap:11px;margin-top:15px}
+.ops-agenda-row{display:grid;grid-template-columns:minmax(125px,26%) minmax(0,1fr);gap:15px;padding:10px;border-radius:17px;border:1px solid #52525b;background:rgba(24,24,27,.75)}
+.ops-agenda-thumb{height:130px;overflow:hidden;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#27272a;font-size:11px;color:#a1a1aa}
+.ops-agenda-thumb .leaflet-tile-pane{filter:grayscale(.78) brightness(.78)}
+.ops-agenda-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.ops-agenda-copy>small{font-size:10px;color:#a1a1aa;text-transform:uppercase}
+.ops-agenda-copy h3{font-size:clamp(15px,2vw,20px);margin:0}
+.ops-agenda-facts{display:flex;flex-wrap:wrap;gap:8px 14px}
+.ops-agenda-facts span{font-size:11px;color:#a1a1aa}
+.ops-agenda-facts b{color:#f4f4f5}
+.ops-agenda-copy .pill{border-radius:999px;margin-top:auto}
+.ops-monitor .toolbar>button{border-radius:999px!important;min-height:42px!important;border:1px solid #7dd3fc!important}
+@media(max-width:700px){.ops-agenda-header{flex-direction:column;align-items:flex-start}.ops-agenda-row{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.ops-agenda-row{transition:none}}
+
+
+/* Portal do cliente: mídia isolada, cartões de laudo sem navegação no mapa. */
+.ops-client-portal .surface,.ops-client-portal .metric{border-radius:18px!important;
+ background:linear-gradient(125deg,rgba(39,39,42,.87),rgba(9,9,11,.95))!important;border:1px solid #52525b!important}
+.client-static-map{position:relative;overflow:hidden;border-radius:14px;min-height:190px;margin:12px 0;isolation:isolate}
+.client-static-map iframe{pointer-events:none!important;filter:grayscale(.8) brightness(.78);max-height:220px}
+.client-static-map .event-map-wrap>a{display:none}
+.client-static-map:after{content:"Visualização estática";position:absolute;right:10px;bottom:10px;padding:5px 9px;border-radius:999px;
+ background:rgba(9,9,11,.82);color:#e4e4e7;font-size:10px}
+.client-inspection-row{padding:14px;border:1px solid #52525b;border-radius:16px;background:rgba(24,24,27,.82);margin:12px 0}
+.client-inspection-row h3{font-size:16px;margin:3px 0}
+.client-inspection-row p{font-size:12px;line-height:1.55;color:#d4d4d8}
+.client-inspection-media{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px;padding-top:9px}
+.client-inspection-media figure{margin:0;min-width:0;padding:7px;border-radius:12px;border:1px solid #3f3f46;background:#09090b}
+.client-inspection-media img,.client-inspection-media video,.client-inspection-media audio{max-width:100%;width:100%;border-radius:8px}
+.client-inspection-media img,.client-inspection-media video{height:116px;object-fit:cover}
+.client-inspection-media figcaption{font-size:10px;color:#d4d4d8;padding-top:5px}

@@ -1,0 +1,64 @@
+/* Rondas Pro | cockpit de ronda 14-10-2026
+   Última camada: glass Zinc, controles em pílula, acessibilidade e fluxo explícito. */
+:root{--rp-zinc:#09090b;--rp-glass:rgba(22,22,25,.86);--rp-cyan:#38bdf8;--rp-silver:#e4e4e7;}
+.dashboard .ronda-page .patrol-actions,
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+ background:linear-gradient(145deg,rgba(36,36,40,.93),rgba(9,9,11,.91))!important;
+ border:1px solid rgba(228,228,231,.26)!important;
+ border-radius:22px!important;
+ box-shadow:0 18px 56px rgba(0,0,0,.57),inset 0 1px rgba(255,255,255,.12)!important;
+ backdrop-filter:blur(22px) saturate(135%)!important;
+}
+.patrol-primary-flow .rondas-main-action{display:flex;justify-content:center;margin:12px 0 8px}
+.dashboard .ronda-page .patrol-primary-flow .rondas-main-action>.button,
+.dashboard .ronda-page .patrol-primary-flow>.button[data-action="start"],
+.dashboard .ronda-page .patrol-primary-flow>.button[data-action="demo-arrive"]{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ gap:10px!important;width:100%!important;min-height:60px!important;max-height:none!important;
+ border-radius:999px!important;border:1px solid rgba(186,230,253,.78)!important;
+ padding:12px 22px!important;font-size:clamp(14px,3.4vw,17px)!important;font-weight:800!important;
+ color:#f8fafc!important;background:linear-gradient(120deg,rgba(14,165,233,.32),rgba(39,39,42,.96) 74%)!important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.24),0 8px 22px rgba(8,145,178,.20)!important;
+ transition:transform .18s ease,box-shadow .18s ease,filter .18s ease!important;
+}
+.dashboard .ronda-page .patrol-primary-flow .rondas-main-action>.button:not(:disabled):active,
+.dashboard .ronda-page .patrol-primary-flow>.button[data-action="start"]:not(:disabled):active{transform:scale(.975)!important;filter:brightness(1.12)}
+.dashboard .ronda-page .patrol-primary-flow .rondas-main-action>.button:focus-visible{outline:3px solid #f8fafc!important;outline-offset:3px}
+.dashboard .ronda-page .patrol-primary-flow .rondas-main-action>.button:disabled{opacity:.6}
+.rondas-directions{display:grid;gap:9px;padding:10px 12px 12px;margin-top:9px;
+ border:1px solid rgba(161,161,170,.30);border-radius:17px;
+ background:linear-gradient(125deg,rgba(63,63,70,.3),rgba(9,9,11,.32));color:#f4f4f5}
+.rondas-directions>span{font-size:12px;font-weight:750;line-height:1.4}
+.rondas-directions-links{display:flex;flex-wrap:wrap;gap:8px}
+.rondas-directions a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;
+ padding:7px 15px;border-radius:999px;border:1px solid rgba(186,230,253,.5);
+ background:rgba(9,9,11,.82);color:#e0f2fe!important;text-decoration:none;font-size:12px;font-weight:750}
+.rondas-directions a:focus-visible{outline:2px solid #38bdf8;outline-offset:2px}
+.rondas-directions small{color:#d4d4d8;line-height:1.35;font-size:11px}
+.checkpoint-curtain-panel{border-radius:26px 26px 0 0!important;scrollbar-width:thin}
+.checkpoint-curtain .checkpoint-stopwatch{border-radius:18px!important;
+ background:radial-gradient(circle at 50% 15%,rgba(14,165,233,.17),rgba(9,9,11,.92))!important;
+ border:1px solid rgba(186,230,253,.50)!important;padding:18px 14px!important}
+.checkpoint-curtain .checkpoint-stopwatch strong{font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.checkpoint-curtain .checkpoint-submit:not(:disabled){border-radius:999px!important;
+ background:linear-gradient(90deg,rgba(16,185,129,.38),rgba(9,9,11,.96))!important}
+.checkpoint-utility-row [data-curtain-torch]{display:inline-flex;align-items:center;gap:7px;
+ border-radius:999px!important;background:rgba(39,39,42,.82)!important;
+ border:1px solid rgba(186,230,253,.5)!important;color:#fafafa!important}
+.checkpoint-utility-row [data-curtain-torch] svg{width:20px;height:20px;flex:none;color:#7dd3fc}
+.field-torch-fab{border-radius:999px!important;backdrop-filter:blur(15px)}
+.field-torch-fab.is-lit{box-shadow:0 0 0 2px #38bdf884,0 0 30px #38bdf86a,inset 0 0 15px #38bdf843!important}
+@media(max-width:900px){
+ .dashboard .ronda-page .patrol-actions,.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+ max-height:min(46dvh,380px)!important;overflow-y:auto!important;scrollbar-width:thin;overscroll-behavior:contain}
+ .patrol-primary-flow .rondas-main-action{margin:10px 0 4px}
+ .rondas-directions{padding:9px;margin:8px 0}
+}
+@media(prefers-reduced-motion:reduce){.dashboard .ronda-page .patrol-primary-flow .rondas-main-action>.button{transition:none!important}}
+
+
+.location-entry-emergency{display:flex;gap:9px;justify-content:center;align-items:center;flex-wrap:wrap;margin:14px 0}
+.location-entry-emergency button,.location-entry-emergency a{display:inline-flex;align-items:center;justify-content:center;
+ min-height:44px;border-radius:999px;padding:10px 15px;font-size:12px;font-weight:750;text-decoration:none}
+.location-entry-emergency .location-entry-panic{color:#fff;background:rgba(185,28,28,.82);border:1px solid #fda4af}
+.location-entry-emergency .location-entry-contact{color:#f0f9ff;background:rgba(9,9,11,.8);border:1px solid #7dd3fc}
