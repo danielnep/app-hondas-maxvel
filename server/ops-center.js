@@ -2,6 +2,7 @@
 const MODULES=['mapa','despachos','rondas','ocorrencias','alertas','relatorios'];
 const REVIEW_ROLES=['operador','coi','admin','master'];
 const ADMIN_ROLES=['admin','master'];
+const FIRST_RESPONSE_ROLES=['coi','operador'];
 const EVENT_LABELS={
  panic:'PÂNICO ACIONADO',incident:'Nova ocorrência',alert:'Alerta operacional',
  gps_issue:'Sinal GPS impreciso',route_deviation:'Possível desvio de rota',
@@ -42,18 +43,17 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  }
  function notifyEvent(actor,record){
   const title=EVENT_LABELS[record.kind];if(!title)return;
-  notify(REVIEW_ROLES,record.kind,title,actor.name+' · '+clean(record.description).slice(0,280),{eventId:record.id,except:[actor.id]});
+  notify(FIRST_RESPONSE_ROLES,record.kind,title,actor.name+' · '+clean(record.description).slice(0,280),{eventId:record.id,except:[actor.id]});
  }
  function notifyReview(actor,record,status,conclusion){
-  if(status==='encaminhada')notify(ADMIN_ROLES,'forwarded','Ocorrência encaminhada ao administrativo',actor.name+': '+clean(conclusion).slice(0,350),{eventId:record.id,except:[actor.id]});
+  if(['em_analise','encaminhada','resolvida'].includes(status))notify(ADMIN_ROLES,'review','Tratativa do COI registrada',actor.name+' · '+status.replaceAll('_',' ')+' · '+clean(conclusion).slice(0,350),{eventId:record.id,except:[actor.id]});
   if(['resolvida','em_analise'].includes(status)&&record.user_id!==actor.id){
    insert.run(id(),record.user_id,'review',status==='resolvida'?'Ocorrência tratada':'Ocorrência em análise',clean(conclusion).slice(0,350),record.id,null,now());
    announce(record.user_id);
   }
  }
  function notifyMessage(actor,record,audience,message){
-  const recipients=actor.id===record.user_id?REVIEW_ROLES:
-   audience==='system'?REVIEW_ROLES:REVIEW_ROLES;
+  const recipients=FIRST_RESPONSE_ROLES;
   notify(recipients,'message',audience==='system'?'Nota interna da central':'Nova mensagem operacional',
    actor.name+' · '+clean(message).slice(0,200),{eventId:record.id,except:[actor.id]});
   if(actor.id!==record.user_id&&audience==='general'){
