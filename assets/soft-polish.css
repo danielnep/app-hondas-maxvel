@@ -100,3 +100,122 @@
   .rp-label-long {display:inline!important}
   .rp-label-short {display:none!important}
 }
+
+
+
+/* Rondas Pro V3 · movimento de interface, nunca de geolocalização ou de segurança.
+   Durações curtas, sem loops decorativos e sem alterar a paleta Maxvel. */
+@keyframes rp-v3-float-in {
+  from {opacity:.45;translate:0 9px}
+  to {opacity:1;translate:0 0}
+}
+@keyframes rp-v3-soft-pop {
+  from {opacity:.8;scale:.985}
+  to {opacity:1;scale:1}
+}
+@keyframes rp-v3-highlight {
+  from {box-shadow:inset 0 0 0 1px transparent}
+  to {box-shadow:inset 0 0 0 1px rgba(255,255,255,.065)}
+}
+@keyframes rp-v3-progress-sheen {
+  from {background-position:115% 50%}
+  to {background-position:-15% 50%}
+}
+/* Primeiras seções chegam em sequência, sem fazer o mapa "andar". */
+.dashboard .app-content.rp-soft-view-enter > :is(.page-title,.v4-dashboard-heading,.v4-dashboard-tabs),
+.dashboard .app-content.rp-soft-view-enter > :is(.page-title,.v4-dashboard-heading,.v4-dashboard-tabs) + :is(section,div),
+#central-root .content.rp-soft-view-enter .stack > :nth-child(-n+5) {
+  animation:rp-v3-float-in 315ms var(--rp-ui-ease) both;
+}
+#central-root .content.rp-soft-view-enter .stack > :nth-child(2) {animation-delay:35ms}
+#central-root .content.rp-soft-view-enter .stack > :nth-child(3) {animation-delay:65ms}
+#central-root .content.rp-soft-view-enter .stack > :nth-child(4) {animation-delay:90ms}
+
+/* Seleção visível e fluida sem depender só de cor. */
+.dashboard :is(.side-link.active,.v4-dashboard-tabs button.active,
+ .ux-report-tabs button[aria-selected="true"],.ux-ronda-tabs button[aria-selected="true"]) {
+  background-image:linear-gradient(115deg,rgba(255,255,255,.055),transparent 78%);
+}
+.dashboard :is(.side-link.active,.v4-dashboard-tabs button.active,
+ .ux-report-tabs button[aria-selected="true"],.ux-ronda-tabs button[aria-selected="true"]) svg {
+  filter:drop-shadow(0 0 4px rgba(119,192,255,.45));
+  transition:filter 240ms ease,translate 220ms var(--rp-ui-ease);
+}
+#central-root .side button.active {
+  background-image:linear-gradient(95deg,rgba(237,53,75,.17),transparent 82%);
+  box-shadow:inset 3px 0 0 var(--accent),inset 0 0 0 1px rgba(237,53,75,.12);
+}
+@media (max-width:760px) {
+  #central-root .side button.active {
+    box-shadow:inset 0 -3px 0 var(--accent),inset 0 0 0 1px rgba(237,53,75,.12);
+  }
+}
+
+/* Ações secundárias respondem ao toque sem provocar deslocamentos permanentes. */
+.dashboard :is(.context-help,.help-toggle,.ops-mini-action,.ux06-map-fit,.ux06-map-help),
+#central-root :is(.toolbar button,.list-item,.details-toggle > summary) {
+  transition:background-color 210ms ease,
+    border-color 210ms ease,color 210ms ease,
+    box-shadow 260ms ease,filter 240ms ease!important;
+}
+.dashboard :is(.context-help,.help-toggle,.ops-mini-action,.ux06-map-fit,.ux06-map-help):active:not(:disabled),
+#central-root :is(.toolbar button,.list-item):active:not(:disabled) {
+  filter:brightness(1.12);
+}
+@media (hover:hover) and (pointer:fine) {
+  .dashboard :is(.context-help,.help-toggle,.ops-mini-action,.ux06-map-fit,.ux06-map-help):hover:not(:disabled) {
+    filter:brightness(1.12) drop-shadow(0 2px 5px rgba(75,165,230,.18));
+  }
+  .dashboard :is(.v4-history-row,.v4-team-row,.schedule-row,.event-item):hover:not(:disabled) {
+    box-shadow:inset 0 0 0 1px rgba(175,203,226,.16),0 5px 13px rgba(0,0,0,.18)!important;
+  }
+  #central-root :is(.surface,.metric):hover {
+    border-color:#474750;
+    box-shadow:0 6px 24px rgba(0,0,0,.16);
+  }
+  #central-root .list-item:hover {box-shadow:inset 3px 0 0 rgba(237,53,75,.46)!important}
+}
+/* Um destaque breve em barra de progresso: sem animação infinita. */
+.dashboard :is(.progress-bar,.mobile-mini-meter,.report-progress-track) > :is(span,i) {
+  background-image:linear-gradient(108deg,transparent 20%,rgba(255,255,255,.2) 46%,transparent 70%);
+  background-size:210% 100%;
+  animation:rp-v3-progress-sheen 1250ms ease-out 1 both;
+}
+/* Abertura de seções e de mensagens com um pequeno gesto de confirmação. */
+#central-root .details-toggle[open] > .surface,
+#central-root .rp-soft-view-enter .bubble {
+  animation:rp-v3-float-in 240ms var(--rp-ui-ease) both;
+}
+#central-root .details-toggle > summary:focus-visible {outline:2px solid var(--accent);outline-offset:3px}
+#central-root :is(input,textarea,select):focus-visible {
+  box-shadow:0 0 0 3px rgba(237,53,75,.14);
+}
+.dashboard :is(input,textarea,select):focus-visible {
+  box-shadow:0 0 0 3px rgba(74,164,225,.14);
+}
+/* Modal mantém foco, fechamento e scroll originais. */
+dialog[open] :is(.modal-actions,.consent-actions,.role-picker-list) {
+  animation:rp-v3-soft-pop 220ms var(--rp-ui-ease) both;
+}
+dialog::backdrop {background:rgba(0,0,0,.68)}
+
+/* Mantém acessibilidade, estabilidade, impressão e ações críticas. */
+@media (prefers-reduced-motion:reduce) {
+  .dashboard .app-content.rp-soft-view-enter > :is(.page-title,.v4-dashboard-heading,.v4-dashboard-tabs),
+  .dashboard .app-content.rp-soft-view-enter > :is(.page-title,.v4-dashboard-heading,.v4-dashboard-tabs) + :is(section,div),
+  #central-root .content.rp-soft-view-enter .stack > *,
+  #central-root .details-toggle[open] > .surface,
+  #central-root .rp-soft-view-enter .bubble,
+  .dashboard :is(.progress-bar,.mobile-mini-meter,.report-progress-track) > :is(span,i),
+  dialog[open] :is(.modal-actions,.consent-actions,.role-picker-list) {
+    animation:none!important;transition:none!important;
+    translate:none!important;scale:1!important;filter:none!important;
+  }
+}
+@media print {
+  .dashboard .app-content.rp-soft-view-enter > *,
+  #central-root .content.rp-soft-view-enter .stack > *,
+  #central-root .rp-soft-view-enter .bubble {
+    animation:none!important;translate:none!important;filter:none!important;
+  }
+}
