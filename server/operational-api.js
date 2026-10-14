@@ -5,9 +5,9 @@ import {randomBytes,scryptSync,timingSafeEqual,createHash,randomUUID} from 'node
 import {addTrackSample} from '../src/field-intelligence.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
-const roles=['ronda','operador','admin','master'];
-const manager=u=>['admin','master'].includes(u.role);
-const reviewer=u=>['operador','admin','master'].includes(u.role);
+const roles=['ronda','operador','admin','master','coi','cliente','vistoriador'];
+const manager=u=>['admin','master','coi'].includes(u.role);
+const reviewer=u=>['operador','admin','master','coi'].includes(u.role);
 const authHash=(password,salt)=>scryptSync(password,salt,64).toString('hex');
 const resp=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
 const serialize=(raw)=>{try{return JSON.parse(raw)}catch{return null}};
@@ -42,6 +42,10 @@ function initialize(){
   'CREATE TABLE IF NOT EXISTS email_jobs(event_id TEXT PRIMARY KEY,status TEXT NOT NULL,last_error TEXT,at INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,action TEXT NOT NULL,subject_id TEXT,at INTEGER NOT NULL)'
  ];for(const statement of ddl)db.exec(statement);
+ // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
+ if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
+ if(!db.prepare('PRAGMA table_info(events)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE events ADD COLUMN site TEXT NOT NULL DEFAULT ''");
+ db.exec('CREATE INDEX IF NOT EXISTS idx_events_site_time ON events(site,occurred_at)');
  if(!db.prepare("PRAGMA table_info(recipients)").all().some(x=>x.name==='group_name'))db.exec('ALTER TABLE recipients ADD COLUMN group_name TEXT NOT NULL DEFAULT "operations"');
  if(!db.prepare("SELECT id FROM users WHERE role='master' LIMIT 1").get()){
   const salt=randomBytes(16).toString('hex');
@@ -60,7 +64,7 @@ export function aggregateOperationalRounds(events=[]){
  const groups=new Map();
  for(const e of events){
   if(!e.round_id)continue;
-  if(!groups.has(e.round_id))groups.set(e.round_id,{id:e.round_id,userId:e.user_id,
+  if(!groups.has(e.round_id))groups.set(e.round_id,{id:e.round_id,userId:e.user_id,site:e.site||'',
    start:null,end:null,gpsTrace:[],km:0,gpsSamples:0,rejectedGps:0,alerts:0,panics:0,incidents:0,checkpoints:0,lastBattery:null,lastFix:null,lastFixAt:null,started:0});
   const r=groups.get(e.round_id);
   if(e.kind==='patrol_start'){r.start=e.occurred_at;r.started++;}
@@ -93,10 +97,11 @@ export function createOperationalApi(){
  const audit=(u,action,subject)=>db.prepare('INSERT INTO audit(id,user_id,action,subject_id,at) VALUES(?,?,?,?,?)').run(id(),u.id,action,subject,now());
  const userFrom=req=>{
   const match=String(req.headers.authorization||'').match(/^Bearer ([0-9a-f]{64})$/i);if(!match)return null;
-  return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
+  return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active,u.site FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
  };
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
- const visible=(u,e)=>u.role!=='ronda'||e.user_id===u.id;
+ const visible=(u,e)=>u.role==='cliente'?Boolean(u.site)&&e.site===u.site:['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
+ const criteriaKeys=['acessos','estrutura','equipamentos','sinalizacao'];
  async function notifyEmail(record,template){
   const targetGroups=serialize(template.recipients)||[];
   const emails=db.prepare('SELECT email,group_name FROM recipients WHERE enabled=1').all().filter(x=>!targetGroups.length||targetGroups.includes(x.group_name)).map(x=>x.email);
@@ -125,32 +130,39 @@ export function createOperationalApi(){
     const candidate=typeof d.password==='string'&&row?authHash(d.password,row.salt):null;
     if(!candidate||!timingSafeEqual(Buffer.from(candidate,'hex'),Buffer.from(row.password_hash,'hex'))){resp(res,401,{error:'Credenciais inválidas'});return true;}
     const token=randomBytes(32).toString('hex');db.prepare('INSERT INTO tokens(token_hash,user_id,expires_at) VALUES(?,?,?)').run(hash(token),row.id,now()+28800000);
-    audit(row,'login',row.id);resp(res,200,{token,user:{id:row.id,name:row.name,role:row.role},expiresIn:28800});return true;
+    audit(row,'login',row.id);resp(res,200,{token,user:{id:row.id,name:row.name,role:row.role,site:row.site||''},expiresIn:28800});return true;
    }
    const a=userFrom(req);
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
    if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
-   if(p==='/api/users'&&m==='GET'&&reviewer(a)){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,created_at,active FROM users').all()});return true;}
+   if(p==='/api/users'&&m==='GET'&&reviewer(a)){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,created_at,active FROM users').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),description=clean(d.description);
-    if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10){resp(res,422,{error:'Cadastro inválido; vigia exige descrição da supervisão'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),description=clean(d.description),site=clean(d.site).slice(0,100);
+    if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10||['cliente','vistoriador','ronda'].includes(d.role)&&site.length<2){resp(res,422,{error:'Cadastro inválido: informe local/posto; vigia exige descrição da supervisão'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
-    db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now());
+    db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at,site) VALUES(?,?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now(),site);
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
    if(p==='/api/events'&&m==='POST'){
+    if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente tem acesso somente de leitura'});return true;}
     const d=serialize((await body(req)).toString())||{},position=d.position??null,battery=d.battery??null,
     templateKey=d.kind==='gps_issue'?'gps_unreliable':d.kind==='patrol_end'?'patrol_completed':null,
-    details=JSON.stringify({...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
-    if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','media','gps_issue','route_deviation'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
+    inspection=d.kind==='inspection'?d.details?.criteria:null;
+    if(d.kind==='inspection'&&(a.role!=='vistoriador'||!a.site||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
+     resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
+    }
+    const validCriteria=d.kind==='inspection'?Object.fromEntries(criteriaKeys.map(key=>[key,inspection[key]])):null;
+    const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length)}:
+     {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
+    if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
     }
     const eid=/^[0-9a-z-]{8,80}$/i.test(d.id||'')?d.id:id();
     const existing=event(eid);
     if(existing){resp(res,existing.user_id===a.id?200:409,{id:eid,duplicate:true});return true;}
-    db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
-      .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details);
+    db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details,a.site||'');
     audit(a,'event.create',eid);
     if(['alert','gps_issue','patrol_end'].includes(d.kind)){
      const key=d.kind==='alert'?clean(d.details?.templateId):d.kind==='gps_issue'?'gps_unreliable':'patrol_completed';
@@ -165,7 +177,9 @@ export function createOperationalApi(){
    }
    if(p==='/api/events'&&m==='GET'){
     const limit=Math.min(500,Math.max(1,Number(u.searchParams.get('limit'))||100));
-    const rows=a.role==='ronda'?db.prepare('SELECT * FROM events WHERE user_id=? ORDER BY occurred_at DESC LIMIT ?').all(a.id,limit):db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT ?').all(limit);
+    const rows=['ronda','vistoriador'].includes(a.role)?db.prepare('SELECT * FROM events WHERE user_id=? ORDER BY occurred_at DESC LIMIT ?').all(a.id,limit):
+     a.role==='cliente'?(a.site?db.prepare('SELECT * FROM events WHERE site=? ORDER BY occurred_at DESC LIMIT ?').all(a.site,limit):[]):
+     db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT ?').all(limit);
     resp(res,200,{events:rows.map(x=>({...x,details:serialize(x.details),position:x.lat==null?null:{lat:x.lat,lng:x.lng,accuracy:x.accuracy}}))});return true;
    }
    const messages=p.match(/^\/api\/events\/([0-9a-z-]+)\/messages$/i);
@@ -173,6 +187,7 @@ export function createOperationalApi(){
     const ev=event(messages[1]);if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     if(m==='GET'){const rows=reviewer(a)?db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? ORDER BY created_at').all(ev.id):db.prepare("SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? AND audience='general' ORDER BY created_at").all(ev.id);resp(res,200,{messages:rows});return true;}
     if(m==='POST'){
+     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente não envia mensagens'});return true;}
      const d=serialize((await body(req)).toString())||{},b=clean(d.body),audience=d.audience||'general';
      if(b.length<1||b.length>4000||!['general','system'].includes(audience)||audience==='system'&&!reviewer(a)){resp(res,422,{error:'Mensagem inválida'});return true;}
      const mid=id();db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(mid,ev.id,a.id,audience,b,now());
@@ -218,24 +233,26 @@ export function createOperationalApi(){
    }
    if(p==='/api/rounds'&&m==='GET'){
     // Vigias consultam EXCLUSIVAMENTE suas próprias rondas. Operadores e adm têm acesso às rondas da operação.
-    const query='SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ';
-    const rows=a.role==='ronda'
+    const query='SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ';
+    const rows=['ronda','vistoriador'].includes(a.role)
       ?db.prepare(query+'AND user_id=? ORDER BY occurred_at').all(a.id)
+      :a.role==='cliente'?(a.site?db.prepare(query+'AND site=? ORDER BY occurred_at').all(a.site):[])
       :db.prepare(query+'ORDER BY occurred_at').all();
-    resp(res,200,{rounds:aggregateOperationalRounds(rows),scope:a.role==='ronda'?'own':'operational',updatedAt:now()});return true;
+    resp(res,200,{rounds:aggregateOperationalRounds(rows),scope:a.role==='cliente'?'site':(['ronda','vistoriador'].includes(a.role)?'own':'operational'),updatedAt:now()});return true;
    }
-   if(p==='/api/my-summary'&&m==='GET'){
+   if(p==='/api/my-summary'&&m==='GET'&&a.role!=='cliente'){
     const mine=db.prepare('SELECT kind,COUNT(*) count FROM events WHERE user_id=? GROUP BY kind').all(a.id);
-    const items=db.prepare('SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE user_id=? AND round_id IS NOT NULL ORDER BY occurred_at').all(a.id);
+    const items=db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE user_id=? AND round_id IS NOT NULL ORDER BY occurred_at').all(a.id);
     const rounds=aggregateOperationalRounds(items);
     resp(res,200,{rounds,metrics:mine,totalKm:Math.round(rounds.reduce((n,r)=>n+r.km,0)*100)/100,
       totalMinutes:rounds.reduce((n,r)=>n+(r.minutes||0),0),updatedAt:now(),scope:'own'});return true;
    }
    if(p==='/api/dashboard'&&m==='GET'&&reviewer(a)){
-    const rounds=aggregateOperationalRounds(db.prepare('SELECT round_id,user_id,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ORDER BY occurred_at').all());
+    const rounds=aggregateOperationalRounds(db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery FROM events WHERE round_id IS NOT NULL ORDER BY occurred_at').all());
     resp(res,200,{source:'sqlite',metrics:db.prepare('SELECT kind,COUNT(*) count FROM events GROUP BY kind').all(),team:db.prepare("SELECT u.id,u.name,u.description,COUNT(e.id) events,SUM(CASE WHEN e.kind='panic' THEN 1 ELSE 0 END) panics FROM users u LEFT JOIN events e ON e.user_id=u.id WHERE u.role='ronda' GROUP BY u.id").all(),rounds,updatedAt:now()});return true;
    }
    if(p==='/api/media'&&m==='POST'){
+    if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente não envia evidências'});return true;}
     const eid=clean(req.headers['x-ronda-event-id']),ev=event(eid);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     const mime=clean(req.headers['content-type']).split(';')[0];
