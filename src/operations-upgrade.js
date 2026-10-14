@@ -205,12 +205,14 @@ export function createOperationsUpgrade(api){
    const file=item?.file??item;
    const view=['front','back','left','right','selfie'].includes(item?.view)?item.view:null;
    if(!file?.size||file.size>25*1024*1024){api.notify('Evidência excede 25 MB ou está vazia.');continue;}
-   if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.type)){api.notify('Tipo de mídia não suportado.');continue;}
+   if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.type)||(view&&!['image/jpeg','image/png','image/webp'].includes(file.type))){api.notify('Tipo de mídia não suportado.');continue;}
    const mid=uuid(),metadata={id:mid,name:limit(file.name),type:file.type,size:file.size,takenAt:file.lastModified||at,
     position:checkpoint.position,battery:lastBattery?.level??null,...(view?{view}:{})};
    await store.put('media',{...metadata,blob:file});
    saved.push(metadata);
   }
+  const required=Array.isArray(session.route?.rules?.requiredEvidenceViews)?session.route.rules.requiredEvidenceViews.filter(view=>['front','back','left','right','selfie'].includes(view)):[];
+  if(required.some(view=>!saved.some(file=>file.view===view)))throw new Error('As fotos obrigatórias não foram salvas no dispositivo.');
   checkpoint.media=saved;
   session.timeline.unshift({id:uuid(),at,kind:'checkpoint-observation',label:'Observação registrada: '+point.name,
     pointId:point.id,description:checkpoint.observation});
