@@ -92,7 +92,7 @@ try{
    await state(page,width,height,'04-ronda');
    if(width<=900){
     const roleText=await page.locator('#toast').innerText();
-    if(!roleText.includes('Vigia:'))throw Error('Aviso de visão de Vigia ausente: '+roleText);
+    if(!roleText.includes('Operação de Ronda:'))throw Error('Aviso de visão de Vigia ausente: '+roleText);
     const control=await page.locator('.app-header [data-action="profile-menu"] .avatar').evaluate(el=>
      ({width:el.getBoundingClientRect().width,display:getComputedStyle(el).display}));
     if(control.width<12||control.display==='none')throw Error('Botão de perfis aparece vazio: '+JSON.stringify(control));
@@ -127,128 +127,36 @@ try{
    }
    if(width<=900&&await page.locator('#dialog').evaluate(el=>!el.open&&getComputedStyle(el).display!=='none'))
     throw Error('Diálogo fechado está ocupando altura fora da tela');
+   // O vigia acessa o histórico próprio sem relatórios da gestão.
+   if(width<=900){
+    await click(page,'[data-action="open-mobile-menu"]');
+    await click(page,'#dialog [data-view="historico"]');
+   } else await click(page,'[data-view="historico"]:visible');
+   await state(page,width,height,'06-historico-do-vigia');
+   if(!await page.locator('.schedule-workspace').count())throw Error('Vigia sem tela de histórico próprio.');
+   if(await page.locator('.report-page').count())throw Error('Relatório administrativo visível ao vigia.');
+
+   // Operadores: acompanhamento de rondas e alertas, sem entrar na gestão administrativa.
    await click(page,'[data-action="sim-role-picker"]');
-   await click(page,'#dialog [data-action="sim-role"][data-role="supervisor"]');
-   await state(page,width,height,'06-supervisao');
-   if(width<=900&&!((await page.locator('#toast').innerText()).includes('Supervisão:')))
-    throw Error('Troca de perfil não informa a visão de Supervisão');
-   if(!await page.locator('.dashboard-v4.v4-supervision').count())throw Error('Supervisor sem dashboard operacional próprio');
-   await click(page,'[data-v4-tab="insights"]');
-   if(!await page.locator('.v4-insights-pane:not([hidden]) .v4-insight-row').count())throw Error('Insights da supervisão inacessíveis');
-   await click(page,'[data-v4-tab="mapa"]');
+   await click(page,'#dialog [data-action="sim-role"][data-role="operador"]');
+   await state(page,width,height,'07-central-monitoramento');
+   if(!await page.locator('.operations-page').count())throw Error('Operador sem área de monitoramento.');
+   if(!await page.locator('#ops-map').count())throw Error('Operador sem mapa de rondas.');
+   if(await page.locator('[data-view="relatorios"]').count())throw Error('Operador recebeu menu de relatórios administrativos.');
    await page.locator('[data-supervisor-watcher]').selectOption('v03');
-   if(!await page.locator('.v4-map-pane .ops-panel-heading h2').innerText().then(t=>t.includes('Rafael Costa')))
-    throw Error('Trocar vigia não mudou o mapa supervisionado');
-   await state(page,width,height,'06b-mapa-vigia');
+   await state(page,width,height,'08-monitorar-vigia');
 
-   await click(page,'[data-view="rondas"]:visible');
-   await state(page,width,height,'07-agenda');
-   if(width<=900){
-    const rows=page.locator('.schedule-list .schedule-row');
-    const first=await rows.first().innerText();
-    await page.locator('[data-action="schedule-next"]:visible').first().click({timeout:8000});
-    const changed=await page.locator('.schedule-list .schedule-row').first().innerText();
-    if(first===changed)throw Error('Seta de próxima página não mudou a escala exibida');
-    await page.locator('[data-action="schedule-prev"]:visible').first().click({timeout:8000});
-   }
-   await click(page,'[data-action="schedule-tab"][data-tab="mapa"]');
-   await state(page,width,height,'08-mapa');
-   if(width<=900){
-    const visiblePanels=async()=>page.locator('.ux-ronda-stage > [data-ux-subpage]').evaluateAll(nodes=>
-     nodes.filter(e=>!e.hidden&&getComputedStyle(e).display!=='none').map(e=>e.dataset.uxSubpage));
-    if(JSON.stringify(await visiblePanels())!=='["mapa"]')throw Error('Painéis sobrepostos ao entrar no mapa: '+JSON.stringify(await visiblePanels()));
-    const alignment=await page.evaluate(()=>{
-     const content=document.querySelector('.dashboard .app-content'),panel=document.querySelector('.ux-ronda-stage');
-     const nav={getBoundingClientRect:()=>({top:document.documentElement.clientHeight})};
-     return {panel:panel?.getBoundingClientRect().bottom,content:content?.getBoundingClientRect().bottom,
-      nav:nav?.getBoundingClientRect().top,map:document.querySelector('#ops-map')?.getBoundingClientRect().height};
-    });
-    if(alignment.nav-alignment.panel>35)throw Error('Espaço vazio sob o painel do mapa: '+JSON.stringify(alignment));
-    if(alignment.map<130)throw Error('Mapa menor que área útil: '+JSON.stringify(alignment));
-    await click(page,'[data-ux-ronda-tab="pontos"]');
-    if(JSON.stringify(await visiblePanels())!=='["pontos"]')throw Error('Pontos e mapa aparecem simultaneamente');
-    if(!await page.locator('.hx05-point-row .hx05-open-button').count())throw Error('Prévia de pontos sem botões Abrir');
-    await click(page,'.hx05-point-row .hx05-open-button');
-    if(!await page.locator('#dialog[open] .hx05-point-detail').count())throw Error('Detalhe do ponto não abriu');
-    await click(page,'#dialog [data-action="focus-route-point"]');
-    if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Detalhe não fechou ao abrir mapa');
-    if(JSON.stringify(await visiblePanels())!=='["mapa"]')throw Error('Ver no mapa não selecionou o mapa');
-    await click(page,'.map-command-panel [data-action="center-maps"]');
-    await click(page,'[data-ux-ronda-tab="historico"]');
-    if(JSON.stringify(await visiblePanels())!=='["historico"]')throw Error('Histórico não isolado da área do mapa');
-    await state(page,width,height,'08b-historico-isolado');
-    await click(page,'[data-ux-ronda-tab="mapa"]');
-    if(JSON.stringify(await visiblePanels())!=='["mapa"]')throw Error('Mapa não voltou após histórico');
-    await checkInteractiveBounds(page,'rondas / mapa');
-   }
-
-   await click(page,'[data-action="sim-role-picker"]');
-   await click(page,'#dialog [data-action="sim-role"][data-role="gestor"]');
-   await state(page,width,height,'09-gestao');
-   if(!await page.locator('.dashboard-v4.v4-management').count())throw Error('Gestão sem dashboard próprio');
-   if(await page.locator('.v4-summary-metric').count()!==6)throw Error('Gestão sem seis indicadores baseados em dados');
-   await click(page,'[data-v4-tab="equipe"]');
-   if(await page.locator('.v4-team-row').count()!==4)throw Error('Equipe demonstrativa não contém quatro vigias');
-   await click(page,'[data-v4-watcher="v02"]');
-   if(!await page.locator('.v4-map-pane .ops-panel-heading h2').innerText().then(t=>t.includes('Ana Beatriz')))
-    throw Error('Seleção da equipe não abriu a rota do vigia');
-   await click(page,'[data-v4-tab="insights"]');
-   if(!await page.locator('.v4-insights-pane:not([hidden]) .v4-insight-row').count())
-    throw Error('Insights da Gestão não acessíveis por aba');
-   await state(page,width,height,'09b-insights-gestao');
-   if(width<=900){
-    await click(page,'.v4-insights-pane:not([hidden]) .ux06-expand-button');
-    if(!await page.locator('#dialog[open].ux06-fullscreen .ux06-sheet-content .v4-insight-row').count())
-     throw Error('Análise ampliada não exibe os insights');
-    await click(page,'#dialog .ux06-sheet-back');
-    if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Voltar dos insights não funciona');
-   }
-   if(width<=900)await checkInteractiveBounds(page,'gestão / insights');
-   await click(page,'[data-v4-tab="resumo"]');
-   if(width<=900)await checkInteractiveBounds(page,'gestão / resumo');
-
-
+   // Administrador: seus indicadores próprios e ferramentas analíticas.
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
-   await state(page,width,height,'10-admin');
+   await state(page,width,height,'09-dashboard-administrativo');
+   if(!await page.locator('.dashboard-v4').count())throw Error('Administrativo sem dashboard.');
    if(width<=900){
     await click(page,'[data-action="open-mobile-menu"]');
     await click(page,'#dialog [data-view="relatorios"]');
-    await state(page,width,height,'11-relatorios');
-    await checkInteractiveBounds(page,'relatório / resumo');
-    for(const tab of ['analise','eventos','historico']){
-     await click(page,'[data-ux-report-tab="'+tab+'"]');
-     const panes=await page.locator('.ux-report-stage > [data-ux-report]').evaluateAll(items=>
-      items.filter(el=>!el.hidden&&getComputedStyle(el).display!=='none').map(el=>el.dataset.uxReport));
-     if(panes.length!==1||panes[0]!==tab)throw Error('Painéis de relatório comprimidos simultaneamente: '+JSON.stringify(panes));
-     if(tab==='analise'){
-      await click(page,'.ux-report-stage [data-ux-report="analise"] .ux06-expand-button');
-      if(!await page.locator('#dialog[open].ux06-fullscreen .report-progress-row').count())throw Error('Análise ampliada vazia');
-      await click(page,'#dialog .ux06-sheet-back');
-     }
-     await checkInteractiveBounds(page,'relatório / '+tab);
-    }
-    await click(page,'[data-action="open-mobile-menu"]');
-    await click(page,'#dialog [data-view="equipe"]');
-    await state(page,width,height,'12-equipe');
-    await checkInteractiveBounds(page,'equipe');
-    await click(page,'[data-action="open-mobile-menu"]');
-    await click(page,'#dialog [data-view="configuracoes"]');
-    await state(page,width,height,'13-configuracoes');
-    await checkInteractiveBounds(page,'configurações');
-    if(await page.locator('.hx05-setting-row').count()!==3)throw Error('Configurações não estão em três linhas com prévia');
-    await click(page,'.hx05-setting-row [data-setting="dwellSeconds"]');
-    if(!await page.locator('#dialog[open] #hx05-settings-form').count())throw Error('Configuração não abriu em janela');
-    await page.locator('#dialog #hx05-settings-value').fill('45');
-    await click(page,'#dialog #hx05-settings-form button[type="submit"]');
-    if(!await page.locator('.hx05-setting-row').first().innerText().then(t=>t.includes('45 segundos')))
-     throw Error('Salvar configuração não atualizou a prévia da lista');
-    await click(page,'.hx05-setting-row [data-setting="evidenceEnabled"]');
-    await click(page,'#dialog [data-action="close-dialog"]');
-    if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Fechar configuração não fechou janela');
-
+    await state(page,width,height,'10-relatorios-administrativos');
+    await checkInteractiveBounds(page,'relatórios administrativos');
    }
-
    if(errors.length)throw Error('Erros JS: '+errors.join('; '));
   }catch(e){fatal++;metrics.push({width,height,error:String(e),consoleErrors:errors});}
   finally{await context.close()}

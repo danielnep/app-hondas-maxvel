@@ -3,6 +3,8 @@
  * Sem API de produção, "pendente de envio" nunca significa entregue remotamente.
  */
 import {fallbackSVG} from './map.js';
+import {createXlsxReport} from './report-xlsx.js';
+import {comparePatrols,ALERT_PRESETS} from './field-intelligence.js';
 
 const DB_NAME='rondas-pro-dispositivo-v1';
 const DB_VERSION=1;
@@ -97,25 +99,143 @@ function section(title,body,sub=''){
 
 export function createOperationsUpgrade(api){
  const store=createDeviceStore();
- let events=[],lastFixSaved=0,lastReportFingerprint='',cameraStream=null,scanning=false;
+ let events=[],lastFixSaved=0,lastReportFingerprint='',cameraStream=null,scanning=false,lastBattery=null,lastBatterySaved=0;
+ let alertTemplates=JSON.parse(localStorage.getItem('rondas-pro-local-alert-templates')||'null')||ALERT_PRESETS.map(x=>({...x}));
+ const batteryApi=async()=>{
+  try{if(window.AndroidTracking?.getBatteryLevel){const n=Number(window.AndroidTracking.getBatteryLevel());if(Number.isFinite(n)&&n>=0&&n<=100)return {level:n,source:'android'};}
+  if(navigator.getBattery){const b=await navigator.getBattery();return {level:Math.round(b.level*100),charging:b.charging,source:'web'};}}
+  catch(err){console.warn('Bateria indisponível',err);}
+  return null;
+ };
  const current=()=>api.get();
  const state=()=>current().operationalSettings;
  const supported=()=>typeof indexedDB!=='undefined';
  const persistEvent=async event=>{
   events.unshift(event);
   try{await store.put('events',event);}catch(err){api.notify('Falha ao salvar evento offline no dispositivo.');console.warn(err);}
+  if(event.status==='pending')void syncPending().catch(console.warn);
  };
+ const allowedSyncedKinds=new Set(['panic','gps','battery','checkpoint','incident','alert','patrol_start','patrol_end','gps_issue','route_deviation']);
+ let inSync=false;
+ async function syncPending(){
+  const token=sessionStorage.getItem('rondaspro_api_token');
+  if(!token||!navigator.onLine||inSync)return;
+  inSync=true;
+  try{
+   const toSync=events.filter(e=>e.status==='pending'&&allowedSyncedKinds.has(e.kind)&&e.payload?.mode!=='simulation').slice().reverse().slice(0,80);
+   for(const event of toSync){
+    const p=event.payload||{},pos=p.position;
+    const data={id:event.id,kind:event.kind,roundId:p.sessionId||null,occurredAt:event.at,
+      description:p.description||p.observation||p.title||({'panic':'Acionamento do botão de pânico','gps':'Leitura GPS','battery':'Nível de bateria','checkpoint':'Conferência do ponto','patrol_start':'Ronda iniciada','patrol_end':'Ronda concluída'}[event.kind]||'Evento de ronda'),
+      position:pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)?pos:null,
+      battery:Number.isFinite(p.battery)?p.battery:null,
+      details:{...p,position:undefined,battery:undefined}};
+    let response;
+    try{response=await fetch('/api/events',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});}
+    catch{return}
+    if(response.status===401||response.status===403)return;
+    if(!response.ok){event.syncError='HTTP '+response.status;await store.put('events',event);continue;}
+    event.status='synced';event.syncedAt=Date.now();delete event.syncError;
+    await store.put('events',event);
+    if(Array.isArray(p.mediaIds)){
+     for(const mediaId of p.mediaIds){
+      const media=await store.get('media',mediaId);
+      if(!media?.blob||media.remoteUploaded)continue;
+      try{
+       const res=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+token,
+        'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at),
+        ...(Number.isFinite(media.position?.lat)&&Number.isFinite(media.position?.lng)?{'X-Media-Lat':String(media.position.lat),'X-Media-Lng':String(media.position.lng)}:{}),
+        ...(Number.isFinite(media.battery)?{'X-Media-Battery':String(media.battery)}:{})},body:media.blob});
+       if(res.ok){media.remoteUploaded=true;await store.put('media',media);}
+      }catch{}
+     }
+    }
+   }
+  }finally{inSync=false;}
+ }
+ let lastGpsIssueAt=0,badQualitySince=null;
+ async function recordGpsIssue(message,fix=null,{immediate=false}={}){
+  const c=current();
+  if(c.mode!=='real'||c.session?.status!=='active')return;
+  const now=Date.now();
+  if(!immediate){
+   badQualitySince??=now;
+   if(now-badQualitySince<180000)return;
+  }
+  if(now-lastGpsIssueAt<180000)return;
+  lastGpsIssueAt=now;badQualitySince=null;
+  await persistEvent({id:uuid(),kind:'gps_issue',at:now,status:'pending',payload:{
+   sessionId:c.session.id,mode:'real',description:message,
+   position:fix&&validateCoords(fix)?{lat:fix.lat,lng:fix.lng,accuracy:fix.accuracy}:null,
+   battery:lastBattery?.level??null,templateId:'gps_unreliable'}});
+ }
+ function gpsQualityRecovered(){badQualitySince=null;}
+ async function recordNativeFixes(rows,sessionId){
+  if(!sessionId||!Array.isArray(rows))return;
+  const known=new Set(events.filter(e=>e.kind==='gps').map(e=>e.id));
+  let queued=0;
+  for(const row of rows.slice(0,3000)){
+   if(!Number.isFinite(row.at)||!Number.isFinite(row.lat)||!Number.isFinite(row.lng)||!Number.isFinite(row.accuracy))continue;
+   const eid='native-'+sessionId+'-'+row.at;
+   if(known.has(eid))continue;
+   await persistEvent({id:eid,at:row.at,kind:'gps',status:'pending',payload:{
+    mode:'real',sessionId,position:{lat:row.lat,lng:row.lng,accuracy:row.accuracy},
+    battery:Number.isFinite(row.battery)?row.battery:null,source:'android-background'}});
+   known.add(eid);queued++;
+  }
+  if(queued)api.notify(queued+' posições nativas encaminhadas para a fila de sincronização.');
+ }
+ async function recordIncident(incident){
+  const c=current(),session=c.session;
+  if(session?.mode!=='real')return;
+  await persistEvent({id:incident.id,at:incident.at,kind:'incident',status:'pending',payload:{
+    sessionId:session.id,mode:'real',description:incident.title+': '+incident.description,
+    position:incident.location,battery:lastBattery?.level??null,
+    severity:incident.severity,mediaIds:(incident.media??[]).map(x=>x.id)}});
+ }
+ async function recordCheckpoint(checkpoint,files,point){
+  const c=current(),session=c.session,at=checkpoint.observedAt||Date.now(),saved=[];
+  for(const file of files){
+   if(!file?.size||file.size>25*1024*1024){api.notify('Evidência excede 25 MB ou está vazia.');continue;}
+   if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.type)){api.notify('Tipo de mídia não suportado.');continue;}
+   const mid=uuid(),metadata={id:mid,name:limit(file.name),type:file.type,size:file.size,takenAt:file.lastModified||at,
+    position:checkpoint.position,battery:lastBattery?.level??null};
+   await store.put('media',{...metadata,blob:file});
+   saved.push(metadata);
+  }
+  checkpoint.media=saved;
+  session.timeline.unshift({id:uuid(),at,kind:'checkpoint-observation',label:'Observação registrada: '+point.name,
+    pointId:point.id,description:checkpoint.observation});
+  await persistEvent({id:uuid(),at,kind:'checkpoint',status:'pending',payload:{
+   mode:session.mode,sessionId:session.id,pointId:point.id,pointName:point.name,
+   observation:checkpoint.observation,description:'Ponto '+point.name+': '+checkpoint.observation,
+   position:checkpoint.position,battery:lastBattery?.level??null,mediaIds:saved.map(x=>x.id)}});
+ }
+ async function recordLifecycle(kind,round){
+  if(round?.mode!=='real')return;
+  await persistEvent({id:uuid(),at:Date.now(),kind,status:'pending',payload:{
+   mode:'real',sessionId:round.id,description:kind==='patrol_start'?'Início da ronda '+round.route.name:'Término da ronda '+round.route.name,
+   position:round.lastFix??null,battery:lastBattery?.level??null}});
+ }
+
  async function load(){
-  try{events=(await store.all('events')).sort((a,b)=>b.at-a.at);}
+  try{events=(await store.all('events')).sort((a,b)=>b.at-a.at);await syncPending();}
   catch(err){console.warn('Registro offline indisponível:',err);}
   // Só a demonstração local é alterada pela recuperação; nenhum envio remoto é presumido.
   api.render();
  }
  const summary=()=>patrolInsights(current().sessions,current().programs);
- const warning='<p class="ops-demo-note">Demonstração: registros deste aparelho. Sem servidor de sincronização nem alerta remoto ativo.</p>';
- function reportSmart(){const info=summary();
+ async function sampleBattery(){
+  const sample=await batteryApi();if(!sample)return;
+  if(!lastBattery||Math.abs(sample.level-lastBattery.level)>=1||sample.charging!==lastBattery.charging){
+   lastBattery=sample;const c=current();
+   if(c.session?.status==='active'&&c.mode==='real')await persistEvent({id:uuid(),at:Date.now(),kind:'battery',status:'pending',payload:{sessionId:c.session.id,mode:'real',battery:sample.level,...sample}});
+  }else lastBattery=sample;
+ }
+ const warning='<p class="ops-demo-note">Dados locais do dispositivo. Sincronização remota só ocorre após autenticação na Central Operacional, com banco configurado e conexão disponível; a demonstração nunca envia dados simulados.</p>';
+ function reportSmart(){const info=summary(),operational=comparePatrols(current().sessions,events);
   return section('Relatório inteligente · análise automática',
-   '<div class="ops-insights">'+info.observations.map(o=>'<div><strong>'+safe(o.value)+'</strong><span>'+safe(o.label)+'</span><small>'+safe(o.detail)+'</small></div>').join('')+'</div>'+
+   '<div class="ops-insights">'+[...info.observations,...operational.insights.map(o=>({label:o.title,value:o.value,detail:o.detail}))].map(o=>'<div><strong>'+safe(o.value)+'</strong><span>'+safe(o.label)+'</span><small>'+safe(o.detail)+'</small></div>').join('')+'</div>'+
    warning,'Atualizado a partir das rondas, alertas e programações disponíveis neste aparelho.');
  }
  function statusBanner(){
@@ -124,7 +244,7 @@ export function createOperationsUpgrade(api){
    '<strong>📡 GPS e registro contínuo durante a ronda</strong>'+
    '<span>'+ (s.mode==='real'?'Localização do aparelho com autorização.':'Deslocamento simulado para apresentação.')+
    ' Sem internet, os eventos continuam em fila local e o mapa esquemático fica disponível. No Android, posições são armazenadas em SQLite; no navegador, usa-se IndexedDB.</span>'+
-   '<small>'+ (navigator.onLine?'Conectado à internet':'Sem internet')+' · '+events.filter(x=>x.status==='pending').length+' evento(s) na fila local · envio ao servidor pendente de implantação</small>'+
+   '<small>'+ (navigator.onLine?'Conectado à internet':'Sem internet')+' · '+events.filter(x=>x.status==='pending').length+' evento(s) na fila local · sincronização exige login operacional</small>'+
    '</div>';
  }
  function panicButton(){
@@ -202,11 +322,11 @@ export function createOperationsUpgrade(api){
   incident.media??=[];
   for(const file of files.slice(0,3)){
    if(!file.size||file.size>25*1024*1024){api.notify('Arquivo ignorado: máximo de 25 MB por evidência.');continue;}
-   const item={id:uuid(),name:limit(file.name),type:file.type,size:file.size,at:Date.now()};
+   const item={id:uuid(),name:limit(file.name),type:file.type,size:file.size,at:Date.now(),takenAt:file.lastModified||Date.now(),position:current().locationFix??null,battery:lastBattery?.level??null};
    try{await store.put('media',{...item,blob:file});incident.media.push(item);}
    catch(err){console.warn(err);api.notify('Não foi possível salvar uma evidência no dispositivo.');}
   }
-  if(files.length)await persistEvent({id:uuid(),at:Date.now(),kind:'incident-media',status:'pending',payload:{incidentId:incident.id,count:incident.media.length}});
+  if(files.length)await persistEvent({id:uuid(),at:Date.now(),kind:'incident-media',status:'pending',payload:{incidentId:incident.id,count:incident.media.length,position:current().locationFix??null,battery:lastBattery?.level??null}});
  }
  function incidentMediaList(i){
   return '<div class="ops-media-list"><strong>Evidências anexadas</strong>'+((i.media??[]).length?
@@ -218,7 +338,7 @@ export function createOperationsUpgrade(api){
   if(Date.now()-lastFixSaved<5000)return;
   lastFixSaved=Date.now();
   await persistEvent({id:uuid(),at:fix.at||Date.now(),kind:'gps',status:'pending',
-   payload:{sessionId:s.session.id,position:{lat:fix.lat,lng:fix.lng,accuracy:fix.accuracy},source:'webview-or-browser'}});
+   payload:{sessionId:s.session.id,mode:'real',position:{lat:fix.lat,lng:fix.lng,accuracy:fix.accuracy},battery:lastBattery?.level??null,source:'webview-or-browser'}});
  }
  async function autoReport(){
   const ctx=current(),sig=JSON.stringify(ctx.sessions.map(s=>[s.id,s.status,s.index,s.incidents?.length,s.notifications?.length]));
@@ -229,7 +349,7 @@ export function createOperationsUpgrade(api){
  }
  async function panic(){
   const c=current(),at=Date.now(),name=c.user?.name??'Vigia';
-  const payload={vigia:name,sessionId:c.session?.id??null,position:c.locationFix??null,at};
+  const payload={vigia:name,sessionId:c.session?.id??null,mode:c.session?.mode??'simulation',position:c.locationFix??null,battery:lastBattery?.level??null,at};
   if(c.session?.status==='active'){
    c.session.notifications.unshift({id:uuid(),kind:'panic',at,seenAt:null,sessionId:c.session.id,label:'PÂNICO: '+name+' solicitou atendimento imediato'});
    c.session.timeline.unshift({id:uuid(),kind:'panic',at,label:'Botão de pânico acionado'});
@@ -237,12 +357,12 @@ export function createOperationsUpgrade(api){
   }
   await persistEvent({id:uuid(),kind:'panic',status:'pending',at,payload});
   api.render();
-  api.showDialog('<div class="ops-emergency-panel"><h2>🚨 Pânico registrado</h2><p>Acionamento associado a <b>'+safe(name)+'</b> às '+safe(nowText(at))+'. O aviso aparece na supervisão desta demonstração. A entrega a outros aparelhos depende do servidor operacional.</p><p>Para uma emergência real, abra o discador e confirme a ligação.</p><a class="button danger full" href="tel:190">📞 Abrir discador · 190</a><button type="button" class="button full" data-action="close-dialog">Voltar ao aplicativo</button></div>',true);
+  api.showDialog('<div class="ops-emergency-panel"><h2>🚨 Pânico registrado</h2><p>Acionamento associado a <b>'+safe(name)+'</b> às '+safe(nowText(at))+'. O aviso aparece na supervisão desta demonstração. A entrega a outros aparelhos depende de login operacional, banco persistente e sincronização confirmada.</p><p>Para uma emergência real, abra o discador e confirme a ligação.</p><a class="button danger full" href="tel:190">📞 Abrir discador · 190</a><button type="button" class="button full" data-action="close-dialog">Voltar ao aplicativo</button></div>',true);
  }
  function exportDialog(){
   const opts=[['resumo','Resumo inteligente'],['rondas','Rondas, horários e responsáveis'],['pontos','Pontos, permanência e QR'],['ocorrencias','Ocorrências e evidências (metadados)'],['alertas','Alertas, justificativas e pânico'],['coordenadas','Localizações registradas'],['programacao','Programação e escala']];
   api.showDialog('<form id="ops-export-form" class="ops-export-form"><h2>Exportar relatório</h2><p>Escolha exatamente o que incluir. Os dados são locais desta demonstração.</p><div class="ops-export-options">'+opts.map(([id,label])=>'<label><input type="checkbox" name="sections" value="'+id+'" '+(id==='coordenadas'?'':'checked')+'>'+safe(label)+'</label>').join('')+'</div>'+
-   '<label class="ops-label">Formato do arquivo<select name="format"><option value="html">HTML · abrir ou imprimir em PDF</option><option value="csv">CSV · planilhas</option><option value="json">JSON · dados completos</option></select></label>'+
+   '<label class="ops-label">Formato do arquivo<select name="format"><option value="html">HTML · abrir ou imprimir em PDF</option><option value="csv">CSV · planilhas</option><option value="json">JSON · dados completos</option><option value="xlsx">Excel XLSX · dashboard e abas</option></select></label>'+
    '<button type="submit" class="button primary full">Gerar e exportar</button></form>',true);
  }
  async function scanQR(){
@@ -340,22 +460,25 @@ export function createOperationsUpgrade(api){
   const report=buildReportData(current(),selected,events);
   const mode=form.querySelector('[name="format"]').value;
   const file='rondas-pro-relatorio-'+new Date().toISOString().slice(0,10);
-  if(mode==='csv')download(reportCSV(report),file+'.csv','text/csv;charset=utf-8');
+  if(mode==='xlsx'){
+    const blob=createXlsxReport(report);const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file+'.xlsx';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+   }else if(mode==='csv')download(reportCSV(report),file+'.csv','text/csv;charset=utf-8');
   else if(mode==='json')download(JSON.stringify(report,null,2),file+'.json','application/json');
   else download(reportHTML(report),file+'.html','text/html;charset=utf-8');
   api.notify('Relatório exportado do dispositivo.');api.closeDialog();
  },true);
  document.addEventListener('click',e=>{if(e.target.closest('[data-action="close-dialog"]'))stopCamera();},true);
- window.addEventListener('online',()=>api.notify('Conexão restaurada. Registros locais permanecem aguardando integração de sincronização.'));
+ window.addEventListener('online',()=>{api.notify('Conexão restaurada. Tentando sincronizar registros autenticados.');syncPending().catch(console.warn);});
  load();
- setInterval(()=>{autoReport().catch(console.warn);},60000);
- return {decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,autoReport,requestEntryGPS,guideSection:()=>
+ setInterval(()=>{autoReport().catch(console.warn);sampleBattery().catch(console.warn);syncPending().catch(console.warn);},60000);
+ sampleBattery().catch(console.warn);
+ return {allEvents:()=>[...events],decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordGpsIssue,gpsQualityRecovered,recordNativeFixes,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
   '<details class="ops-guide-details"><summary>Recursos operacionais adicionais e modo offline</summary><p><b>GPS contínuo:</b> acompanhe a ronda durante o serviço. No Android o serviço nativo pode registrar posições em segundo plano, sujeito às permissões do sistema.</p>'+
   '<p><b>Sequência e validação:</b> 25 m, 30 segundos e QR opcional; Administração configura GPS, QR ou ambos.</p>'+
-  '<p><b>Sem conexão:</b> coordenadas ficam no SQLite do Android; registros e evidências ficam no IndexedDB do dispositivo. Envio ao servidor exige integração posterior.</p>'+
+  '<p><b>Sem conexão:</b> coordenadas ficam no SQLite do Android; registros e evidências ficam no IndexedDB do dispositivo. Envio ao servidor ocorre somente com login autenticado, servidor configurado e conexão disponível.</p>'+
   '<p><b>Salvar mapa:</b> mantém os pontos e o esquema da rota disponíveis sem internet; ruas reais exigem mapa offline específico.</p>'+
   '<p><b>Botão de pânico:</b> alerta prioritário no histórico da demonstração e opção de abrir o discador 190.</p>'+
   '<p><b>Gestão e cliente:</b> acompanham progresso e histórico deste cenário; alertas remotos precisam de backend.</p>'+
-  '<p><b>Ocorrências:</b> anexar foto, áudio ou vídeo pelo aparelho. <b>Relatórios:</b> geração automática local e exportação por seções em HTML, CSV ou JSON.</p></details>'
+  '<p><b>Ocorrências:</b> anexar foto, áudio ou vídeo pelo aparelho. <b>Relatórios:</b> geração automática local e exportação por seções em XLSX com dashboard, HTML, CSV ou JSON.</p></details>'
  };
 }

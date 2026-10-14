@@ -1,12 +1,12 @@
 /* Cache da interface para a demonstração Web/PWA. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v2';
+const CACHE='rondas-pro-interface-v5';
 const CORE=[
- './','./index.html',
+ './','./index.html','./manifest.webmanifest',
  './assets/ronda-pro.css','./assets/ronda-pro-upgrade.css',
  './assets/maxvel-logo.webp',
- './src/app.js','./src/operations-upgrade.js',
+ './src/app.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./central.html','./assets/central.css','./assets/checkpoint-curtain.css',
  './src/domain.js','./src/map.js','./src/wizard.js',
  './src/demo-scenarios.js','./src/dashboard-insights.js',
  './src/dialog-pagination.js','./src/evidence.js',
@@ -28,7 +28,7 @@ self.addEventListener('fetch',event=>{
  if(request.method!=='GET')return;
  const u=new URL(request.url);
  if(u.origin!==self.location.origin)return;
- const allowed=/\.(?:js|css|html|webp|svg|png|jpg|jpeg)$/.test(u.pathname)||u.pathname===new URL('./',self.registration.scope).pathname;
+ const allowed=/\.(?:js|css|html|webp|svg|png|jpg|jpeg|webmanifest)$/.test(u.pathname)||u.pathname===new URL('./',self.registration.scope).pathname;
  if(!allowed)return;
  event.respondWith(caches.match(request,{ignoreSearch:true}).then(hit=>hit||fetch(request).then(response=>{
   if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{});}

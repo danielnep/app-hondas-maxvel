@@ -2,10 +2,12 @@ import {createServer} from 'node:http';
 import {readFile, stat} from 'node:fs/promises';
 import {dirname, extname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createOperationalApi} from './server/operational-api.js';
 
 const publicRoot = dirname(fileURLToPath(import.meta.url));
 const contentTypes = {
   '.html': 'text/html; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
@@ -26,12 +28,13 @@ function publicFile(requestUrl) {
   if (!pathname.startsWith('/') || /[\\\0]/.test(pathname)) return null;
   if (pathname.split('/').some(part => part.startsWith('.'))) return null;
   if (pathname === '/') return 'index.html';
-  if (pathname === '/index.html' || pathname === '/styles.css' || pathname === '/sw.js') return pathname.slice(1);
+  if (pathname === '/central.html' || pathname === '/index.html' || pathname === '/styles.css' || pathname === '/sw.js' || pathname === '/manifest.webmanifest') return pathname.slice(1);
   if (pathname.startsWith('/src/') || pathname.startsWith('/assets/')) return pathname.slice(1);
   return null;
 }
 
 export function createAppServer() {
+  const operationalApi=createOperationalApi();
   return createServer(async (request, response) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -41,6 +44,7 @@ export function createAppServer() {
       response.writeHead(status, {'Content-Type': type, 'Content-Length': Buffer.byteLength(body)});
       response.end(request.method === 'HEAD' ? undefined : body);
     };
+    if (request.url?.startsWith('/api/')) {await operationalApi(request,response);return;}
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.setHeader('Allow', 'GET, HEAD');
       send(405, 'Método não permitido.');
