@@ -128,34 +128,45 @@ export function createOperationsUpgrade(api){
   if(!token||!navigator.onLine||inSync)return;
   inSync=true;
   try{
-   const toSync=events.filter(e=>e.status==='pending'&&allowedSyncedKinds.has(e.kind)&&e.payload?.mode!=='simulation').slice().reverse().slice(0,80);
+   // Eventos concluídos ainda podem conter imagens cujo envio falhou.
+   const toSync=events.filter(e=>allowedSyncedKinds.has(e.kind)&&e.payload?.mode!=='simulation'&&(
+    e.status==='pending'||(e.status==='synced'&&Array.isArray(e.payload?.mediaIds)&&e.payload.mediaIds.length>0&&!e.mediaSyncedAt)
+   )).slice().reverse().slice(0,80);
    for(const event of toSync){
     const p=event.payload||{},pos=p.position;
-    const data={id:event.id,kind:event.kind,roundId:p.sessionId||null,occurredAt:event.at,
-      description:p.description||p.observation||p.title||({'panic':'Acionamento do botão de pânico','gps':'Leitura GPS','battery':'Nível de bateria','checkpoint':'Conferência do ponto','patrol_start':'Ronda iniciada','patrol_end':'Ronda concluída'}[event.kind]||'Evento de ronda'),
-      position:pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)?pos:null,
-      battery:Number.isFinite(p.battery)?p.battery:null,
-      details:{...p,position:undefined,battery:undefined}};
-    let response;
-    try{response=await fetch('/api/events',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});}
-    catch{return}
-    if(response.status===401||response.status===403)return;
-    if(!response.ok){event.syncError='HTTP '+response.status;await store.put('events',event);continue;}
-    event.status='synced';event.syncedAt=Date.now();delete event.syncError;
-    await store.put('events',event);
-    if(Array.isArray(p.mediaIds)){
-     for(const mediaId of p.mediaIds){
-      const media=await store.get('media',mediaId);
-      if(!media?.blob||media.remoteUploaded)continue;
-      try{
-       const res=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+token,
-        'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at),
-        ...(Number.isFinite(media.position?.lat)&&Number.isFinite(media.position?.lng)?{'X-Media-Lat':String(media.position.lat),'X-Media-Lng':String(media.position.lng)}:{}),
-        ...(Number.isFinite(media.battery)?{'X-Media-Battery':String(media.battery)}:{})},body:media.blob});
-       if(res.ok){media.remoteUploaded=true;await store.put('media',media);}
-      }catch{}
-     }
+    if(event.status==='pending'){
+     const data={id:event.id,kind:event.kind,roundId:p.sessionId||null,occurredAt:event.at,
+       description:p.description||p.observation||p.title||({'panic':'Acionamento do botão de pânico','gps':'Leitura GPS','battery':'Nível de bateria','checkpoint':'Conferência do ponto','patrol_start':'Ronda iniciada','patrol_end':'Ronda concluída'}[event.kind]||'Evento de ronda'),
+       position:pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)?pos:null,
+       battery:Number.isFinite(p.battery)?p.battery:null,
+       details:{...p,position:undefined,battery:undefined}};
+     let response;
+     try{response=await fetch('/api/events',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});}
+     catch{return}
+     if(response.status===401||response.status===403)return;
+     if(!response.ok){event.syncError='HTTP '+response.status;await store.put('events',event);continue;}
+     event.status='synced';event.syncedAt=Date.now();delete event.syncError;
+     await store.put('events',event);
     }
+    if(!Array.isArray(p.mediaIds)||!p.mediaIds.length)continue;
+    let mediaPending=false;
+    for(const mediaId of p.mediaIds){
+     const media=await store.get('media',mediaId);
+     if(!media?.blob){mediaPending=true;continue;}
+     if(media.remoteUploaded)continue;
+     try{
+      const res=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+token,
+       'Content-Type':media.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(media.takenAt||event.at),
+       ...(Number.isFinite(media.position?.lat)&&Number.isFinite(media.position?.lng)?{'X-Media-Lat':String(media.position.lat),'X-Media-Lng':String(media.position.lng)}:{}),
+       ...(Number.isFinite(media.battery)?{'X-Media-Battery':String(media.battery)}:{}),
+       ...(media.view?{'X-Media-View':media.view}:{}),
+       ...(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(media.id)?{'X-Ronda-Media-Id':media.id}:{})},body:media.blob});
+      if(res.status===401||res.status===403)return;
+      if(res.ok){media.remoteUploaded=true;delete media.syncError;await store.put('media',media);}
+      else{mediaPending=true;media.syncError='HTTP '+res.status;await store.put('media',media);}
+     }catch{mediaPending=true;}
+    }
+    if(!mediaPending){event.mediaSyncedAt=Date.now();await store.put('events',event);}
    }
   }finally{inSync=false;}
  }
@@ -201,21 +212,26 @@ export function createOperationsUpgrade(api){
  }
  async function recordCheckpoint(checkpoint,files,point){
   const c=current(),session=c.session,at=checkpoint.observedAt||Date.now(),saved=[];
-  for(const file of files){
+  for(const item of files){
+   const file=item?.file??item;
+   const view=['front','back','left','right','selfie'].includes(item?.view)?item.view:null;
    if(!file?.size||file.size>25*1024*1024){api.notify('Evidência excede 25 MB ou está vazia.');continue;}
-   if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.type)){api.notify('Tipo de mídia não suportado.');continue;}
+   if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm','audio/webm','audio/mp4','audio/ogg'].includes(file.type)||(view&&!['image/jpeg','image/png','image/webp'].includes(file.type))){api.notify('Tipo de mídia não suportado.');continue;}
    const mid=uuid(),metadata={id:mid,name:limit(file.name),type:file.type,size:file.size,takenAt:file.lastModified||at,
-    position:checkpoint.position,battery:lastBattery?.level??null};
+    position:checkpoint.position,battery:lastBattery?.level??null,...(view?{view}:{})};
    await store.put('media',{...metadata,blob:file});
    saved.push(metadata);
   }
+  const required=Array.isArray(session.route?.rules?.requiredEvidenceViews)?session.route.rules.requiredEvidenceViews.filter(view=>['front','back','left','right','selfie'].includes(view)):[];
+  if(required.some(view=>!saved.some(file=>file.view===view)))throw new Error('As fotos obrigatórias não foram salvas no dispositivo.');
   checkpoint.media=saved;
   session.timeline.unshift({id:uuid(),at,kind:'checkpoint-observation',label:'Observação registrada: '+point.name,
     pointId:point.id,description:checkpoint.observation});
   await persistEvent({id:uuid(),at,kind:'checkpoint',status:'pending',payload:{
    mode:session.mode,sessionId:session.id,pointId:point.id,pointName:point.name,
    observation:checkpoint.observation,description:'Ponto '+point.name+': '+checkpoint.observation,
-   position:checkpoint.position,battery:lastBattery?.level??null,mediaIds:saved.map(x=>x.id)}});
+   position:checkpoint.position,battery:lastBattery?.level??null,mediaIds:saved.map(x=>x.id),
+   mediaViews:saved.filter(x=>x.view).map(x=>({view:x.view,id:x.id}))}});
  }
  async function recordLifecycle(kind,round){
   if(round?.mode!=='real')return;

@@ -28,7 +28,7 @@ export function createMediaCapture({notify=()=>{}}={}){
  function nativeCamera(kind){
   return new Promise((resolve,reject)=>{
    const input=document.createElement('input');
-   input.type='file';input.accept=kind==='photo'?'image/*':'video/*';input.setAttribute('capture','environment');
+   input.type='file';input.accept=(kind==='photo'||kind==='selfie')?'image/*':'video/*';input.setAttribute('capture',kind==='selfie'?'user':'environment');
    input.style.cssText='position:fixed;opacity:0;width:1px;height:1px;pointer-events:none';
    document.body.append(input);
    let settled=false;
@@ -104,7 +104,7 @@ export function createMediaCapture({notify=()=>{}}={}){
   if(recorder?.state==='recording'){clearInterval(clock);clock=null;recorder.stop();overlay?.classList.remove('is-recording')}
  }
  function request(kind){
-  if(kind==='photo'||kind==='video')return nativeCamera(kind);
+  if(kind==='photo'||kind==='selfie'||kind==='video')return nativeCamera(kind);
   if(kind==='audio')return microphone();
   return Promise.reject(new Error('Captura desconhecida.'));
  }

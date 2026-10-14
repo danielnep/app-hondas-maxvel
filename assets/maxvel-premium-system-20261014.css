@@ -618,3 +618,44 @@ body:has(#central-root) main{max-width:1600px}
   .dashboard .dashboard-v4 .v4-dashboard-tabs>button,
   .dashboard .dashboard-v4 .v4-team-row{animation:none!important;transition:none!important}
 }
+
+/* Conferência de ponto: cinco fotografias identificáveis sem fugir do tema Maxvel. */
+.checkpoint-curtain .checkpoint-curtain-shade{background:rgba(5,5,8,.8)}
+.checkpoint-curtain .checkpoint-curtain-panel{
+  background:var(--mxp-panel)!important;color:var(--mxp-ink)!important;
+  border:1px solid var(--mxp-rule)!important;border-bottom:0!important;
+  border-radius:var(--mxp-r-lg) var(--mxp-r-lg) 0 0!important;
+  box-shadow:0 -18px 62px rgba(0,0,0,.6)!important;
+}
+.checkpoint-curtain .checkpoint-stopwatch{
+  background:var(--mxp-canvas)!important;border:1px solid var(--mxp-rule)!important;
+  border-radius:var(--mxp-r-md)!important;
+}
+.checkpoint-curtain .checkpoint-stopwatch strong{color:var(--mxp-ink)!important}
+.checkpoint-curtain .checkpoint-curtain-eyebrow{color:var(--mxp-red)!important}
+.checkpoint-curtain .checkpoint-view-grid{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:10px 0 4px;
+}
+.checkpoint-curtain .checkpoint-view-action{
+  min-width:0;min-height:62px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:5px;padding:8px 2px;
+  background:var(--mxp-elevated);border:1px solid var(--mxp-rule);
+  border-radius:var(--mxp-r-sm);color:var(--mxp-ink);
+  font:inherit;font-size:clamp(10px,2.5vw,12px);cursor:pointer;
+  transition:border-color var(--mxp-speed) var(--mxp-ease),background var(--mxp-speed) var(--mxp-ease);
+}
+.checkpoint-curtain .checkpoint-view-action small{font-size:16px;line-height:1;color:var(--mxp-cyan)}
+.checkpoint-curtain .checkpoint-view-action.has-capture{border-color:var(--mxp-green);background:rgba(16,185,129,.11)}
+.checkpoint-curtain .checkpoint-view-action.has-capture small{color:var(--mxp-green)}
+.checkpoint-curtain .checkpoint-view-action:focus-visible{outline:2px solid var(--mxp-cyan);outline-offset:2px}
+.checkpoint-curtain .checkpoint-evidence-hint{margin:8px 0;color:var(--mxp-muted);font-size:11px}
+.checkpoint-curtain .checkpoint-evidence-extra-label{font-size:12px;font-weight:650;color:var(--mxp-muted);margin:12px 0 4px}
+.checkpoint-curtain .checkpoint-note textarea{background:var(--mxp-canvas);color:var(--mxp-ink);border-color:var(--mxp-rule-strong)}
+.checkpoint-curtain .checkpoint-submit:not(:disabled){background:var(--mxp-cyan);color:var(--mxp-canvas)}
+@media(max-width:350px){
+  .checkpoint-curtain .checkpoint-view-grid{gap:4px}
+  .checkpoint-curtain .checkpoint-view-action{font-size:9px;min-height:58px}
+}
+@media(prefers-reduced-motion:reduce){
+  .checkpoint-curtain .checkpoint-view-action{transition:none}
+}
