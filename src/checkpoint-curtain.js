@@ -39,12 +39,13 @@ export function createCheckpointCurtain(api){
   close();key=next;document.body.classList.add('checkpoint-arrived');root=document.createElement('section');
   root.className='checkpoint-curtain';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
   root.setAttribute('aria-label','Conferência obrigatória do ponto de ronda');
-  root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel">'+
+  root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel" tabindex="-1">'+
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
    '<div class="checkpoint-stopwatch" aria-live="polite"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message>Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
-   '<div class="checkpoint-tools">'+evidenceButtons()+
-   '<button type="button" data-curtain-torch>🔦 Lanterna</button>'+
+   '<div class="checkpoint-evidence-title">Evidências <small>Registre quando necessário</small></div>'+
+   '<div class="checkpoint-tools">'+evidenceButtons()+'</div>'+
+   '<div class="checkpoint-utility-row"><button type="button" data-curtain-torch>🔦 Lanterna</button>'+
    '<button type="button" class="checkpoint-panic" data-ops="panic-confirm">⚠ PÂNICO</button></div>'+
    '<fieldset class="checkpoint-condition" data-curtain-observation-wrap hidden><legend>Condições encontradas neste ponto</legend>'+
    '<label><input type="radio" name="point-state" value="ok" checked> Tudo dentro do esperado</label>'+
@@ -74,7 +75,7 @@ export function createCheckpointCurtain(api){
     ?evidenceFiles.map((file,i)=>'<span class="attached-file">'+safe(file.name)+' <button type="button" data-evidence-remove="'+i+'" aria-label="Remover evidência">×</button></span>').join('')
     :'Nenhuma evidência anexada.';
   });
-  status();root.querySelector('textarea').focus({preventScroll:true});
+  status();root.querySelector('.checkpoint-curtain-panel').focus({preventScroll:true});
  }
  async function toggleTorch(){
   const el=root?.querySelector('[data-curtain-torch]');if(!el)return;
