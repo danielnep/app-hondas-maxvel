@@ -31,3 +31,6 @@ O usuário aprovou replicar a repaginação Premium Dark do cockpit no restante 
 - Fundo geral preto grafite, vermelho Maxvel, celeste atual e alertas semânticos preservados.
 - Motor de ronda, cronômetro sobreposto, permissões, dados e backend não alterados.
 - Editadas folhas CSS existentes; nenhuma folha extra foi criada.
+
+## Geometria uniforme de cards e conteúdo (14/10/2026)
+Decisão complementar aprovada: cards e painéis devem ter bordas suavemente arredondadas, nunca quadrados nem exageradamente redondos. Raios de referência: controles/abas e hover de linhas 7px, cards/painéis 10px, modais 14px. Uma área de conteúdo por grupo com fundo sólido #19191e e contorno discreto; linhas de equipe e registros dentro dela, sem cards individuais. Pânico preserva botão circular. Sem alterações de domínio ou dados.

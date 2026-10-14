@@ -467,22 +467,22 @@ body:has(#central-root) main{max-width:1600px}
   padding:8px 1px!important;margin:0!important;
   background:transparent!important;background-image:none!important;
   border:0!important;border-bottom:2px solid transparent!important;
-  border-radius:0!important;box-shadow:none!important;
+  border-radius:7px!important;box-shadow:none!important;
   color:#b8beca!important;font-size:clamp(10px,2.9vw,13px)!important;
   font-weight:650!important;white-space:nowrap!important;
 }
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs>button[aria-selected="true"]{
   background:rgba(56,189,248,.07)!important;background-image:none!important;
   border:0!important;border-bottom:2px solid var(--mxp-cyan)!important;
-  border-radius:0!important;box-shadow:none!important;color:#f4f9fc!important;
+  border-radius:7px!important;box-shadow:none!important;color:#f4f9fc!important;
 }
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-stage{
   gap:0!important;background:transparent!important;
 }
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-pane:not(.v4-map-pane){
-  background:transparent!important;background-image:none!important;
-  border:0!important;border-radius:0!important;box-shadow:none!important;
-  padding:clamp(6px,2.6vw,15px) 0!important;min-width:0!important;
+  background:#19191e!important;background-image:none!important;
+  border:1px solid var(--mxp-rule)!important;border-radius:10px!important;
+  box-shadow:none!important;padding:clamp(10px,2.6vw,16px)!important;min-width:0!important;
 }
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-map-pane{
   background:#19191e!important;background-image:none!important;
@@ -508,7 +508,7 @@ body:has(#central-root) main{max-width:1600px}
   align-items:center!important;
   padding:11px 3px!important;min-height:66px!important;margin:0!important;
   border:0!important;border-bottom:1px solid var(--mxp-rule)!important;
-  border-radius:0!important;background:transparent!important;
+  border-radius:7px!important;background:transparent!important;
   background-image:none!important;box-shadow:none!important;gap:10px!important;
   color:var(--mxp-ink)!important;
 }
@@ -554,7 +554,7 @@ body:has(#central-root) main{max-width:1600px}
 #central-root .cards>.metric{
   background:transparent!important;background-image:none!important;
   border:0!important;border-right:1px solid var(--mxp-rule)!important;
-  border-radius:0!important;box-shadow:none!important;
+  border-radius:7px!important;box-shadow:none!important;
   padding:12px 9px!important;
 }
 .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-summary-metric:last-child,
@@ -563,7 +563,7 @@ body:has(#central-root) main{max-width:1600px}
   .schedule-row,.team-row,.list-row,.event-item,.demo-ops-row){
   background:transparent!important;background-image:none!important;
   border:0!important;border-bottom:1px solid var(--mxp-rule)!important;
-  border-radius:0!important;box-shadow:none!important;margin-top:0!important;
+  border-radius:7px!important;box-shadow:none!important;margin-top:0!important;
 }
 .dashboard .app-content:not(.ronda-page) :is(.report-card,.ops-card,.card){
   background:#19191e!important;background-image:none!important;
@@ -574,16 +574,16 @@ body:has(#central-root) main{max-width:1600px}
   padding:0!important;box-shadow:none!important;
 }
 #central-root .content>.stack>.surface:not(form){
-  background:transparent!important;background-image:none!important;
-  border:0!important;border-top:1px solid var(--mxp-rule)!important;
-  border-radius:0!important;box-shadow:none!important;padding:14px 0!important;
+  background:#19191e!important;background-image:none!important;
+  border:1px solid var(--mxp-rule)!important;border-radius:10px!important;
+  box-shadow:none!important;padding:14px!important;
 }
 #central-root :is(.surface,.route-filter,.ops-agenda-surface){
   background:#19191e!important;background-image:none!important;
   border-radius:10px!important;box-shadow:none!important;
 }
 #central-root :is(.list-item,.ops-notification-row,.ops-dispatch-line,.ops-worker-row){
-  border-radius:0!important;border:0!important;
+  border-radius:7px!important;border:0!important;
   border-bottom:1px solid var(--mxp-rule)!important;
   background:transparent!important;box-shadow:none!important;
 }
@@ -609,7 +609,7 @@ body:has(#central-root) main{max-width:1600px}
     min-width:0!important;padding:8px 1px!important;
   }
   .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-pane:not(.v4-map-pane){
-    padding:3px 0!important;
+    padding:11px 12px!important;
   }
   #central-root .cards>.metric:nth-child(2n){border-right:0!important}
   #central-root .cards>.metric:nth-child(-n+2){border-bottom:1px solid var(--mxp-rule)!important}

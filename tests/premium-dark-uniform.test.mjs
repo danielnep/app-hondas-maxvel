@@ -17,6 +17,8 @@ test('Cinco abas alinhadas e pessoas sem cards internos',()=>{
  assert.ok(premium.includes('.v4-team-row'));
  assert.ok(premium.includes('.v4-pane:not(.v4-map-pane)'));
  assert.ok(premium.includes('border-bottom:1px solid var(--mxp-rule)!important'));
+ assert.ok(premium.includes('border:1px solid var(--mxp-rule)!important;border-radius:10px!important'));
+ assert.ok(premium.includes('border-radius:7px!important'));
 });
 test('Pânico e fluxo map-first preservados',()=>{
  assert.ok(flow.includes('overflow:visible!important'));
@@ -25,8 +27,8 @@ test('Pânico e fluxo map-first preservados',()=>{
 });
 test('Revisão e cache carregados no app e central',()=>{
  assert.ok(index.includes('rondas-pro-flow-20261014.css?v=3'));
- assert.ok(index.includes('maxvel-premium-system-20261014.css?v=2'));
+ assert.ok(index.includes('maxvel-premium-system-20261014.css?v=3'));
  assert.ok(central.includes('central-glass-20261014.css?v=2'));
- assert.ok(central.includes('maxvel-premium-system-20261014.css?v=2'));
- assert.ok(sw.includes('rondas-pro-interface-v25'));
+ assert.ok(central.includes('maxvel-premium-system-20261014.css?v=3'));
+ assert.ok(sw.includes('rondas-pro-interface-v26'));
 });
