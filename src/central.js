@@ -88,7 +88,7 @@ async function load(){
 }
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Notificações','✉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ operador:[['monitor','Agenda de Rondas','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  coi:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  admin:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  master:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
@@ -132,9 +132,31 @@ function ownHistory(){
  '<details class="details-toggle"><summary>Ver histórico técnico completo · '+telemetry.length+' registros de GPS e bateria</summary><div class="surface">'+eventList(telemetry)+'</div></details>'+
  '<p class="muted">Distâncias são estimativas de amostras GPS confiáveis. O histórico remoto só mostra dados efetivamente sincronizados.</p></section>';
 }
-let operationalMap=null;
-function resetOperationalMap(){if(operationalMap){try{operationalMap.remove()}catch{}operationalMap=null}}
+let operationalMap=null,miniMaps=[];
+function resetOperationalMap(){
+ if(operationalMap){try{operationalMap.remove()}catch{}operationalMap=null}
+ for(const m of miniMaps)try{m.remove()}catch{}
+ miniMaps=[];
+}
+function mountAgendaMaps(){
+ const L=globalThis.L;if(!L)return;
+ for(const node of document.querySelectorAll('[data-agenda-map]')){
+  const route=routes.find(r=>r.id===node.dataset.agendaMap);
+  const pts=(route?.points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+  if(!pts.length){node.innerHTML='<span>Rota sem coordenadas configuradas</span>';continue;}
+  node.innerHTML='';
+  const map=L.map(node,{zoomControl:false,scrollWheelZoom:false,dragging:false,touchZoom:false,
+   doubleClickZoom:false,boxZoom:false,keyboard:false,attributionControl:false});
+  miniMaps.push(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+  L.polyline(pts.map(p=>[p.lat,p.lng]),{color:'#38bdf8',weight:3,opacity:.85,interactive:false}).addTo(map);
+  pts.forEach(p=>L.circleMarker([p.lat,p.lng],{radius:3,color:'#fafafa',fillColor:'#38bdf8',fillOpacity:1,weight:1,interactive:false}).addTo(map));
+  if(pts.length===1)map.setView([pts[0].lat,pts[0].lng],17,{animate:false});
+  else map.fitBounds(pts.map(p=>[p.lat,p.lng]),{padding:[12,12],maxZoom:17,animate:false});
+ }
+}
 function mountOperationalMap(){
+ mountAgendaMaps();
  const node=document.querySelector('#ops-live-map'),L=globalThis.L;if(!node||!L)return;
  resetOperationalMap();node.innerHTML='';
  const active=rounds.find(r=>r.status==='em_andamento'),planned=routes.find(r=>r.id===active?.routeId)||routes[0];
@@ -158,22 +180,31 @@ function mountOperationalMap(){
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
- const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message'].includes(e.kind)&&e.status!=='resolvida');
- const urgent=open.filter(e=>e.kind==='panic');
- const current=active[0],def=routes.find(r=>r.id===current?.routeId)||routes[0],worker=users.find(w=>w.id===current?.userId);
- const future=routes.filter(r=>r.id!==def?.id).slice(0,8);
- const list=active.length?active:rounds.slice(0,6);
- const info=current?escape(worker?.name||'Vigia')+' · '+escape(current.site||'Posto não informado')+' · '+fmt(current.start):def?escape(def.workerName||'Vigia')+' · '+escape(def.site||'Posto')+' · Horário a definir':'Nenhuma ronda programada';
- return '<section class="stack ops-monitor"><div class="toolbar"><div><div class="eyebrow">COI · MONITORAMENTO INTEGRADO</div><h1>Centro operacional</h1><p class="muted">Acompanhamento das equipes, prioridades e registros sincronizados. GPS sem sinal recente não é tratado como desvio comprovado.</p></div><button data-refresh>Atualizar</button></div>'+
+ const active=rounds.filter(r=>r.status==='em_andamento'),
+  open=events.filter(e=>['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message'].includes(e.kind)&&e.status!=='resolvida'),
+  urgent=open.filter(e=>e.kind==='panic');
+ const agenda=routes.slice(0,9).map(route=>{
+  const item=rounds.find(r=>r.routeId===route.id)||null;
+  return {route,round:item};
+ });
+ const rows=agenda.map(({route,round})=>{
+  const pointCount=Array.isArray(route.points)?route.points.length:0,
+   status=round?roundStatus(round):'Programação pendente',
+   attention=!!round&&(round.panics>0||round.alerts>0||round.incidents>0);
+  const tag=attention?'Ocorrência':round?.status==='em_andamento'?'Em andamento':round?.status==='concluida'?'Tudo OK':status;
+  return '<article class="ops-agenda-row"><div class="ops-agenda-thumb" data-agenda-map="'+escape(route.id)+'" aria-label="Mini-mapa ilustrativo da rota '+escape(route.name)+'"><span>Carregando mapa…</span></div>'+
+   '<div class="ops-agenda-copy"><small>'+escape(route.site||'Posto não informado')+'</small><h3>'+escape(route.name||'Ronda sem nome')+'</h3>'+
+   '<div class="ops-agenda-facts"><span>Início <b>'+fmt(round?.start)+'</b></span><span>Término <b>'+fmt(round?.end)+'</b></span><span>Pontos <b>'+Number(round?.checkpoints||0)+' / '+pointCount+'</b></span></div>'+
+   '<span class="pill '+(attention?'flag':round?.status==='concluida'?'ok':'warning')+'">'+escape(tag)+'</span></div></article>';
+ }).join('');
+ return '<section class="stack ops-monitor"><header class="ops-agenda-header"><div><div class="eyebrow">CENTRAL OPERACIONAL · COI</div><h1>Agenda de Rondas</h1>'+
+ '<p class="muted">Local / posto: '+escape(account.site||'Todos os locais autorizados')+'</p></div>'+
+ '<div class="ops-agenda-live"><span class="ops-live-led"></span><span>Monitoramento ativo</span><strong data-ops-live-clock>'+escape(new Date().toLocaleTimeString('pt-BR'))+'</strong></div></header>'+
  '<div class="ops-monitor-kpis">'+[['Em ronda',active.length],['Pendentes',open.length],['Pânicos',urgent.length],['Vigias',users.filter(w=>w.role==='ronda').length]].map(([label,num],i)=>'<div class="ops-monitor-kpi'+(i===2&&num?' critical':'')+'"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
- '<div class="ops-monitor-columns"><section class="surface ops-monitor-main"><div class="toolbar"><div><div class="eyebrow">MAPA DINÂMICO</div><h2>'+(current?'Ronda em andamento':def?'Próxima rota cadastrada':'Nenhuma rota ativa')+'</h2><p class="muted">'+info+'</p></div><button data-page="routes">Ver percursos</button></div><div id="ops-live-map" class="ops-live-map" aria-label="Mapa da ronda atual com trajeto planejado e última posição GPS"></div><p class="muted">Azul celeste: trajeto previsto · Verde: percurso GPS recebido · A localização só é considerada atual quando houver leitura recente.</p></section>'+
- '<aside class="surface ops-monitor-sequence"><div class="toolbar"><h2>Sequência de rondas</h2><button data-page="dispatches">Novo despacho</button></div>'+
- '<div class="ops-sequence-list">'+(current?'<div class="ops-sequence-row is-live"><b>Em andamento</b><strong>'+escape(worker?.name||'Vigia')+'</strong><small>'+fmt(current.start)+' · '+escape(current.site||'Posto')+'</small></div>':'')+
- (def&&!current?'<div class="ops-sequence-row"><b>Próxima rota cadastrada</b><strong>'+escape(def.name)+'</strong><small>'+escape(def.workerName||'Vigia')+' · Horário ainda não programado</small></div>':'')+
- future.map((route,i)=>'<div class="ops-sequence-row"><b>Subsequente '+(i+1)+'</b><strong>'+escape(route.name)+'</strong><small>'+escape(route.workerName||'Vigia')+' · Horário ainda não programado</small></div>').join('')+
- '<h3>Histórico recente</h3>'+rounds.filter(r=>r.status!=='em_andamento').slice(0,5).map(r=>'<div class="ops-sequence-row"><b>'+escape(roundStatus(r))+'</b><strong>'+escape(users.find(w=>w.id===r.userId)?.name||'Vigia')+'</strong><small>'+fmt(r.start)+'</small></div>').join('')+'</div></aside></div>'+
- '<section class="surface"><div class="toolbar"><h2>Vigias e localização</h2><button data-page="team">Consultar equipe</button></div>'+monitorRows(list)+'</section>'+
- '<section class="ops-monitor-footer"><div class="toolbar"><div><h2>Alertas e ocorrências</h2><p class="muted">'+open.length+' registro(s) aguardando acompanhamento</p></div><button data-page="events">Abrir e tratar</button></div>'+eventList(open.slice(0,5))+'</section></section>';
+ '<section class="surface ops-agenda-surface"><div class="toolbar"><div><h2>Agenda de Rondas</h2><p class="muted">Mapa compacto, horários e verificação por local</p></div><button data-page="routes">Programar / consultar</button></div>'+
+ '<div class="ops-agenda-list">'+(rows||'<p class="empty">Nenhuma rota cadastrada. A Administração pode preparar os percursos.</p>')+'</div></section>'+
+ '<section class="surface"><div class="toolbar"><div><h2>Vigias e localização</h2><p class="muted">A última leitura GPS não comprova presença contínua.</p></div><button data-page="dispatches">Despachar vigia</button></div>'+monitorRows(active.length?active:rounds.slice(0,6))+'</section>'+
+ '<section class="ops-monitor-footer"><div class="toolbar"><div><h2>Alertas e ocorrências</h2><p class="muted">'+open.length+' registro(s) para triagem prioritária pelo COI</p></div><button data-page="events">Abrir e tratar</button></div>'+eventList(open.slice(0,6))+'</section></section>';
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -520,6 +551,7 @@ document.addEventListener('submit',async e=>{
 setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
 setInterval(()=>{if(account&&!document.hidden)void ops.refresh(account,true).catch(()=>{});},15000);
 setInterval(()=>{if(account?.role==='ronda'&&!document.hidden)void api('/presence',{method:'POST'}).catch(()=>{});},45000);
+setInterval(()=>{for(const e of document.querySelectorAll('[data-ops-live-clock]'))e.textContent=new Date().toLocaleTimeString('pt-BR');},1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&account?.role==='ronda')void api('/presence',{method:'POST'}).catch(()=>{});});
 document.addEventListener('change',e=>{
  if(e.target?.dataset?.coiToggle){void ops.change(e.target).then(()=>load()).catch(error=>flash(error.message));return;}
