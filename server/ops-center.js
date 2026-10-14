@@ -83,7 +83,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    resp(res,200,{ok:true});return true;
   }
   if(p==='/api/presence/off'&&method==='POST'){
-   if(user.role!=='ronda'){resp(res,403,{error:'Presença reservada ao vigia'});return true;}
+   if(!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Presença reservada à equipe de campo'});return true;}
    db.prepare('DELETE FROM operational_presence WHERE user_id=?').run(user.id);
    resp(res,200,{ok:true});return true;
   }
