@@ -16,7 +16,7 @@ export function createUiMotion({root,modal}) {
   drag=null;
  }
  modal.addEventListener('pointerdown',event=>{
-  if(reduce.matches||event.button!==0||!event.isPrimary||window.innerWidth>900)return;
+  if(reduce.matches||modal.classList.contains('guide-dialog')||event.button!==0||!event.isPrimary||window.innerWidth>900)return;
   const handle=event.target.closest('h2,.ux06-sheet-header');
   if(!handle||event.target.closest('button,input,select,textarea,a'))return;
   event.preventDefault();
