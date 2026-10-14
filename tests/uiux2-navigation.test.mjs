@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const central=read('src/central.js'),app=read('src/app.js'),curtain=read('src/checkpoint-curtain.js');
-const css=read('assets/maxvel-premium-system-20261014.css'),sw=read('sw.js');
+const css=read('assets/maxvel-premium-system-20261014.css'),sw=read('sw.js'),entry=read('src/location-entry-gate.js');
 
 test('perfis conservam comandos existentes mas separam acesso frequente e áreas secundárias',()=>{
  assert.match(central,/const rp2Priority=\{/);
@@ -53,4 +53,8 @@ test('visual transversal mantém Maxvel, layout mobile legível e movimento redu
  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
  assert.match(sw,/rondas-pro-interface-v28/);
+ assert.match(entry,/rp2-gate-brand/);
+ assert.match(entry,/maxvel-logo.webp/);
+ assert.match(entry,/<svg viewBox/);
+ assert.doesNotMatch(entry,/location-entry-icon[^']*⌖/);
 });
