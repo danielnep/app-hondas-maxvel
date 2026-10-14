@@ -22,7 +22,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  if(!fields.includes('completion_note'))db.exec("ALTER TABLE dispatches ADD COLUMN completion_note TEXT NOT NULL DEFAULT ''");
  const clients=new Map();
  const announce=userId=>{
-  for(const res of clients.get(userId)||[])try{res.write('event: change\\ndata: {}\\n\\n')}catch{}
+  for(const res of clients.get(userId)||[])try{res.write('event: change\ndata: {}\n\n')}catch{}
  };
 
  const seed=db.prepare('INSERT OR IGNORE INTO coi_permissions(module,enabled,updated_at) VALUES(?,1,?)');
@@ -84,9 +84,9 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   if(p==='/api/notifications/stream'&&method==='GET'){
    if(!req.headers.authorization){resp(res,401,{error:'Sessão obrigatória'});return true;}
    res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','Connection':'keep-alive','X-Accel-Buffering':'no'});
-   res.write(': conectado\\n\\n');
+   res.write(': conectado\n\n');
    const listeners=clients.get(user.id)||new Set();listeners.add(res);clients.set(user.id,listeners);
-   const keepAlive=setInterval(()=>{try{res.write(': ativo\\n\\n')}catch{}},25000);
+   const keepAlive=setInterval(()=>{try{res.write(': ativo\n\n')}catch{}},25000);
    req.on('close',()=>{clearInterval(keepAlive);listeners.delete(res);if(!listeners.size)clients.delete(user.id)});
    return true;
   }
