@@ -45,7 +45,13 @@ function initialize(){
   'CREATE TABLE IF NOT EXISTS planned_routes(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,site TEXT NOT NULL,name TEXT NOT NULL,points TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,created_by TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))',
   'CREATE INDEX IF NOT EXISTS idx_planned_routes_user ON planned_routes(user_id,updated_at)',
   'CREATE TABLE IF NOT EXISTS event_treatments(id TEXT PRIMARY KEY,event_id TEXT NOT NULL,author_id TEXT NOT NULL,from_status TEXT NOT NULL,to_status TEXT NOT NULL,conclusion TEXT NOT NULL,created_at INTEGER NOT NULL,FOREIGN KEY(event_id) REFERENCES events(id))',
-  'CREATE INDEX IF NOT EXISTS idx_treatment_event ON event_treatments(event_id,created_at)'
+  'CREATE INDEX IF NOT EXISTS idx_treatment_event ON event_treatments(event_id,created_at)',
+  'CREATE TABLE IF NOT EXISTS presence_sessions(token_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,last_seen INTEGER NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))',
+  'CREATE INDEX IF NOT EXISTS idx_presence_user ON presence_sessions(user_id,last_seen)',
+  'CREATE TABLE IF NOT EXISTS inspection_destinations(id TEXT PRIMARY KEY,site TEXT NOT NULL,name TEXT NOT NULL,latitude REAL NOT NULL,longitude REAL NOT NULL,active INTEGER NOT NULL DEFAULT 1,created_by TEXT NOT NULL,updated_at INTEGER NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS idx_destinations_site ON inspection_destinations(site,active)',
+  'CREATE TABLE IF NOT EXISTS dispatch_orders(id TEXT PRIMARY KEY,worker_id TEXT NOT NULL,destination_id TEXT NOT NULL,site TEXT NOT NULL,requested_by TEXT NOT NULL,reason TEXT NOT NULL,status TEXT NOT NULL DEFAULT "pendente",created_at INTEGER NOT NULL,acknowledged_at INTEGER,completed_at INTEGER,FOREIGN KEY(worker_id) REFERENCES users(id),FOREIGN KEY(destination_id) REFERENCES inspection_destinations(id))',
+  'CREATE INDEX IF NOT EXISTS idx_dispatch_worker ON dispatch_orders(worker_id,created_at)'
  ];for(const statement of ddl)db.exec(statement);
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
@@ -144,8 +150,10 @@ export function createOperationalApi(){
    }
    const a=userFrom(req);
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
+   const sessionKey=hash(String(req.headers.authorization).slice(7));
+   db.prepare('INSERT INTO presence_sessions(token_hash,user_id,last_seen) VALUES(?,?,?) ON CONFLICT(token_hash) DO UPDATE SET last_seen=excluded.last_seen').run(sessionKey,a.id,now());
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
-   if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
+   if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(sessionKey);db.prepare('DELETE FROM presence_sessions WHERE token_hash=?').run(sessionKey);resp(res,200,{ok:true});return true;}
    if(p==='/api/users'&&m==='GET'&&reviewer(a)){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,created_at,active FROM users').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
     const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),description=clean(d.description),site=clean(d.site).slice(0,100);
@@ -153,6 +161,77 @@ export function createOperationalApi(){
     const salt=randomBytes(16).toString('hex'),uid=id();
     db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at,site) VALUES(?,?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now(),site);
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
+   }
+
+   /* Destinos cadastrados por administração; nunca aceitamos coordenadas livres no despacho. */
+   if(p==='/api/destinations'&&m==='GET'&&reviewer(a)){
+    const rows=db.prepare('SELECT id,site,name,latitude,longitude,active,updated_at FROM inspection_destinations ORDER BY site,name').all();
+    resp(res,200,{destinations:rows});return true;
+   }
+   const destinationId=p.match(/^\/api\/destinations\/([0-9a-f-]{36})$/i);
+   if((p==='/api/destinations'&&m==='POST')||(destinationId&&m==='PUT')){
+    if(!manager(a)){resp(res,403,{error:'Somente administradores gerenciam destinos'});return true;}
+    const d=serialize((await body(req)).toString())||{},site=clean(d.site).slice(0,100),name=clean(d.name).slice(0,120);
+    const lat=Number(d.latitude),lng=Number(d.longitude);
+    if(site.length<2||name.length<3||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){
+     resp(res,422,{error:'Informe posto, nome e coordenadas válidas'});return true;
+    }
+    if(destinationId){
+     const existing=db.prepare('SELECT id FROM inspection_destinations WHERE id=?').get(destinationId[1]);
+     if(!existing){resp(res,404,{error:'Destino não encontrado'});return true;}
+     db.prepare('UPDATE inspection_destinations SET site=?,name=?,latitude=?,longitude=?,active=?,updated_at=? WHERE id=?')
+      .run(site,name,lat,lng,d.active===false?0:1,now(),existing.id);
+     audit(a,'destination.update',existing.id);resp(res,200,{id:existing.id});return true;
+    }
+    const did=id();db.prepare('INSERT INTO inspection_destinations(id,site,name,latitude,longitude,active,created_by,updated_at) VALUES(?,?,?,?,?,?,?,?)')
+     .run(did,site,name,lat,lng,d.active===false?0:1,a.id,now());
+    audit(a,'destination.create',did);resp(res,201,{id:did});return true;
+   }
+   if(p==='/api/available-workers'&&m==='GET'&&reviewer(a)){
+    const workers=db.prepare("SELECT u.id,u.name,u.site,u.role,MAX(ps.last_seen) last_seen FROM users u LEFT JOIN presence_sessions ps ON ps.user_id=u.id WHERE u.active=1 AND u.role IN ('ronda','vistoriador') GROUP BY u.id").all();
+    const active=db.prepare("SELECT worker_id FROM dispatch_orders WHERE status IN ('pendente','recebida')").all();
+    const busy=new Set(active.map(x=>x.worker_id));
+    resp(res,200,{workers:workers.map(w=>({id:w.id,name:w.name,site:w.site,role:w.role,lastSeen:w.last_seen||null,
+     online:!!w.last_seen&&now()-w.last_seen<120000,status:busy.has(w.id)?'Em atividade':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço'}))});return true;
+   }
+   if(p==='/api/dispatches'&&m==='GET'){
+    if(a.role==='cliente'){resp(res,403,{error:'Consulta indisponível ao cliente'});return true;}
+    const query='SELECT d.id,d.worker_id,d.destination_id,d.site,d.requested_by,d.reason,d.status,d.created_at,d.acknowledged_at,d.completed_at,t.name destination,t.latitude,t.longitude,u.name worker,req.name dispatcher FROM dispatch_orders d JOIN inspection_destinations t ON t.id=d.destination_id JOIN users u ON u.id=d.worker_id JOIN users req ON req.id=d.requested_by ';
+    const rows=['ronda','vistoriador'].includes(a.role)
+     ?db.prepare(query+'WHERE d.worker_id=? ORDER BY d.created_at DESC LIMIT 100').all(a.id)
+     :db.prepare(query+'ORDER BY d.created_at DESC LIMIT 300').all();
+    resp(res,200,{dispatches:rows});return true;
+   }
+   if(p==='/api/dispatches'&&m==='POST'){
+    if(!reviewer(a)){resp(res,403,{error:'Somente a central pode despachar colaboradores'});return true;}
+    const d=serialize((await body(req)).toString())||{},reason=clean(d.reason).slice(0,2000);
+    const worker=db.prepare("SELECT id,site,role FROM users WHERE id=? AND active=1 AND role IN ('ronda','vistoriador')").get(clean(d.workerId));
+    const destination=db.prepare('SELECT id,site FROM inspection_destinations WHERE id=? AND active=1').get(clean(d.destinationId));
+    if(!worker||!destination||!worker.site||worker.site!==destination.site||reason.length<10){
+     resp(res,422,{error:'Selecione colaborador e destino ativo do mesmo posto; motivo mínimo de 10 caracteres'});return true;
+    }
+    const online=db.prepare('SELECT MAX(last_seen) recent FROM presence_sessions WHERE user_id=?').get(worker.id)?.recent;
+    if(!online||now()-online>=120000){resp(res,409,{error:'Colaborador sem sessão online recente; aguarde sua conexão'});return true;}
+    const pending=db.prepare("SELECT id FROM dispatch_orders WHERE worker_id=? AND status IN ('pendente','recebida') LIMIT 1").get(worker.id);
+    if(pending){resp(res,409,{error:'Colaborador já tem um chamado ativo'});return true;}
+    const did=id(),at=now();
+    db.prepare('INSERT INTO dispatch_orders(id,worker_id,destination_id,site,requested_by,reason,status,created_at) VALUES(?,?,?,?,?,?,?,?)')
+     .run(did,worker.id,destination.id,worker.site,a.id,reason,'pendente',at);
+    const eid=id();
+    db.prepare('INSERT INTO events(id,user_id,kind,occurred_at,received_at,description,details,status,site) VALUES(?,?,?,?,?,?,?,?,?)')
+     .run(eid,a.id,'dispatch',at,at,'Despacho de '+worker.role+' para '+worker.site+': '+reason,
+      JSON.stringify({dispatchId:did,workerId:worker.id,destinationId:destination.id}),'aberta',worker.site);
+    audit(a,'dispatch.create',did);resp(res,201,{id:did,createdAt:at,status:'pendente',delivery:'polling'});return true;
+   }
+   const dispatchAck=p.match(/^\/api\/dispatches\/([0-9a-f-]{36})\/ack$/i);
+   if(dispatchAck&&m==='POST'){
+    const order=db.prepare('SELECT id,worker_id,status FROM dispatch_orders WHERE id=?').get(dispatchAck[1]);
+    if(!order||order.worker_id!==a.id){resp(res,404,{error:'Atribuição não encontrada'});return true;}
+    if(order.status==='pendente'){
+     db.prepare("UPDATE dispatch_orders SET status='recebida',acknowledged_at=? WHERE id=?").run(now(),order.id);
+     audit(a,'dispatch.ack',order.id);
+    }
+    resp(res,200,{id:order.id,status:order.status==='pendente'?'recebida':order.status});return true;
    }
    if(p==='/api/routes'&&m==='GET'){
     if(a.role==='vistoriador'){resp(res,200,{routes:[]});return true;}
