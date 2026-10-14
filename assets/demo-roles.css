@@ -1,0 +1,39 @@
+/* Rondas Pro · acessos de demonstração e histórico de rotas, visual Maxvel */
+.demo-role-view,.demo-admin-route-queue{display:grid;gap:16px;min-width:0}
+.demo-role-site{padding:18px 20px;background:var(--surface,#16161a);border:1px solid rgba(186,191,203,.22);border-radius:12px}
+.demo-role-site>span{font-size:10px;font-weight:800;letter-spacing:1.3px;color:var(--muted,#aaa)}
+.demo-role-site h2{font-size:22px;margin:5px 0}
+.demo-role-site p{font-size:12px;opacity:.8}
+.demo-role-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.demo-role-metrics>div{border:1px solid rgba(185,191,203,.25);padding:14px 16px;border-radius:10px;display:grid;gap:1px}
+.demo-role-metrics strong{font-size:27px;font-variant-numeric:tabular-nums}
+.demo-role-metrics small{font-size:11px;opacity:.75}
+.demo-role-columns{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:15px}
+.demo-role-columns>section,.demo-role-columns>form{padding:17px;background:var(--surface,#151518);border:1px solid rgba(185,191,203,.2);border-radius:12px;min-width:0}
+.demo-role-columns h3{margin:0 0 10px;font-size:16px}
+.demo-role-columns h3:not(:first-child){margin-top:20px}
+.demo-role-columns .map-container{height:300px;min-height:300px;border-radius:9px;overflow:hidden}
+.demo-ops-row{width:100%;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:11px 0;border:0;border-bottom:1px solid rgba(177,181,195,.22);border-radius:0;background:transparent;color:inherit;text-align:left}
+.demo-ops-row span{display:grid;gap:4px;min-width:0}
+.demo-ops-row strong{font-size:13px}
+.demo-ops-row small{font-size:11px;opacity:.7;overflow-wrap:anywhere}
+.demo-ops-row b{font-size:11px;white-space:nowrap}
+.demo-inspection-form{display:grid;gap:12px;align-content:start}
+.demo-inspection-form>label{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid rgba(175,187,202,.25);border-radius:9px;font-size:13px}
+.demo-inspection-form>label:has(textarea){display:grid;gap:8px}
+.demo-inspection-form input[type=checkbox]{height:19px;width:19px;accent-color:#ed354b}
+.demo-inspection-form textarea{min-height:92px;width:100%;border-radius:8px}
+.demo-admin-route-queue{margin:16px 0 20px;border-top:1px solid rgba(185,191,203,.25);padding-top:17px}
+.demo-admin-route-header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.demo-admin-route-header h2{margin:3px 0}
+.demo-admin-route-header p{font-size:12px;opacity:.75}
+.demo-admin-route-line{display:grid;grid-template-columns:minmax(210px,35%) minmax(0,1fr);overflow:hidden;border-radius:12px;border:1px solid rgba(185,191,203,.23);min-height:206px;background:var(--surface,#151518)}
+.demo-mini-route-map{min-height:206px;background:#10151b}
+.demo-admin-route-line>div:last-child{padding:16px;display:grid;align-content:start;gap:8px}
+.demo-admin-route-line h3{font-size:15px;margin:0}
+.demo-admin-route-line p{font-size:12px;opacity:.8;margin:0}
+.demo-admin-route-line .button{justify-self:start}
+.demo-route-flag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#f2bdca}
+.simulation-roles{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.simulation-roles button{flex-shrink:0}
+@media(max-width:760px){.demo-role-columns,.demo-admin-route-line{grid-template-columns:minmax(0,1fr)}.demo-role-columns .map-container{height:250px;min-height:250px}.demo-admin-route-header .button{width:100%;justify-content:center}.demo-mini-route-map{height:220px;min-height:220px}.demo-role-view,.demo-admin-route-queue{gap:12px}.demo-role-columns>section,.demo-role-columns>form{padding:13px}.demo-admin-route-line>div:last-child{padding:14px}.simulation-roles{justify-content:flex-start}}
