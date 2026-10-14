@@ -201,11 +201,13 @@ export function createOperationsUpgrade(api){
  }
  async function recordCheckpoint(checkpoint,files,point){
   const c=current(),session=c.session,at=checkpoint.observedAt||Date.now(),saved=[];
-  for(const file of files){
+  for(const item of files){
+   const file=item?.file??item;
+   const view=['front','back','left','right','selfie'].includes(item?.view)?item.view:null;
    if(!file?.size||file.size>25*1024*1024){api.notify('Evidência excede 25 MB ou está vazia.');continue;}
    if(!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.type)){api.notify('Tipo de mídia não suportado.');continue;}
    const mid=uuid(),metadata={id:mid,name:limit(file.name),type:file.type,size:file.size,takenAt:file.lastModified||at,
-    position:checkpoint.position,battery:lastBattery?.level??null};
+    position:checkpoint.position,battery:lastBattery?.level??null,...(view?{view}:{})};
    await store.put('media',{...metadata,blob:file});
    saved.push(metadata);
   }
@@ -215,7 +217,8 @@ export function createOperationsUpgrade(api){
   await persistEvent({id:uuid(),at,kind:'checkpoint',status:'pending',payload:{
    mode:session.mode,sessionId:session.id,pointId:point.id,pointName:point.name,
    observation:checkpoint.observation,description:'Ponto '+point.name+': '+checkpoint.observation,
-   position:checkpoint.position,battery:lastBattery?.level??null,mediaIds:saved.map(x=>x.id)}});
+   position:checkpoint.position,battery:lastBattery?.level??null,mediaIds:saved.map(x=>x.id),
+   mediaViews:saved.filter(x=>x.view).map(x=>({view:x.view,id:x.id}))}});
  }
  async function recordLifecycle(kind,round){
   if(round?.mode!=='real')return;
