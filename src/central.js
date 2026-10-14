@@ -369,10 +369,72 @@ function guideView(){
  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">GUIA ATUALIZADO · RONDAS PRO</div><h1>Guia completo · '+escape(roles[account.role])+'</h1><p class="muted">Instruções específicas para as funções que este perfil pode acessar.</p></div></header><section class="surface">'+items.map((x,i)=>'<details class="details-toggle" '+(i===0?'open':'')+'><summary>'+String(i+1).padStart(2,'0')+' · '+escape(x[0])+'</summary><p style="padding:12px 3px">'+escape(x[1])+'</p></details>').join('')+'</section><p class="muted">A operação depende de conexão com o servidor e permissões autorizadas. Atualização de monitoramento: aproximadamente 30 segundos com a página aberta. GPS impreciso é problema técnico a analisar, não prova de descumprimento.</p></section>';
 }
 function siteLabel(){return escape(account.site||'Local não vinculado')}
+function clientDate(ts){
+ if(!ts)return 'Não informado';
+ const date=new Date(ts),today=new Date();
+ const delta=Math.round((new Date(date.getFullYear(),date.getMonth(),date.getDate())-
+  new Date(today.getFullYear(),today.getMonth(),today.getDate()))/86400000);
+ const day=delta===0?'Hoje':delta===1?'Amanhã':delta===-1?'Ontem':date.toLocaleDateString('pt-BR');
+ return day+' · '+date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+const clientMediaUrls=[];
+function staticClientMap(fix){
+ if(!fix)return '<div class="client-static-map-empty">Posição ainda não recebida</div>';
+ return '<div class="client-static-map" aria-label="Mapa estático sem navegação">'+positionMap(fix)+'</div>';
+}
 function clientView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),past=rounds.filter(r=>r.status!=='em_andamento');
- const item=r=>'<details class="details-toggle"><summary>'+escape(roundStatus(r))+' · Ronda '+escape(String(r.id).slice(0,9))+' · '+fmt(r.start)+'</summary><div class="surface"><div class="detail-grid">'+[['Local',r.site||account.site],['Situação',roundStatus(r)],['Início',fmt(r.start)],['Término',fmt(r.end)],['Última leitura GPS',fmt(r.lastFixAt)],['Pontos registrados',r.checkpoints],['Distância estimada',Number(r.km||0).toFixed(2)+' km']].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+positionMap(r.lastFix)+'<p class="muted">A posição é a última recebida. Sem GPS recente não significa desvio comprovado.</p></div></details>';
- return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">VISÃO CLIENTE · SOMENTE CONSULTA</div><h1>'+siteLabel()+'</h1><p class="muted">Status e histórico das rondas do seu local autorizado.</p></div><button data-refresh>Atualizar</button></header><div class="cards"><div class="metric"><strong>'+active.length+'</strong><span>Em andamento</span></div><div class="metric"><strong>'+past.filter(r=>r.status==='concluida').length+'</strong><span>Concluídas</span></div><div class="metric"><strong>'+past.filter(r=>['interrompida','incompleta'].includes(r.status)).length+'</strong><span>Incompletas / interrompidas</span></div></div><section class="surface"><h2>Rondas em andamento</h2><p class="muted">Atualização automática a cada 30 segundos enquanto o painel estiver aberto.</p>'+(active.length?active.map(item).join(''):'<div class="empty">Nenhuma ronda ativa neste local.</div>')+'</section><section class="surface"><h2>Últimas rondas</h2>'+(past.length?past.slice(0,40).map(item).join(''):'<div class="empty">Nenhuma ronda anterior registrada para este local.</div>')+'</section></section>';
+ const inspections=events.filter(e=>e.kind==='inspection').slice(0,12);
+ const item=r=>'<details class="details-toggle"><summary>'+escape(roundStatus(r))+' · '+clientDate(r.start)+' · '+escape(r.site||account.site)+'</summary>'+
+  '<div class="surface"><div class="detail-grid">'+[['Local',r.site||account.site],['Situação',roundStatus(r)],
+  ['Hora de início',clientDate(r.start)],['Hora de término',clientDate(r.end)],['Pontos verificados',r.checkpoints],
+  ['Distância estimada',Number(r.km||0).toFixed(2)+' km'],['Última posição recebida',clientDate(r.lastFixAt)]]
+  .map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
+  staticClientMap(r.lastFix)+'<p class="muted">Mapa sem navegação. A posição depende da última atualização do GPS.</p></div></details>';
+ const inspectionRow=e=>'<article class="client-inspection-row"><div class="toolbar"><div><small>'+clientDate(e.occurred_at)+'</small>'+
+  '<h3>'+(e.details?.qualityPercent===100?'Tudo OK':'Vistoria registrada')+'</h3></div>'+
+  '<span class="pill '+(e.details?.qualityPercent===100?'ok':'warning')+'">'+
+  (Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'% de conformidade':'Laudo')+'</span></div>'+
+  '<p>'+escape(e.description||'Sem descrição')+'</p>'+
+  '<div class="client-inspection-media" data-client-inspection="'+escape(e.id)+'"><small>Carregando evidências autorizadas…</small></div></article>';
+ return '<section class="stack ops-client-portal"><header class="ops-agenda-header"><div><div class="eyebrow">PATRIMÔNIO PROTEGIDO · PORTAL DO CLIENTE</div>'+
+  '<h1>'+siteLabel()+'</h1><p class="muted">Dados restritos ao local autorizado à sua conta.</p></div>'+
+  '<button data-refresh>Atualizar</button></header>'+
+  '<div class="cards"><div class="metric"><strong>'+active.length+'</strong><span>Rondas em andamento</span></div>'+
+  '<div class="metric"><strong>'+past.filter(r=>r.status==='concluida').length+'</strong><span>Rondas concluídas</span></div>'+
+  '<div class="metric"><strong>'+inspections.length+'</strong><span>Vistorias registradas</span></div></div>'+
+  '<section class="surface"><h2>Próxima Ronda</h2><div class="detail-grid">'+
+  '<div><small>Hora Programada de Início</small><strong>Aguardando programação confirmada</strong></div>'+
+  '<div><small>Previsão de Término</small><strong>Indisponível sem percurso programado</strong></div></div></section>'+
+  '<section class="surface"><h2>Rondas atuais</h2>'+(active.length?active.map(item).join(''):'<p class="empty">Nenhuma ronda ativa neste local.</p>')+'</section>'+
+  '<section class="surface"><h2>Vistorias e evidências</h2><p class="muted">Laudos e fotos, vídeos ou áudios vinculados ao seu local.</p>'+
+  (inspections.length?inspections.map(inspectionRow).join(''):'<p class="empty">Nenhum laudo disponível para este local.</p>')+'</section>'+
+  '<section class="surface"><h2>Histórico de rondas</h2>'+(past.length?past.slice(0,40).map(item).join(''):'<p class="empty">Sem rondas anteriores registradas.</p>')+'</section></section>';
+}
+async function loadClientInspectionMedia(){
+ const nodes=[...document.querySelectorAll('[data-client-inspection]')];
+ for(const node of nodes){
+  if(!node.isConnected)return;
+  try{
+   const res=await api('/events/media?eventId='+encodeURIComponent(node.dataset.clientInspection));
+   if(!node.isConnected)return;
+   const items=(res.media||[]).slice(0,8);
+   if(!items.length){node.innerHTML='<small>Sem mídia anexada ao laudo.</small>';continue}
+   node.innerHTML='';
+   for(const meta of items){
+    const blob=await api('/media/'+encodeURIComponent(meta.id));
+    if(!node.isConnected)return;
+    const url=URL.createObjectURL(blob);clientMediaUrls.push(url);
+    const figure=document.createElement('figure');
+    const kind=meta.mimetype.startsWith('video/')?'video':meta.mimetype.startsWith('audio/')?'audio':'img';
+    const item=document.createElement(kind);item.src=url;
+    if(kind==='img')item.alt='Evidência vinculada à vistoria';else item.controls=true;
+    const caption=document.createElement('figcaption');
+    caption.textContent=clientDate(meta.captured_at)+' · '+(meta.battery==null?'Bateria não registrada':meta.battery+'%');
+    figure.append(item,caption);node.append(figure);
+   }
+  }catch(error){if(node.isConnected)node.innerHTML='<small>Evidências indisponíveis neste momento.</small>'}
+ }
 }
 function inspectionView(){
  const entries=events.filter(e=>e.kind==='inspection'),scored=entries.filter(e=>Number.isFinite(e.details?.qualityPercent));
@@ -382,6 +444,7 @@ function inspectionView(){
 }
 
 function render(){
+ for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
  routeBoard.resetMaps();resetOperationalMap();
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
@@ -398,6 +461,7 @@ function render(){
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(mountOperationalMap);
+ if(account.role==='cliente'&&page==='client')void loadClientInspectionMedia();
 }
 async function loadMessages(eventId){
  try{messages=(await api('/events/'+eventId+'/messages')).messages||[];const host=document.querySelector('#thread');if(!host)return;
