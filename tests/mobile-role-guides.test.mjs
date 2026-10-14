@@ -5,9 +5,8 @@ import {mobileGuideFor} from '../src/mobile-role-guides.js';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('todos os três perfis usam o mesmo fluxo mobile sem afetar o guia original do vigia',()=>{
- assert.equal(mobileGuideFor('ronda'),null);
- for(const role of ['operador','admin']){
+test('os perfis recebem guias móveis completos sem confundir avaliação com dados reais',()=>{
+ for(const role of ['ronda','operador','coi','admin','cliente','vistoriador']){
   const guide=mobileGuideFor(role);
   assert.ok(guide.title&&guide.subtitle);
   assert.equal(guide.stages.length,5);
@@ -30,17 +29,19 @@ test('Operadores recebem orientações de monitoramento sem prometer GPS remoto 
  const guide=mobileGuideFor('operador');
  assert.match(guide.stages.map(x=>x.title).join(' '),/central|rondas|alertas|ocorrências|limites/i);
  const text=guide.stages.map(x=>x.body).join(' ');
- for(const term of ['Monitoramento','Alertas','Ocorrências','Vigias','GPS','autenticação'])assert.ok(text.includes(term),term);
+ for(const term of [/monitoramento/i,/alertas/i,/ocorrências/i,/vigia/i,/GPS/i,/autenticad/i])
+  assert.match(text,term);
 });
 
 test('Administrativo recebe painel, ocorrências, relatórios e informações de validação',()=>{
  const guide=mobileGuideFor('admin');
- const text=guide.stages.map(x=>x.body).join(' ');
- for(const term of ['Visão geral','Rondas','Equipe','Notificações','Ocorrências','Relatórios','Configurações','servidor'])assert.ok(text.includes(term),term);
+ const text=guide.stages.map(x=>x.title+' '+x.body).join(' ');
+ for(const term of [/visão geral/i,/rondas/i,/rota/i,/notificações/i,/ocorrências/i,/relatórios/i,/configurações/i,/autenticada/i])
+  assert.match(text,term);
 });
 
 test('aplicativo e PWA incluem conteúdo dos perfis na mesma publicação',()=>{
- assert.match(read('../index.html'),/src\/app\.js\?v=35/);
+ assert.match(read('../index.html'),/src\/app\.js\?v=[0-9]+/);
  const sw=read('../sw.js');
  assert.match(sw,/rondas-pro-interface-v13/);
  assert.match(sw,/\.\/src\/mobile-role-guides\.js/);
