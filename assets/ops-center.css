@@ -69,3 +69,22 @@
 .ops-dispatch-actions button{min-height:46px}
 .ops-dispatch-modal .ops-required{font-size:10px;color:#fbbf24;font-weight:750}
 @media(max-width:600px){.ops-dispatch-modal{padding:18px 14px;width:calc(100vw - 20px);max-height:94dvh}.ops-dispatch-actions{display:grid;grid-template-columns:1fr 1fr}.ops-dispatch-actions button{padding:10px 7px}}
+
+
+/* Atribuições do vigia, confirmações e estados de despacho. */
+.ops-assignment-banner{width:100%;display:grid;gap:5px;text-align:left;padding:12px 15px;margin:0 0 14px;background:#10b98116!important;border:1px solid #10b9818f!important;border-left:4px solid #10b981!important;border-radius:10px;color:#f4fff9!important;min-height:70px}
+.ops-assignment-banner span{font-size:10px;color:#6ee7b7;letter-spacing:.07em;font-weight:800}
+.ops-assignment-banner strong{font-size:15px}
+.ops-assignment-banner small{color:#d4e8de}
+.ops-dispatch-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ops-dispatch-buttons>button{flex:1 1 160px;font-weight:750}
+.ops-dispatch-buttons .ops-start-button{background:#047857!important;color:#fff!important;border:1px solid #10b981!important}
+.ops-dispatch-buttons .ops-finish-button{background:rgba(7,10,9,.88)!important;color:#a7f3d0!important;border:1px solid #10b981!important}
+#ops-completion-modal{padding:23px!important;background:linear-gradient(155deg,rgba(25,25,28,.98),rgba(9,9,11,.99))!important;color:#fafafa!important;border:1px solid #62626e!important;border-radius:15px!important;box-shadow:0 20px 70px #000d!important;width:min(92vw,510px);max-height:90dvh;overflow-y:auto}
+#ops-completion-modal::backdrop{background:rgba(0,0,0,.8);backdrop-filter:blur(14px)}
+#ops-completion-modal h2{font-size:22px;margin-bottom:7px}
+#ops-completion-modal .stack{margin-top:16px}
+#ops-completion-modal textarea{background:#09090b!important;color:#fff!important;border-color:#6b7280!important;min-height:112px}
+#ops-completion-modal .ops-dispatch-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+#ops-completion-modal button.primary{background:#047857!important;border-color:#10b981!important}
+@media(max-width:760px){.ops-dispatch-buttons>button{min-height:46px}.ops-assignment-banner{margin-top:2px}}
