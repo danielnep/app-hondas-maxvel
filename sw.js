@@ -1,7 +1,7 @@
 /* Cache da interface para a demonstração Web/PWA. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v11';
+const CACHE='rondas-pro-interface-v12';
 const CORE=[
  './','./index.html','./manifest.webmanifest',
  './assets/ronda-pro.css','./assets/ronda-pro-upgrade.css','./assets/soft-polish.css',
@@ -30,6 +30,14 @@ self.addEventListener('fetch',event=>{
  if(u.origin!==self.location.origin)return;
  const allowed=/\.(?:js|css|html|webp|svg|png|jpg|jpeg|webmanifest)$/.test(u.pathname)||u.pathname===new URL('./',self.registration.scope).pathname;
  if(!allowed)return;
+ // Navegações usam primeiro a versão publicada; offline mantém a última página disponível.
+ if(request.mode==='navigate'){
+  event.respondWith(fetch(request).then(response=>{
+   if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{});}
+   return response;
+  }).catch(async()=>await caches.match(request,{ignoreSearch:true})||await caches.match('./index.html')));
+  return;
+ }
  event.respondWith(caches.match(request,{ignoreSearch:true}).then(hit=>hit||fetch(request).then(response=>{
   if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy)).catch(()=>{});}
   return response;
