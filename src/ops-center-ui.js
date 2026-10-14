@@ -115,13 +115,7 @@ export function createOpsCenterUI({api,flash,openNotice}){
    (notifications.length?cards():'<p class="empty">Nenhuma notificação registrada.</p>')+'</section></section>';
  }
  function dispatchesView({users,rounds,events}){
-  const active=new Set(rounds.filter(x=>x.status==='em_andamento').map(x=>x.userId));
-  const guards=users.filter(x=>x.role==='ronda').map(w=>{
-   const latest=events.find(e=>e.user_id===w.id);
-   const fresh=latest&&Date.now()-latest.occurred_at<=15*60000;
-   const status=!w.active?'Fora de serviço':active.has(w.id)?'Em ronda':fresh?'Disponível':'Fora de serviço';
-   return {...w,dispatchStatus:status,lastActivity:latest?.occurred_at};
-  });
+  const guards=availability.map(w=>({...w,dispatchStatus:w.status,lastActivity:w.last_seen}));
   return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">COI · DESPACHO SOB DEMANDA</div><h1>Disponibilidade e direcionamento</h1><p class="muted">Selecione um vigia disponível para abrir o despacho. Status exige atividade recente sincronizada, não basta cadastro ativo.</p></div>'+badge()+'</header>'+
    '<section class="surface"><h2>Vigias</h2><p class="muted">Toque no profissional para informar destino e justificativa. A administração recebe o registro automaticamente.</p>'+
    '<div class="ops-worker-list">'+guards.map(w=>
@@ -137,12 +131,26 @@ export function createOpsCenterUI({api,flash,openNotice}){
  }
  function dispatchList(){
   if(!dispatches.length)return '<p class="empty">Nenhum despacho registrado.</p>';
-  return '<div class="ops-dispatch-list">'+dispatches.slice(0,60).map(d=>
-   '<article class="ops-dispatch-line"><div><b>'+esc(d.worker||'Vigia')+'</b><span class="pill '+(d.acknowledged_at?'ok':'warning')+'">'+(d.acknowledged_at?'Recebido':'Aguardando confirmação')+'</span></div><strong>'+esc(d.address)+'</strong><p>'+esc(d.reason)+'</p><small>'+stamp(d.created_at)+' · Operador: '+esc(d.author||'Não informado')+'</small>'+
-   (current?.role==='ronda'&&!d.acknowledged_at?'<button type="button" data-ops-ack="'+esc(d.id)+'">Confirmar recebimento</button>':'')+'</article>').join('')+'</div>';
+  return '<div class="ops-dispatch-list">'+dispatches.slice(0,60).map(d=>{
+   const label=d.completed_at?'Concluído':d.started_at?'Em atendimento':d.acknowledged_at?'Recebido':'Aguardando confirmação';
+   const actions=current?.role==='ronda'&&!d.completed_at?'<div class="ops-dispatch-buttons">'+
+    (!d.acknowledged_at?'<button type="button" data-ops-ack="'+esc(d.id)+'">Confirmar recebimento</button>':'')+
+    (!d.started_at?'<button type="button" class="ops-start-button" data-ops-start="'+esc(d.id)+'">Iniciar atendimento</button>':
+     '<button type="button" class="ops-finish-button" data-ops-finish="'+esc(d.id)+'">Concluir atendimento</button>')+'</div>':'';
+   return '<article class="ops-dispatch-line"><div><b>'+esc(d.worker||'Vigia')+'</b><span class="pill '+(d.completed_at?'ok':d.started_at?'warning':'')+'">'+label+'</span></div>'+
+    '<strong>'+esc(d.address)+'</strong><p>'+esc(d.reason)+'</p><small>Enviado '+stamp(d.created_at)+' · Operador: '+esc(d.author||'Não informado')+'</small>'+
+    (d.started_at?'<small>Iniciado '+stamp(d.started_at)+'</small>':'')+
+    (d.completed_at?'<small>Concluído '+stamp(d.completed_at)+' · '+esc(d.completion_note||'')+'</small>':'')+actions+'</article>';
+  }).join('')+'</div>';
  }
  function vigilanteDispatches(){
-  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">NOVAS ATRIBUIÇÕES</div><h1>Minhas rondas adicionais</h1><p class="muted">Confira os endereços encaminhados pela central antes de iniciar a tarefa.</p></div>'+badge()+'</header><section class="surface">'+dispatchList()+'</section></section>';
+  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">ATRIBUIÇÕES DE RONDA</div><h1>Meus atendimentos</h1><p class="muted">Confira o destino, confirme a chegada da ordem e registre o início e o encerramento com GPS habilitado.</p></div>'+badge()+'</header>'+
+   '<section class="surface">'+dispatchList()+'</section>'+
+   '<dialog id="ops-completion-modal" class="ops-dispatch-modal" aria-labelledby="ops-completion-heading"><h2 id="ops-completion-heading">Concluir atendimento</h2>'+
+   '<p class="muted">Informe o resultado da verificação. Este relatório ficará registrado permanentemente no histórico operacional.</p>'+
+   '<form id="ops-completion-form" class="stack"><input type="hidden" name="dispatchId">'+
+   '<label>Resultado da verificação<textarea name="note" required minlength="10" maxlength="1500" placeholder="Descreva o que foi verificado e o resultado encontrado."></textarea></label>'+
+   '<div class="ops-dispatch-actions"><button type="button" data-ops-close-completion>Cancelar</button><button type="submit" class="primary">Registrar conclusão</button></div></form></dialog></section>';
  }
  function permissionsView(){
   if(!manager())return '<div class="empty">Somente administração pode alterar permissões.</div>';
@@ -160,6 +168,19 @@ export function createOpsCenterUI({api,flash,openNotice}){
    return true;
   }
   if(target.hasAttribute('data-ops-close-dispatch')){document.querySelector('#ops-dispatch-modal')?.close();return true;}
+  if(target.hasAttribute('data-ops-close-completion')){document.querySelector('#ops-completion-modal')?.close();return true;}
+  if(target.dataset.opsFinish){
+   const dialog=document.querySelector('#ops-completion-modal');
+   if(!dialog)return true;
+   dialog.querySelector('[name="dispatchId"]').value=target.dataset.opsFinish;
+   dialog.showModal();dialog.querySelector('[name="note"]').focus();return true;
+  }
+  if(target.dataset.opsStart){
+   const position=await requireLocation();
+   await api('/dispatches/'+target.dataset.opsStart+'/start',{method:'POST',data:{position}});
+   flash('Atendimento iniciado com data, hora e posição GPS.');
+   await refresh(current,false);openNotice({page:'dispatches'});return true;
+  }
   if(target.dataset.opsPage){openNotice({page:target.dataset.opsPage});return true;}
   if(target.dataset.opsAck){
    await api('/dispatches/'+target.dataset.opsAck+'/ack',{method:'POST'});flash('Recebimento registrado.');await refresh(current,false);openNotice({page:'dispatches'});return true;
@@ -174,6 +195,15 @@ export function createOpsCenterUI({api,flash,openNotice}){
   return false;
  }
  async function submit(form){
+  if(form.id==='ops-completion-form'){
+   const data=Object.fromEntries(new FormData(form));
+   if(String(data.note||'').trim().length<10)throw Error('Informe o resultado da verificação (10 caracteres ou mais).');
+   const position=await requireLocation();
+   await api('/dispatches/'+data.dispatchId+'/complete',{method:'POST',data:{note:data.note,position}});
+   document.querySelector('#ops-completion-modal')?.close();
+   flash('Atendimento concluído e registrado no histórico.');
+   await refresh(current,false);openNotice({page:'dispatches'});return true;
+  }
   if(form.id!=='ops-dispatch-form')return false;
   const data=Object.fromEntries(new FormData(form));
   await api('/dispatches',{method:'POST',data});
@@ -192,5 +222,5 @@ export function createOpsCenterUI({api,flash,openNotice}){
    return true;
   }catch(error){input.checked=!enabled;throw error}
  }
- return {refresh,allowed,badge,present,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread};
+ return {refresh,allowed,badge,assignmentBanner,present,connectLive,stopLive,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread};
 }
