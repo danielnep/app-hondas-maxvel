@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-trap 'status=$?; if [ "$status" -ne 0 ]; then echo "[diagnostico] Falha na verificação visual do Chromium, status=$status" >&2; if [ -f artifacts/desktop-dom.html ]; then grep -Eo "location-entry-gate|simulation-rolebar|maxvel-only-brand|Ative sua localização|boot|entry-screen" artifacts/desktop-dom.html | sort | uniq -c >&2 || true; echo "[diagnostico] Cabeçalho do DOM:" >&2; head -c 1000 artifacts/desktop-dom.html >&2; fi; if [ -f /tmp/maxvel-chrome.err ]; then tail -n 25 /tmp/maxvel-chrome.err >&2; fi; fi' EXIT
+trap 'status=$?; if [ "$status" -ne 0 ]; then echo "[diagnostico] Falha na verificação visual do Chromium, status=$status" >&2; if [ -f artifacts/desktop-dom.html ]; then grep -Eo "location-entry-gate|simulation-rolebar|maxvel-only-brand|Ative sua localização|boot|entry-screen" artifacts/desktop-dom.html | sort | uniq -c >&2 || true; echo "[diagnostico] Cabeçalho do DOM:" >&2; head -c 1000 artifacts/desktop-dom.html >&2; fi; if [ -f /tmp/maxvel-chrome.err ]; then tail -n 25 /tmp/maxvel-chrome.err >&2; fi; fi' ERR
 BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
 if [ -z "$BROWSER" ]; then
   echo "Nenhum Chromium/Chrome disponível para validação visual" >&2
