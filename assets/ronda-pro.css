@@ -3873,3 +3873,70 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
     animation:none!important;transition:none!important;transform:none!important;
   }
 }
+
+/* Mais opções: mantém a cartografia no fundo da etapa, sem telas recortadas. */
+@media screen and (max-width:900px){
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed){
+   position:relative!important;display:block!important;inset:auto!important;
+   width:100%!important;height:100%!important;min-height:100%!important;
+   max-height:100%!important;overflow:hidden!important;padding:0!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-map-panel{
+   display:block!important;position:absolute!important;inset:0!important;
+   width:100%!important;height:100%!important;min-height:0!important;
+   max-height:none!important;opacity:.80!important;z-index:0!important;
+   overflow:hidden!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-map-canvas{
+   position:absolute!important;inset:0!important;width:100%!important;
+   height:100%!important;min-height:0!important;max-height:none!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-map-heading{
+   display:none!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-actions{
+   position:absolute!important;inset:10px 9px calc(8px + env(safe-area-inset-bottom,0px))!important;
+   display:flex!important;flex-direction:column!important;
+   z-index:620!important;width:auto!important;height:auto!important;
+   min-height:0!important;max-height:none!important;
+   border:1px solid #7bc6ee77!important;border-radius:15px!important;
+   background:rgba(12,24,36,.92)!important;
+   box-shadow:0 15px 45px #030c19a8!important;
+   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+   overflow:hidden!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-action-heading{
+   flex:0 0 auto!important;min-height:48px!important;max-height:60px!important;
+   padding:5px 11px!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-action-body{
+   display:flex!important;flex-direction:column!important;
+   flex:1 1 auto!important;max-height:none!important;min-height:0!important;
+   height:auto!important;overflow-y:auto!important;overflow-x:hidden!important;
+   overscroll-behavior:contain!important;padding:8px 10px!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-extra-flow{
+   display:flex!important;flex-direction:column!important;flex:1 1 auto!important;
+   min-height:0!important;height:auto!important;overflow:hidden!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .ux-patrol-stage{
+   flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;
+   overflow-x:hidden!important;overscroll-behavior:contain!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .ux-patrol-stage>[data-ux-tools-pane]:not([hidden]){
+   overflow-y:auto!important;overscroll-behavior:contain!important;
+   min-height:0!important;max-height:none!important;
+ }
+ .dashboard .ronda-page .patrol-workspace:not(.sheet-collapsed) .patrol-communication-bar{
+   display:none!important;
+ }
+ .dashboard .ops-panic{z-index:850!important}
+}
+/* Scroll nativo nas telas da central abertas pelos comandos rápidos. */
+@media(max-width:760px){
+ #central-root .workspace,#central-root .content{min-width:0;max-width:100%}
+ #central-root .content .stack{min-width:0}
+ #central-root form.surface{max-width:100%;min-width:0;overflow:visible}
+ #central-root form.surface input,#central-root form.surface select,
+ #central-root form.surface textarea{font-size:16px;scroll-margin:105px}
+}
