@@ -53,7 +53,7 @@ async function capture(page,name,width,height){
   const box=selector=>{const el=document.querySelector(selector);if(!el)return null;const r=el.getBoundingClientRect();return {x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),bottom:Math.round(r.bottom)}};
   return {viewport:innerWidth,height:innerHeight,documentWidth:document.documentElement.scrollWidth,
    documentHeight:document.documentElement.scrollHeight,primary:box('.patrol-actions [data-action="start"]'),
-   map:box('#mobile-map'),action:box('.patrol-actions'),logo:box('.maxvel-only-brand'),
+   map:box('#mobile-map'),action:box('.patrol-actions'),quick:box('.patrol-communication-actions'),panic:box('.ops-panic'),logo:box('.maxvel-only-brand'),
    areas:!!document.querySelector('.app-header [data-action="sim-role-picker"]'),
    app:!!document.querySelector('.dashboard.simulation-mode'),tour:!!document.querySelector('#horizon-tour')};
  });
@@ -62,8 +62,15 @@ async function capture(page,name,width,height){
  if(metrics.viewport>width+2||metrics.documentWidth>width+3)throw Error('Expansão horizontal: '+JSON.stringify(metrics));
  if(metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
  if(width<=900&&metrics.app&&name==='ronda'&&metrics.map&&metrics.action){
-  if(metrics.map.y<0||metrics.map.bottom>height-45)throw Error('Mapa cortado: '+JSON.stringify(metrics.map));
-  if(metrics.action.y<0||metrics.action.bottom>height+2)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
+  // Novo design: mapa até as bordas da área útil; comandos flutuam por cima.
+  if(metrics.map.y<0||metrics.map.bottom>height+2||metrics.map.h<height*.60)
+   throw Error('Fundo cartográfico não preenche área útil: '+JSON.stringify(metrics.map));
+  if(metrics.action.y<0||metrics.action.bottom>height+2)
+   throw Error('Painel de ronda fora da tela: '+JSON.stringify(metrics.action));
+  if(metrics.quick&&(metrics.quick.x<0||metrics.quick.bottom>height+2))
+   throw Error('Dock de comunicação cortado: '+JSON.stringify(metrics.quick));
+  if(metrics.panic&&(metrics.panic.x<0||metrics.panic.bottom>height+2))
+   throw Error('Pânico cortado: '+JSON.stringify(metrics.panic));
  }
  if(name==='ronda'){
   if(!metrics.app||!metrics.areas||!metrics.map||!metrics.action||!metrics.primary)throw Error('Aplicativo, seletor Áreas, mapa ou ação não encontrados');
@@ -74,13 +81,18 @@ async function capture(page,name,width,height){
 try{
  await wait(850);
  for(const [width,height] of sizes){
-  const context=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce'});
+  const context=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.139,longitude:-44.885,accuracy:12}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
   try{
    await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:18000});
    await capture(page,'login',width,height);
    if(!await page.locator('.entry-screen .maxvel-only-brand').count())throw Error('Identidade Maxvel ausente na entrada');
    await enter(page);
+   const gate=page.locator('.location-entry-gate');
+   if(await gate.count()){
+    await page.locator('.location-entry-grant').click();
+    await gate.waitFor({state:'detached',timeout:12000});
+   }
    await capture(page,'ronda',width,height);
    if(!await page.locator('.my-schedule').count())throw Error('Página do vigia sem rondas programadas');
    await tap(page,'.patrol-actions [data-action="start"]');
