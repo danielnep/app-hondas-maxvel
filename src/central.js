@@ -297,7 +297,7 @@ function eventView(e){
  '<div class="detail-grid">'+[['Data e hora',fmt(e.occurred_at)],['Bateria',e.battery==null?'Não informada':e.battery+'%'],['Localização',Number.isFinite(e.lat)?'Disponível no mapa':'Indisponível'],['Status',e.status]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
  (Number.isFinite(e.lat)&&Number.isFinite(e.lng)?positionMap({lat:e.lat,lng:e.lng}):'<p class="muted">Sem geolocalização confiável anexada a este registro.</p>')+
  '</section>'+
- (review()?'<section class="surface no-print"><h2>Tratamento pela equipe</h2><p class="muted">Cada decisão exige uma conclusão descritiva, com responsável, horário e histórico auditável.</p>'+
+ (['coi','operador','master'].includes(account.role)?'<section class="surface no-print"><h2>Tratamento pelo COI</h2><p class="muted">Cada decisão exige uma conclusão descritiva, com responsável, horário e histórico auditável.</p>'+
  '<div class="row treatment-actions" role="group" aria-label="Opções de tratamento">'+
  '<button type="button" data-review-status="em_analise">Registrar análise</button>'+
  '<button type="button" data-review-status="encaminhada">Encaminhar ao administrativo</button>'+
@@ -305,9 +305,9 @@ function eventView(e){
   '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
  '<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form></section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
- '<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
+ (account.role==='admin'?'<p class="muted">A Administração acompanha a tratativa registrada pelo COI.</p>':'<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
  (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · vigia pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
- '<button class="primary">Enviar resposta</button></div></form></section>'+
+ '<button class="primary">Enviar resposta</button></div></form>')+'</section>'+
  '<details class="details-toggle"><summary>Dados técnicos completos</summary><div class="surface"><div class="detail-grid">'+
  [['Recebido no servidor',fmt(e.received_at)],['Precisão GPS',e.accuracy==null?'Não informada':e.accuracy+' m'],['Coordenadas',e.lat==null?'Indisponíveis':e.lat+', '+e.lng],['Ronda',e.round_id||'Sem vínculo'],['Arquivos associados',details]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div></div></details></section>';
 }
@@ -506,7 +506,7 @@ document.addEventListener('submit',async e=>{
    flash(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':'Mensagem registrada na central.');
    return;
   }
-  if(form.id==='send-message'){await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general'}});form.reset();await loadMessages(selected.event.id);return;}
+  if(form.id==='send-message'){if(account?.role==='admin')throw Error('Resposta reservada ao COI.');await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general'}});form.reset();await loadMessages(selected.event.id);return;}
   if(form.id==='upload-evidence'){
    const file=form.querySelector('[name=file]').files[0];if(!file)throw new Error('Selecione uma mídia');
    const at=file.lastModified||Date.now();
