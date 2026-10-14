@@ -12,7 +12,7 @@ export function createFieldTorch({notify=()=>{}}={}){
   el.setAttribute('aria-pressed',String(active()));
   el.classList.toggle('is-lit',active());
   el.setAttribute('aria-label',active()?'Apagar lanterna e liberar câmera':'Acender lanterna');
-  el.querySelector('span').textContent=active()?'Lanterna ligada':'Lanterna';
+  el.querySelector('span').textContent=busy?'Solicitando câmera…':active()?'Lanterna ligada':'Lanterna';
   el.disabled=busy;
  }
  function stop(){
@@ -37,7 +37,7 @@ export function createFieldTorch({notify=()=>{}}={}){
    try{navigator.vibrate?.(15)}catch{}
   }catch(err){
    stop();
-   notify('Não foi possível acender a lanterna neste celular. O navegador precisa oferecer controle de flash.');
+   notify(['NotAllowedError','PermissionDeniedError','SecurityError'].includes(err?.name)?'Permita acesso à câmera nas configurações do navegador para usar a lanterna.':'Lanterna indisponível: verifique se o aparelho permite controlar o flash pelo navegador.');
   }finally{busy=false;paint()}
  }
  function decorate(){
