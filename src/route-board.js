@@ -1,6 +1,7 @@
 /** Administrative route workspace. Live readings are displayed only when received from the authenticated API. */
 export function createRouteBoard({api,getContext,redraw,notify}){
  let watcher='',editing=null,editor=false,points=[],maps=[],draftMap=null,previewPoints=null;
+ const canEdit=()=>['admin','master'].includes(getContext().account?.role);
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const stamp=t=>Number.isFinite(t)&&t>0?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'Não registrado';
  const statuses={em_andamento:'Em andamento',concluida:'Concluída',interrompida:'Interrompida',incompleta:'Incompleta',sem_inicio:'Sem início'};
@@ -52,12 +53,12 @@ export function createRouteBoard({api,getContext,redraw,notify}){
    '<div class="route-facts"><span>Início <b>'+stamp(r?.start)+'</b></span><span>Pontos <b>'+esc(r?.checkpoints??def?.points?.length??0)+'</b></span><span>Bateria <b>'+(r?.lastBattery==null?'—':r.lastBattery+'%')+'</b></span><span>GPS válido <b>'+Number(r?.gpsSamples??gps.length)+' amostras</b></span></div>'+
    (recent?'<p class="route-attention">Registro: '+esc(recent.kind==='gps_issue'?'Falha técnica GPS':recent.kind==='route_deviation'?'Desvio a verificar':recent.kind==='panic'?'Pânico':recent.kind==='patrol_incomplete'?'Ronda incompleta':recent.kind==='patrol_interrupted'?'Ronda interrompida':'Ocorrência')+' · '+stamp(recent.occurred_at)+'</p>':'')+
    (def?'<p class="route-checkpoints">Pontos previstos: '+def.points.map(p=>esc(p.name)).join(' → ')+'</p>':'<p class="muted">Traçado planejado indisponível; somente posições recebidas podem aparecer no mapa.</p>')+
-   '<div class="route-actions">'+(def?'<button type="button" data-route-edit="'+esc(def.id)+'">Editar rota</button>':'')+(r?'<button type="button" data-route-events="'+esc(r.id)+'">Ver cronologia</button>':'')+'</div>'+
+   '<div class="route-actions">'+(canEdit()&&def?'<button type="button" data-route-edit="'+esc(def.id)+'">Editar rota</button>':'')+(r?'<button type="button" data-route-events="'+esc(r.id)+'">Ver cronologia</button>':'')+'</div>'+
    (r?'<details class="route-timeline" data-route-timeline="'+esc(r.id)+'"><summary>Registros da execução</summary><ol>'+activity.slice(-35).reverse().map(e=>'<li><small>'+stamp(e.occurred_at)+'</small><span>'+esc(({gps:'GPS registrado',battery:'Bateria',checkpoint:'Ponto validado',patrol_start:'Início',patrol_end:'Conclusão',route_deviation:'Possível desvio',gps_issue:'Falha técnica GPS',panic:'Pânico',incident:'Ocorrência'})[e.kind]||e.kind)+'</span></li>').join('')+'</ol></details>':'')+
    '</div></article>';
  }
  function editorHtml(){
-  if(!editor)return '';
+  if(!editor||!canEdit())return '';
   const worker=chosenWorker();
   return '<section class="surface route-editor" id="route-editor"><div class="toolbar"><div><div class="eyebrow">ADMINISTRAÇÃO · CADASTRO DE ROTAS</div><h2>'+(editing?'Editar rota':'Criar nova rota')+'</h2><p class="muted">Colaborador: '+esc(worker?.name||'Não selecionado')+' · '+esc(worker?.site||'Sem local')+'</p></div><button type="button" data-route-cancel>Fechar</button></div>'+
    '<form id="route-form" class="stack"><label>Nome da rota<input name="name" required minlength="3" maxlength="120" value="'+esc(editing?.name||'')+'" placeholder="Ex.: Ronda noturna · Perímetro externo"></label>'+
@@ -74,7 +75,7 @@ export function createRouteBoard({api,getContext,redraw,notify}){
  function render(){
   const workerList=chooseWorker(),person=chosenWorker(),items=routeHistory();
   const active=items.filter(x=>x.round?.status==='em_andamento').length;
-  return '<section class="stack route-board"><header class="toolbar route-titlebar"><div><div class="eyebrow">CONTROLE ADMINISTRATIVO · MAPAS E ROTAS</div><h1>Rotas por colaborador</h1><p class="muted">Organize os percursos e acompanhe execuções registradas, da mais recente para a mais antiga.</p></div><button type="button" class="primary" data-route-create '+(!person?'disabled':'')+'>+ Criar nova rota para colaborador</button></header>'+
+  return '<section class="stack route-board"><header class="toolbar route-titlebar"><div><div class="eyebrow">CONTROLE ADMINISTRATIVO · MAPAS E ROTAS</div><h1>Rotas por colaborador</h1><p class="muted">Organize os percursos e acompanhe execuções registradas, da mais recente para a mais antiga.</p></div>'+(canEdit()?'<button type="button" class="primary" data-route-create '+(!person?'disabled':'')+'>+ Criar nova rota para colaborador</button>':'')+'</header>'+
    '<div class="surface route-filter"><label>Selecionar vigia<select id="route-worker">'+workerList.map(w=>'<option value="'+esc(w.id)+'" '+(w.id===watcher?'selected':'')+'>'+esc(w.name)+' · '+esc(w.site||'Local não definido')+'</option>').join('')+'</select></label>'+
    '<div class="route-counter"><strong>'+active+'</strong><small>em andamento</small></div><div class="route-counter"><strong>'+items.length+'</strong><small>rotas e execuções</small></div></div>'+
    editorHtml()+'<div class="route-lines">'+(items.length?items.slice(0,16).map(row).join(''):'<div class="surface empty">'+(person?'Nenhuma rota ou execução registrada para este colaborador. Use Criar nova rota.':'Cadastre um usuário Vigia na área Colaboradores para organizar as rotas.')+'</div>')+'</div>'+
@@ -125,11 +126,13 @@ export function createRouteBoard({api,getContext,redraw,notify}){
  }
  async function click(button){
   if(button.hasAttribute('data-route-create')){
+   if(!canEdit())return true;
    if(!chosenWorker())return true;
    editor=true;editing=null;points=[];redraw();document.querySelector('#route-editor')?.scrollIntoView({block:'start',behavior:'smooth'});return true;
   }
   if(button.hasAttribute('data-route-cancel')){editor=false;editing=null;points=[];redraw();return true;}
   if(button.hasAttribute('data-route-edit')){
+   if(!canEdit())return true;
    const {routes}=getContext(),route=routes.find(x=>x.id===button.dataset.routeEdit);
    if(!route)return true;
    watcher=route.userId;editing=route;points=route.points.map(x=>({...x}));editor=true;redraw();document.querySelector('#route-editor')?.scrollIntoView({block:'start',behavior:'smooth'});return true;
@@ -161,6 +164,7 @@ export function createRouteBoard({api,getContext,redraw,notify}){
   return false;
  }
  async function submit(form){
+  if(!canEdit())throw Error('Somente administradores podem alterar rotas.');
   if(form.id!=='route-form')return false;
   const worker=chosenWorker();
   const name=String(new FormData(form).get('name')||'').trim();
