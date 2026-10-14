@@ -18,12 +18,25 @@ test('Comprovação só aparece na ronda ativa do vigia',()=>{
  ])assert.equal(canShowPatrolVerification(context),false);
 });
 
-test('Card de comprovação não é injetado sob o botão Iniciar ronda',()=>{
+test('Comprovação continua reservada à aba Ponto da ronda ativa',()=>{
  const ops=readFileSync(new URL('../src/operations-upgrade.js',import.meta.url),'utf8');
  assert.doesNotMatch(ops,/querySelector\('\.patrol-action-body'\)\?\.insertAdjacentHTML\('beforeend',gpsQrRow\(\)\)/);
  assert.match(ops,/if\(canShowPatrolVerification\(context\)\)/);
- assert.match(ops,/querySelector\('\.patrol-verification-pane'\)\?\.insertAdjacentHTML\('beforeend',gpsQrRow\(\)\+communicationActions\(\)\)/);
- assert.doesNotMatch(ops,/querySelector\('\.patrol-action-heading'\)\?\.insertAdjacentHTML\('afterend',communicationActions\(\)\)/);
+ assert.ok(ops.includes("querySelector('.patrol-verification-pane')?.insertAdjacentHTML('beforeend',gpsQrRow())"));
+ assert.ok(!ops.includes('gpsQrRow()+communicationActions()'),'A comunicação não deve ficar escondida na aba Ponto');
+});
+
+test('Ações rápidas aparecem na tela inicial antes da ronda e preservam Iniciar ronda',()=>{
+ const ops=readFileSync(new URL('../src/operations-upgrade.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
+ assert.ok(ops.includes("if(view==='minha-ronda')"));
+ assert.ok(ops.includes("main.querySelector('.patrol-actions')"),'Atalhos mobile devem ficar fora de Mais opções');
+ assert.ok(ops.includes("primaryTarget?.insertAdjacentHTML('afterend',communicationActions())"));
+ assert.ok(ops.includes('data-ops="incident-quick"'));
+ assert.ok(ops.includes('data-ops="central-alert"'));
+ assert.ok(ops.includes('data-ops="central-message"'));
+ assert.ok(css.includes('.patrol-workspace.sheet-collapsed>.patrol-communication-bar'));
+ assert.ok(css.includes('height:clamp(205px,40dvh,330px)!important'),'Mapa mobile não deve ocupar toda a tela');
 });
 
 test('Aba Ponto ocupa o painel de ferramentas apenas durante a ronda',()=>{
