@@ -7,12 +7,14 @@ import {evidenceButtons,createMediaCapture} from './media-capture.js';
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const EVIDENCE_VIEWS=[['front','Frente'],['back','Trás'],['left','Esquerda'],['right','Direita'],['selfie','Selfie']];
 export function createCheckpointCurtain(api){
- let key=null,root=null,torchStream=null,torchTrack=null,saving=false,evidenceFiles=[];
+ let key=null,root=null,torchStream=null,torchTrack=null,saving=false,evidenceFiles=[],previewUrls=[];
+ const releasePreviews=()=>{for(const url of previewUrls)URL.revokeObjectURL(url);previewUrls=[]};
  const mediaCapture=createMediaCapture({notify:api.notify});
  const closeTorch=()=>{torchStream?.getTracks().forEach(t=>t.stop());torchStream=null;torchTrack=null};
- function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;saving=false;evidenceFiles=[];mediaCapture.stopAll();closeTorch()}
+ function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;saving=false;evidenceFiles=[];releasePreviews();mediaCapture.stopAll();closeTorch()}
  function paintEvidence(){
   if(!root)return;
+  releasePreviews();
   for(const button of root.querySelectorAll('[data-evidence-view]')){
    const taken=evidenceFiles.some(item=>item.view===button.dataset.evidenceView);
    button.classList.toggle('has-capture',taken);
@@ -22,8 +24,18 @@ export function createCheckpointCurtain(api){
   }
   const list=root.querySelector('[data-evidence-attachments]');
   if(list)list.innerHTML=evidenceFiles.length
-   ?evidenceFiles.map((item,i)=>'<span class="attached-file">'+safe(EVIDENCE_VIEWS.find(([key])=>key===item.view)?.[1]||'Anexo')+': '+safe(item.file.name)+' <button type="button" data-evidence-remove="'+i+'" aria-label="Remover evidência">×</button></span>').join('')
-   :'Nenhuma evidência anexada.';
+   ?'<div class="rp2-evidence-preview-list">'+evidenceFiles.map((item,i)=>{
+    const label=EVIDENCE_VIEWS.find(([key])=>key===item.view)?.[1]||'Anexo';
+    const isImage=item.file?.type?.startsWith('image/');
+    const url=isImage&&typeof URL.createObjectURL==='function'?URL.createObjectURL(item.file):'';
+    if(url)previewUrls.push(url);
+    return '<div class="rp2-evidence-preview">'+(url?'<img loading="lazy" src="'+safe(url)+'" alt="Prévia da foto: '+safe(label)+'">':'<span class="rp2-evidence-media-icon" aria-hidden="true">▣</span>')+
+     '<span class="rp2-evidence-preview-copy"><strong>'+safe(label)+'</strong><small>'+safe(item.file.name)+'</small></span>'+
+     '<button type="button" data-evidence-remove="'+i+'" aria-label="Remover '+safe(label)+'" title="Remover '+safe(label)+'">×</button></div>';
+   }).join('')+'</div>'
+   :'<p class="rp2-evidence-empty">Nenhuma imagem ou arquivo anexado.</p>';
+  const count=root.querySelector('[data-evidence-count]');
+  if(count)count.textContent=evidenceFiles.filter(item=>item.view).length+' de 5 posições fotografadas';
  }
  const status=()=>{
   if(!root)return;
@@ -36,6 +48,7 @@ export function createCheckpointCurtain(api){
   root.querySelector('[data-curtain-observation-wrap]').hidden=remain>0;
   root.querySelector('.checkpoint-curtain-panel')?.classList.toggle('is-ready',remain===0);
   root.querySelector('[data-curtain-observation-wrap]').setAttribute('aria-hidden',String(remain>0));
+  root.querySelector('.checkpoint-curtain-panel')?.setAttribute('data-rp2-phase',s.insideSince==null?'paused':remain===0?'ready':'counting');
   root.querySelector('[data-dwell-message]').textContent=s.insideSince==null
     ?'GPS fora do raio ou impreciso. A validação está suspensa.'
     :elapsed<target?'Aguarde e observe o ambiente para registrar as condições deste ponto.':'Tempo concluído. Informe as condições verificadas para prosseguir.';
@@ -64,12 +77,12 @@ export function createCheckpointCurtain(api){
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
    '<div class="checkpoint-stopwatch" aria-live="polite"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message>Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
-   '<div class="checkpoint-evidence-title">Fotos do ponto <small>Frente, trás, laterais e selfie</small></div>'+
-   '<div class="checkpoint-view-grid" role="group" aria-label="Fotos do ponto">'+EVIDENCE_VIEWS.map(([view,label])=>'<button type="button" class="checkpoint-view-action" data-evidence-view="'+view+'" aria-label="Capturar '+label+'" aria-pressed="false"><span>'+label+'</span><small data-view-state>+</small></button>').join('')+'</div>'+
+   '<div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">0 de 5 posições fotografadas</small></div>'+
+   '<div class="checkpoint-view-grid" role="group" aria-label="Captura de fotos por direção">'+EVIDENCE_VIEWS.map(([view,label],i)=>'<button type="button" class="checkpoint-view-action" data-evidence-view="'+view+'" aria-label="Capturar ou substituir foto: '+label+'" aria-pressed="false"><span class="rp2-view-number" aria-hidden="true">'+(i+1)+'</span><span>'+label+'</span><small data-view-state>+</small></button>').join('')+'</div>'+
    '<p class="checkpoint-evidence-hint" data-evidence-required-hint></p>'+
    '<div class="checkpoint-evidence-extra-label">Outras evidências</div>'+
    '<div class="checkpoint-tools">'+evidenceButtons()+'</div>'+
-   '<div class="checkpoint-utility-row"><button type="button" data-curtain-torch aria-label="Autorizar câmera e ativar lanterna"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-2 7 4 4-6 8-6-8 4-4-2-7Z"/><path d="M11 11l2 2M18 18h3M3 18h3"/></svg> <span>Lanterna</span></button>'+
+   '<div class="checkpoint-utility-row" aria-label="Ferramentas do ponto"><button type="button" data-curtain-torch aria-label="Autorizar câmera e ativar lanterna"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-2 7 4 4-6 8-6-8 4-4-2-7Z"/><path d="M11 11l2 2M18 18h3M3 18h3"/></svg> <span>Lanterna</span></button>'+
    '<button type="button" class="checkpoint-panic" data-ops="panic-confirm">⚠ PÂNICO</button></div>'+
    '<fieldset class="checkpoint-condition" data-curtain-observation-wrap hidden><legend>Condições encontradas neste ponto</legend>'+
    '<label><input type="radio" name="point-state" value="ok" checked> Tudo dentro do esperado</label>'+
