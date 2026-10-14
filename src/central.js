@@ -3,10 +3,10 @@ const root=document.querySelector('#central-root'),exit=document.querySelector('
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
 const id=x=>escape(x);
-const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término'};
+const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término',inspection:'Vistoria de qualidade',patrol_interrupted:'Ronda interrompida',patrol_incomplete:'Ronda incompleta'};
 let composeKind='message';
 let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
-const roles={ronda:'Vigia',operador:'Equipe interna',admin:'Administrador',master:'Master'};
+const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
@@ -14,7 +14,7 @@ async function api(path,{method='GET',data,headers={},raw}={}){
  return res.headers.get('content-type')?.includes('application/json')?res.json():res.blob();
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
-const review=()=>account&&['operador','admin','master'].includes(account.role);
+const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
 const actionGlyph={
  alert:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 9 16H3L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>',
  incident:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/></svg>',
@@ -53,27 +53,34 @@ async function load(){
   account=(await api('/me')).user;roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
   const previousRole=root.dataset.loadedRole;
   if(previousRole!==account.role){
-   page=account.role==='operador'?'monitor':'dashboard';selected=null;root.dataset.loadedRole=account.role;
+   page=['operador','coi'].includes(account.role)?'monitor':account.role==='cliente'?'client':account.role==='vistoriador'?'inspections':'dashboard';selected=null;root.dataset.loadedRole=account.role;
    const requestedCompose=location.hash.slice(1);
    if(account.role==='ronda'&&['alert','incident','message'].includes(requestedCompose)){
     composeKind=requestedCompose;page='send';history.replaceState(null,'',location.pathname+location.search);
    }
   }
-  const requested=[api('/events?limit=500'),api('/templates'),api('/rounds')];
-  if(review())requested.push(api('/dashboard'),api('/users'),api('/email-jobs'));
-  else requested.push(api('/my-summary'));
-  const responses=await Promise.all(requested);
-  events=responses[0].events||[];templates=responses[1].templates||[];rounds=responses[2].rounds||[];
-  if(review()){dashboard=responses[3];users=responses[4].users||[];emailJobs=responses[5].jobs||[];mySummary=null;}
-  else {mySummary=responses[3];dashboard=null;users=[];emailJobs=[];}
+  const [e,r]=await Promise.all([api('/events?limit=500'),api('/rounds')]);
+  events=e.events||[];rounds=r.rounds||[];
+  if(review()){
+   const [d,u,j,t]=await Promise.all([api('/dashboard'),api('/users'),api('/email-jobs'),api('/templates')]);
+   dashboard=d;users=u.users||[];emailJobs=j.jobs||[];templates=t.templates||[];mySummary=null;
+  }else if(account.role==='ronda'){
+   const [sum,t]=await Promise.all([api('/my-summary'),api('/templates')]);
+   mySummary=sum;templates=t.templates||[];dashboard=null;users=[];emailJobs=[];
+  }else{
+   mySummary=null;dashboard=null;users=[];emailJobs=[];templates=[];
+  }
   render();
  }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
- ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉']],
- operador:[['monitor','Monitoramento','◉'],['events','Alertas e ocorrências','!'],['team','Vigias','♙']],
- admin:[['dashboard','Indicadores','▥'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩']],
- master:[['dashboard','Indicadores','▥'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩']]
+ ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
+ operador:[['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
+ coi:[['monitor','Central COI','◉'],['events','Ocorrências','!'],['team','Vigias','♙'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','Monitoramento','◉'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
+ vistoriador:[['inspections','Vistorias e qualidade','▤'],['guide','Guia completo','?']]
 };
 const nav=()=>'<nav class="side" aria-label="Navegação do '+escape(roles[account.role])+'">'+
  (roleMenus[account.role]||[]).map(([key,label,icon])=>'<button type="button" data-page="'+key+'" class="'+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'><span class="nav-symbol" aria-hidden="true">'+icon+'</span>'+escape(label)+'</button>').join('')+'</nav>';
@@ -169,7 +176,7 @@ function eventsView(){
 }
 function teamView(){
  return '<section class="stack"><h1>Equipe e indicadores individuais</h1><div class="surface"><div class="list">'+(dashboard?.team||[]).map(w=>'<button data-person="'+id(w.id)+'" class="list-item"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Descrição pendente')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' acionamentos</span></button>').join('')+'</div></div>'+
- (privileged()?'<form id="new-user" class="surface"><h2>Cadastrar membro da equipe</h2><p class="muted">Informe a descrição da supervisão sobre o vigia no cadastro. A descrição será armazenada no banco.</p><div class="grid"><label>Nome<input required name="name" minlength="2"></label><label>E-mail<input required type="email" name="email"></label><label>Perfil<select name="role"><option value="ronda">Vigia</option><option value="operador">Equipe interna</option><option value="admin">Administrador</option>'+(account.role==='master'?'<option value="master">Master</option>':'')+'</select></label><label>Senha inicial (12+ caracteres)<input required name="password" minlength="12" type="password"></label></div><label>Descrição do supervisor sobre o colaborador<textarea name="description" placeholder="Resumo factual das atribuições, posto e orientações de acompanhamento" minlength="10"></textarea></label><button class="primary">Cadastrar</button></form>':'')+'</section>';
+ (privileged()?'<form id="new-user" class="surface"><h2>Cadastrar membro da equipe</h2><p class="muted">Informe a descrição da supervisão sobre o vigia no cadastro. A descrição será armazenada no banco.</p><div class="grid"><label>Nome<input required name="name" minlength="2"></label><label>E-mail<input required type="email" name="email"></label><label>Perfil<select name="role"><option value="ronda">Vigia</option><option value="operador">Equipe interna</option><option value="coi">COI</option><option value="vistoriador">Vistoriador</option><option value="cliente">Cliente (consulta)</option><option value="admin">Administrador</option>'+(account.role==='master'?'<option value="master">Master</option>':'')+'</select></label><label>Local/posto vinculado<input name="site" maxlength="100" placeholder="Ex.: Unidade Centro"></label><label>Senha inicial (12+ caracteres)<input required name="password" minlength="12" type="password"></label></div><label>Descrição do supervisor sobre o colaborador<textarea name="description" placeholder="Resumo factual das atribuições, posto e orientações de acompanhamento" minlength="10"></textarea></label><button class="primary">Cadastrar</button></form>':'')+'</section>';
 }
 function personView(pid){
  const w=users.find(x=>x.id===pid),mine=events.filter(e=>e.user_id===pid);
@@ -223,11 +230,13 @@ function eventView(e){
 function render(){
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
- const content=selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
+ const content=page==='guide'?guideView():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
-   account.role==='operador'?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
-   page==='dashboard'?dashboardView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
- root.innerHTML='<div class="workspace">'+nav()+'<article class="content">'+content+'</article></div>'+
+   account.role==='cliente'?clientView():
+   account.role==='vistoriador'?inspectionView():
+   ['operador','coi'].includes(account.role)?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
+   page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
+ root.innerHTML='<div class="workspace">'+nav()+'<article class="content">'+firstAccessGuide()+content+'</article></div>'+
   (account.role==='ronda'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
@@ -302,7 +311,7 @@ document.addEventListener('click',async e=>{
    return;
   }
   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;selected=null;page=target.dataset.page;render();return;}
-  if(target.dataset.event){const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
+  if(target.dataset.event){if(['cliente','vistoriador'].includes(account.role))return;const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
   if(target.dataset.template){
    const t=templates.find(x=>x.id===target.dataset.template);if(!privileged()||!t)return;
@@ -314,6 +323,7 @@ document.addEventListener('click',async e=>{
    const savedGroups=JSON.parse(t.recipients||'[]');document.querySelectorAll('#save-template [name=recipients]').forEach(input=>input.checked=savedGroups.includes(input.value));
    document.querySelector('#save-template').scrollIntoView({behavior:'smooth'});return;
   }
+  if(target.hasAttribute('data-guide-dismiss')){localStorage.setItem('rondaspro-guide-seen-'+account.role,'yes');render();return;}
   if(target.hasAttribute('data-refresh')){await load();flash('Registros atualizados');return;}
   if(target.dataset.retryEmail){await api('/email-jobs/retry',{method:'POST',data:{eventId:target.dataset.retryEmail}});flash('Nova tentativa registrada.');await load();return;}
   if(target.id==='print-chat'){window.print();return;}
@@ -325,10 +335,15 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
  const form=e.target;
- if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','review-event','send-message','upload-evidence'].includes(form.id))return;
+ if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','review-event','send-message','upload-evidence','inspection-form'].includes(form.id))return;
  e.preventDefault();const d=Object.fromEntries(new FormData(form));
  try{
   if(form.id==='central-login'){const result=await api('/login',{method:'POST',data:d});token=result.token;sessionStorage.setItem('rondaspro_api_token',token);await load();return;}
+  if(form.id==='inspection-form'){
+   const criteria={acessos:form.elements.acessos.checked,estrutura:form.elements.estrutura.checked,equipamentos:form.elements.equipamentos.checked,sinalizacao:form.elements.sinalizacao.checked};
+   await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria},...await eventTelemetry()}});
+   flash('Vistoria salva no servidor.');await load();return;
+  }
   if(form.id==='new-user'){await api('/users',{method:'POST',data:d});flash('Colaborador cadastrado.');await load();return;}
   if(form.id==='save-template'){const f=new FormData(form);const recipients=f.getAll('recipients');if(!recipients.length)throw Error('Escolha ao menos um grupo destinatário.');await api('/templates',{method:'POST',data:{...d,enabled:f.has('enabled'),cooldownMin:Number(d.cooldownMin),recipients}});flash('Modelo salvo no banco.');await load();return;}
   if(form.id==='recipient-form'){await api('/recipients',{method:'POST',data:{email:d.email,groupName:d.groupName,enabled:true}});form.reset();flash('Destinatário cadastrado.');return;}
@@ -354,6 +369,6 @@ document.addEventListener('submit',async e=>{
 });
 // A central do operador acompanha o servidor sem depender de recarregar a página.
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
-setInterval(()=>{if(account?.role==='operador'&&page==='monitor'&&!document.hidden)void load();},30000);
+setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client'].includes(page)&&!document.hidden&&!selected)void load();},30000);
 exit.addEventListener('click',async()=>{try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
