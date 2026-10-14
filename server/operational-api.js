@@ -241,7 +241,7 @@ export function createOperationalApi(){
     if(m==='GET'&&reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas'});return true;}
     if(m==='GET'){const rows=reviewer(a)?db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? ORDER BY created_at').all(ev.id):db.prepare("SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? AND audience='general' ORDER BY created_at").all(ev.id);resp(res,200,{messages:rows});return true;}
     if(m==='POST'){
-     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente não envia mensagens'});return true;}
+     if(['cliente','admin'].includes(a.role)){resp(res,403,{error:'Apenas COI e equipe responsável podem responder; Administração acompanha a tratativa.'});return true;}
      const d=serialize((await body(req)).toString())||{},b=clean(d.body),audience=d.audience||'general';
      if(b.length<1||b.length>4000||!['general','system'].includes(audience)||audience==='system'&&!reviewer(a)){resp(res,422,{error:'Mensagem inválida'});return true;}
      const mid=id();db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(mid,ev.id,a.id,audience,b,now());
@@ -252,10 +252,11 @@ export function createOperationalApi(){
    }
    const review=p.match(/^\/api\/events\/([0-9a-z-]+)\/review$/i);
    if(review&&m==='POST'){
+    const ev=event(review[1]);
+    if(!ev){resp(res,404,{error:'Não encontrado'});return true;}
     if(!['coi','operador','master'].includes(a.role)){resp(res,403,{error:'Tratamento reservado ao COI; Administração acompanha a conclusão.'});return true;}
     if(!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Tratamento desabilitado pelo administrador'});return true;}
-    const ev=event(review[1]),d=serialize((await body(req)).toString())||{};
-    if(!ev){resp(res,404,{error:'Não encontrado'});return true;}
+    const d=serialize((await body(req)).toString())||{};
     const status=clean(d.status),validation=validateConclusion(d.conclusion??d.note);
     if(!['aberta','em_analise','resolvida','encaminhada'].includes(status)||!validation.ok){resp(res,422,{error:validation.reason||'Situação inválida'});return true;}
     if(status==='encaminhada'&&a.role==='ronda'){resp(res,403,{error:'Sem permissão para encaminhar'});return true;}
