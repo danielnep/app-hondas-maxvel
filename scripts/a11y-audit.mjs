@@ -35,7 +35,9 @@ try{
   await check(page,'03-ronda',width);
   // Alternância entre perfis acontece diretamente no demonstrativo, sem login.
   if(width<=900){
-   await click(page,'[data-action="sim-role-picker"]');
+   // O seletor do cabeçalho é desktop-only. No celular, trocar pelo menu de perfil.
+   await click(page,'[data-action="profile-menu"]');
+   await click(page,'#dialog [data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
   }else{
    const role=page.locator('.simulation-rolebar [data-action="sim-role"][data-role="admin"]:visible');
