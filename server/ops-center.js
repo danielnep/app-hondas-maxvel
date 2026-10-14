@@ -77,6 +77,11 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    db.prepare('INSERT INTO operational_presence(user_id,last_seen) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen').run(user.id,now());
    resp(res,200,{ok:true});return true;
   }
+  if(p==='/api/presence/off'&&method==='POST'){
+   if(user.role!=='ronda'){resp(res,403,{error:'Presença reservada ao vigia'});return true;}
+   db.prepare('DELETE FROM operational_presence WHERE user_id=?').run(user.id);
+   resp(res,200,{ok:true});return true;
+  }
   if(p==='/api/availability'&&method==='GET'){
    if(!review(user)||!allows(user,'rondas')){resp(res,403,{error:'Sem acesso à disponibilidade'});return true;}
    resp(res,200,{guards:availability()});return true;
@@ -87,7 +92,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    res.write(': conectado\n\n');
    const listeners=clients.get(user.id)||new Set();listeners.add(res);clients.set(user.id,listeners);
    const keepAlive=setInterval(()=>{try{res.write(': ativo\n\n')}catch{}},25000);
-   req.on('close',()=>{clearInterval(keepAlive);listeners.delete(res);if(!listeners.size)clients.delete(user.id)});
+   res.on('close',()=>{clearInterval(keepAlive);listeners.delete(res);if(!listeners.size)clients.delete(user.id)});
    return true;
   }
   if(p==='/api/coi-permissions'&&method==='GET'){
