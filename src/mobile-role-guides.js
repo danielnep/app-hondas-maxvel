@@ -7,10 +7,10 @@ const guide=(title,subtitle,sections)=>Object.freeze({
 });
 export const MOBILE_GUIDES=Object.freeze({
  ronda:guide('Operação de Ronda','Seu percurso, validação de pontos e registros em ordem.',[
-  ['Antes de começar','<p>Confira o colaborador, a rota e as orientações. A localização é necessária no modo GPS real, com autorização do aparelho.</p><p><strong>Neste teste:</strong> trajetos e posições são fictícios.</p>'],
-  ['Percorra os pontos','<p>Inicie a ronda e siga os pontos na ordem. Com localização confiável, aproxime-se a 25 m do ponto e permaneça 30 segundos contínuos antes de confirmar.</p>'],
+  ['Antes de começar','<p>Esta demonstração abre direto na visão do vigia, sem login. Uma cortina escura solicita autorização para a localização; sem permitir, a ronda não inicia. Se negar, será possível tentar novamente pelas permissões do celular.</p><p><strong>Na implantação real:</strong> o administrador cadastrará cada vigia e profissional com login, senha e painel designado. Neste teste, o trajeto e os eventos são simulados.</p>'],
+  ['Percorra os pontos','<p>Depois da autorização, o mapa apresenta a localização fornecida pelo aparelho e reenquadra o percurso demonstrativo. Toque em Iniciar ronda. Use Ir ao ponto e siga a ordem obrigatória. Ao chegar ao raio de 25 metros, uma cortina inicia 30 segundos contínuos e orienta a observar o ambiente.</p><p>Quando a contagem terminar, marque Tudo dentro do esperado (observações opcionais) ou Situação que exige atenção (descrição obrigatória), e só então finalize o ponto.</p>'],
   ['Desvios e falhas técnicas','<p>Se o sistema identificar uma possível saída da rota, informe a justificativa. Baixa precisão ou perda de GPS exige análise e não comprova desvio.</p>'],
-  ['Evidências e pânico','<p>Use as ações para registrar ocorrência e evidências quando exigidas. O acionamento de pânico é uma prioridade operacional. Mensagens e sincronização reais dependem da central autenticada.</p>'],
+  ['Evidências e pânico','<p>Ações rápidas: Alerta amarelo, Ocorrência azul e Mensagem branca. PÂNICO permanece vermelho. Em evidências, use os ícones de Foto, Vídeo ou Áudio; o áudio tem gravador próprio. Todos os registros reais e a comunicação remota dependem da central autenticada.</p>'],
   ['Meu histórico','<p>Consulte seus horários, pontos, ocorrências e progresso no menu Meu histórico. O demonstrativo armazena registros no navegador; a central autenticada possui dados sincronizados.</p>']
  ]),
  operador:guide('Central de Monitoramento','Rotas e vigias, com prioridade para alertas.',[
@@ -32,7 +32,7 @@ export const MOBILE_GUIDES=Object.freeze({
   ['Rotas por vigia','<p>Abra Rondas e selecione um colaborador. As execuções ficam em ordem cronológica, cada uma com mapa e detalhes. O mapa da demonstração usa dados fictícios.</p>'],
   ['Criar uma nova rota','<p>Na seção de rotas, use <strong>Criar nova rota para colaborador</strong> para abrir a central autenticada. Lá o administrador escolhe vigia, nome e pontos, marcando no mapa ou inserindo coordenadas.</p>'],
   ['Tratamento','<p>Use Notificações e Ocorrências para investigar, justificar e registrar a análise. Perda de precisão do GPS não é prova de irregularidade.</p>'],
-  ['Relatórios e acesso real','<p>Relatórios e Configurações estão na área administrativa. Exportações remotas, cadastro e controles efetivos exigem autenticação da central operacional; os dados do cenário não são dados de produção.</p>']
+  ['Relatórios e acesso real','<p>A apresentação dispensa login para facilitar a avaliação de cada perfil. Na implantação, o administrador cadastra os usuários e distribui login, senha e permissões individuais. Relatórios, configurações e registros remotos só operam mediante autenticação da central; o cenário não é produção.</p>']
  ]),
  cliente:guide('Acompanhamento do Cliente','Transparência das rondas do seu local, sem administração.',[
   ['Seu local','<p>A primeira informação é o nome do local acompanhado. No demonstrativo a unidade é fictícia; na central real o acesso fica limitado à unidade atribuída.</p>'],
