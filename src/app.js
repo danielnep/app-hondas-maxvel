@@ -13,6 +13,7 @@ import {createUiMotion} from './ui-motion.js?v=2';
 import {createOperationsUpgrade} from './operations-upgrade.js';
 import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
+import {createLocationEntryGate} from './location-entry-gate.js';
 import {mobileGuideFor} from './mobile-role-guides.js';
 import {summarizePatrol} from './field-intelligence.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
@@ -354,6 +355,8 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda')curtain?.close()
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
  installViewportViews();installUX06();attachMaps();ops.decorate();installManager.decorate();uiMotion.enterView();justRendered=Date.now();
+ if(user?.role==='ronda'&&view==='minha-ronda'&&screen!=='landing'&&!locationGate.isGranted())locationGate.open({demo:presentation});
+ else if(user?.role!=='ronda'||view!=='minha-ronda')locationGate.close();
 }
 /** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
 function watchesSession(s,watcher){
@@ -430,8 +433,8 @@ function beginSimulation(name,autoStart=false,startRole='ronda'){
  locationFix={...DEMO_ROUTE.base,accuracy:5,at:Date.now()};
  movement=null;
  if(session)save();
- render();if(startRole==='ronda')ops.requestEntryGPS();window.scrollTo({top:0,behavior:'instant'});
- if(!tour.hasSeen())setTimeout(()=>tour.open(),350);
+ render();window.scrollTo({top:0,behavior:'instant'});
+ if(startRole!=='ronda'&&!tour.hasSeen())setTimeout(()=>tour.open(),350);
  notifyRoleView(startRole);
 }
 function endSimulation(){
@@ -862,7 +865,7 @@ function notificationDialog(id,sid){const s=sessions.find(x=>x.id===sid),n=s?.no
 function detailSession(id){const s=sessions.find(x=>x.id===id);if(!s)return;showDialog(`<div class="eyebrow">DETALHES DE UMA RONDA</div><h2>${esc(s.route.name)}</h2>${tag(s.status==='completed'?'Concluída':'Em andamento',s.status==='completed'?'green':'orange')}<div style="margin:17px 0">${[['Colaborador',s.name],['Início',fmt(s.startedAt)],['Conclusão',fmt(s.finishedAt)],['Pontos',`${s.index} de ${s.route.points.length}`],['Desvios',s.deviations.length],['Ocorrências',s.incidents.length],['Verificações ilustrativas',Object.values(s.evidences??{}).filter(x=>x.confirmedAt).length]].map(([a,b])=>`<div class="detail-pair"><span>${esc(a)}</span><strong>${esc(b)}</strong></div>`).join('')}</div><h3>Histórico de eventos</h3><div class="timeline" style="margin-top:13px">${s.timeline.map(x=>`<div class="timeline-entry"><strong>${esc(x.label)}</strong><small>${fmt(x.at)}</small></div>`).join('')}</div>${btn('Fechar','close-dialog','primary full')}`,true)}
 function pointDialog(index){const route=session?.route??DEMO_ROUTE,p=route.points[index];if(!p)return;const completed=session?.checkpoints[index]?.completedAt;showDialog(`<div class="eyebrow">PONTO ${index+1} · ROTA DEMONSTRATIVA</div><h2>${esc(p.name)}</h2><p>${esc(p.instruction)}</p>${tag(completed?'Concluído':session?.index===index?'Ponto atual':'Pendente',completed?'green':'neutral')}<div style="margin-top:16px">${[['Raio','25 metros'],['Permanência','30 segundos contínuos'],['Sequência',`${index+1} de ${route.points.length}`],['Localização', 'Ilustrativa no modo simulado']].map(([a,b])=>`<div class="detail-pair"><span>${a}</span><strong>${b}</strong></div>`).join('')}</div>${btn('Entendi','close-dialog','primary full')}`)}
 function finishDialog(){showDialog(`<div class="eyebrow">CONFIRMAR CONCLUSÃO</div><h2>Finalizar esta ronda?</h2><p style="font-size:12px">Os quatro pontos já foram concluídos e o retorno à base foi identificado. O registro ficará salvo neste navegador.</p><div class="modal-actions">${btn('Cancelar','close-dialog')}${btn('Finalizar ronda','confirm-finish','primary')}</div>`)}
-async function startSession(){const now=Date.now();if(mode==='real'&&!presentation){
+async function startSession(){if(!locationGate.isGranted()){locationGate.open({demo:presentation});notify('Ative a localização antes de iniciar a ronda.');return;}const now=Date.now();if(mode==='real'&&!presentation){
  if(!navigator.geolocation){notify('Geolocalização indisponível neste navegador.');return;}
  try{const loc=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
   const f={lat:loc.coords.latitude,lng:loc.coords.longitude,accuracy:loc.coords.accuracy,at:now};
@@ -921,7 +924,7 @@ function processPosition(){if(!session||session.status!=='active'||screen==='lan
  updateLive(result);
 }
 function updateLive(result){if(!session||session.status!=='active')return;
- if(session.mode==='real'&&user?.role==='ronda'&&view==='minha-ronda')curtain.open();const p=currentCheckpoint(session),elapsed=p?Math.floor(session.checkpoints[session.index].dwellMs/1000):0,c=coach();
+ if(user?.role==='ronda'&&view==='minha-ronda')curtain.open();const p=currentCheckpoint(session),elapsed=p?Math.floor(session.checkpoints[session.index].dwellMs/1000):0,c=coach();
  for(const el of document.querySelectorAll('[data-live="seconds"]'))el.textContent=elapsed;
  for(const el of document.querySelectorAll('[data-live="ring"]'))el.style.setProperty('--deg',`${Math.min(360,elapsed/(requiredDwellMs(session)/1000)*360)}deg`);
  for(const el of document.querySelectorAll('[data-live="coords"]'))el.textContent=locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)} · precisão ${Math.round(locationFix.accuracy??5)} m`:'Sem leitura válida';
@@ -981,7 +984,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   if(name.length<2){notify('Informe um nome com pelo menos duas letras.');return;}
   beginSimulation(name,false,'ronda');return;
  }
- if(act==='end-presentation'){endSimulation();return;}
+ if(act==='end-presentation'){locationGate.reset();endSimulation();return;}
  if(act==='launch-scenario'){
   beginSimulation('Administrador',true,'admin');
   notify('Cenário ativo. Alterne para Ronda para mover o marcador e gerar eventos.');return;
@@ -1082,13 +1085,13 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='logout'&&presentation){tour.close();endSimulation();return;}
  if(act==='logout'){stopLocation();user=null;session=null;mode='simulation';screen='landing';locationFix=null;movement=null;render();return;}
  if(act==='privacy'){privacy();return;}
- if(act==='start'){startDialog();return;}
+ if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
  if(act==='mode-real'||act==='mode-simulation'){if(presentation&&act==='mode-real'){notify('Neste cenário você não precisa ativar GPS.');return;}if(session?.status==='active')return;mode=act==='mode-real'?'real':'simulation';render();return;}
  if(act==='demo-arrive'||act==='demo-leave'||act==='demo-skip'){startMove(act);return;}
  if(act==='justify'){justificationDialog();return;}
  if(act==='incident-form'){incidentDialog();return;}
- if(act==='complete-point'){if(!session)return;updateLocation(session,locationFix,Date.now());if(!completePoint(session)){notify('Cumpra os 30 segundos dentro do raio e resolva qualquer desvio.');return;}save();render();notify(currentCheckpoint(session)?`Ponto concluído. Ponto ${session.index+1} liberado.`:'Pontos concluídos. Retorne à base.');return;}
+ if(act==='complete-point'){if(!session)return;updateLocation(session,locationFix,Date.now());if(!canCompletePoint(session)){notify('Aguarde os 30 segundos e valide o GPS.');return;}curtain.open();return;}
  if(act==='finish'){if(!session)return;finishDialog();return;}
  if(act==='confirm-finish'){if(finishSession(session)){void ops.recordLifecycle('patrol_end',session);stopLocation();movement=null;save();render();notify('Ronda finalizada, registro salvo neste navegador.')}else notify('Conclua os pontos e retorne à base.');return;}
  if(act==='new-session'){session=null;movement=null;locationFix=null;render();return;}
@@ -1273,5 +1276,12 @@ const ops=createOperationsUpgrade({
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });
 const curtain=createCheckpointCurtain({get:()=>({user,view,session,locationFix}),recordCheckpoint:(checkpoint,files,point)=>ops.recordCheckpoint(checkpoint,files,point),save,render,notify});
+const locationGate=createLocationEntryGate({onGranted:fix=>{
+ if(!presentation)locationFix=fix;
+ const map=liveMaps.find(x=>x?.container?.id==='mobile-map');
+ if(map?.instance){map.instance.flyTo([fix.lat,fix.lng],17,{animate:true,duration:.8});setTimeout(()=>map.fit(),1800)}
+ notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
+ if(!tour.hasSeen())setTimeout(()=>tour.open(),1900);
+}});
 render();
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
