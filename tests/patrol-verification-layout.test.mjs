@@ -36,7 +36,11 @@ test('Ações rápidas aparecem na tela inicial antes da ronda e preservam Inici
  assert.ok(ops.includes('data-ops="central-alert"'));
  assert.ok(ops.includes('data-ops="central-message"'));
  assert.ok(css.includes('.patrol-workspace.sheet-collapsed>.patrol-communication-bar'));
- assert.ok(css.includes('height:clamp(205px,40dvh,330px)!important'),'Mapa mobile não deve ocupar toda a tela');
+ assert.ok(css.includes('position:absolute!important;inset:0!important;z-index:0!important'),'O mapa deve preencher o fundo do vigia');
+ assert.ok(css.includes('grid-template-columns:78px 52px 52px!important'),'Ações compactas ficam no canto oposto ao pânico');
+ assert.ok(css.includes('calc(118px + env(safe-area-inset-bottom,0px))'),'Painel principal fica sobre o mapa, acima dos atalhos');
+ assert.ok(css.includes('@keyframes rp-dock-reveal'),'Ações oferecem resposta visual');
+ assert.ok(css.includes('@media(prefers-reduced-motion:reduce)'),'Animações respeitam acessibilidade');
 });
 
 test('Aba Ponto ocupa o painel de ferramentas apenas durante a ronda',()=>{
@@ -46,4 +50,17 @@ test('Aba Ponto ocupa o painel de ferramentas apenas durante a ronda',()=>{
  assert.match(app,/active\?'<section class="patrol-verification-pane"/);
  const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
  assert.match(css,/\.ux-patrol-stage>\.patrol-verification-pane\[data-ux-tools-pane\]\{overflow-y:auto!important/);
+});
+
+
+test('Janelas móveis apresentam avanço, rolagem e revisão de campos obrigatórios',()=>{
+ const pagination=readFileSync(new URL('../src/dialog-pagination.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
+ assert.ok(pagination.includes('ux-dialog-page-scroll'),'Conteúdo da etapa deve ter scroll próprio');
+ assert.ok(pagination.includes('checkValidity()'),'Avançar valida os campos da etapa atual');
+ assert.ok(pagination.includes('Avançar ›'),'Etapas longas devem ter avançar');
+ assert.ok(pagination.includes('‹ Voltar'),'Etapas longas devem ter voltar');
+ assert.ok(css.includes('dialog[open].ux-dialog-paging .ux-dialog-page-scroll'));
+ assert.ok(css.includes('dialog[open].ux-dialog-paging .ux-dialog-pagination'));
+ assert.ok(css.includes('dialog[open]:not(.guide-dialog):not(.ux06-fullscreen)'),'Janelas comuns não podem ser cortadas');
 });
