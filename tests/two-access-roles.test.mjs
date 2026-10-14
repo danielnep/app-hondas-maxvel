@@ -10,22 +10,17 @@ const range=(source,start,end)=>{
  return source.slice(a,b);
 };
 
-test('as três áreas de acesso são vigia, monitoramento e administrativo',()=>{
+test('as áreas de avaliação incluem vigia, monitoramento, COI, cliente, vistoriador e administração',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
- assert.match(nav,/ronda:/);
- assert.match(nav,/admin:/);
- assert.match(nav,/operador:/);
- for(const oldRole of ['supervisor','gestor','cliente'])assert.doesNotMatch(nav,new RegExp(oldRole+':'));
+ for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])assert.match(nav,new RegExp(role+':'));
+ for(const obsolete of ['supervisor','gestor'])assert.doesNotMatch(nav,new RegExp(obsolete+':'));
  const chooser=range(app,'function loginDialog(){','function startDialog(){');
- assert.match(chooser,/\['ronda','Vigia'/);
- assert.match(chooser,/\['operador','Central de Monitoramento'/);
- assert.match(chooser,/\['admin','Administrativo'/);
- assert.doesNotMatch(chooser,/\['(supervisor|gestor|cliente)'/);
+ for(const [role,label] of [['ronda','Vigia'],['operador','Central de Monitoramento'],['coi','COI'],['cliente','Cliente'],['vistoriador','Vistoriador'],['admin','Administrativo']])
+  assert.ok(chooser.includes("['"+role+"','"+label+"'"),role+' está disponível na escolha inicial');
  const picker=range(app,"if(act==='sim-role-picker'){","if(act==='schedule-tab')");
- assert.doesNotMatch(picker,/\['(supervisor|gestor|cliente)'/);
- assert.match(picker,/\['ronda','Vigia'/);
- assert.match(picker,/\['operador','Monitoramento'/);
- assert.match(picker,/\['admin','Administração'/);
+ for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])
+  assert.ok(picker.includes("['"+role+"',"),'perfil '+role+' disponível no seletor');
+ assert.match(picker,/não representa autenticação/);
 });
 
 test('vigia executa ronda e consulta o próprio histórico, sem acessar relatórios administrativos',()=>{
