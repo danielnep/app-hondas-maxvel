@@ -57,6 +57,9 @@ async function load(){
   if(previousRole!==account.role){
    page=['operador','coi'].includes(account.role)?'monitor':account.role==='cliente'?'client':account.role==='vistoriador'?'inspections':'dashboard';selected=null;root.dataset.loadedRole=account.role;
    const requestedCompose=location.hash.slice(1);
+   if(['admin','master'].includes(account.role)&&requestedCompose==='routes'){
+    page='routes';history.replaceState(null,'',location.pathname+location.search);
+   }
    if(account.role==='ronda'&&['alert','incident','message'].includes(requestedCompose)){
     composeKind=requestedCompose;page='send';history.replaceState(null,'',location.pathname+location.search);
    }
@@ -95,7 +98,7 @@ function dashboardView(){
  const active=rounds.filter(r=>r.status==='em_andamento');
  const totalKm=rounds.reduce((n,r)=>n+(r.km||0),0);
  const summary=[['Rondas',rounds.length],['Em andamento',active.length],['Pendências',open.length],['Distância registrada',totalKm.toFixed(2)+' km']];
- return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">GESTÃO E INDICADORES</div><h1>Painel administrativo</h1><p class="muted">Dados do banco operacional, com análises e histórico para tomada de decisão.</p></div><button data-refresh>Atualizar</button></div>'+
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">GESTÃO E INDICADORES</div><h1>Painel administrativo</h1><p class="muted">Locais acompanhados: '+escape([...new Set(users.map(w=>w.site).filter(Boolean))].join(', ')||'Nenhum posto cadastrado')+'. Dados reais do banco operacional.</p></div><button data-refresh>Atualizar</button></div>'+
  '<div class="cards">'+summary.map(([label,value],i)=>'<div class="metric '+(i===2&&open.length?'urgent':'')+'"><strong>'+value+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
  '<section class="surface"><div class="toolbar"><h2>Ocorrências que precisam de tratamento</h2><button data-page="events">Abrir todas</button></div>'+eventList(open.slice(0,6))+'</section>'+
  '<section class="surface"><div class="toolbar"><h2>Rondas recentes</h2><button data-page="team">Analisar colaboradores</button></div>'+roundTable(rounds.slice(0,7))+'</section>'+
@@ -125,7 +128,7 @@ function monitorView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
  const urgent=open.filter(e=>e.kind==='panic');
  const list=active.length?active:rounds.slice(0,5);
- return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CENTRAL DE MONITORAMENTO</div><h1>Acompanhamento de rondas</h1><p class="muted">Localização, estado do sinal, comunicação e ocorrências de cada vigia.</p></div><button data-refresh>Atualizar agora</button></div>'+
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CENTRAL DE MONITORAMENTO</div><h1>COI · Acompanhamento de rondas</h1><p class="muted">Local, status, histórico, localização GPS e ocorrências de cada vigia. Atualização a cada 30 segundos com a tela aberta.</p></div><button data-refresh>Atualizar agora</button></div>'+
  '<div class="cards">'+[['Rondas ativas',active.length],['Pânicos em aberto',urgent.length],['Pendências',open.length],['Vigias cadastrados',users.filter(w=>w.role==='ronda').length]].map(([n,v],i)=>'<div class="metric '+(i===1&&v?'urgent':'')+'"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
  '<section class="surface"><div class="toolbar"><h2>Prioridade da operação</h2><button data-page="events">Tratar ocorrências</button></div>'+eventList(open.slice(0,8))+'</section>'+
  '<section class="surface"><h2>'+ (active.length?'Rondas em acompanhamento':'Últimas rondas registradas')+'</h2><p class="muted">Posições com horário da última atualização. Ausência de GPS não comprova desvio.</p>'+monitorRows(list)+'</section>'+
@@ -139,8 +142,8 @@ function monitorRows(rows){
   const signal=age<60000?'GPS recente':age<180000?'GPS desatualizado':'Sem GPS recente';
   const lastEvent=events.find(e=>e.round_id===r.id&&['panic','incident','alert','checkpoint'].includes(e.kind));
   return '<details class="details-toggle"><summary>'+escape(worker)+' · '+(r.status==='em_andamento'?'Em ronda':'Última ronda')+
-  ' · '+escape(signal)+'</summary><div class="surface"><div class="detail-grid">'+
-  [['Última posição',fmt(r.lastFixAt)],['Distância',r.km.toFixed(2)+' km'],['Em trajeto',r.minutes==null?'—':r.minutes+' min'],['Bateria',r.lastBattery==null?'—':r.lastBattery+'%'],['Alertas',r.alerts],['Pânico',r.panics]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
+  ' · '+escape(r.site||'Local não informado')+' · '+escape(roundStatus(r))+' · '+escape(signal)+'</summary><div class="surface"><div class="detail-grid">'+
+  [['Local',r.site||'Posto não informado'],['Status',roundStatus(r)],['Percurso',routeCheck(r)],['Última posição',fmt(r.lastFixAt)],['Distância',r.km.toFixed(2)+' km'],['Em trajeto',r.minutes==null?'—':r.minutes+' min'],['Bateria',r.lastBattery==null?'—':r.lastBattery+'%'],['Alertas',r.alerts],['Pânico',r.panics]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
   positionMap(r.lastFix)+
   (lastEvent?'<p class="row" style="margin-top:13px"><button data-event="'+escape(lastEvent.id)+'">Abrir registros e conversar</button></p>':'<p class="muted">Sem ocorrência ou ponto registrado para abrir conversa.</p>')+
   '</div></details>';
@@ -157,8 +160,8 @@ function roundTable(rows){
  return '<div class="list">'+rows.slice(0,30).map(r=>{
   const worker=users.find(w=>w.id===r.userId)?.name||'Colaborador';
   return '<div class="list-item"><span><b>'+escape(worker)+' · '+escape(r.id.slice(0,16))+'</b>'+
-   '<small>'+fmt(r.start)+' · '+escape(r.status.replaceAll('_',' '))+'</small>'+
-   '<small>GPS: '+r.gpsSamples+' amostras · '+r.rejectedGps+' descartadas</small></span>'+
+   '<small>'+escape(r.site||'Local não informado')+' · '+fmt(r.start)+' · '+escape(roundStatus(r))+'</small>'+
+   '<small>'+escape(routeCheck(r))+' · GPS: '+r.gpsSamples+' amostras · '+r.rejectedGps+' descartadas</small></span>'+
    '<span style="text-align:right"><b>'+r.km.toFixed(2)+' km</b><small>'+(r.minutes??'—')+' min · '+r.checkpoints+' pontos</small>'+
    '<small>'+r.panics+' pânicos · '+r.alerts+' alertas · bateria '+(r.lastBattery??'—')+'%</small></span></div>';
  }).join('')+'</div>';
@@ -230,6 +233,12 @@ function eventView(e){
  [['Recebido no servidor',fmt(e.received_at)],['Precisão GPS',e.accuracy==null?'Não informada':e.accuracy+' m'],['Coordenadas',e.lat==null?'Indisponíveis':e.lat+', '+e.lng],['Ronda',e.round_id||'Sem vínculo'],['Arquivos associados',details]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div></div></details></section>';
 }
 
+function routeCheck(r){
+ const issue=events.filter(e=>e.round_id===r.id);
+ if(issue.some(e=>e.kind==='route_deviation'))return 'Possível desvio · analisar';
+ if(issue.some(e=>e.kind==='gps_issue'))return 'Falha técnica GPS';
+ return r.gpsSamples?'Sem desvio registrado':'Sem GPS suficiente';
+}
 const roundStatus=r=>({em_andamento:'Em andamento',concluida:'Concluída',incompleta:'Incompleta',interrompida:'Interrompida',sem_inicio:'Sem início'})[r.status]||String(r.status||'Pendente').replaceAll('_',' ');
 const guideByRole={
  ronda:[['Primeiro acesso','Confirme seu posto, faça a verificação do GPS e consulte os próximos pontos.'],['Execução','Siga a sequência obrigatória de pontos e registre evidências conforme solicitado.'],['Comunicação','Alertas, ocorrências e pânico ficam na área de comunicação com a central.'],['Histórico','Consulte suas rondas e os eventos sincronizados com data e hora.']],
