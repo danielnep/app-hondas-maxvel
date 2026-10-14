@@ -77,7 +77,7 @@ test('Desvio confirmado encerra cortina do ponto e libera justificativa',()=>{
 
 test('Ajuda do mapa não fica embaixo do painel de comandos no celular',()=>{
  const css=readFileSync(new URL('../assets/maxvel-visual-2026.css',import.meta.url),'utf8');
- assert.match(css,/\.patrol-map-canvas \.ux06-map-help\{/);
+ assert.match(css,/\.patrol-workspace>\.ux06-map-help\{/);
  assert.match(css,/top:72px!important;right:12px!important;left:auto!important/);
  assert.match(css,/focus-visible/);
 });
