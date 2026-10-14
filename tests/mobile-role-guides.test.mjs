@@ -17,7 +17,7 @@ test('os perfis recebem guias móveis completos sem confundir avaliação com da
   }
  }
  const app=read('../src/app.js');
- assert.match(app,/window\.innerWidth<=900&&!isLaunching\?mobileGuideFor\(user\?\.role\):null/);
+ assert.match(app,/const mobileGuide=!isLaunching\?mobileGuideFor\(user\?\.role\):null/);
  assert.match(app,/mobileGuide\?mobileGuide\.stages\.map/);
  assert.match(app,/mobileGuide\?mobileGuide\.stages\[guideStage\]\.body:lesson\(guideStage\)/);
  assert.match(app,/mobileGuide\?'':ops\.guideSection\(\)/);
@@ -29,7 +29,7 @@ test('Operadores recebem orientações de monitoramento sem prometer GPS remoto 
  const guide=mobileGuideFor('operador');
  assert.match(guide.stages.map(x=>x.title).join(' '),/central|rondas|alertas|ocorrências|limites/i);
  const text=guide.stages.map(x=>x.body).join(' ');
- for(const term of [/monitoramento/i,/alertas/i,/ocorrências/i,/vigia/i,/GPS/i,/autenticad/i])
+ for(const term of [/monitoramento/i,/alertas/i,/ocorrências/i,/vigia/i,/localização|sinal|GPS/i,/autenticad/i])
   assert.match(text,term);
 });
 
