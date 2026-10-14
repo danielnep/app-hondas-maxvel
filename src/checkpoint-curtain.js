@@ -76,7 +76,7 @@ export function createCheckpointCurtain(api){
   root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel" tabindex="-1">'+
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
-   '<div class="checkpoint-stopwatch" aria-live="polite"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message>Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
+   '<div class="checkpoint-stopwatch" role="timer" aria-live="off"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message role="status" aria-live="polite">Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
    '<div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">0 de 5 posições fotografadas</small></div>'+
    '<div class="checkpoint-view-grid" role="group" aria-label="Captura de fotos por direção">'+EVIDENCE_VIEWS.map(([view,label],i)=>'<button type="button" class="checkpoint-view-action" data-evidence-view="'+view+'" aria-label="Capturar ou substituir foto: '+label+'" aria-pressed="false"><span class="rp2-view-number" aria-hidden="true">'+(i+1)+'</span><span>'+label+'</span><small data-view-state>+</small></button>').join('')+'</div>'+
    '<p class="checkpoint-evidence-hint" data-evidence-required-hint></p>'+
