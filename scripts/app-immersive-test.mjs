@@ -64,7 +64,7 @@ async function capture(page,name,width,height){
  if(metrics.viewport>width+2||metrics.documentWidth>width+3)throw Error('Expansão horizontal: '+JSON.stringify(metrics));
  if(metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
  if(width<=900&&metrics.app&&name==='ronda'&&metrics.map&&metrics.action){
-  if(metrics.map.y<0||metrics.map.bottom>height-45)throw Error('Mapa cortado: '+JSON.stringify(metrics.map));
+  if(metrics.map.y<0||metrics.map.bottom>height+2||metrics.map.bottom<height-35||metrics.map.h<height*.65)throw Error('Mapa não preenche o fundo útil: '+JSON.stringify(metrics.map));
   if(metrics.action.y<0||metrics.action.bottom>height+2)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
  }
  if(name==='ronda'){
@@ -153,7 +153,7 @@ try{
    await capture(page,'agenda-filtrada',width,height);
    await tap(page,'[data-action="sim-role-picker"]');
    await tap(page,'#dialog [data-action="sim-role"][data-role="ronda"]');
-   await tap(page,width<=900?'.patrol-map-canvas [data-action="feature-help"]':'.patrol-map-heading [data-action="feature-help"]');
+   await tap(page,width<=900?'.patrol-workspace > .ux06-map-help':'.patrol-map-heading [data-action="feature-help"]');
    if(!await page.locator('#dialog[open] .help-detail').count())throw Error('Ajuda contextual ? inativa');
    if(width<=900){
     await page.emulateMedia({reducedMotion:'no-preference'});
@@ -171,7 +171,7 @@ try{
     await page.mouse.move(second.x+second.width/2,second.y+second.height/2);await page.mouse.down();
     await page.mouse.move(second.x+second.width/2,second.y+second.height/2+140,{steps:9});await page.mouse.up();
     if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Arrasto longo não fechou a janela');
-    await tap(page,width<=900?'.patrol-map-canvas [data-action="feature-help"]':'.patrol-map-heading [data-action="feature-help"]');
+    await tap(page,width<=900?'.patrol-workspace > .ux06-map-help':'.patrol-map-heading [data-action="feature-help"]');
     await page.emulateMedia({reducedMotion:'reduce'});
     const reduced=await page.locator('.ronda-pro-wordmark b:visible').first().evaluate(el=>getComputedStyle(el).animationName);
     if(reduced!=='none')throw Error('Preferência de movimento reduzido ignorada: '+reduced);

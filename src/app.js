@@ -346,7 +346,7 @@ function installViewportViews(){
  if(view==='equipe')paginateRows(main,'.team-row','Equipe',4);
 }
 
-function render(){if(user?.role!=='ronda'||view!=='minha-ronda')curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(presentation&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
@@ -358,7 +358,14 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda')curtain?.close()
  const workspace=document.querySelector('.patrol-workspace');
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
- attachMaps();ops.decorate();installManager.decorate();uiMotion.enterView();justRendered=Date.now();
+ attachMaps();ops.decorate();
+ // Ajuda da cartografia pertence ao nível do cockpit: atrás do painel o ícone
+ // fica visível mas não recebe clique, mesmo com z-index elevado no filho.
+ if(window.innerWidth<=900&&workspace){
+  const mapHelp=workspace.querySelector('.patrol-map-canvas .ux06-map-help');
+  if(mapHelp)workspace.append(mapHelp);
+ }
+ installManager.decorate();uiMotion.enterView();justRendered=Date.now();
  if(user?.role==='ronda'&&view==='minha-ronda'&&screen!=='landing'&&!locationGate.isGranted())locationGate.open({demo:presentation});
  else if(user?.role!=='ronda'||view!=='minha-ronda')locationGate.close();
 }

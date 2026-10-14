@@ -2,7 +2,7 @@
  * Cortina de checagem do ponto. Não bloqueia controles do Android ou chamadas reais;
  * somente impede a navegação dentro da experiência de ronda até registrar a visita.
  */
-import {canCompletePoint,completePoint,currentCheckpoint,requiredDwellMs} from './domain.js';
+import {canCompletePoint,completePoint,currentCheckpoint,requiredDwellMs,hasBlock} from './domain.js';
 import {evidenceButtons,createMediaCapture} from './media-capture.js';
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createCheckpointCurtain(api){
@@ -13,7 +13,7 @@ export function createCheckpointCurtain(api){
  const status=()=>{
   if(!root)return;
   const s=api.get().session,point=s&&currentCheckpoint(s);
-  if(!s||s.status!=='active'||!point||key!==s.id+':'+s.index){close();return}
+  if(!s||s.status!=='active'||!point||key!==s.id+':'+s.index||hasBlock(s)){close();return}
   const elapsed=Math.round(s.checkpoints[s.index].dwellMs/1000),target=Math.round(requiredDwellMs(s)/1000);
   const remain=Math.max(0,target-elapsed);
   root.querySelector('[data-dwell-seconds]').textContent=String(remain).padStart(2,'0');
@@ -34,6 +34,7 @@ export function createCheckpointCurtain(api){
  };
  function open(){
   const state=api.get(),s=state.session,p=s&&currentCheckpoint(s);
+  if(s?.status==='active'&&hasBlock(s)){close();return}
   if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||!p||s.insideSince==null){status();return}
   const next=s.id+':'+s.index;if(root&&key===next){status();return}
   close();key=next;document.body.classList.add('checkpoint-arrived');root=document.createElement('section');
