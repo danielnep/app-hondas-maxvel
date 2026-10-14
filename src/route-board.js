@@ -49,7 +49,7 @@ export function createRouteBoard({api,getContext,redraw,notify}){
   return '<article class="route-line'+(live?' is-live':'')+'">'+mapArea(item,i)+
    '<div class="route-line-info"><div class="route-row-top"><span class="route-status'+(live?' live':'')+'">'+esc(label)+'</span><small>'+esc(site)+'</small></div>'+
    '<h3>'+esc(name)+'</h3><p class="muted">'+esc(gpsStatus)+(r?.status==='em_andamento'&&!live?' · Sinal a confirmar':'')+'</p>'+
-   '<div class="route-facts"><span>Início <b>'+stamp(r?.start)+'</b></span><span>Pontos <b>'+esc(r?.checkpoints??def?.points?.length??0)+'</b></span><span>Bateria <b>'+(r?.lastBattery==null?'—':r.lastBattery+'%')+'</b></span><span>GPS válido <b>'+gps.length+' amostras</b></span></div>'+
+   '<div class="route-facts"><span>Início <b>'+stamp(r?.start)+'</b></span><span>Pontos <b>'+esc(r?.checkpoints??def?.points?.length??0)+'</b></span><span>Bateria <b>'+(r?.lastBattery==null?'—':r.lastBattery+'%')+'</b></span><span>GPS válido <b>'+Number(r?.gpsSamples??gps.length)+' amostras</b></span></div>'+
    (recent?'<p class="route-attention">Registro: '+esc(recent.kind==='gps_issue'?'Falha técnica GPS':recent.kind==='route_deviation'?'Desvio a verificar':recent.kind==='panic'?'Pânico':recent.kind==='patrol_incomplete'?'Ronda incompleta':recent.kind==='patrol_interrupted'?'Ronda interrompida':'Ocorrência')+' · '+stamp(recent.occurred_at)+'</p>':'')+
    (def?'<p class="route-checkpoints">Pontos previstos: '+def.points.map(p=>esc(p.name)).join(' → ')+'</p>':'<p class="muted">Traçado planejado indisponível; somente posições recebidas podem aparecer no mapa.</p>')+
    '<div class="route-actions">'+(def?'<button type="button" data-route-edit="'+esc(def.id)+'">Editar rota</button>':'')+(r?'<button type="button" data-route-events="'+esc(r.id)+'">Ver cronologia</button>':'')+'</div>'+
@@ -74,7 +74,7 @@ export function createRouteBoard({api,getContext,redraw,notify}){
  function render(){
   const workerList=chooseWorker(),person=chosenWorker(),items=routeHistory();
   const active=items.filter(x=>x.round?.status==='em_andamento').length;
-  return '<section class="stack route-board"><header class="toolbar route-titlebar"><div><div class="eyebrow">CONTROLE ADMINISTRATIVO · MAPAS E ROTAS</div><h1>Rotas por colaborador</h1><p class="muted">Organize os percursos e acompanhe execuções registradas, da mais recente para a mais antiga.</p></div><button type="button" class="primary" data-route-create '+(!person?'disabled':'')+'>+ Criar nova rota</button></header>'+
+  return '<section class="stack route-board"><header class="toolbar route-titlebar"><div><div class="eyebrow">CONTROLE ADMINISTRATIVO · MAPAS E ROTAS</div><h1>Rotas por colaborador</h1><p class="muted">Organize os percursos e acompanhe execuções registradas, da mais recente para a mais antiga.</p></div><button type="button" class="primary" data-route-create '+(!person?'disabled':'')+'>+ Criar nova rota para colaborador</button></header>'+
    '<div class="surface route-filter"><label>Selecionar vigia<select id="route-worker">'+workerList.map(w=>'<option value="'+esc(w.id)+'" '+(w.id===watcher?'selected':'')+'>'+esc(w.name)+' · '+esc(w.site||'Local não definido')+'</option>').join('')+'</select></label>'+
    '<div class="route-counter"><strong>'+active+'</strong><small>em andamento</small></div><div class="route-counter"><strong>'+items.length+'</strong><small>rotas e execuções</small></div></div>'+
    editorHtml()+'<div class="route-lines">'+(items.length?items.slice(0,16).map(row).join(''):'<div class="surface empty">'+(person?'Nenhuma rota ou execução registrada para este colaborador. Use Criar nova rota.':'Cadastre um usuário Vigia na área Colaboradores para organizar as rotas.')+'</div>')+'</div>'+
@@ -110,7 +110,8 @@ export function createRouteBoard({api,getContext,redraw,notify}){
   };
   items.slice(0,16).forEach(item=>{
    const host=[...document.querySelectorAll('[data-route-map]')].find(el=>el.dataset.routeMap===item.key);
-   const actual=item.activity.filter(e=>e.kind==='gps'&&Number.isFinite(e.lat)&&Number.isFinite(e.lng)&&Number.isFinite(e.accuracy)&&e.accuracy<=35);
+   const track=Array.isArray(item.round?.track)?item.round.track:[];
+   const actual=track.length?track:item.activity.filter(e=>e.kind==='gps'&&Number.isFinite(e.lat)&&Number.isFinite(e.lng)&&Number.isFinite(e.accuracy)&&e.accuracy<=35);
    draw(host,item.def?.points||[],actual,item.round?.lastFix);
   });
   if(editor){
