@@ -3,7 +3,8 @@ const root=document.querySelector('#central-root'),exit=document.querySelector('
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
 const id=x=>escape(x);
-const friendly={panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término'};
+const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término'};
+let composeKind='message';
 let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[];
 const roles={ronda:'Vigia',operador:'Equipe interna',admin:'Administrador',master:'Master'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
@@ -14,6 +15,30 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','admin','master'].includes(account.role);
+const actionGlyph={
+ alert:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 9 16H3L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>',
+ incident:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/></svg>',
+ message:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v12H9l-5 4V5Z"/><path d="M8 10h8M8 13h6"/></svg>'
+};
+const composerActions=[['alert','Enviar alerta'],['incident','Registrar ocorrência'],['message','Enviar mensagem']];
+function composeActionButtons(){
+ return '<div class="central-quick-actions" role="group" aria-label="Comunicação com a central">'+
+  composerActions.map(([kind,label])=>'<button type="button" class="central-quick-action '+(page==='send'&&composeKind===kind?'selected':'')+'" data-compose="'+kind+'" aria-pressed="'+(page==='send'&&composeKind===kind)+'">'+actionGlyph[kind]+'<span>'+label+'</span></button>').join('')+'</div>';
+}
+async function eventTelemetry(){
+ const context={};
+ try{if(navigator.getBattery){const reading=await navigator.getBattery();if(Number.isFinite(reading?.level))context.battery=Math.round(reading.level*100)}}catch{}
+ try{
+  const permission=await navigator.permissions?.query({name:'geolocation'});
+  if(permission?.state==='granted'&&navigator.geolocation){
+   const fix=await new Promise(resolve=>navigator.geolocation.getCurrentPosition(resolve,()=>resolve(null),{maximumAge:90000,timeout:1200,enableHighAccuracy:false}));
+   if(fix&&Number.isFinite(fix.coords.latitude)&&Number.isFinite(fix.coords.longitude))
+    context.position={lat:fix.coords.latitude,lng:fix.coords.longitude,accuracy:fix.coords.accuracy};
+  }
+ }catch{}
+ return context;
+}
+
 function loginView(error=''){
  roleTag.textContent='';exit.hidden=true;
  root.innerHTML='<form id="central-login" class="login"><h1>Central operacional</h1><p>Área com autenticação própria para a operação real. O perfil de demonstração do site não libera acesso a estes registros.</p>'+
@@ -27,7 +52,13 @@ async function load(){
  try{
   account=(await api('/me')).user;roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
   const previousRole=root.dataset.loadedRole;
-  if(previousRole!==account.role){page=account.role==='operador'?'monitor':'dashboard';selected=null;root.dataset.loadedRole=account.role;}
+  if(previousRole!==account.role){
+   page=account.role==='operador'?'monitor':'dashboard';selected=null;root.dataset.loadedRole=account.role;
+   const requestedCompose=location.hash.slice(1);
+   if(account.role==='ronda'&&['alert','incident','message'].includes(requestedCompose)){
+    composeKind=requestedCompose;page='send';history.replaceState(null,'',location.pathname+location.search);
+   }
+  }
   const requested=[api('/events?limit=500'),api('/templates'),api('/rounds')];
   if(review())requested.push(api('/dashboard'),api('/users'),api('/email-jobs'));
   else requested.push(api('/my-summary'));
@@ -39,7 +70,7 @@ async function load(){
  }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
- ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Avisar equipe','✉']],
+ ronda:[['dashboard','Minha ronda','◉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉']],
  operador:[['monitor','Monitoramento','◉'],['events','Alertas e ocorrências','!'],['team','Vigias','♙']],
  admin:[['dashboard','Indicadores','▥'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩']],
  master:[['dashboard','Indicadores','▥'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩']]
@@ -51,7 +82,7 @@ function kpis(){
  return '<div class="cards">'+[['Eventos',events.length],['Pânicos',kinds.panic||0],['Ocorrências',kinds.incident||0],['Amostras GPS',kinds.gps||0],['Alertas de e-mail',kinds.alert||0],['Baterias monitoradas',kinds.battery||0]].map(([label,num])=>'<div class="metric"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>';
 }
 function dashboardView(){
- const open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
+ const open=events.filter(e=>['panic','incident','message','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
  const active=rounds.filter(r=>r.status==='em_andamento');
  const totalKm=rounds.reduce((n,r)=>n+(r.km||0),0);
  const summary=[['Rondas',rounds.length],['Em andamento',active.length],['Pendências',open.length],['Distância registrada',totalKm.toFixed(2)+' km']];
@@ -63,10 +94,10 @@ function dashboardView(){
 }
 function ownDashboard(){
  const mine=mySummary||{},all=mine.rounds||rounds,activity=events.filter(e=>e.kind!=='gps'&&e.kind!=='battery');
- const open=activity.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
+ const open=activity.filter(e=>['incident','panic','alert','message','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
  const latest=all.find(r=>r.status==='em_andamento')||all[0];
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">ACESSO DO VIGIA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
- '<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
+ composeActionButtons()+'<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','message','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
  '<section class="surface"><div class="toolbar"><h2>Minha execução mais recente</h2><button data-page="history">Histórico completo</button></div>'+
  (latest?'<div class="detail-grid">'+[['Início',fmt(latest.start)],['Estado',latest.status.replaceAll('_',' ')],['Percorrido',latest.km.toFixed(2)+' km'],['Tempo em trajeto',latest.minutes==null?'Sem registro':latest.minutes+' min'],['Alertas',latest.alerts],['Pânico',latest.panics],['Bateria',latest.lastBattery==null?'Não informada':latest.lastBattery+'%']].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>':'<div class="empty">Nenhuma ronda real sincronizada para sua conta.</div>')+
  '</section><section class="surface"><div class="toolbar"><h2>Minhas ocorrências e mensagens</h2><button data-page="send">Enviar alerta</button></div>'+eventList(open.slice(0,6))+'</section>'+
@@ -82,7 +113,7 @@ function ownHistory(){
  '<p class="muted">Distâncias são estimativas de amostras GPS confiáveis. O histórico remoto só mostra dados efetivamente sincronizados.</p></section>';
 }
 function monitorView(){
- const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
+ const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','message','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
  const urgent=open.filter(e=>e.kind==='panic');
  const list=active.length?active:rounds.slice(0,5);
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CENTRAL DE MONITORAMENTO</div><h1>Acompanhamento de rondas</h1><p class="muted">Localização, estado do sinal, comunicação e ocorrências de cada vigia.</p></div><button data-refresh>Atualizar agora</button></div>'+
@@ -127,7 +158,7 @@ function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
 function eventsView(){
- const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
+ const priority=events.filter(e=>['incident','panic','alert','message','route_deviation','gps_issue'].includes(e.kind));
  const ordinary=events.filter(e=>!priority.includes(e));
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">TRATAMENTO E REGISTROS</div><h1>Ocorrências</h1><p class="muted">Prioridades, respostas da equipe, evidências e histórico.</p></div><button data-refresh>Atualizar</button></div>'+
  '<section class="surface"><h2>Exigem atenção</h2>'+eventList(priority.filter(e=>e.status!=='resolvida'))+'</section>'+
@@ -155,7 +186,15 @@ function emailHistory(){
   (privileged()&&job.status!=='accepted'?'<button data-retry-email="'+escape(job.event_id)+'">Reenviar</button>':'')+'</span></div>').join('')+'</div>';
 }
 function sendView(){
- return '<section class="stack"><h1>Alerta por e-mail</h1><form id="send-alert" class="surface"><p class="muted">Função separada do botão de pânico. O registro é salvo antes de tentar a notificação.</p><label>Modelo<select name="templateId">'+templates.filter(t=>t.enabled&&t.trigger==='manual').map(t=>'<option value="'+id(t.id)+'">'+escape(t.title)+'</option>').join('')+'</select></label><label>Descrição<textarea name="description" required minlength="10" maxlength="2000"></textarea></label><button class="primary">Registrar alerta</button></form></section>';
+ const manual=templates.filter(t=>t.enabled&&t.trigger==='manual');
+ const form=composeKind==='alert'
+  ?'<form id="send-alert" class="surface stack"><h2>Enviar alerta à central</h2><p class="muted">Para situações que precisam de atenção. O evento é salvo no servidor; o envio de e-mail depende dos modelos e destinatários configurados.</p>'+
+   (manual.length?'<label>Tipo de alerta<select name="templateId">'+manual.map(t=>'<option value="'+id(t.id)+'">'+escape(t.title)+'</option>').join('')+'</select></label>':'<p class="muted">Sem modelo de e-mail habilitado. O alerta ainda será registrado na central.</p>')+
+   '<label>Descreva o alerta<textarea name="description" required minlength="10" maxlength="2000" placeholder="O que a central precisa saber?"></textarea></label><button class="primary">Enviar alerta</button></form>'
+  :composeKind==='incident'
+   ?'<form id="register-incident" class="surface stack"><h2>Registrar ocorrência</h2><p class="muted">Documente um fato observado. Depois de registrar, você poderá adicionar evidências e acompanhar as respostas.</p><label>Assunto<input name="title" minlength="3" maxlength="100" required placeholder="Ex.: Acesso não autorizado"></label><label>Descrição<textarea name="description" required minlength="10" maxlength="1800" placeholder="Descreva o que aconteceu..."></textarea></label><button class="primary">Registrar ocorrência</button></form>'
+   :'<form id="send-note" class="surface stack"><h2>Enviar mensagem à central</h2><p class="muted">Comunicação cotidiana, sem classificar automaticamente como emergência ou ocorrência.</p><label>Mensagem<textarea name="description" required minlength="3" maxlength="2000" placeholder="Escreva sua mensagem..."></textarea></label><button class="primary">Enviar mensagem</button></form>';
+ return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CONTATO OPERACIONAL</div><h1>Comunicar à central</h1><p class="muted">Escolha o tipo de comunicação. O botão de pânico permanece disponível para urgências.</p></div></div>'+composeActionButtons()+form+'</section>';
 }
 function exportView(){
  return '<div class="stack"><h1>Relatório inteligente</h1><div class="cards">'+[['Rondas',events.filter(e=>e.kind==='patrol_start').length],['Pânicos',events.filter(e=>e.kind==='panic').length],['Ocorrências',events.filter(e=>e.kind==='incident').length],['Registros GPS',events.filter(e=>e.kind==='gps').length]].map(([x,y])=>'<div class="metric"><strong>'+y+'</strong><span>'+x+'</span></div>').join('')+'</div><section class="surface"><h2>Exportar Excel completo</h2><p>O XLSX inclui uma primeira aba Dashboard formatada, seguida de abas com eventos e conversas. Os dados dependem dos registros efetivamente sincronizados.</p><div class="row"><button class="primary" id="download-xlsx">Baixar XLSX com abas</button><button id="download-json">Exportar JSON</button><button id="download-csv">Conversas CSV</button></div></section><section class="surface"><h2>Conversas em PDF</h2><p>Histórico com remetente, data e hora de cada mensagem. O navegador permite salvar como PDF.</p><button id="print-all-chats">Imprimir todas as conversas / PDF</button></section></div>';
@@ -170,7 +209,7 @@ function eventView(e){
  (Number.isFinite(e.lat)&&Number.isFinite(e.lng)?positionMap({lat:e.lat,lng:e.lng}):'<p class="muted">Sem geolocalização confiável anexada a este registro.</p>')+
  '</section>'+
  (review()?'<section class="surface no-print"><h2>Tratamento pela equipe</h2><form id="review-event" class="stack"><div class="row"><label style="max-width:230px;flex:1">Situação<select name="status"><option value="aberta" '+(e.status==='aberta'?'selected':'')+'>Aberta</option><option value="em_analise" '+(e.status==='em_analise'?'selected':'')+'>Em análise</option><option value="resolvida" '+(e.status==='resolvida'?'selected':'')+'>Resolvida</option></select></label><button class="primary" type="submit">Salvar tratamento</button></div><label>Providência / descrição interna<textarea name="note" placeholder="O que foi verificado e qual providência foi tomada?"></textarea></label></form></section>':'')+
- '<section class="surface"><h2>Evidências da ocorrência</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
+ '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
  '<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" name="file" required></label><button>Enviar mídia</button></form></section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
  '<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
@@ -186,7 +225,9 @@ function render(){
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='operador'?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
    page==='dashboard'?dashboardView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
- root.innerHTML='<div class="workspace">'+nav()+'<article class="content">'+content+'</article></div>';
+ root.innerHTML='<div class="workspace">'+nav()+'<article class="content">'+content+'</article></div>'+
+  (account.role==='ronda'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
+  '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
 }
 async function loadMessages(eventId){
@@ -247,6 +288,17 @@ async function printAllConversations(){
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
+  if(target.dataset.compose){if(account?.role!=='ronda'||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;page='send';render();return;}
+  if(target.id==='central-panic'){document.querySelector('#central-panic-dialog')?.showModal();return;}
+  if(target.id==='panic-cancel'){document.querySelector('#central-panic-dialog')?.close();return;}
+  if(target.id==='panic-send'){
+   target.disabled=true;
+   try{
+    await api('/events',{method:'POST',data:{kind:'panic',occurredAt:Date.now(),description:'Botão de pânico acionado pelo vigia',...await eventTelemetry()}});
+    document.querySelector('#central-panic-dialog')?.close();await load();flash('Pânico registrado no servidor da central.');
+   }finally{if(target.isConnected)target.disabled=false}
+   return;
+  }
   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;selected=null;page=target.dataset.page;render();return;}
   if(target.dataset.event){const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
@@ -271,16 +323,22 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
  const form=e.target;
- if(!['central-login','new-user','save-template','recipient-form','send-alert','review-event','send-message','upload-evidence'].includes(form.id))return;
+ if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','review-event','send-message','upload-evidence'].includes(form.id))return;
  e.preventDefault();const d=Object.fromEntries(new FormData(form));
  try{
   if(form.id==='central-login'){const result=await api('/login',{method:'POST',data:d});token=result.token;sessionStorage.setItem('rondaspro_api_token',token);await load();return;}
   if(form.id==='new-user'){await api('/users',{method:'POST',data:d});flash('Colaborador cadastrado.');await load();return;}
   if(form.id==='save-template'){const f=new FormData(form);const recipients=f.getAll('recipients');if(!recipients.length)throw Error('Escolha ao menos um grupo destinatário.');await api('/templates',{method:'POST',data:{...d,enabled:f.has('enabled'),cooldownMin:Number(d.cooldownMin),recipients}});flash('Modelo salvo no banco.');await load();return;}
   if(form.id==='recipient-form'){await api('/recipients',{method:'POST',data:{email:d.email,groupName:d.groupName,enabled:true}});form.reset();flash('Destinatário cadastrado.');return;}
-  if(form.id==='send-alert'){
-   await api('/events',{method:'POST',data:{kind:'alert',occurredAt:Date.now(),description:d.description,details:{templateId:d.templateId}}});
-   flash('Alerta registrado. Consulte o status do envio no servidor.');page='events';await load();return;
+  if(form.id==='send-alert'||form.id==='register-incident'||form.id==='send-note'){
+   const kind=form.id==='send-alert'?'alert':form.id==='register-incident'?'incident':'message';
+   const title=String(d.title||'').trim();
+   const description=kind==='incident'?title+' · '+String(d.description||'').trim():String(d.description||'').trim();
+   const details=kind==='alert'&&d.templateId?{templateId:d.templateId}:kind==='incident'?{title}:{channel:'central',category:'routine'};
+   await api('/events',{method:'POST',data:{kind,occurredAt:Date.now(),description,details,...await eventTelemetry()}});
+   page='history';await load();
+   flash(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':'Mensagem registrada na central.');
+   return;
   }
   if(form.id==='review-event'){await api('/events/'+selected.event.id+'/review',{method:'POST',data:d});flash('Tratamento registrado.');await load();return;}
   if(form.id==='send-message'){await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general'}});form.reset();await loadMessages(selected.event.id);return;}
