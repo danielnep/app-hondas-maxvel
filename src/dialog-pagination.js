@@ -57,10 +57,14 @@ export function installDialogPagination(dialog){
    }
    page=Math.max(0,Math.min(chunks.length-1,page+(bt.dataset.dialogPage==='next'?1:-1)));
    paint();
-   const first=chunks[page][0];
-   if(first)first.scrollIntoView({block:'nearest',behavior:'instant'});
+   scroller.scrollTop=0;
   });
-  host.append(navigation);
+  // Cabeçalho fixo + conteúdo rolável + navegação de etapas fixa.
+  // Mover os nós, em vez de cloná-los, preserva listeners, valores e o formulário original.
+  const scroller=document.createElement('div');
+  scroller.className='ux-dialog-page-scroll';
+  for(const el of body)scroller.append(el);
+  host.append(scroller,navigation);
   // Campo obrigatório de página anterior: revele sua página e permita correção.
   host.addEventListener('invalid',event=>{
    const idx=chunks.findIndex(group=>group.some(el=>el===event.target||el.contains(event.target)));
