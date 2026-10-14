@@ -707,6 +707,7 @@ function patrolMapClock(){
   <span class="patrol-clock-label">${ic('clock')} <span data-live="clock-state">${label}</span></span>
   <strong><span data-live="seconds">${seconds}</span><small> / ${required} s</small></strong></div>`;
 }
+/** Verificação e comunicação pertencem à aba Ponto; nunca devem deslocar Iniciar ronda. */
 function phoneContent(){
  const s=session,route=s?.route??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
  const state=active?(hasBlock(s)?'Atenção · justificativa':point?`Ponto ${s.index+1} de ${route.points.length}`:'Retorno à base'):s?.status==='completed'?'Ronda concluída':'Ronda preparada';
