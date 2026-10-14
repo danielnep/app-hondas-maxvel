@@ -1,4 +1,4 @@
-import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation} from './domain.js';
+import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
 import {PatrolMap} from './map.js';
 import {createRoundWizard} from './wizard.js';
 import {withExampleRondas} from './demo-scenarios.js';
@@ -445,6 +445,7 @@ function beginSimulation(name,autoStart=false,startRole='ronda'){
  user={name:presentationName,role:startRole};
  view=startRole==='ronda'?'minha-ronda':startRole==='cliente'?'cliente':startRole==='vistoriador'?'vistoriador':'overview';
  session=autoStart?createSession(presentationName,DEMO_ROUTE,Date.now(),'simulation'):null;
+ if(session){session.requiresManualCheckin=true;session.fastDemoClock=true;}
  if(startRole==='ronda')selectedWatcherId=DEMO_WATCHERS.find(w=>w.name===presentationName)?.id??'v01';
  locationFix={...DEMO_ROUTE.base,accuracy:5,at:Date.now()};
  movement=null;
@@ -723,7 +724,7 @@ function settings(){
 function personalRecords(){const mine=sessionList().filter(s=>s.name===user.name);return pageTitle('Meus registros','Consulte suas rondas, horários e justificativas.',helpButton('reports','histórico'))+`<div class="card">${tablePatrols(mine)}</div>`}
 function legend(){return `<div class="map-legend maxvel-map-legend" aria-label="Legenda operacional do mapa"><span><i class="legend-dot base"></i>Base</span><span><i class="legend-dot"></i>Ponto planejado</span><span><i class="legend-dot done"></i>Concluído</span><span><i class="legend-dot radius"></i>Raio de 25 m</span><span><i class="legend-line planned"></i>Traçado ilustrativo</span><span><i class="legend-line traced"></i>Posição percorrida</span></div>`}
 const latestDeviation=()=>session?.deviations.at(-1)??null;
-function coach(){if(!session)return {n:1,title:'Inicie a ronda',detail:'Clique em “Iniciar ronda”. Antes de começar, leia e aceite as orientações.',benefit:'Processo iniciado com regras explícitas.'};if(session.status==='completed')return {n:7,title:'Ronda concluída',detail:'Abra o histórico para consultar horários e eventos registrados.',benefit:'Sequência e retorno documentados.'};if(movement)return {n:2,title:'Acompanhe o deslocamento',detail:'O marcador percorre posições intermediárias sobre o mapa real. Aguarde chegar ao destino.',benefit:'Acompanhamento visual da rota fictícia.'};const d=latestDeviation();if(d&&!d.justification)return {n:4,title:'Justificativa pendente',detail:'No celular, clique em “Escrever justificativa”. O avanço continua bloqueado.',benefit:'A supervisão consulta o desvio e a explicação.'};if(d&&!d.returnedAt)return {n:5,title:'Retorne ao ponto obrigatório',detail:'Justificar não conclui o ponto. Use “Deslocar até o ponto” para retornar e cumprir a permanência.',benefit:'A sequência de verificações permanece obrigatória.'};const p=currentCheckpoint(session);if(!p)return {n:6,title:'Retorne à base',detail:'Use “Retornar à base” e depois finalize a ronda.',benefit:'A operação se encerra na base prevista.'};if(session.insideSince===null)return {n:2,title:`Desloque-se até o ponto ${session.index+1}`,detail:'O botão de deslocamento simula o percurso. A contagem começará ao entrar no raio de 25 m.',benefit:'Só o ponto atual pode ser validado.'};if(!canCompletePoint(session))return {n:3,title:'Permaneça no raio',detail:`Aguarde ${Math.max(0,Math.ceil((requiredDwellMs(session)-session.checkpoints[session.index].dwellMs)/1000))} s. Se sair, a contagem reinicia.`,benefit:'A permanência tem duração verificável.'};return {n:3,title:'Confirme este ponto',detail:'Toque em “Concluir ponto e seguir”. Somente então o próximo ponto ficará disponível.',benefit:'Progressão condicionada à validação.'};}
+function coach(){if(!session)return {n:1,title:'Inicie a ronda',detail:'Clique em “Iniciar ronda”. Antes de começar, leia e aceite as orientações.',benefit:'Processo iniciado com regras explícitas.'};if(session.status==='completed')return {n:7,title:'Ronda concluída',detail:'Abra o histórico para consultar horários e eventos registrados.',benefit:'Sequência e retorno documentados.'};if(movement)return {n:2,title:'Acompanhe o deslocamento',detail:'O marcador percorre posições intermediárias sobre o mapa real. Aguarde chegar ao destino.',benefit:'Acompanhamento visual da rota fictícia.'};const d=latestDeviation();if(d&&!d.justification)return {n:4,title:'Justificativa pendente',detail:'No celular, clique em “Escrever justificativa”. O avanço continua bloqueado.',benefit:'A supervisão consulta o desvio e a explicação.'};if(d&&!d.returnedAt)return {n:5,title:'Retorne ao ponto obrigatório',detail:'Justificar não conclui o ponto. Use “Deslocar até o ponto” para retornar e cumprir a permanência.',benefit:'A sequência de verificações permanece obrigatória.'};const p=currentCheckpoint(session);if(!p)return {n:6,title:'Retorne à base',detail:'Use “Retornar à base” e depois finalize a ronda.',benefit:'A operação se encerra na base prevista.'};if(session.insideSince===null)return {n:2,title:`Desloque-se até o ponto ${session.index+1}`,detail:'Use Deslocar, chegue ao destino e toque em Estou Aqui. Aproximação não inicia o cronômetro.',benefit:'Confirmação presencial obrigatória.'};if(!canCompletePoint(session))return {n:3,title:'Permaneça no raio',detail:`Aguarde ${Math.max(0,Math.ceil((requiredDwellMs(session)-session.checkpoints[session.index].dwellMs)/1000))} s. Se sair, a contagem reinicia.`,benefit:'A permanência tem duração verificável.'};return {n:3,title:'Confirme este ponto',detail:'Toque em “Concluir ponto e seguir”. Somente então o próximo ponto ficará disponível.',benefit:'Progressão condicionada à validação.'};}
 function coachHtml(){const c=coach();return `<aside class="guide-inline" aria-label="Ajuda da etapa atual"><span class="stepnum">${String(c.n).padStart(2,'0')}</span><div style="flex:1"><strong data-live="coach-title">${esc(c.title)}</strong><p data-live="coach-detail">${esc(c.detail)}</p></div><button data-action="guide">Ajuda</button></aside>`}
 function phoneTelemetry(){
  const s=session,point=s?.status==='active'?currentCheckpoint(s):null;
@@ -736,35 +737,51 @@ function phoneTelemetry(){
 function readyStartPanel(){
  return `<div class="patrol-stage-intro"><span class="patrol-stage-index">01 · PREPARAÇÃO</span><h2>Pronto para iniciar?</h2><p>Ronda em quatro pontos. Raio de 25 metros e 30 segundos de permanência por ponto.</p></div><div class="patrol-mode-toggle" aria-label="Modo da ronda"><button type="button" class="${mode==='simulation'?'selected':''}" data-action="mode-simulation" aria-pressed="${mode==='simulation'}">${ic('play')} Cenário</button><button type="button" class="${mode==='real'?'selected':''}" data-action="mode-real" ${presentation?'disabled':''} aria-pressed="${mode==='real'}">${ic('crosshair')} GPS real</button></div>${btn('Iniciar ronda '+ic('arrow'),'start','primary full')}<p class="patrol-microtext">${presentation?'Você experimenta o próprio aplicativo, com mapa e alertas ilustrativos.':mode==='real'?'O aparelho solicitará permissão para localização durante a ronda.':'O mapa contém ruas reais; trajeto e posições do cenário são simulados.'}</p>`;
 }
+function navigationShortcuts(point){
+ if(!point)return '';
+ const lat=Number(point.lat),lng=Number(point.lng);
+ if(!Number.isFinite(lat)||!Number.isFinite(lng))return '';
+ const coord=encodeURIComponent(lat+','+lng);
+ const maps='https://www.google.com/maps/dir/?api=1&destination='+coord;
+ const waze='https://waze.com/ul?ll='+coord+'&navigate=yes';
+ return '<div class="rondas-directions" aria-label="Navegação externa ao destino">'+
+  '<span>Próximo destino · '+esc(point.name)+'</span><div class="rondas-directions-links">'+
+  '<a href="'+esc(maps)+'" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>'+
+  '<a href="'+esc(waze)+'" target="_blank" rel="noopener noreferrer">Waze ↗</a></div>'+
+  (mode==='simulation'?'<small>Coordenadas fictícias nesta demonstração. Não utilize para um atendimento real.</small>':'<small>O aplicativo de trânsito receberá as coordenadas do ponto.</small>')+'</div>';
+}
 function patrolActionContent(){
  const s=session,active=s?.status==='active',complete=s?.status==='completed',route=s?.route??DEMO_ROUTE;
  const p=active?currentCheckpoint(s):null,dev=active?latestDeviation():null,blocked=active&&hasBlock(s);
  if(!s)return readyStartPanel();
- if(complete)return `<div class="patrol-stage-intro"><span class="patrol-stage-index">RONDA FINALIZADA</span><h2>${ic('checkcircle')} Todos os pontos concluídos</h2><p>Etapas e retorno à base registrados para acompanhamento pela Administração.</p></div>${btn('Nova ronda','new-session','primary full')}`;
- if(blocked&&dev&&!dev.justification)return `<div class="patrol-stage-intro is-alert"><span class="patrol-stage-index">${ic('alert')} ATENÇÃO · AVANÇO BLOQUEADO</span><h2>Justificativa necessária</h2><p>Foi registrada uma saída da rota. Explique o motivo à supervisão, depois volte ao ponto obrigatório.</p></div>${btn('Escrever justificativa '+ic('arrow'),'justify','primary full')}<p class="patrol-microtext">Esta explicação aparece na supervisão do cenário, não é enviada remotamente.</p>`;
- if(blocked&&dev&&!dev.returnedAt)return `<div class="patrol-stage-intro is-alert"><span class="patrol-stage-index">${ic('alert')} DESVIO REGISTRADO</span><h2>Retorne ao ponto</h2><p>Justificativa registrada. Para seguir, volte ao ponto ${s.index+1} e cumpra novamente os 30 segundos.</p></div>${mode==='simulation'?btn('Simular retorno ao ponto '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':''):`<div class="section-note">${ic('crosshair')} Aguarde a confirmação de GPS no local.</div>`}`;
+ if(complete)return '<div class="patrol-stage-intro"><span class="patrol-stage-index">RONDA FINALIZADA</span><h2>'+ic('checkcircle')+' Todos os pontos concluídos</h2><p>Etapas e retorno à base registrados para acompanhamento.</p></div>'+btn('Nova ronda','new-session','primary full');
+ if(blocked&&dev&&!dev.justification)return '<div class="patrol-stage-intro is-alert"><span class="patrol-stage-index">'+ic('alert')+' ATENÇÃO · AVANÇO BLOQUEADO</span><h2>Justificativa necessária</h2><p>Descreva a saída do trajeto antes de continuar.</p></div>'+btn('Escrever justificativa','justify','primary full');
+ if(blocked&&dev&&!dev.returnedAt)return '<div class="patrol-stage-intro is-alert"><span class="patrol-stage-index">'+ic('alert')+' DESVIO REGISTRADO</span><h2>Retorne ao ponto</h2><p>É necessário retornar ao local e confirmar sua presença novamente.</p></div>'+(mode==='simulation'?btn('Retornar ao ponto','demo-arrive','primary full',movement?'disabled':''):'<p class="section-note">Aguarde um GPS confiável no ponto.</p>');
  if(p){
-  const secs=Math.floor(s.checkpoints[s.index].dwellMs/1000),required=Math.round(requiredDwellMs(s)/1000),ready=canCompletePoint(s);
-  const label=ready?'Tempo concluído · Confirmar ponto e seguir '+ic('arrow'):s.insideSince!==null?`Aguarde ${Math.max(0,required-secs)} s no local`:'Aguardando chegada ao ponto';
-  const action=mode==='simulation'&&s.insideSince===null&&!ready
-   ?btn(movement?'A caminho do ponto…':'📍 Estou no Local','demo-arrive','primary full',movement?'disabled':'')
-   :mode==='real'&&s.insideSince===null&&!ready
-    ?btn('📍 Estou no Local','checkin-now','primary full')
-    :btn(label,'complete-point','primary full',ready?'':'disabled');
-  return `<div class="patrol-stage-intro"><span class="patrol-stage-index">PONTO ${s.index+1} / ${route.points.length}</span><h2>${esc(p.name)}</h2><p>${esc(p.instruction)}</p></div>${action}`;
+  const current=s.checkpoints[s.index],checkedIn=!!current.checkedInAt&&s.insideSince!==null;
+  const reached=mode==='simulation'&&!movement&&!!locationFix&&distanceMeters(locationFix,p)<=p.radius;
+  let action;
+  if(movement)action=btn('Deslocamento em andamento…','demo-arrive','primary full','disabled');
+  else if(checkedIn)action=btn('Ver cronômetro de verificação','show-checkpoint','primary full');
+  else if(mode==='simulation'&&!reached)action=btn('Deslocar até o ponto '+(s.index+1)+' '+ic('arrow'),'demo-arrive','primary full');
+  else action=btn('📍 Estou Aqui','checkin-now','primary full');
+  return '<div class="patrol-stage-intro"><span class="patrol-stage-index">PONTO '+(s.index+1)+' / '+route.points.length+'</span><h2>'+esc(p.name)+'</h2><p>'+esc(p.instruction||'Verifique o local.')+'</p></div>'+
+   '<div class="rondas-main-action">'+action+'</div>'+(!checkedIn&&!movement?navigationShortcuts(p):'');
  }
- return `<div class="patrol-stage-intro"><span class="patrol-stage-index">TODOS OS PONTOS VERIFICADOS</span><h2>Retorne à base</h2><p>A ronda só termina após o retorno ser confirmado pela localização.</p></div>${mode==='simulation'&&!s.returnConfirmed?btn(movement?'Retornando à base…':'Simular retorno à base '+ic('arrow'),'demo-arrive','primary full',movement?'disabled':''):btn('Finalizar ronda '+ic('check'),'finish','primary full',s.returnConfirmed&&!hasBlock(s)?'':'disabled')}`;
+ return '<div class="patrol-stage-intro"><span class="patrol-stage-index">CIRCUITO · RETORNO</span><h2>Voltar à Base Maxvel</h2><p>Rua Mato Grosso, 1546 · Centro, Divinópolis / MG. A ronda só se encerra após o retorno à base.</p></div>'+
+   (mode==='simulation'&&!s.returnConfirmed?btn(movement?'Retornando à base…':'Deslocar até a base','demo-arrive','primary full',movement?'disabled':''):btn('Finalizar ronda '+ic('check'),'finish','primary full',s.returnConfirmed&&!hasBlock(s)?'':'disabled'))+
+   '<div class="rondas-directions"><a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('Rua Mato Grosso, 1546, Centro, Divinópolis, MG')+'">Abrir Base Maxvel no Google Maps ↗</a></div>';
 }
 function patrolScenarioControls(){
  if(!session||session.status!=='active'||mode!=='simulation')return '';
  const p=currentCheckpoint(session),busy=!!movement;
- return `<div class="patrol-scenario-tools"><div class="patrol-tools-heading"><span>${ic('play')} Comandos do cenário</span><small>Deslocamento animado</small></div><div class="patrol-quick-actions">${btn(p?'Ir ao próximo ponto':'Voltar à base','demo-arrive','',busy?'disabled':'')}${btn('Sair da rota','demo-leave','',busy?'disabled':'')}${btn('Ocorrência','incident-form','')}</div></div>`;
+ return `<div class="patrol-scenario-tools"><div class="patrol-tools-heading"><span>${ic('play')} Testes do cenário</span><small>Ações opcionais de demonstração</small></div><div class="patrol-quick-actions">${btn('Testar desvio','demo-leave','',busy?'disabled':'')}${btn('Ocorrência','incident-form','')}</div></div>`;
 }
 function patrolMapClock(){
  if(!session||session.status!=='active'||!currentCheckpoint(session))return '';
  const seconds=Math.floor(session.checkpoints[session.index].dwellMs/1000),required=Math.round(requiredDwellMs(session)/1000);
  const started=session.insideSince!==null,ready=canCompletePoint(session);
- const label=ready?'Tempo concluído':started?'Dentro de 25 m':'Aguardando ponto';
+ const label=ready?'Tempo concluído':started?'Verificação iniciada':'Aguardando Estou Aqui';
  return `<div class="patrol-map-clock ${ready?'clock-done':started?'clock-running':'clock-waiting'}" aria-live="polite">
   <span class="patrol-clock-label">${ic('clock')} <span data-live="clock-state">${label}</span></span>
   <strong><span data-live="seconds">${seconds}</span><small> / ${required} s</small></strong></div>`;
@@ -887,7 +904,7 @@ async function startSession(){if(!locationGate.isGranted()){locationGate.open({d
   if(f.accuracy>25){notify(`Sinal com precisão de ${Math.round(f.accuracy)} m. Tente em uma área com melhor recepção.`);return;}
   const route=offsetRouteNear(f.lat,f.lng);route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode};
- session=createSession(user?.name??presentationName,route,now,'real');session.evidenceEnabled=operationalSettings.evidenceEnabled;locationFix=f;
+ session=createSession(user?.name??presentationName,route,now,'real');session.requiresManualCheckin=true;session.evidenceEnabled=operationalSettings.evidenceEnabled;locationFix=f;
   try{window.AndroidTracking?.startTracking()}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
   deviceWatch=navigator.geolocation.watchPosition(pos=>{
    const f={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:Date.now()};
@@ -916,7 +933,7 @@ async function startSession(){if(!locationGate.isGranted()){locationGate.open({d
  route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode,
   ...(planned?.customRoute?.rules||{})};
- session=createSession(user?.name??presentationName,route,now,'simulation');session.evidenceEnabled=operationalSettings.evidenceEnabled;if(planned){session.programId=planned.id;session.watcherId=planned.watcherId;selectedProgramId=planned.id;}locationFix={...session.route.base,accuracy:5,at:now};}
+ session=createSession(user?.name??presentationName,route,now,'simulation');session.requiresManualCheckin=true;session.fastDemoClock=true;session.evidenceEnabled=operationalSettings.evidenceEnabled;if(planned){session.programId=planned.id;session.watcherId=planned.watcherId;selectedProgramId=planned.id;}locationFix={...session.route.base,accuracy:5,at:now};}
  movement=null;contextWarning='';save();void ops.recordLifecycle('patrol_start',session);modal.close();render();window.scrollTo({top:0,behavior:'instant'});notify('Ronda iniciada. Siga as orientações do primeiro ponto.');
 }
 function stopLocation(){if(deviceWatch!=null&&navigator.geolocation){navigator.geolocation.clearWatch(deviceWatch);deviceWatch=null;}try{window.AndroidTracking?.stopTracking()}catch{}}
@@ -939,14 +956,14 @@ function processPosition(){if(!session||session.status!=='active'||screen==='lan
  updateLive(result);
 }
 function updateLive(result){if(!session||session.status!=='active')return;
- if(user?.role==='ronda'&&view==='minha-ronda')curtain.open();const p=currentCheckpoint(session),elapsed=p?Math.floor(session.checkpoints[session.index].dwellMs/1000):0,c=coach();
+ if(user?.role==='ronda'&&view==='minha-ronda'&&session.checkpoints[session.index]?.checkedInAt)curtain.open();const p=currentCheckpoint(session),elapsed=p?Math.floor(session.checkpoints[session.index].dwellMs/1000):0,c=coach();
  for(const el of document.querySelectorAll('[data-live="seconds"]'))el.textContent=elapsed;
  for(const el of document.querySelectorAll('[data-live="ring"]'))el.style.setProperty('--deg',`${Math.min(360,elapsed/(requiredDwellMs(session)/1000)*360)}deg`);
  for(const el of document.querySelectorAll('[data-live="coords"]'))el.textContent=locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)} · precisão ${Math.round(locationFix.accuracy??5)} m`:'Sem leitura válida';
  for(const el of document.querySelectorAll('[data-live="status"]'))el.innerHTML=result?.reason==='gps-unreliable'?`${ic('crosshair')} Aguardando posição GPS confiável. O tempo foi reiniciado.`:hasBlock(session)?`${ic('alert')} Avanço bloqueado. Justifique e retorne ao ponto.`:session.insideSince!==null?elapsed>=requiredDwellMs(session)/1000?`${ic('checkcircle')} Tempo cumprido. Confirme a conclusão do ponto.`:`${ic('clock')} Permaneça no raio por mais ${Math.max(0,Math.round(requiredDwellMs(session)/1000)-elapsed)} segundos.`:`${ic('pin')} Vá ao ponto ${session.index+1}: ${esc(p?.name??'base')}.`;
  for(const el of document.querySelectorAll('[data-live="req-time"]'))el.classList.toggle('ok',elapsed>=requiredDwellMs(session)/1000);
  for(const el of document.querySelectorAll('[data-live="req-radius"]'))el.classList.toggle('ok',session.insideSince!==null);
- for(const el of document.querySelectorAll('[data-live="clock-state"]'))el.textContent=canCompletePoint(session)?'Tempo concluído':session.insideSince!==null?'Dentro de 25 m':'Aguardando ponto';
+ for(const el of document.querySelectorAll('[data-live="clock-state"]'))el.textContent=canCompletePoint(session)?'Tempo concluído':session.insideSince!==null?'Presença confirmada':'Aguardando Estou Aqui';
  for(const el of document.querySelectorAll('.patrol-map-clock'))el.classList.toggle('clock-done',canCompletePoint(session));
  for(const el of document.querySelectorAll('[data-action="complete-point"]')){
   const seconds=Math.round(requiredDwellMs(session)/1000);
@@ -1105,22 +1122,28 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
  if(act==='mode-real'||act==='mode-simulation'){if(presentation&&act==='mode-real'){notify('Neste cenário você não precisa ativar GPS.');return;}if(session?.status==='active')return;mode=act==='mode-real'?'real':'simulation';render();return;}
  if(act==='checkin-now'){
-  if(!session||session.status!=='active'||mode!=='real')return;
+  if(!session||session.status!=='active'||movement)return;
+  const confirm=fix=>{
+   const result=checkInAtPoint(session,fix,Date.now());
+   if(!result.ok){notify(result.reason);return;}
+   save();render();curtain.open();
+   try{navigator.vibrate?.(14)}catch{}
+   notify('Estou Aqui confirmado. Cronômetro iniciado.');
+  };
+  if(mode==='simulation'){confirm({...locationFix,at:Date.now(),accuracy:5});return;}
   if(!navigator.geolocation){notify('GPS indisponível neste dispositivo.');return;}
   navigator.geolocation.getCurrentPosition(pos=>{
    locationFix={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:pos.timestamp||Date.now()};
-   processPosition();
-   if(!accurateFix(locationFix,Date.now()))notify('GPS sem precisão suficiente. A checagem não foi confirmada.');
-   else if(session.insideSince!==null)notify('Presença confirmada. A contagem de permanência iniciou.');
-   else notify('Você ainda não está dentro da margem validada do ponto.');
-  },()=>notify('Não foi possível confirmar a posição. Revise a permissão e o sinal GPS.'),
+   confirm(locationFix);
+  },()=>notify('Não foi possível confirmar a posição. Verifique a permissão e o sinal GPS.'),
    {enableHighAccuracy:true,timeout:15000,maximumAge:0});
   return;
  }
+ if(act==='show-checkpoint'){curtain.open();return;}
  if(act==='demo-arrive'||act==='demo-leave'||act==='demo-skip'){startMove(act);return;}
  if(act==='justify'){justificationDialog();return;}
  if(act==='incident-form'){incidentDialog();return;}
- if(act==='complete-point'){if(!session)return;updateLocation(session,locationFix,Date.now());if(!canCompletePoint(session)){notify('Aguarde os 30 segundos e valide o GPS.');return;}curtain.open();return;}
+ if(act==='complete-point'){if(!session)return;curtain.open();return;}
  if(act==='finish'){if(!session)return;finishDialog();return;}
  if(act==='confirm-finish'){if(finishSession(session)){void ops.recordLifecycle('patrol_end',session);stopLocation();movement=null;save();render();notify('Ronda finalizada, registro salvo neste navegador.')}else notify('Conclua os pontos e retorne à base.');return;}
  if(act==='new-session'){session=null;movement=null;locationFix=null;render();return;}
