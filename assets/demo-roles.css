@@ -37,3 +37,19 @@
 .simulation-roles{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
 .simulation-roles button{flex-shrink:0}
 @media(max-width:760px){.demo-role-columns,.demo-admin-route-line{grid-template-columns:minmax(0,1fr)}.demo-role-columns .map-container{height:250px;min-height:250px}.demo-admin-route-header .button{width:100%;justify-content:center}.demo-mini-route-map{height:220px;min-height:220px}.demo-role-view,.demo-admin-route-queue{gap:12px}.demo-role-columns>section,.demo-role-columns>form{padding:13px}.demo-admin-route-line>div:last-child{padding:14px}.simulation-roles{justify-content:flex-start}}
+
+/* Seletor mobile do Rondas Pro: cinco áreas, sem painel vazio ou rolagem horizontal. */
+#dialog.role-picker-dialog[open]{box-sizing:border-box!important;height:max-content!important;min-height:0!important;max-height:calc(100dvh - 28px)!important;width:min(480px,calc(100vw - 26px))!important;overflow-y:auto!important;overflow-x:hidden!important;padding:18px!important;margin:auto!important;background:rgba(16,16,19,.97)!important;color:#f4f4f5!important;border:1px solid rgba(171,179,194,.3)!important;border-radius:16px!important;box-shadow:0 24px 70px rgba(0,0,0,.65)!important}
+#dialog.role-picker-dialog .eyebrow{font-size:10px!important;letter-spacing:.10em;color:#38bdf8!important;font-weight:800;margin-top:8px}
+#dialog.role-picker-dialog h2{font-size:24px!important;line-height:1.2;margin:6px 0 14px!important;color:#fafafa!important}
+#dialog.role-picker-dialog .role-picker-list{display:grid;grid-template-columns:1fr;gap:8px;margin:0!important}
+#dialog.role-picker-dialog .role-picker-list button{border-radius:11px!important;min-height:60px!important;padding:11px 14px!important;display:flex!important;align-items:center;gap:14px;background:rgba(35,35,39,.85)!important;color:#f4f4f5!important;border:1px solid rgba(145,145,159,.22)!important;text-align:left;box-shadow:none!important;transition:background .18s ease,border-color .18s ease}
+#dialog.role-picker-dialog .role-picker-list button.selected{border-left:3px solid #38bdf8!important;background:rgba(41,48,54,.75)!important}
+#dialog.role-picker-dialog .role-picker-list button:focus-visible{outline:2px solid #38bdf8!important;outline-offset:2px}
+#dialog.role-picker-dialog .role-picker-list button svg{width:22px;height:22px;flex:none}
+#dialog.role-picker-dialog .role-picker-list button strong{flex:1;font-size:15px;line-height:1.25;overflow-wrap:break-word}
+#dialog.role-picker-dialog .role-picker-list button span{font-size:11px;color:#a5b7c1}
+#dialog.role-picker-dialog .map-caption{line-height:1.45;font-size:11px!important;margin:12px 0 0;color:#b5b5bf!important}
+#dialog.role-picker-dialog .dialog-close{position:sticky;top:0;float:right;z-index:9;width:44px;min-width:44px;height:44px;min-height:44px;background:#1d2732!important;color:#fff!important;border:1px solid #515d6c!important;border-radius:10px!important}
+@media(max-width:760px){#dialog.role-picker-dialog[open]{padding:16px!important;max-height:calc(100dvh - 22px)!important}#dialog.role-picker-dialog h2{font-size:22px!important}#dialog.role-picker-dialog .role-picker-list button{min-height:58px!important}}
+@media(prefers-reduced-motion:reduce){#dialog.role-picker-dialog .role-picker-list button{transition:none!important}}
