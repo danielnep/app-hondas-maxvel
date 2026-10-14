@@ -273,8 +273,13 @@ export function createOperationalApi(){
     if(d.kind==='inspection'&&(a.role!=='vistoriador'||!a.site||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
      resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
     }
+    const dispatchId=d.kind==='inspection'?clean(d.details?.dispatchId):'';
+    if(dispatchId){
+     const assigned=db.prepare("SELECT id FROM dispatch_orders WHERE id=? AND worker_id=? AND site=? AND status IN ('pendente','recebida')").get(dispatchId,a.id,a.site);
+     if(!assigned){resp(res,403,{error:'Chamado não atribuído a este vistoriador'});return true;}
+    }
     const validCriteria=d.kind==='inspection'?Object.fromEntries(criteriaKeys.map(key=>[key,inspection[key]])):null;
-    const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length)}:
+    const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length),...(dispatchId?{dispatchId}:{})}:
      {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
     if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','patrol_incomplete','patrol_interrupted','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
@@ -289,6 +294,10 @@ export function createOperationalApi(){
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details,a.site||'');
     audit(a,'event.create',eid);
+    if(dispatchId){
+     db.prepare("UPDATE dispatch_orders SET status='concluida',completed_at=? WHERE id=? AND worker_id=?").run(now(),dispatchId,a.id);
+     audit(a,'dispatch.complete',dispatchId);
+    }
     if(['alert','gps_issue','patrol_end'].includes(d.kind)){
      const key=d.kind==='alert'?clean(d.details?.templateId):d.kind==='gps_issue'?'gps_unreliable':'patrol_completed';
      const template=db.prepare('SELECT * FROM templates WHERE id=? AND enabled=1').get(key);
@@ -396,7 +405,7 @@ export function createOperationalApi(){
     const eid=clean(req.headers['x-ronda-event-id']),ev=event(eid);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
     const mime=clean(req.headers['content-type']).split(';')[0];
-    const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm'];
+    const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm','audio/webm','audio/mp4','audio/ogg','audio/wav'];
     if(!types.includes(mime)){resp(res,415,{error:'Formato não autorizado'});return true;}
     const bytes=await body(req,25*1024*1024);
     const magic=bytes.subarray(0,12);
@@ -404,7 +413,10 @@ export function createOperationalApi(){
       ||(mime==='image/png'&&magic.subarray(1,4).toString()==='PNG')
       ||(mime==='image/webp'&&magic.subarray(8,12).toString()==='WEBP')
       ||(mime==='video/mp4'&&magic.subarray(4,8).toString()==='ftyp')
-      ||(mime==='video/webm'&&magic.subarray(0,4).equals(Buffer.from([26,69,223,163])));
+      ||(mime==='video/webm'||mime==='audio/webm')&&magic.subarray(0,4).equals(Buffer.from([26,69,223,163]))
+      ||(mime==='audio/mp4'&&magic.subarray(4,8).toString()==='ftyp')
+      ||(mime==='audio/ogg'&&magic.subarray(0,4).toString()==='OggS')
+      ||(mime==='audio/wav'&&magic.subarray(0,4).toString()==='RIFF'&&magic.subarray(8,12).toString()==='WAVE');
     if(!correct){resp(res,415,{error:'Conteúdo do arquivo incompatível'});return true;}
     const mediaId=id(),folder=resolve(dirname(process.env.RONDA_PRO_DB_PATH),'media');
     mkdirSync(folder,{recursive:true});writeFileSync(join(folder,mediaId),bytes,{flag:'wx',mode:0o600});
