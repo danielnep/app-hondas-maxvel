@@ -303,7 +303,7 @@ function eventView(e){
  '<button type="button" data-review-status="encaminhada">Encaminhar ao administrativo</button>'+
  '<button type="button" class="primary" data-review-status="resolvida">Marcar como analisada</button></div></section>':'')+
   '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
- '<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" name="file" required></label><button>Enviar mídia</button></form></section>'+
+ '<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form></section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
  '<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
  (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · vigia pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
@@ -382,8 +382,8 @@ async function loadMedia(eventId){
   host.innerHTML='';
   for(const media of items){
    const blob=await api('/media/'+media.id),url=URL.createObjectURL(blob);recentMediaUrls.push(url);
-   const element=document.createElement('figure'),visual=document.createElement(media.mimetype.startsWith('video/')?'video':'img');
-   visual.src=url;if(visual.tagName==='VIDEO')visual.controls=true;visual.alt='Evidência do evento';
+   const element=document.createElement('figure'),visual=document.createElement(media.mimetype.startsWith('video/')?'video':media.mimetype.startsWith('audio/')?'audio':'img');
+   visual.src=url;if(['VIDEO','AUDIO'].includes(visual.tagName))visual.controls=true;else visual.alt='Evidência do evento';
    const label=document.createElement('figcaption');
    label.textContent=fmt(media.captured_at)+' · '+(media.battery==null?'Bateria não informada':media.battery+'%');
    element.append(visual,label);
