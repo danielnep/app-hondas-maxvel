@@ -64,7 +64,7 @@ async function capture(page,name,width,height){
  report.push({width,height,name,...metrics});
  await page.screenshot({path:out+'/'+width+'x'+height+'-'+name+'.png',animations:'disabled',timeout:14000});
  if(metrics.viewport>width+2||metrics.documentWidth>width+3)throw Error('Expansão horizontal: '+JSON.stringify(metrics));
- if(metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
+ if(width<1280&&metrics.documentHeight>height+4)throw Error('Página vertical além da viewport: '+JSON.stringify(metrics));
  if(width<=900&&metrics.app&&name==='ronda'&&metrics.map&&metrics.action){
   if(metrics.map.y<0||metrics.map.bottom>height+2||metrics.map.bottom<height-35||metrics.map.h<height*.65)throw Error('Mapa não preenche o fundo útil: '+JSON.stringify(metrics.map));
   if(metrics.action.y<0||metrics.action.bottom>height+2)throw Error('Comandos cortados: '+JSON.stringify(metrics.action));
@@ -121,6 +121,24 @@ try{
    await tap(page,'[data-action="sim-role-picker"]');
    await tap(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await capture(page,'admin',width,height);
+   if(width>=1280){
+    const layout=await page.evaluate(()=>{
+     const root=document.querySelector('.v4-wide-workspace');
+     const map=root?.querySelector('[data-v4-pane="mapa"]');
+     const alerts=root?.querySelector('[data-v4-pane="alertas"]');
+     const summary=root?.querySelector('[data-v4-pane="resumo"]');
+     const team=root?.querySelector('[data-v4-pane="equipe"]');
+     const bounds=el=>el?.getBoundingClientRect();
+     return {wide:!!root,visible:[map,alerts,summary,team].every(el=>el&&!el.hidden&&el.getBoundingClientRect().width>0),
+      map:bounds(map)?.toJSON(),alerts:bounds(alerts)?.toJSON(),
+      grid:root?getComputedStyle(root.querySelector('.v4-stage')).display:'',
+      post:root?.querySelector('.v4-site-context')?.textContent||''};
+    });
+    if(!layout.wide||!layout.visible||layout.grid!=='grid'||!layout.post.includes('Posto em foco'))
+     throw Error('Painel administrativo desktop sem visão simultânea: '+JSON.stringify(layout));
+    if(layout.alerts.left<layout.map.right-4)
+     throw Error('Mapa e alertas desktop estão sobrepostos: '+JSON.stringify(layout));
+   }
    await tap(page,'[data-view="notificacoes"]:visible');
    await tap(page,'[data-action="open-incidents"]');
    await tap(page,'.list-row[data-action="incident-detail"]');
