@@ -160,7 +160,7 @@ export function createOperationsUpgrade(api){
        ...(Number.isFinite(media.position?.lat)&&Number.isFinite(media.position?.lng)?{'X-Media-Lat':String(media.position.lat),'X-Media-Lng':String(media.position.lng)}:{}),
        ...(Number.isFinite(media.battery)?{'X-Media-Battery':String(media.battery)}:{}),
        ...(media.view?{'X-Media-View':media.view}:{}),
-       ...(/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(media.id)?{'X-Ronda-Media-Id':media.id}:{})},body:media.blob});
+       ...(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(media.id)?{'X-Ronda-Media-Id':media.id}:{})},body:media.blob});
       if(res.status===401||res.status===403)return;
       if(res.ok){media.remoteUploaded=true;delete media.syncError;await store.put('media',media);}
       else{mediaPending=true;media.syncError='HTTP '+res.status;await store.put('media',media);}
