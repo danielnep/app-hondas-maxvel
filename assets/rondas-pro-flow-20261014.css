@@ -55,3 +55,10 @@
  .rondas-directions{padding:9px;margin:8px 0}
 }
 @media(prefers-reduced-motion:reduce){.dashboard .ronda-page .patrol-primary-flow .rondas-main-action>.button{transition:none!important}}
+
+
+.location-entry-emergency{display:flex;gap:9px;justify-content:center;align-items:center;flex-wrap:wrap;margin:14px 0}
+.location-entry-emergency button,.location-entry-emergency a{display:inline-flex;align-items:center;justify-content:center;
+ min-height:44px;border-radius:999px;padding:10px 15px;font-size:12px;font-weight:750;text-decoration:none}
+.location-entry-emergency .location-entry-panic{color:#fff;background:rgba(185,28,28,.82);border:1px solid #fda4af}
+.location-entry-emergency .location-entry-contact{color:#f0f9ff;background:rgba(9,9,11,.8);border:1px solid #7dd3fc}
