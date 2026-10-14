@@ -46,6 +46,44 @@ async function checkInteractiveBounds(page,label){
  });
  if(overflow.length)throw Error('Ações cortadas em '+label+': '+JSON.stringify(overflow));
 }
+async function checkRoleGuide(page,width,height,role,heading){
+ await page.locator('.app-header [data-action="profile-menu"]:visible').click();
+ await page.locator('#dialog [data-action="guide"]:visible').click();
+ const dialog=page.locator('#dialog.guide-dialog[open]');
+ await dialog.waitFor({timeout:8000});
+ const header=await page.locator('#dialog #guide-title').innerText();
+ if(header!==heading)throw Error('Guia '+role+' com título incorreto: '+header);
+ const measures=await dialog.evaluate(el=>{
+  const sc=el.querySelector('.guide-scroll'),footer=el.querySelector('.guide-footer');
+  const d=el.getBoundingClientRect(),f=footer.getBoundingClientRect();
+  return {role:el.dataset.guideRole,width:d.width,right:d.right,bottom:d.bottom,
+   scrollWidth:sc.scrollWidth,clientWidth:sc.clientWidth,
+   bodyOverflow:getComputedStyle(sc).overflowY,footerTop:f.top,footerBottom:f.bottom,
+   hasGenericPages:!!el.querySelector('.ux-dialog-pagination')};
+ });
+ if(measures.role!==role||measures.right>width+3||measures.bottom>height+3||
+    measures.scrollWidth>measures.clientWidth+2||!['auto','scroll'].includes(measures.bodyOverflow)||
+    measures.hasGenericPages||measures.footerBottom>height+3)
+  throw Error('Guia '+role+' com overflow ou paginação indevida: '+JSON.stringify(measures));
+ const title=await dialog.locator('#guide-current-heading').innerText();
+ if(!title||await dialog.locator('.guide-tabs button').count()!==5)
+  throw Error('Etapas ausentes no guia de '+role);
+ await dialog.locator('.guide-step-picker > summary').click();
+ const vertical=await dialog.locator('.guide-tabs').evaluate(el=>{
+  const bounds=Array.from(el.querySelectorAll('button'),b=>b.getBoundingClientRect());
+  return bounds.every((b,i)=>i===0||b.top>=bounds[i-1].bottom-1);
+ });
+ if(!vertical)throw Error('Seletor do perfil '+role+' rola horizontalmente');
+ await dialog.locator('.guide-tabs [data-stage="3"]').click();
+ if(!((await dialog.locator('.guide-stage-progress > span').innerText()).includes('Etapa 4 de 5')))
+  throw Error('Seleção de etapa falhou em '+role);
+ await dialog.locator('[data-action="guide-back"]:visible').click();
+ if(!((await dialog.locator('.guide-stage-progress > span').innerText()).includes('Etapa 3 de 5')))
+  throw Error('Voltar etapa falhou em '+role);
+ await dialog.locator('.dialog-close').click();
+ if(await dialog.count())throw Error('Guia '+role+' não fechou');
+}
+
 async function state(page,width,height,name){
  await page.evaluate(()=>document.fonts.ready);
  // Aguarda a marca assumir dimensões reais antes de medir a interface animada.
@@ -202,6 +240,7 @@ try{
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="operador"]');
    await state(page,width,height,'07-central-monitoramento');
+   if(width<=900)await checkRoleGuide(page,width,height,'operador','Central de Monitoramento');
    if(!await page.locator('.operations-page').count())throw Error('Operador sem área de monitoramento.');
    if(!await page.locator('#ops-map').count())throw Error('Operador sem mapa de rondas.');
    if(await page.locator('[data-view="relatorios"]').count())throw Error('Operador recebeu menu de relatórios administrativos.');
@@ -212,6 +251,7 @@ try{
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
    await state(page,width,height,'09-dashboard-administrativo');
+   if(width<=900)await checkRoleGuide(page,width,height,'admin','Painel Administrativo');
    if(!await page.locator('.dashboard-v4').count())throw Error('Administrativo sem dashboard.');
    if(width<=900){
     await click(page,'[data-action="open-mobile-menu"]');
