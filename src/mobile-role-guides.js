@@ -13,14 +13,14 @@ export const MOBILE_GUIDES=Object.freeze({
   ['Evidências e pânico','<p>Ações rápidas: Alerta amarelo, Ocorrência azul e Mensagem branca. PÂNICO permanece vermelho. Em evidências, use os ícones de Foto, Vídeo ou Áudio; o áudio tem gravador próprio. Todos os registros reais e a comunicação remota dependem da central autenticada.</p>'],
   ['Meu histórico','<p>Consulte seus horários, pontos, ocorrências e progresso no menu Meu histórico. O demonstrativo armazena registros no navegador; a central autenticada possui dados sincronizados.</p>']
  ]),
- operador:guide('Central de Monitoramento','Rotas e vigias, com prioridade para alertas.',[
+ operador:guide('COI · Monitoramento','Rotas e vigias, com prioridade para alertas.',[
   ['Visão da operação','<p>Abra Monitoramento para consultar as rondas do cenário, a localização indicada e o status de cada vigia.</p>'],
   ['Escolher colaborador','<p>Selecione um vigia para analisar sua rota atual ou as rondas anteriores. Veja os detalhes antes de interpretar um alerta.</p>'],
   ['Alertas e ocorrências','<p>Consulte as abas Alertas e Ocorrências para verificar os fatos, justificativas e sequência de eventos.</p>'],
   ['Qualidade do GPS','<p>Sinal desatualizado ou impreciso não representa automaticamente uma falha do vigia. Compare horários e registros confiáveis.</p>'],
   ['Integração real','<p>Este ambiente é demonstrativo. Na central autenticada, o operador recebe apenas dados enviados ao servidor, sujeitos às permissões da conta.</p>']
  ]),
- coi:guide('COI · Central de Monitoramento','Controle visual da operação e priorização de ocorrências.',[
+ coi:guide('COI · Monitoramento','Controle visual da operação e priorização de ocorrências.',[
   ['Monitoramento COI','<p>Visualize as rondas disponíveis, suas últimas posições e as condições de acompanhamento em um único local.</p>'],
   ['Situação dos percursos','<p>Confira se a execução está em andamento, foi concluída ou apresenta registros que exigem análise. Dados técnicos insuficientes permanecem sinalizados como tal.</p>'],
   ['Vigias e histórico','<p>Selecione o colaborador e consulte os registros por data, começando pelos mais recentes.</p>'],
