@@ -328,3 +328,15 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
  .dashboard .ux-wide-workspace *,
  .dashboard .v4-wide-workspace *{scroll-behavior:auto!important}
 }
+
+/* Identificação do posto sempre junto do título, sem competir com o mapa. */
+.dashboard .v4-dashboard-heading .v4-site-context,
+.dashboard .ops-topline .ops-site-context{
+ color:#d1e3e9!important;font-size:12px!important;
+ font-weight:700!important;letter-spacing:.01em!important;
+ overflow-wrap:anywhere!important;
+}
+@media(min-width:1280px){
+ .dashboard .v4-dashboard-heading .v4-site-context{margin-top:7px!important}
+ .dashboard .ops-topline .ops-site-context{padding-left:7px!important;border-left:2px solid #62c3e8!important}
+}
