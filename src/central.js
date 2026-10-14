@@ -67,6 +67,7 @@ async function load(){
   }
   const [e,r,planned]=await Promise.all([api('/events?limit=500'),api('/rounds'),api('/routes')]);
   events=e.events||[];rounds=r.rounds||[];routes=planned.routes||[];
+  if(selected?.event)selected={event:events.find(record=>record.id===selected.event.id)||selected.event};
   if(review()){
    const [d,u,j,t]=await Promise.all([api('/dashboard'),api('/users'),api('/email-jobs'),api('/templates')]);
    dashboard=d;users=u.users||[];emailJobs=j.jobs||[];templates=t.templates||[];mySummary=null;
