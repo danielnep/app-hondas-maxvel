@@ -128,3 +128,17 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
  .checkpoint-condition{padding-top:8px!important}
 }
 @media(prefers-reduced-motion:reduce){.checkpoint-curtain *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Ajuda do mapa permanece acionável acima do cockpit sem interceptação dos controles. */
+@media screen and (max-width:900px){
+ .dashboard .ronda-page .patrol-map-canvas .ux06-map-help{
+  position:absolute!important;top:72px!important;right:12px!important;left:auto!important;
+  z-index:660!important;min-width:36px!important;min-height:36px!important;
+  background:rgba(16,21,28,.9)!important;border:1px solid rgba(98,195,232,.75)!important;
+  border-radius:50%!important;color:#e8f9ff!important;
+  box-shadow:0 6px 19px rgba(0,0,0,.45)!important;
+ }
+ .dashboard .ronda-page .patrol-map-canvas .ux06-map-help:focus-visible{
+  outline:3px solid #62c3e8!important;outline-offset:2px!important;
+ }
+}
