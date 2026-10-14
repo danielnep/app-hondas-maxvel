@@ -197,7 +197,7 @@ export function createOperationalApi(){
     inspection=d.kind==='inspection'?d.details?.criteria:null,
     dispatchId=d.kind==='inspection'?clean(d.details?.dispatchId):'',
     inspectionAssignment=dispatchId?db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria' AND started_at IS NOT NULL AND completed_at IS NULL").get(dispatchId,a.id):null;
-    if(d.kind==='inspection'&&(a.role!=='vistoriador'||!a.site||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
+    if(d.kind==='inspection'&&(a.role!=='vistoriador'||(!a.site&&!inspectionAssignment)||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
      resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
     }
     if(dispatchId&&!inspectionAssignment){resp(res,422,{error:'Vistoria exige despacho válido iniciado e atribuído ao profissional'});return true;}
