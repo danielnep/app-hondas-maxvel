@@ -68,6 +68,7 @@ async function load(){
     composeKind=requestedCompose;page='send';history.replaceState(null,'',location.pathname+location.search);
    }
   }
+  if(account.role==='ronda')try{await api('/presence',{method:'POST'});}catch{}
   await ops.refresh(account,false);
   const [e,r,planned]=await Promise.allSettled([review()&&!ops.allowed('ocorrencias')?Promise.resolve({events:[]}):api('/events?limit=500'),api('/rounds'),review()&&!ops.allowed('rondas')?Promise.resolve({routes:[]}):api('/routes')]);
   events=e.status==='fulfilled'?e.value.events||[]:[];rounds=r.status==='fulfilled'?r.value.rounds||[]:[];routes=planned.status==='fulfilled'?planned.value.routes||[]:[];
@@ -82,7 +83,7 @@ async function load(){
   }else{
    mySummary=null;dashboard=null;users=[];emailJobs=[];templates=[];
   }
-  render();ops.present();
+  render();ops.present();ops.connectLive(token);
  }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
@@ -359,7 +360,7 @@ function render(){
    account.role==='vistoriador'?inspectionView():
    account.role==='operador'?(page==='events'?eventsView():page==='team'?teamView():monitorView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
- root.innerHTML='<div class="workspace">'+nav()+'<article class="content"><div class="ops-bell-bar">'+ops.badge()+'</div>'+firstAccessGuide()+content+'</article></div>'+ 
+ root.innerHTML='<div class="workspace">'+nav()+'<article class="content"><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+ 
   (account.role==='ronda'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
@@ -453,7 +454,7 @@ document.addEventListener('click',async e=>{
     }});
    return;
   }
-  if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;selected=null;page=target.dataset.page;render();return;}
+  if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}selected=null;page=target.dataset.page;render();return;}
   if(target.dataset.event){if(['cliente','vistoriador'].includes(account.role))return;const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
   if(target.dataset.template){
@@ -478,7 +479,7 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('submit',async e=>{
  const form=e.target;
- if(form.id==='ops-dispatch-form'){e.preventDefault();try{await ops.submit(form)}catch(err){flash(err.message)}return;}
+ if(form.id==='ops-dispatch-form'||form.id==='ops-completion-form'){e.preventDefault();try{await ops.submit(form)}catch(err){flash(err.message)}return;}
  if(form.id==='route-form'){e.preventDefault();try{await routeBoard.submit(form)}catch(err){flash(err.message)}return;}
  if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','send-message','upload-evidence','inspection-form'].includes(form.id))return;
  e.preventDefault();const d=Object.fromEntries(new FormData(form));
@@ -517,11 +518,13 @@ document.addEventListener('submit',async e=>{
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
 setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
 setInterval(()=>{if(account&&!document.hidden)void ops.refresh(account,true).catch(()=>{});},15000);
+setInterval(()=>{if(account?.role==='ronda'&&!document.hidden)void api('/presence',{method:'POST'}).catch(()=>{});},45000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&account?.role==='ronda')void api('/presence',{method:'POST'}).catch(()=>{});});
 document.addEventListener('change',e=>{
  if(e.target?.dataset?.coiToggle){void ops.change(e.target).then(()=>load()).catch(error=>flash(error.message));return;}
  const field=e.target.closest('[data-occ-filter]');
  if(field){occurrenceFilters[field.dataset.occFilter]=field.value;render();return;}
  routeBoard.change(e.target);
 });
-exit.addEventListener('click',async()=>{try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
+exit.addEventListener('click',async()=>{if(account?.role==='ronda')try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
