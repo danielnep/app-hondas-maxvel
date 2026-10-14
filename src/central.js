@@ -82,7 +82,7 @@ function kpis(){
  return '<div class="cards">'+[['Eventos',events.length],['Pânicos',kinds.panic||0],['Ocorrências',kinds.incident||0],['Amostras GPS',kinds.gps||0],['Alertas de e-mail',kinds.alert||0],['Baterias monitoradas',kinds.battery||0]].map(([label,num])=>'<div class="metric"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>';
 }
 function dashboardView(){
- const open=events.filter(e=>['panic','incident','message','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
+ const open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
  const active=rounds.filter(r=>r.status==='em_andamento');
  const totalKm=rounds.reduce((n,r)=>n+(r.km||0),0);
  const summary=[['Rondas',rounds.length],['Em andamento',active.length],['Pendências',open.length],['Distância registrada',totalKm.toFixed(2)+' km']];
@@ -94,7 +94,7 @@ function dashboardView(){
 }
 function ownDashboard(){
  const mine=mySummary||{},all=mine.rounds||rounds,activity=events.filter(e=>e.kind!=='gps'&&e.kind!=='battery');
- const open=activity.filter(e=>['incident','panic','alert','message','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
+ const open=activity.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
  const latest=all.find(r=>r.status==='em_andamento')||all[0];
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">ACESSO DO VIGIA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
  composeActionButtons()+'<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','message','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
@@ -113,7 +113,7 @@ function ownHistory(){
  '<p class="muted">Distâncias são estimativas de amostras GPS confiáveis. O histórico remoto só mostra dados efetivamente sincronizados.</p></section>';
 }
 function monitorView(){
- const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','message','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
+ const active=rounds.filter(r=>r.status==='em_andamento'),open=events.filter(e=>['panic','incident','gps_issue','route_deviation'].includes(e.kind)&&e.status!=='resolvida');
  const urgent=open.filter(e=>e.kind==='panic');
  const list=active.length?active:rounds.slice(0,5);
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CENTRAL DE MONITORAMENTO</div><h1>Acompanhamento de rondas</h1><p class="muted">Localização, estado do sinal, comunicação e ocorrências de cada vigia.</p></div><button data-refresh>Atualizar agora</button></div>'+
@@ -158,11 +158,13 @@ function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
 function eventsView(){
- const priority=events.filter(e=>['incident','panic','alert','message','route_deviation','gps_issue'].includes(e.kind));
- const ordinary=events.filter(e=>!priority.includes(e));
+ const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
+ const ordinary=events.filter(e=>!priority.includes(e)&&e.kind!=='message');
+ const routineMessages=events.filter(e=>e.kind==='message');
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">TRATAMENTO E REGISTROS</div><h1>Ocorrências</h1><p class="muted">Prioridades, respostas da equipe, evidências e histórico.</p></div><button data-refresh>Atualizar</button></div>'+
  '<section class="surface"><h2>Exigem atenção</h2>'+eventList(priority.filter(e=>e.status!=='resolvida'))+'</section>'+
  '<details class="details-toggle"><summary>Ocorrências tratadas · '+priority.filter(e=>e.status==='resolvida').length+'</summary><div class="surface">'+eventList(priority.filter(e=>e.status==='resolvida'))+'</div></details>'+
+ '<section class="surface"><h2>Mensagens à central</h2><p class="muted">Comunicações rotineiras, separadas dos alertas e ocorrências urgentes.</p>'+eventList(routineMessages)+'</section>'+ 
  '<details class="details-toggle"><summary>Histórico técnico · '+ordinary.length+' eventos</summary><div class="surface">'+eventList(ordinary)+'</div></details></section>';
 }
 function teamView(){
