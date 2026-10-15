@@ -1,5 +1,9 @@
 # Rondas Pro · Grupo Maxvel
 
+## Eventos, chat interno e histórico — 15/10/2026
+
+A central autenticada recebe chat privado com recibos de entrega/leitura, exclusão condicionada à ausência de visualização e histórico de rondas/vistorias com percurso e evidências. O cabeçalho separa eventos e mensagens; Eventos usa colunas por tipo. A demonstração mantém dados locais e direciona o chat real à autenticação. [Comportamento, persistência, configuração e validação](docs/EVENTOS-CHAT-HISTORICO-20261015.md).
+
 ## Ampliação demonstrativa · GPS, QR, pânico, offline e relatórios (13/10/2026)
 
 **Acessos atuais:** somente **Administração** (todas as funções gerenciais e relatórios) e **Operação de Ronda** (execução e registros, sem telas ou atalhos de relatório).

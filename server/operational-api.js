@@ -5,6 +5,8 @@ import {randomBytes,scryptSync,timingSafeEqual,createHash,randomUUID} from 'node
 import {addTrackSample} from '../src/field-intelligence.js';
 import {validateConclusion} from '../src/conclusion-validation.js';
 import {createOpsCenter} from './ops-center.js';
+import {createInternalChat} from './internal-chat.js';
+import {createActivityHistory} from './activity-history.js';
 import {createTreatments} from './treatments.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
@@ -52,6 +54,7 @@ function initialize(){
  // Migrações aditivas: nunca substituir nem apagar evidências e registros anteriores.
  if(!db.prepare('PRAGMA table_info(media)').all().some(x=>x.name==='evidence_view'))db.exec("ALTER TABLE media ADD COLUMN evidence_view TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='planned_start'))db.exec('ALTER TABLE planned_routes ADD COLUMN planned_start INTEGER');
+ if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='phone'))db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(events)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE events ADD COLUMN site TEXT NOT NULL DEFAULT ''");
@@ -112,12 +115,14 @@ export function createOperationalApi(){
  const audit=(u,action,subject)=>db.prepare('INSERT INTO audit(id,user_id,action,subject_id,at) VALUES(?,?,?,?,?)').run(id(),u.id,action,subject,now());
  const userFrom=req=>{
   const match=String(req.headers.authorization||'').match(/^Bearer ([0-9a-f]{64})$/i);if(!match)return null;
-  return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active,u.site FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
+  return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active,u.site,u.phone FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
  };
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
  const visible=(u,e)=>u.role==='cliente'?Boolean(u.site&&e.site===u.site&&['inspection','checkpoint','patrol_start','patrol_end'].includes(e.kind)):['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
  const criteriaKeys=['acessos','estrutura','equipamentos','sinalizacao'];
  const operations=db?createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}):null;
+ const chat=db?createInternalChat(db,{now,id,audit,resp,body,serialize}):null;
+ const activity=db?createActivityHistory(db,{resp,serialize,aggregateOperationalRounds,visible,operations}):null;
  const treatmentService=db?createTreatments(db,{now,id,audit,resp,body,serialize,operations}):null;
  async function notifyEmail(record,template){
   const targetGroups=serialize(template.recipients)||[];
@@ -152,15 +157,20 @@ export function createOperationalApi(){
    const a=userFrom(req);
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
+   if(p==='/api/profile'&&m==='PUT'){const d=serialize((await body(req)).toString())||{};if(typeof d.phone!=='string'||d.phone.length>35){resp(res,422,{error:'Telefone inválido'});return true;}db.prepare('UPDATE users SET phone=? WHERE id=?').run(clean(d.phone),a.id);resp(res,200,{ok:true});return true;}
    if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
+   if(await chat.handle(req,res,a,p,m))return true;
+   if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
-   if(p==='/api/users'&&m==='GET'&&reviewer(a)&&operations.allows(a,'rondas')){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,created_at,active FROM users').all()});return true;}
+   if(p==='/api/users'&&m==='GET'&&reviewer(a)&&operations.allows(a,'rondas')){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,phone,created_at,active FROM users').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
     const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),description=clean(d.description),site=clean(d.site).slice(0,100);
     if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10||['cliente','ronda'].includes(d.role)&&site.length<2){resp(res,422,{error:'Cadastro inválido: informe local/posto; vigia exige descrição da supervisão'});return true;}
+    if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
     db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at,site) VALUES(?,?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now(),site);
+    db.prepare('UPDATE users SET phone=? WHERE id=?').run(clean(d.phone),uid);
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
    if(p==='/api/routes'&&m==='GET'){
@@ -388,6 +398,6 @@ export function createOperationalApi(){
     audit(a,'export',null);resp(res,200,{source:'sqlite',at:now(),events,messages,rondas:aggregateOperationalRounds(events),limit:50000});return true;
    }
    resp(res,404,{error:'Endpoint não encontrado ou acesso não autorizado'});return true;
-  }catch(e){console.error('Erro operacional:',e.message);resp(res,e.status||500,{error:e.status===413?'Limite de tamanho excedido':'Falha no processamento'});return true;}
+  }catch(e){console.error('Erro operacional:',e.message);resp(res,e.status||500,{error:e.status>=400&&e.status<500?e.message:'Falha no processamento'});return true;}
  };
 }

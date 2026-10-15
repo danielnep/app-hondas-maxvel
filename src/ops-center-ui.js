@@ -5,7 +5,7 @@ const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle
 const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
 const activeKinds=new Set([...Object.keys(EVENT_TYPES),'panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message','inspection']);
 export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
- let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,attention=0,unreadTotal=0,nextCursor=null,treatmentSummary={total:0,categories:[]},refreshing=null,generation=0;
+ let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,attention=0,unreadTotal=0,notificationTotal=0,nextCursor=null,treatmentSummary={total:0,categories:[]},refreshing=null,generation=0;
  const manager=()=>['admin','master'].includes(current?.role);
  const reviewer=()=>['admin','master','operador','coi'].includes(current?.role);
  const allowed=key=>manager()||!!modules.find(x=>x.module===key)?.enabled;
@@ -42,7 +42,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   try{return await task}finally{if(refreshing===task)refreshing=null}
  }
  async function refreshData(user,withPopup=true,epoch){
-  const requests=[api('/notifications')];
+  const requests=[api('/notifications?channel=events')];
   if(reviewer()){
    requests.push(api('/coi-permissions'));
    requests.push(api('/dispatches'));
@@ -58,14 +58,14 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   if(results[0].status==='fulfilled'){
    let incoming=results[0].value,items=incoming.notifications||[];
    const wanted=notifications.length;
-   while(items.length<wanted&&incoming.nextCursor){incoming=await api('/notifications?cursor='+encodeURIComponent(incoming.nextCursor));items.push(...incoming.notifications);}
+   while(items.length<wanted&&incoming.nextCursor){incoming=await api('/notifications?channel=events&cursor='+encodeURIComponent(incoming.nextCursor));items.push(...incoming.notifications);}
    if(epoch!==generation||current?.id!==user.id)return;
    notifications=[...new Map(items.map(n=>[n.id,n])).values()];nextCursor=incoming.nextCursor;
-   attention=results[0].value.attention||0;unreadTotal=results[0].value.unread||0;
+   notificationTotal=results[0].value.total||0;attention=results[0].value.attention||0;unreadTotal=results[0].value.unread||0;
    // Notificações antigas não devem gerar um popup novo a cada atualização.
    if(!initialized){seen=new Set(notifications.map(item=>item.id));initialized=true;lastReminder=Date.now();}
    const bell=document.querySelector('.ops-bell-bar');
-   if(bell)bell.innerHTML=badge();
+   for(const bell of document.querySelectorAll('.ops-bell-bar')){const open=bell.querySelector('details')?.open;bell.innerHTML=badge();if(open)bell.querySelector('details').open=true;}
   }
   if(reviewer()&&results[1]?.status==='fulfilled')modules=results[1].value.modules||[];
   if(results[2]?.status==='fulfilled')dispatches=results[2].value.dispatches||[];
@@ -117,8 +117,10 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   return active?'<button type="button" class="ops-assignment-banner" data-ops-page="dispatches"><span>⌖ NOVA ATRIBUIÇÃO</span><strong>'+esc(active.address)+'</strong><small>'+(active.started_at?'Atendimento em andamento':'Toque para visualizar e iniciar')+'</small></button>':'';
  }
  function badge(){
-  return '<button type="button" data-ops-page="notifications" class="ops-notification-bell" aria-label="Abrir notificações, '+attention+' pendências operacionais">🔔 <span>Notificações</span><span class="rp-pending-dot" data-pending-scope="notifications" '+(!attention?'hidden':'')+' aria-label="Há pendências operacionais"></span>'+(unreadTotal?'<b class="ops-notification-count">'+unreadTotal+'</b>':'')+'</button>';
+  const latest=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message').slice(0,5),extra=Math.max(0,unreadTotal-latest.filter(n=>!n.read_at).length);
+  return '<details class="rp-header-popover"><summary class="rp-blue-button '+(unreadTotal?'has-unread':'')+'" aria-label="Eventos: '+unreadTotal+' não lidos"><span aria-hidden="true">🔔</span><span>Eventos</span>'+(unreadTotal?'<b class="rp-unread-count">'+unreadTotal+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.length?cards(latest):'<p class="empty">Nenhum evento recebido.</p>')+(notificationTotal>5?'<button type="button" data-ops-page="notifications">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details>';
  }
+
  function cards(list){
   return list.map(n=>{
    const pending=n.event_id?n.event_status!=='resolvida':n.dispatch_id?!n.dispatch_completed_at:false;
@@ -130,10 +132,9 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }).join('');
  }
  function notificationsView(){
-  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · COMUNICAÇÕES RECEBIDAS</div><h1>Notificações</h1><p class="muted">Todas as comunicações, da mais recente para a mais antiga. Abra o registro para consultar ou realizar a tratativa.</p></div></header>'+
-   '<section class="surface ops-notifications" aria-label="Feed de notificações">'+(notifications.length?cards(notifications):'<p class="empty">Nenhuma notificação recebida.</p>')+'</section>'+
-   (nextCursor?'<button type="button" data-ops-more>Carregar notificações anteriores</button>':'')+
-   '<p class="coi3-footnote">Ler uma notificação não conclui a tratativa. Notificações e Tratativas abrem o mesmo registro e histórico.</p></section>';
+  const list=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message'),groups=new Map();
+  for(const n of list){const kind=n.kind==='review'?n.event_kind:n.kind;if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
+  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · EVENTOS RECEBIDOS</div><h1>Eventos</h1><p class="muted">Colunas por tipo, da recepção mais recente à mais antiga. Abrir um evento não conclui sua tratativa.</p></div></header><div class="rp-event-columns">'+([...groups].map(([kind,items])=>'<section class="rp-event-column"><header><h2>'+esc(kind==='dispatch'?'Despachos':typeInfo(kind).label)+'</h2>'+(items.some(n=>!n.read_at)?'<b class="rp-unread-count">'+items.filter(n=>!n.read_at).length+'</b>':'')+'</header>'+cards(items.slice().sort((a,b)=>b.created_at-a.created_at||b.id.localeCompare(a.id)))+'</section>').join('')||'<p class="empty">Nenhum evento recebido.</p>')+'</div>'+(nextCursor?'<button type="button" data-ops-more>Carregar eventos anteriores</button>':'')+'</section>';
  }
 
  function dispatchesView({users,rounds,events}){
@@ -201,7 +202,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   if(target.hasAttribute('data-ops-more')){
    if(!nextCursor)return true;
    target.disabled=true;
-   try{const result=await api('/notifications?cursor='+encodeURIComponent(nextCursor));notifications=[...new Map([...notifications,...result.notifications].map(n=>[n.id,n])).values()];nextCursor=result.nextCursor;await openNotice({page:'notifications'});}finally{if(target.isConnected)target.disabled=false}
+   try{const result=await api('/notifications?channel=events&cursor='+encodeURIComponent(nextCursor));notifications=[...new Map([...notifications,...result.notifications].map(n=>[n.id,n])).values()];nextCursor=result.nextCursor;await openNotice({page:'notifications'});}finally{if(target.isConnected)target.disabled=false}
    return true;
   }
   if(target.dataset.opsSelectInspector){
@@ -240,9 +241,9 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }
   if(target.dataset.opsNotification){
    const n=notifications.find(x=>x.id===target.dataset.opsNotification);if(!n)return true;
-   await api('/notifications/'+n.id+'/read',{method:'POST'});
-   n.read_at=Date.now();unreadTotal=Math.max(0,unreadTotal-1);document.querySelector('#ops-priority-toast')?.remove();
    await openNotice(n.event_id?{eventId:n.event_id}:{page:n.dispatch_id?'dispatches':'notifications'});
+   await api('/notifications/'+n.id+'/read',{method:'POST'});
+   document.querySelector('#ops-priority-toast')?.remove();await refresh(current,false);
    return true;
   }
   return false;

@@ -37,9 +37,11 @@ test('estado de ponto, 25 m e tempo de permanência constam no popup',()=>{
  assert.match(map,/Number\(p\.radius\)\|\|25/);
 });
 
-test('notificações mostram feed único e tratativas mantêm categorias distintas',()=>{
+test('eventos mostram colunas por tipo e tratativas mantêm categorias distintas',()=>{
  const feed=app.slice(app.indexOf('function notificationsView(){'),app.indexOf('function occurrences(){'));
- assert.match(feed,/Feed único de notificações/);
+ assert.match(feed,/rp-event-columns/);
+ assert.match(feed,/groups/);
+ assert.match(feed,/demoEventNotifications/);
  assert.doesNotMatch(feed,/data-action="filter-alerts"|data-filter=|tablist/);
  const treatment=app.slice(app.indexOf('function occurrences(){'),app.indexOf('\nfunction ',app.indexOf('function occurrences(){')+10));
  assert.match(treatment,/demo-treatment-tab/);

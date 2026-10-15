@@ -126,12 +126,14 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const url=new URL(req.url,'http://local'),limit=Math.min(120,Math.max(1,Number(url.searchParams.get('limit'))||120));
    const cursor=url.searchParams.get('cursor'),parts=cursor?.split(':');
    if(cursor&&(!parts||parts.length!==2||!/^\d+$/.test(parts[0])||!/[a-f0-9-]{36}/i.test(parts[1]))){resp(res,422,{error:'Cursor inválido'});return true;}
-   const query='SELECT n.*,e.kind event_kind,e.status event_status,reporter.name origin_name,reporter.role origin_role,d.started_at dispatch_started_at,d.completed_at dispatch_completed_at FROM notifications n LEFT JOIN events e ON e.id=n.event_id LEFT JOIN users reporter ON reporter.id=e.user_id LEFT JOIN dispatches d ON d.id=n.dispatch_id WHERE n.user_id=? ';
+   const eventChannel=url.searchParams.get('channel')==='events',channelFilter=eventChannel?" AND n.kind<>'message' AND COALESCE(e.kind,'')<>'message' ":' ';
+   const query="SELECT n.*,e.kind event_kind,e.status event_status,reporter.name origin_name,reporter.role origin_role,d.started_at dispatch_started_at,d.completed_at dispatch_completed_at FROM notifications n LEFT JOIN events e ON e.id=n.event_id LEFT JOIN users reporter ON reporter.id=e.user_id LEFT JOIN dispatches d ON d.id=n.dispatch_id WHERE n.user_id=? "+channelFilter;
    const rows=cursor?db.prepare(query+'AND (n.created_at<? OR (n.created_at=? AND n.id<?)) ORDER BY n.created_at DESC,n.id DESC LIMIT ?').all(user.id,Number(parts[0]),Number(parts[0]),parts[1],limit+1):db.prepare(query+'ORDER BY n.created_at DESC,n.id DESC LIMIT ?').all(user.id,limit+1);
    const items=rows.slice(0,limit),last=items.at(-1);
-   const count=db.prepare('SELECT COUNT(*) n FROM notifications WHERE user_id=? AND read_at IS NULL').get(user.id).n;
+   const count=db.prepare("SELECT COUNT(*) n FROM notifications n LEFT JOIN events e ON e.id=n.event_id WHERE n.user_id=? AND n.read_at IS NULL"+channelFilter).get(user.id).n;
+   const total=db.prepare("SELECT COUNT(*) n FROM notifications n LEFT JOIN events e ON e.id=n.event_id WHERE n.user_id=?"+channelFilter).get(user.id).n;
    const attention=db.prepare("SELECT COUNT(DISTINCT CASE WHEN e.id IS NOT NULL AND e.status<>'resolvida' THEN 'e:'||e.id WHEN d.id IS NOT NULL AND d.completed_at IS NULL THEN 'd:'||d.id END) n FROM notifications n LEFT JOIN events e ON e.id=n.event_id LEFT JOIN dispatches d ON d.id=n.dispatch_id WHERE n.user_id=?").get(user.id).n;
-   resp(res,200,{notifications:items,unread:count,attention,hasMore:rows.length>limit,nextCursor:rows.length>limit&&last?last.created_at+':'+last.id:null});return true;
+   resp(res,200,{notifications:items,total,unread:count,attention,hasMore:rows.length>limit,nextCursor:rows.length>limit&&last?last.created_at+':'+last.id:null});return true;
   }
   const seen=p.match(/^\/api\/notifications\/([a-f0-9-]{36})\/read$/i);
   if(seen&&method==='POST'){
