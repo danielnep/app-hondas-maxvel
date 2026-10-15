@@ -121,3 +121,10 @@
 .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-note textarea{max-height:none!important;min-height:100px!important}
 .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-submit{position:static!important;width:100%!important;margin:14px 0 0!important;min-height:50px!important;font-size:13px!important;padding:12px!important;box-shadow:none!important}
 .checkpoint-curtain .checkpoint-footnote{margin-top:12px!important;line-height:1.5!important}
+.dashboard .app-content:not(.ronda-page) .v4-summary-metrics{gap:0!important;border:1px solid #3d3d46!important;border-radius:10px!important;overflow:hidden!important;background:#19191e!important}
+.dashboard .app-content:not(.ronda-page) .v4-summary-metrics .v4-summary-metric{background:transparent!important;border:0!important;border-right:1px solid #3d3d46!important;border-bottom:1px solid #3d3d46!important;border-radius:0!important;box-shadow:none!important;padding:14px!important;min-height:80px!important}
+.dashboard .app-content:not(.ronda-page) .v4-summary-callout{background:transparent!important;border:0!important;padding:10px 0!important;box-shadow:none!important}
+@media(max-width:760px){
+ .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs{display:flex!important;flex-wrap:wrap!important;gap:5px!important;background:#131316!important;border:1px solid #3d3d46!important;border-radius:10px!important;padding:5px!important;margin-bottom:18px!important}
+ .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs>button{flex:1 1 28%!important;min-height:44px!important;border-radius:7px!important;padding:9px 5px!important;font-size:12px!important}
+}

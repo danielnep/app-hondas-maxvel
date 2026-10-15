@@ -35,14 +35,21 @@ jobs:
           node-version: '24'
       - name: Instalar controlador de navegador
         run: npm install --no-save --no-package-lock playwright-core@1.56.1
-      - name: Executar fluxos do próprio app em sete tamanhos
-        run: node scripts/app-immersive-test.mjs
-      - name: Validar COI autenticado (mobile e desktop)
-        run: node scripts/coi-central-smoke.mjs
       - name: Validar abertura de tratativas no COI demonstrativo
         run: node scripts/coi-demo-smoke.mjs
         env:
           CHROME_BIN: /usr/bin/google-chrome
+      - name: Guardar prévia visual da revisão
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maxvel-uiux-preview
+          path: artifacts/uiux-refinement/
+          if-no-files-found: warn
+      - name: Executar fluxos do próprio app em sete tamanhos
+        run: node scripts/app-immersive-test.mjs
+      - name: Validar COI autenticado (mobile e desktop)
+        run: node scripts/coi-central-smoke.mjs
       - name: Guardar capturas e medidas
         if: always()
         uses: actions/upload-artifact@v4

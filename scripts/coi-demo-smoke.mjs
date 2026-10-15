@@ -38,9 +38,20 @@ try{
   await page.locator('#incident-form [name="truth"]').check();
   await page.locator('#incident-form button[type="submit"]').click();
   await page.locator('#dialog').waitFor({state:'hidden'});
+  // Chegada simulada: valida a conferência sem alterar o estado por JavaScript.
+  await page.locator('.patrol-actions [data-action="demo-arrive"]').click();
+  await page.locator('.patrol-actions [data-action="checkin-now"]').waitFor({state:'visible',timeout:25000});
+  await page.locator('.patrol-actions [data-action="checkin-now"]').click();
+  await page.locator('.checkpoint-curtain-panel').waitFor({state:'visible'});
+  await page.locator('[data-curtain-submit]:not(:disabled)').waitFor({state:'visible',timeout:40000});
+  await page.locator('.checkpoint-curtain-panel').evaluate(el=>el.scrollTop=el.scrollHeight);
+  await page.screenshot({path:out+'/ponto-'+width+'.png'});
+  await page.locator('[data-curtain-submit]').click();
+  await page.locator('.checkpoint-curtain').waitFor({state:'hidden'});
   // Entradas de preparação; os registros e formulários usam cliques reais abaixo.
   await page.locator('[data-action="sim-role-picker"]').first().evaluate(el=>el.click());
   await page.locator('#dialog [data-action="sim-role"][data-role="operador"]').click();
+  await page.locator('#toast.toast-visible').waitFor({state:'hidden'});
   await page.screenshot({path:out+'/coi-'+width+'.png',fullPage:true});
   await page.locator('[data-view="notificacoes"]').first().evaluate(el=>el.click());
   if(await page.locator('.alert-filter-tabs').count())throw Error('Feed deve ser único, sem filtros');
@@ -55,7 +66,7 @@ try{
   await page.locator('[data-action="incident-review"]').click();
   await page.locator('[data-view="ocorrencias"]').first().evaluate(el=>el.click());
   await page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
-  await page.locator('[data-action="notification-detail"]').first().click();
+  await page.locator('[data-action="incident-detail"][data-id="rev3-fixture-incident"]').click();
   await page.locator('#incident-review-form [name="status"]').selectOption('Resolvida');
   await page.locator('#incident-review-form [name="note"]').fill('Iluminação conferida e providência concluída pelo COI.');
   await page.locator('[data-action="incident-review"]').click();
