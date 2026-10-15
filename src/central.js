@@ -424,8 +424,25 @@ function staticClientMap(fix){
  if(!fix)return '<div class="client-static-map-empty">Posição ainda não recebida</div>';
  return '<div class="client-static-map" aria-label="Mapa estático sem navegação">'+positionMap(fix)+'</div>';
 }
+// Uma previsão é estimativa geométrica entre pontos cadastrados; não é caminho por ruas.
+function routeEstimate(route){
+ const pts=(route?.points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+ if(pts.length<2||!Number.isFinite(route?.plannedStart))return null;
+ let distanceKm=0;
+ for(let i=1;i<pts.length;i++){
+  const a=pts[i-1],b=pts[i],toRad=Math.PI/180;
+  const dLat=(b.lat-a.lat)*toRad,dLng=(b.lng-a.lng)*toRad;
+  const h=Math.sin(dLat/2)**2+Math.cos(a.lat*toRad)*Math.cos(b.lat*toRad)*Math.sin(dLng/2)**2;
+  distanceKm+=6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
+ }
+ const minutes=Math.max(10,Math.ceil(distanceKm/20*60+pts.length*.5));
+ return {minutes,endAt:route.plannedStart+minutes*60000,distanceKm};
+}
 function clientView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),past=rounds.filter(r=>r.status!=='em_andamento');
+ const planned=routes.filter(r=>r.site===account.site&&Number.isFinite(r.plannedStart)&&r.plannedStart>=Date.now()-60000)
+   .sort((a,b)=>a.plannedStart-b.plannedStart)[0]||null;
+ const estimate=routeEstimate(planned);
  const inspections=events.filter(e=>e.kind==='inspection').slice(0,12);
  const item=r=>'<details class="details-toggle rp2-timeline-entry"><summary>'+escape(roundStatus(r))+' · '+clientDate(r.start)+' · '+escape(r.site||account.site)+'</summary>'+
   '<div class="surface"><div class="detail-grid">'+[['Local',r.site||account.site],['Situação',roundStatus(r)],
@@ -446,8 +463,9 @@ function clientView(){
   '<div class="metric"><strong>'+past.filter(r=>r.status==='concluida').length+'</strong><span>Rondas concluídas</span></div>'+
   '<div class="metric"><strong>'+inspections.length+'</strong><span>Vistorias registradas</span></div></div>'+
   '<section class="surface"><h2>Próxima Ronda</h2><div class="detail-grid">'+
-  '<div><small>Hora Programada de Início</small><strong>Aguardando programação confirmada</strong></div>'+
-  '<div><small>Previsão de Término</small><strong>Indisponível sem percurso programado</strong></div></div></section>'+
+  '<div><small>Hora Programada de Início</small><strong>'+(planned?clientDate(planned.plannedStart):'Aguardando programação confirmada')+'</strong></div>'+
+  '<div><small>Previsão de Término</small><strong>'+(estimate?clientDate(estimate.endAt):'Indisponível sem percurso programado')+'</strong></div></div>'+
+  (estimate?'<p class="muted" style="margin-top:11px">Previsão ilustrativa do trajeto entre pontos cadastrados, a 20 km/h e 30 segundos por ponto, sem considerar trânsito ou caminho real por ruas.</p>':'')+'</section>'+
   '<section class="surface"><h2>Rondas atuais</h2>'+(active.length?active.map(item).join(''):'<p class="empty">Nenhuma ronda ativa neste local.</p>')+'</section>'+
   '<section class="surface"><h2>Vistorias e evidências</h2><p class="muted">Laudos e fotos, vídeos ou áudios vinculados ao seu local.</p>'+
   (inspections.length?inspections.map(inspectionRow).join(''):'<p class="empty">Nenhum laudo disponível para este local.</p>')+'</section>'+
