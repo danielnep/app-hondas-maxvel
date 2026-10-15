@@ -79,3 +79,16 @@ dialog:has(.field-composer){width:min(360px,calc(100vw - 24px))!important;paddin
  .dashboard .app-header .brand .brand-partner{width:44px!important;flex:0 0 44px!important}
 }
 @media(max-width:350px){.dashboard .app-header .brand .brand-partner{width:30px!important;flex-basis:30px!important}}
+/* Keep the unmodified Maxvel logo inside its allocated space at every width. */
+.dashboard .sidebar>.brand.maxvel-only-brand{grid-template-columns:max-content 2px minmax(0,1fr)!important;gap:6px!important}
+.dashboard .sidebar>.brand .ronda-pro-wordmark{font-size:15px!important}
+.dashboard .sidebar>.brand .maxvel-real-logo{width:64px!important}
+@media(min-width:601px) and (max-width:900px){
+ .dashboard .app-header .brand.maxvel-only-brand{grid-template-columns:max-content 2px minmax(0,1fr)!important}
+}
+@media(max-width:350px){
+ .dashboard .app-header .brand.maxvel-only-brand{gap:3px!important}
+ .dashboard .app-header .brand .ronda-pro-wordmark{font-size:13px!important}
+ .dashboard .app-header .brand .brand-partner{width:26px!important;min-width:26px!important;flex-basis:26px!important}
+ .dashboard .app-header .brand .brand-divider{flex:0 0 2px!important}
+}
