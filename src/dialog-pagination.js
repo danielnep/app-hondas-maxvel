@@ -1,81 +1,33 @@
-/** MAXVEL-04 | Paginação de diálogos altos sem rolagem ou perda de controles.
- * Reorganiza apenas apresentação DOM, preservando campos e handlers.
+/** Ordinary dialogs keep one reading order and one scroll surface.
+ * Guided flows own their steps; viewport height must never split a form.
  */
 export function installDialogPagination(dialog){
- if(!dialog?.open||window.innerWidth>900||dialog.querySelector('.round-wizard,.ux06-sheet')||dialog.classList.contains('guide-dialog')||dialog.classList.contains('role-picker-dialog'))return;
- dialog.classList.add('ux-dialog-scroll-ready');
- const maxOuter=Math.max(230,window.innerHeight-46);
- const roots=[...dialog.children].filter(el=>!el.classList.contains('dialog-close'));
- const root=roots.length===1?roots[0]:dialog;
- if(root.scrollHeight<maxOuter-14&&dialog.scrollHeight<maxOuter)return;
- // Cabeçalhos permanecem visíveis; o conteúdo vira páginas de leitura/ação.
- const paginate=(host,maxHeight)=>{
-  let children=[...host.children].filter(el=>!el.classList.contains('dialog-close')&&!el.matches('.ux-dialog-pagination'));
-  if(children.length<3){host.classList.add('ux-dialog-scroll-fallback');return false;}
-  const heading=children.filter((el,i)=>i<2&&(
-   el.matches('h1,h2,.eyebrow,.profile-heading,.consent-compact-head')||
-   el.matches('.incident-review-tags')&&!host.querySelector('h2')));
-  const body=children.filter(el=>!heading.includes(el));
-  const headerHeight=heading.reduce((n,el)=>n+Math.max(0,el.getBoundingClientRect().height),0);
-  const space=Math.max(120,maxHeight-headerHeight-57);
-  // Forms stay intact; any long form receives its own controls inside the same form.
-  for(const el of body){
-   if(el.tagName==='FORM'&&el.scrollHeight>space&&el.children.length>3)paginate(el,space+18);
-  }
-  let chunks=[],current=[],used=0;
-  for(const el of body){
-   const h=Math.max(24,Math.ceil(el.getBoundingClientRect().height)||24)+6;
-   if(current.length&&used+h>space){chunks.push(current);current=[];used=0;}
-   current.push(el);used+=h;
-  }
-  if(current.length)chunks.push(current);
-  if(chunks.length<2){host.classList.add('ux-dialog-scroll-fallback');return false;}
-  host.classList.add('ux-dialog-paging-root');
-  dialog.classList.add('ux-dialog-paging');
-  const navigation=document.createElement('nav');
-  navigation.className='ux-dialog-pagination';
-  navigation.setAttribute('aria-label','Páginas desta janela');
-  let page=0;
-  const paint=()=>{
-   const visible=new Set(chunks[page]);
-   for(const el of body)el.hidden=!visible.has(el);
-   navigation.innerHTML='<button type="button" data-dialog-page="back" '+(page===0?'disabled':'')+
-    ' aria-label="Página anterior">‹ Voltar</button><span>'+ (page+1)+' de '+chunks.length+
-    '</span><button type="button" data-dialog-page="next" '+(page>=chunks.length-1?'disabled':'')+
-    ' aria-label="Próxima página">Avançar ›</button>';
-   navigation.setAttribute('aria-label','Etapa '+(page+1)+' de '+chunks.length);
-  };
-  navigation.addEventListener('click',event=>{
-   const bt=event.target.closest('[data-dialog-page]');if(!bt)return;
-   if(bt.dataset.dialogPage==='next'){
-    const fields=chunks[page].flatMap(node=>[
-     ...node.querySelectorAll('input,select,textarea'),
-     ...(node.matches('input,select,textarea')?[node]:[])
-    ]);
-    const invalid=fields.find(field=>!field.disabled&&!field.checkValidity());
-    if(invalid){invalid.reportValidity();invalid.focus({preventScroll:false});return;}
-   }
-   page=Math.max(0,Math.min(chunks.length-1,page+(bt.dataset.dialogPage==='next'?1:-1)));
-   paint();
-   scroller.scrollTop=0;
-  });
-  // Cabeçalho fixo + conteúdo rolável + navegação de etapas fixa.
-  // Mover os nós, em vez de cloná-los, preserva listeners, valores e o formulário original.
-  const scroller=document.createElement('div');
-  scroller.className='ux-dialog-page-scroll';
-  for(const el of body)scroller.append(el);
-  host.append(scroller,navigation);
-  // Campo obrigatório de página anterior: revele sua página e permita correção.
-  host.addEventListener('invalid',event=>{
-   const idx=chunks.findIndex(group=>group.some(el=>el===event.target||el.contains(event.target)));
-   if(idx>=0&&idx!==page){event.preventDefault();page=idx;paint();requestAnimationFrame(()=>event.target.focus());}
-  },true);
-  paint();return true;
+ if(!dialog?.open||dialog.querySelector('.round-wizard,.ux06-sheet')||dialog.classList.contains('guide-dialog')||dialog.classList.contains('role-picker-dialog'))return;
+ dialog.classList.add('rp-flow-dialog');
+ dialog._flowController?.abort();
+ const controller=new AbortController();dialog._flowController=controller;
+ const viewport=window.visualViewport;
+ const resize=()=>{
+  dialog.style.setProperty('--dialog-available-height',Math.floor(viewport?.height||window.innerHeight)+'px');
  };
- const paged=paginate(root,maxOuter-12);
- if(!paged)dialog.classList.add('ux-dialog-scroll-fallback');
+ resize();
+ viewport?.addEventListener('resize',resize,{signal:controller.signal});
  dialog.addEventListener('focusin',event=>{
   if(!event.target.matches?.('input,select,textarea'))return;
   requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest',inline:'nearest'}));
- },{once:true});
+ },{signal:controller.signal});
+ dialog.addEventListener('invalid',event=>{
+  event.preventDefault();
+  requestAnimationFrame(()=>dialog.querySelector('[aria-invalid="true"]')?.focus());
+  event.target.setAttribute('aria-invalid','true');
+  const field=event.target.closest('label')||event.target.parentElement;
+  let hint=field.querySelector('.rp-field-error');
+  if(!hint){hint=document.createElement('small');hint.className='rp-field-error';hint.id='field-error-'+crypto.randomUUID();hint.setAttribute('role','alert');field.append(hint);}
+  hint.textContent=event.target.validity.tooShort?'Preencha pelo menos '+event.target.minLength+' caracteres.':event.target.validity.valueMissing?'Preencha este campo para continuar.':event.target.validationMessage;
+  event.target.setAttribute('aria-errormessage',hint.id);
+ },{capture:true,signal:controller.signal});
+ dialog.addEventListener('input',event=>{
+  if(event.target.validity?.valid){event.target.removeAttribute('aria-invalid');event.target.removeAttribute('aria-errormessage');event.target.closest('label')?.querySelector('.rp-field-error')?.remove();}
+ },{signal:controller.signal});
+ dialog.addEventListener('close',()=>controller.abort(),{once:true,signal:controller.signal});
 }

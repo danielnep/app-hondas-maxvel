@@ -11,6 +11,8 @@ on:
       - 'src/coi-monitor.js'
       - 'src/central.js'
       - 'assets/coi-operations-v3.css'
+      - 'assets/uiux-refinement.css'
+      - 'src/dialog-pagination.js'
       - 'src/app.js'
       - 'assets/horizon-operacional.css'
       - 'assets/horizon-graphite.css'
@@ -49,4 +51,5 @@ jobs:
           path: |
             artifacts/app-immersive/
             artifacts/coi-authenticated/
+            artifacts/uiux-refinement/
           if-no-files-found: warn
