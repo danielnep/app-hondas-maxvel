@@ -26,8 +26,8 @@ try{
   await page.locator('.patrol-actions [data-action="start"]').click();
   await page.locator('#declaration-check').check();
   await page.locator('[data-action="confirm-start"]').click();
+  await page.locator('.patrol-actions [data-action="toggle-patrol-sheet"]').click();
   if(width<=900){
-   await page.locator('.patrol-actions [data-action="toggle-patrol-sheet"]').click();
    await page.locator('#dialog [data-action="incident-form"]').click();
   }else await page.locator('.patrol-actions [data-action="incident-form"]').click();
   await page.locator('#incident-form [name="title"]').fill('Teste de interface');

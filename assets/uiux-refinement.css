@@ -128,3 +128,8 @@
  .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs{display:flex!important;flex-wrap:wrap!important;gap:5px!important;background:#131316!important;border:1px solid #3d3d46!important;border-radius:10px!important;padding:5px!important;margin-bottom:18px!important}
  .dashboard .app-content:not(.ronda-page) .dashboard-v4 .v4-dashboard-tabs>button{flex:1 1 28%!important;min-height:44px!important;border-radius:7px!important;padding:9px 5px!important;font-size:12px!important}
 }
+.checkpoint-curtain .checkpoint-curtain-panel{height:auto!important}
+@media(max-width:760px){
+ .checkpoint-curtain .checkpoint-view-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+ .checkpoint-curtain .checkpoint-view-action{min-height:74px!important;font-size:12px!important;padding:9px 4px!important}
+}

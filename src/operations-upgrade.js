@@ -348,7 +348,7 @@ export function createOperationsUpgrade(api){
   }
   
  }
- function mediaFields(){return '<section class="ops-media-fields" data-evidence-host><strong>Evidências contextuais (opcionais)</strong><p>Capture e anexe diretamente foto, vídeo ou áudio, sem selecionar arquivos manualmente.</p>'+evidenceButtons()+'</section>';}
+ function mediaFields(){return '<section class="ops-media-fields" data-evidence-host><strong>Evidências contextuais (opcionais)</strong><p>Anexe fotos, vídeos ou áudio que ajudem a explicar o ocorrido.</p>'+evidenceButtons()+'</section>';}
  async function attachIncidentMedia(incident,form){
   const files=Array.isArray(form.__evidenceFiles)?form.__evidenceFiles:[];
   incident.media??=[];
