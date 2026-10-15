@@ -133,3 +133,13 @@
  .checkpoint-curtain .checkpoint-view-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
  .checkpoint-curtain .checkpoint-view-action{min-height:74px!important;font-size:12px!important;padding:9px 4px!important}
 }
+/* Contexto do posto em duas linhas, sem uma linha vazia para o estado local. */
+.dashboard .coi-demo-topline{display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;column-gap:9px;row-gap:6px}
+.dashboard .coi-demo-topline>.ops-live-dot{grid-column:1;grid-row:1}
+.dashboard .coi-demo-topline>strong{grid-column:2;grid-row:1}
+.dashboard .coi-demo-topline>small{grid-column:2;grid-row:2;padding-left:0}
+.dashboard .coi-demo-topline>span:last-child{grid-column:3;grid-row:1 / span 2;margin-left:0}
+#dialog.rp-flow-dialog form{height:auto!important;align-content:start!important}
+#dialog.rp-flow-dialog .check-label{margin:0!important}
+#dialog.rp-flow-dialog .ops-media-fields{margin:0!important}
+@media(max-width:380px){.dashboard .coi-demo-topline>span:last-child{grid-column:2;grid-row:3;justify-self:start}}
