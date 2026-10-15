@@ -224,3 +224,36 @@
  background:#242429;color:#f4f4f5;padding:8px 12px;font:inherit;
 }
 .demo-client-selector select:focus-visible{outline:2px solid #38bdf8;outline-offset:2px}
+
+/* Pendências operacionais: independentes de leitura e da página aberta. */
+.rp-pending-dot{display:inline-block;width:10px;height:10px;min-width:10px;border-radius:50%;background:#f5223d;border:1px solid #ff8192;vertical-align:middle;margin-left:7px;box-shadow:0 0 0 2px #09090b}
+.rp-pending-dot[hidden]{display:none!important}
+#central-root .rp-coi-missing{color:#ff8394!important;font-weight:700}
+#central-root .is-completed{background:#121215;color:#b6b6bf}
+#central-root .is-completed .coi3-treatment-copy>span,#central-root .is-completed small{color:#a1a1ad}
+#central-root .is-completed .coi3-treatment-copy strong,#central-root .is-completed strong{font-weight:400;color:#b7b7c2}
+#central-root .is-pending strong{font-weight:700;color:#fafafa}
+#central-root .rp-treatment-tabs{display:flex;flex-wrap:wrap;gap:8px}
+#central-root .rp-treatment-tabs button{min-height:44px;padding:10px 14px;background:#18181e;border:1px solid #484850;border-radius:8px;color:#e9e9f0}
+#central-root .rp-treatment-tabs button[aria-selected=true]{background:#35212a;border-color:#f5223d;color:#fff}
+#central-root .rp-treatment-tabs button:focus-visible{outline:2px solid #38bdf8;outline-offset:3px}
+#central-root .rp-notice-icon{width:32px;min-width:32px;height:32px;display:grid;place-items:center;color:#f4f4f5;border:1px solid #52525b;border-radius:8px}
+#central-root .ops-inbox-3 .ops-notification-row{grid-template-columns:32px minmax(0,1fr) 20px}
+#central-root .ops-inbox-3 .ops-notification-row.is-pending{background:#1c1c23!important;border-left:3px solid #f5223d!important}
+#central-root .ops-inbox-3 .ops-notification-row.is-completed{background:#121215!important;border-left:3px solid transparent!important}
+#central-root .ops-inbox-3 .ops-notification-row.is-completed small{color:#a1a1ad}
+#central-root .rp-treatment-history{padding-left:24px;display:grid;gap:16px}
+#central-root .rp-treatment-history small{display:block;color:#b3b3bf}
+#central-root .rp-treatment-history p{white-space:pre-wrap;overflow-wrap:anywhere}
+.rp-central-menu-button{display:none}
+@media(max-width:760px){
+ .rp-central-menu-button{display:flex;align-items:center;gap:6px;min-height:44px;margin:10px 12px;background:#1b1b22;color:#fff;border:1px solid #52525b;border-radius:8px;padding:10px 15px}
+ #central-root .side.rp2-role-nav{display:none!important}
+ #central-root .side.rp2-role-nav.is-open{display:block!important;position:fixed;z-index:110;top:115px;left:12px;bottom:16px;width:calc(100vw - 24px);max-width:340px;overflow-y:auto!important;background:#131319;border:1px solid #52525b;border-radius:12px;padding:16px;box-shadow:0 10px 40px #000b}
+ #central-root .rp2-role-nav.is-open .rp2-nav-primary,#central-root .rp2-role-nav.is-open .rp2-nav-secondary-items{display:flex;flex-direction:column}
+ #central-root .rp2-role-nav.is-open .rp2-nav-item{width:100%;justify-content:flex-start;flex-direction:row;min-height:48px;text-align:left;padding:10px}
+ #central-root .rp-treatment-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #central-root .rp-treatment-tabs button{display:flex;align-items:center;justify-content:space-between;overflow-wrap:anywhere;text-align:left}
+}
+
+#central-root .ops-inbox-3 .ops-notification-row,#central-root .coi3-treatment-row{opacity:1}

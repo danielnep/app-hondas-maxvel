@@ -1,3 +1,4 @@
+import {EVENT_TYPES,typeInfo,isPending,stateLabel} from './treatment-policy.js';
 import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
 import {openConclusionDialog} from './conclusion-dialog.js';
@@ -12,6 +13,9 @@ const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS
 let composeKind='message';
 const coi=createCoiMonitor();
 let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
+let treatmentTab='incident',treatmentRows=[],treatmentMore=false,treatmentOffset=0,eventHistory=[],detailOrigin='events',claimedEvent=null,remoteSyncing=false;
+const claimSession=sessionStorage.getItem('rondaspro-treatment-session')||crypto.randomUUID();
+sessionStorage.setItem('rondaspro-treatment-session',claimSession);
 let occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
@@ -23,7 +27,10 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
-const ops=createOpsCenterUI({api,flash,openNotice:({page:nextPage,eventId}={})=>{if(eventId){const evt=events.find(x=>x.id===eventId);if(evt){selected={event:evt};page=review()?'events':'history';render();return;}}if(nextPage){selected=null;page=nextPage;render();}}});
+const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId}={})=>{
+ if(eventId){await openEvent(eventId,'notifications');return;}
+ if(nextPage){await releaseTreatment();selected=null;page=nextPage;render();}
+}});
 const routeBoard=createRouteBoard({api,getContext:()=>({users,rounds,events,routes,account}),redraw:async(loadRemote=false)=>loadRemote?await load():render(),notify:flash});
 const actionGlyph={
  alert:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 9 16H3L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg>',
@@ -49,6 +56,69 @@ async function eventTelemetry(){
  return context;
 }
 
+function pendingDot(scope,count){return '<span class="rp-pending-dot" data-pending-scope="'+escape(scope)+'" '+(!count?'hidden':'')+' aria-label="Há pendências operacionais"></span>';}
+function updatePendingIndicators(){
+ const summary=ops.summary();
+ for(const node of document.querySelectorAll('[data-pending-scope]')){
+  const key=node.dataset.pendingScope;
+  const count=key==='notifications'?ops.attention():key==='total'?summary.total:summary.categories.find(c=>c.kind===key)?.pending||0;
+  node.hidden=!count;
+ }
+}
+async function readTreatmentRows(more=false){
+ const offset=more?treatmentOffset:0;
+ const result=await api('/treatment-records?kind='+encodeURIComponent(treatmentTab)+'&offset='+offset);
+ treatmentRows=more?[...new Map([...treatmentRows,...result.events].map(e=>[e.id,e])).values()]:result.events;
+ treatmentMore=result.hasMore;treatmentOffset=result.nextOffset;
+}
+async function releaseTreatment(){
+ if(!claimedEvent)return;
+ const key=claimedEvent;claimedEvent=null;
+ try{await api('/events/'+key+'/release',{method:'POST',data:{claimSession}})}catch(error){flash('Não foi possível liberar agora. A reserva expira automaticamente.');}
+}
+async function openEvent(key,origin=page){
+ if(selected?.event?.id!==key)await releaseTreatment();
+ if(review()){
+  const result=await api('/events/'+key);selected={event:result.event};eventHistory=result.treatments;
+ }else{
+  const item=events.find(e=>e.id===key);if(!item)throw Error('Atualize seus registros para abrir esta comunicação.');selected={event:item};
+ }
+ detailOrigin=origin;page='events';render();
+}
+async function syncOperational({remote=false}={}){
+ updatePendingIndicators();
+ if(!remote||!account||remoteSyncing)return;
+ remoteSyncing=true;
+ try{
+  if(selected?.event&&review()){
+   const key=selected.event.id,result=await api('/events/'+key);
+   if(selected?.event?.id!==key)return;
+   selected={event:result.event};eventHistory=result.treatments;
+   // Atualizar os avisos sem apagar respostas ou conclusões em edição.
+   const busy=document.querySelector('.conclusion-overlay')||Array.from(document.querySelectorAll('#send-message textarea')).some(el=>el.value.trim());
+   if(!busy)render();
+   else{
+    void loadMessages(key);
+    const status=document.querySelector('[data-event-operational-status]');if(status)status.textContent=stateLabel(result.event);
+    const feedback=document.querySelector('[data-live-treatment-state]');if(feedback)feedback.textContent=result.event.status==='resolvida'?'Este registro foi concluído em outra sessão. O texto em edição foi preservado.':result.event.treatment_owner?'Atendimento: '+result.event.treatment_owner:'';
+   }
+  }else if(page==='treatments'&&review()){await readTreatmentRows();render();}
+  else if(page==='notifications'){
+   const host=document.querySelector('.ops-inbox-3');
+   if(host){const holder=document.createElement('div');holder.innerHTML=ops.notificationsView();host.replaceWith(holder.firstElementChild);}
+  }
+ }catch(error){flash('Sincronização pendente: '+error.message)}finally{remoteSyncing=false;updatePendingIndicators();}
+}
+function treatmentActions(e){
+ const active=claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id;
+ const absence=privileged()&&isPending(e)&&!e.coi_treated?'<p class="rp-coi-missing">Sem tratativa pelo COI</p>':'';
+ const history=eventHistory.map(t=>'<li><strong>'+escape(t.concluded_by)+' · '+escape(roles[t.author_role]||t.author_role)+'</strong><small>'+fmt(t.created_at)+' · '+escape(t.to_status)+'</small><p>'+escape(t.conclusion)+'</p></li>').join('');
+ const actions=!isPending(e)?'<p>Tratativa concluída. Consulte as ações e o histórico abaixo.</p>':active?
+  '<div class="row treatment-actions" role="group" aria-label="Opções de tratamento"><button type="button" data-review-status="em_analise">Registrar análise</button>'+(!privileged()?'<button type="button" data-review-status="encaminhada">Encaminhar ao administrativo</button>':'')+'<button type="button" class="primary" data-review-status="resolvida">Concluir tratativa</button><button type="button" data-release-treatment>Liberar atendimento</button></div>':
+  e.can_treat?'<button type="button" class="primary" data-claim-treatment>'+ (privileged()?'Realizar tratativa':'Iniciar ou continuar tratativa')+'</button>':
+  '<p>'+(e.treatment_owner?'Em atendimento por '+escape(e.treatment_owner)+'.':'Acompanhe o tratamento registrado pelo COI. Registros encaminhados ficam disponíveis à Administração.')+'</p>';
+ return '<section class="surface no-print" data-treatment-panel><h2>Tratativa operacional</h2>'+absence+'<p data-live-treatment-state role="status"></p>'+actions+'</section><section class="surface"><h2>Histórico de tratativas</h2>'+(history?'<ol class="rp-treatment-history">'+history+'</ol>':'<p>Nenhuma tratativa registrada.</p>')+'</section>';
+}
 function loginView(error=''){
  roleTag.textContent='';exit.hidden=true;
  root.innerHTML='<form id="central-login" class="login"><h1>Central operacional</h1><p>Área com autenticação própria para a operação real. O perfil de demonstração do site não libera acesso a estes registros.</p>'+
@@ -87,6 +157,8 @@ async function load(){
   }else{
    mySummary=null;dashboard=null;users=[];emailJobs=[];templates=[];
   }
+  if(selected?.event&&review()){const detail=await api('/events/'+selected.event.id);selected={event:detail.event};eventHistory=detail.treatments;}
+  if(page==='treatments'&&review())await readTreatmentRows();
   render();ops.present();ops.connectLive(token);
  }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
@@ -94,8 +166,8 @@ const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Notificações','✉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
  operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Auditoria de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Auditoria de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Notificações','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
@@ -132,10 +204,10 @@ function nav(){
  const priority=rp2Priority[role]||[];
  const primaries=permitted.filter(([key])=>priority.includes(key));
  const secondary=permitted.filter(([key])=>!priority.includes(key));
- const node=([key,label])=>'<button type="button" data-page="'+key+'" class="rp2-nav-item '+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'>'+rp2Glyph(key)+'<span>'+escape(label)+'</span></button>';
+ const node=([key,label])=>'<button type="button" data-page="'+key+'" class="rp2-nav-item '+(page===key?'active':'')+'"'+(page===key?' aria-current="page"':'')+'>'+rp2Glyph(key)+'<span>'+escape(label)+'</span>'+(key==='treatments'?pendingDot('total',ops.summary().total):key==='notifications'?pendingDot('notifications',ops.attention()):'')+'</button>';
  const moreActive=secondary.some(([key])=>key===page);
  const wide=typeof window!=='undefined'&&window.matchMedia('(min-width:761px)').matches;
- return '<nav class="side rp2-role-nav" aria-label="Navegação do '+escape(roles[role])+'">'+
+ return '<nav id="central-navigation" class="side rp2-role-nav" aria-label="Navegação do '+escape(roles[role])+'">'+
   '<span class="rp2-nav-eyebrow">TRABALHO · '+escape(roles[role])+'</span>'+
   '<div class="rp2-nav-primary">'+primaries.map(node).join('')+'</div>'+
   (secondary.length?'<details class="rp2-nav-secondary" '+(wide||moreActive?'open':'')+'><summary>Mais áreas <span aria-hidden="true">'+(moreActive?'●':'⌄')+'</span></summary><div class="rp2-nav-secondary-items">'+secondary.map(node).join('')+'</div></details>':'')+
@@ -259,29 +331,13 @@ function roundTable(rows){
  }).join('')+'</div>';
 }
 function eventList(rows){
- return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
+ return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span data-event-operational-status class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
-const ACTIONABLE=new Set(['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message','inspection']);
 function treatmentsView(){
- const adminView=account&&['admin','master'].includes(account.role);
- const work=events.filter(e=>ACTIONABLE.has(e.kind));
- const unresolved=work.filter(e=>e.status!=='resolvida').sort((a,b)=>(a.kind==='panic'?-1:0)-(b.kind==='panic'?-1:0)||(b.occurred_at||0)-(a.occurred_at||0));
- const completed=work.filter(e=>e.status==='resolvida').sort((a,b)=>(b.reviewed_at||b.occurred_at)-(a.reviewed_at||a.occurred_at));
- const lastFor=e=>treatments.find(t=>t.event_id===e.id);
- const status=e=>e.status==='resolvida'?'Finalizada':e.status==='encaminhada'?'Encaminhada':e.status==='em_analise'?'Em análise':'Aguardando tratativa';
- const renderRow=e=>{
-  const last=lastFor(e),worker=users.find(u=>u.id===e.user_id);
-  return '<button type="button" class="coi3-treatment-row" data-event="'+escape(e.id)+'">'+
-   '<span class="coi3-treatment-icon '+(e.kind==='panic'?'danger':'')+'" aria-hidden="true">'+(e.kind==='panic'?'!':e.kind==='inspection'?'▤':'●')+'</span>'+
-   '<span class="coi3-treatment-copy"><strong>'+escape(friendly[e.kind]||e.kind)+'</strong><span>'+escape(e.description||'Registro sem descrição').slice(0,250)+'</span><small>'+fmt(e.occurred_at)+' · '+escape(e.site||'Sem local')+' · '+escape(worker?.name||'Equipe de campo')+'</small>'+
-   (last?'<small>Último tratativo: '+escape(last.concluded_by||'COI')+' · '+fmt(last.created_at)+' · '+escape(last.conclusion).slice(0,150)+'</small>':'')+'</span>'+
-   '<span class="coi3-treatment-badge '+(e.status==='resolvida'?'done':'')+'">'+status(e)+'</span></button>';
- };
- return '<section class="stack coi3-treatments"><header class="coi3-heading"><div class="coi3-heading-copy"><div class="eyebrow">'+(adminView?'ADMINISTRAÇÃO · CONFERÊNCIA':'COI · RESPONSABILIDADE DE RESPOSTA')+'</div><h1>'+(adminView?'Auditoria de tratativas':'Tratativas')+'</h1><p>'+(adminView?'Consulte o que o COI analisou, encaminhou e concluiu. O administrativo não altera a conclusão operacional.':'Toda ocorrência permanece aberta até o COI registrar análise e conclusão descritiva.')+'</p></div></header>'+
- '<div class="coi3-stats coi3-treat-stats"><div><strong>'+unresolved.length+'</strong><span>Pendentes / em análise</span></div><div><strong>'+unresolved.filter(e=>e.kind==='panic').length+'</strong><span>Pânicos pendentes</span></div><div><strong>'+completed.length+'</strong><span>Concluídas</span></div></div>'+
- '<section class="surface coi3-treatment-surface"><div class="toolbar"><h2>Tratativas em aberto</h2><span class="pill warning">'+unresolved.length+' aguardando COI</span></div><div class="coi3-treatment-list">'+(unresolved.length?unresolved.map(renderRow).join(''):'<p class="coi3-empty">Nenhuma pendência encontrada.</p>')+'</div></section>'+
- '<section class="surface coi3-treatment-surface"><div class="toolbar"><h2>Concluídas e auditáveis</h2><span class="pill ok">'+completed.length+' finalizadas</span></div><div class="coi3-treatment-list">'+(completed.length?completed.slice(0,80).map(renderRow).join(''):'<p class="coi3-empty">Nenhuma conclusão registrada.</p>')+'</div></section>'+
- '<p class="coi3-footnote">Marcar uma notificação como lida não encerra a tratativa. A conclusão fica registrada no servidor, com responsável, horário e justificativa.</p></section>';
+ const summary=ops.summary(),kinds=[...new Set(['incident','alert','message',...summary.categories.map(c=>c.kind)])];
+ const tabs=kinds.map(kind=>{const info=typeInfo(kind),category=summary.categories.find(c=>c.kind===kind);return '<button type="button" role="tab" data-treatment-tab="'+escape(kind)+'" aria-selected="'+(treatmentTab===kind)+'" aria-controls="treatment-record-list">'+escape(info.label)+pendingDot(kind,category?.pending||0)+'</button>';}).join('');
+ const rows=treatmentRows.map(e=>'<button type="button" class="coi3-treatment-row '+(isPending(e)?'is-pending':'is-completed')+'" data-event="'+escape(e.id)+'"><span class="coi3-treatment-icon" aria-hidden="true">'+escape(typeInfo(e.kind).icon)+'</span><span class="coi3-treatment-copy"><strong>'+escape(friendly[e.kind]||typeInfo(e.kind).label)+'</strong><span>'+escape(e.description||'Sem descrição')+'</span><small>'+escape(e.reporter_name)+' · '+escape(e.site||'Sem posto')+' · '+fmt(e.occurred_at)+'</small>'+(privileged()&&isPending(e)&&!e.coi_treated?'<small class="rp-coi-missing">Sem tratativa pelo COI</small>':'')+(e.treatment_owner?'<small>Em atendimento por '+escape(e.treatment_owner)+'</small>':'')+'</span><span class="coi3-treatment-badge '+(!isPending(e)?'done':'')+'">'+stateLabel(e)+'</span></button>').join('');
+ return '<section class="stack coi3-treatments"><header class="toolbar"><div><div class="eyebrow">'+(privileged()?'ADMINISTRAÇÃO · SUPERVISÃO E APOIO':'COI · TRATAMENTO OPERACIONAL')+'</div><h1>Tratativas</h1><p>Pendências primeiro. Registros concluídos permanecem acessíveis para consulta.</p></div><strong>'+summary.total+' pendentes</strong></header><div class="rp-treatment-tabs" role="tablist" aria-label="Categorias de tratativas">'+tabs+'</div><section class="surface" id="treatment-record-list" role="tabpanel" aria-label="'+escape(typeInfo(treatmentTab).label)+'">'+(rows||'<p class="empty">Nenhum registro nesta categoria.</p>')+'</section>'+(treatmentMore?'<button type="button" data-treatment-more>Carregar mais registros</button>':'')+'</section>';
 }
 function eventsView(){
  const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
@@ -362,23 +418,19 @@ function exportView(){
  return '<div class="stack"><h1>Relatório inteligente</h1><div class="cards">'+[['Rondas',events.filter(e=>e.kind==='patrol_start').length],['Pânicos',events.filter(e=>e.kind==='panic').length],['Ocorrências',events.filter(e=>e.kind==='incident').length],['Registros GPS',events.filter(e=>e.kind==='gps').length]].map(([x,y])=>'<div class="metric"><strong>'+y+'</strong><span>'+x+'</span></div>').join('')+'</div><section class="surface"><h2>Exportar Excel completo</h2><p>O XLSX inclui uma primeira aba Dashboard formatada, seguida de abas com eventos e conversas. Os dados dependem dos registros efetivamente sincronizados.</p><div class="row"><button class="primary" id="download-xlsx">Baixar XLSX com abas</button><button id="download-json">Exportar JSON</button><button id="download-csv">Conversas CSV</button></div></section><section class="surface"><h2>Conversas em PDF</h2><p>Histórico com remetente, data e hora de cada mensagem. O navegador permite salvar como PDF.</p><button id="print-all-chats">Imprimir todas as conversas / PDF</button></section></div>';
 }
 function eventView(e){
- const back=account.role==='ronda'?'history':page==='treatments'?'treatments':'events';
+ const back=account.role==='ronda'?'history':detailOrigin;
  const details=Array.isArray(e.details?.mediaIds)?e.details.mediaIds.length:0;
  return '<section class="stack" id="print-conversation">'+
  '<div class="toolbar"><div><button data-page="'+back+'" class="no-print">← Voltar</button><h1 style="margin-top:12px">'+escape(friendly[e.kind]||e.kind)+'</h1><p class="muted">'+fmt(e.occurred_at)+' · '+escape(e.id)+'</p></div><div class="row no-print"><button id="print-chat">Salvar conversa em PDF</button><button data-refresh>Atualizar</button></div></div>'+
- '<section class="surface"><div class="row" style="justify-content:space-between"><span class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span><small>'+escape(users.find(u=>u.id===e.user_id)?.name||account.name)+'</small></div><p style="font-size:14px;margin:14px 0">'+escape(e.description||'Sem descrição')+'</p>'+
+ '<section class="surface"><div class="row" style="justify-content:space-between"><span data-event-operational-status class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span><small>'+escape(users.find(u=>u.id===e.user_id)?.name||account.name)+'</small></div><p style="font-size:14px;margin:14px 0">'+escape(e.description||'Sem descrição')+'</p>'+
  '<div class="detail-grid">'+[['Data e hora',fmt(e.occurred_at)],['Bateria',e.battery==null?'Não informada':e.battery+'%'],['Localização',Number.isFinite(e.lat)?'Disponível no mapa':'Indisponível'],['Status',e.status]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
  (Number.isFinite(e.lat)&&Number.isFinite(e.lng)?positionMap({lat:e.lat,lng:e.lng}):'<p class="muted">Sem geolocalização confiável anexada a este registro.</p>')+
  '</section>'+
- (['coi','operador','master'].includes(account.role)?'<section class="surface no-print"><h2>Tratamento pelo COI</h2><p class="muted">Cada decisão exige uma conclusão descritiva, com responsável, horário e histórico auditável.</p>'+
- '<div class="row treatment-actions" role="group" aria-label="Opções de tratamento">'+
- '<button type="button" data-review-status="em_analise">Registrar análise</button>'+
- '<button type="button" data-review-status="encaminhada">Encaminhar ao administrativo</button>'+
- '<button type="button" class="primary" data-review-status="resolvida">Marcar como analisada</button></div></section>':'')+
+ (review()?treatmentActions(e):'')+
   '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
- '<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form></section>'+
+ (review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'':'<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form>')+'</section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
- (account.role==='admin'?'<p class="muted">A Administração acompanha a tratativa registrada pelo COI.</p>':'<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
+ (review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'<p class="muted">Assuma a tratativa disponível para registrar respostas. Concluídas ficam somente para consulta.</p>':'<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
  (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · vigia pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
  '<button class="primary">Enviar resposta</button></div></form>')+'</section>'+
  '<details class="details-toggle"><summary>Dados técnicos completos</summary><div class="surface"><div class="detail-grid">'+
@@ -517,16 +569,17 @@ function render(){
    account.role==='vistoriador'?(page==='send'?sendView():inspectionView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
- root.innerHTML='<div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+ 
+ root.innerHTML='<button type="button" class="rp-central-menu-button" data-central-menu aria-expanded="false" aria-controls="central-navigation">☰ Menu '+pendingDot('total',ops.summary().total)+'</button><div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div><div class="ops-bell-bar">'+ops.badge()+'</div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+
   (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
+ updatePendingIndicators();
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(()=>coi.mount());
  if(account.role==='cliente'&&page==='client')void loadClientInspectionMedia();
 }
 async function loadMessages(eventId){
- try{messages=(await api('/events/'+eventId+'/messages')).messages||[];const host=document.querySelector('#thread');if(!host)return;
+ try{messages=(await api('/events/'+eventId+'/messages')).messages||[];if(selected?.event?.id!==eventId)return;const host=document.querySelector('#thread');if(!host)return;
  host.innerHTML=messages.length?messages.map(m=>'<div class="bubble '+(m.audience==='system'?'internal':'')+'"><span class="scope">'+(m.audience==='system'?'MENSAGEM INTERNA':'MENSAGEM GERAL')+'</span><p>'+escape(m.body)+'</p><small>'+escape(m.author)+' · '+fmt(m.created_at)+'</small></div>').join(''):'<p class="empty">Nenhuma resposta registrada.</p>';
  }catch(e){flash(e.message)}
 }
@@ -613,22 +666,29 @@ document.addEventListener('click',async e=>{
   if(target.hasAttribute('data-occ-reset')){
    occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};render();return;
   }
+  if(target.hasAttribute('data-central-menu')){
+   const nav=document.querySelector('#central-navigation'),open=!nav.classList.contains('is-open');nav.classList.toggle('is-open',open);target.setAttribute('aria-expanded',String(open));return;
+  }
+  if(target.dataset.treatmentTab){treatmentTab=target.dataset.treatmentTab;await releaseTreatment();selected=null;await readTreatmentRows();render();return;}
+  if(target.hasAttribute('data-treatment-more')){target.disabled=true;try{await readTreatmentRows(true);render()}finally{if(target.isConnected)target.disabled=false}return;}
+  if(target.hasAttribute('data-claim-treatment')&&selected?.event){
+   const result=await api('/events/'+selected.event.id+'/claim',{method:'POST',data:{claimSession,version:selected.event.version}});selected={event:result.event};claimedEvent=result.event.id;render();return;
+  }
+  if(target.hasAttribute('data-release-treatment')){await releaseTreatment();await load();return;}
   if(target.dataset.reviewStatus){
-   if(!['coi','operador','master'].includes(account?.role)||!selected?.event)return;
-   const status=target.dataset.reviewStatus;
-   const titles={em_analise:'Registrar análise',encaminhada:'Encaminhar ao administrativo',resolvida:'Marcar como analisada'};
+   if(!review()||!selected?.event||claimedEvent!==selected.event.id)return;
+   const status=target.dataset.reviewStatus,titles={em_analise:'Registrar análise',encaminhada:'Encaminhar ao administrativo',resolvida:'Concluir tratativa'};
    if(!titles[status])return;
-   const selectedEventId=selected.event.id;
+   const selectedEventId=selected.event.id,version=selected.event.version,requestId=crypto.randomUUID();
    openConclusionDialog({title:titles[status],eventLabel:(friendly[selected.event.kind]||selected.event.kind)+' · '+selected.event.description,
     action:status,onConfirm:async({conclusion})=>{
-     await api('/events/'+selectedEventId+'/review',{method:'POST',data:{status,conclusion}});
-     await load();flash('Conclusão registrada com data, hora e responsável.');
-    }});
-   return;
+     await api('/events/'+selectedEventId+'/review',{method:'POST',data:{status,conclusion,claimSession,version,requestId}});
+     claimedEvent=null;await load();flash('Tratativa registrada e estados sincronizados.');
+    }});return;
   }
   if(target.dataset.coiTab){if(page==='monitor'&&coi.selectTab(target.dataset.coiTab))render();return;}
-   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}selected=null;page=target.dataset.page;render();return;}
-  if(target.dataset.event){if(['cliente','vistoriador'].includes(account.role))return;const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
+   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}await releaseTreatment();selected=null;page=target.dataset.page;if(page==='treatments')await readTreatmentRows();render();return;}
+  if(target.dataset.event){if(account.role==='cliente')return;await openEvent(target.dataset.event);return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
   if(target.dataset.template){
    const t=templates.find(x=>x.id===target.dataset.template);if(!privileged()||!t)return;
@@ -694,11 +754,11 @@ document.addEventListener('submit',async e=>{
    flash(attachmentFailure||(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':attachments.length?'Mensagem e '+uploads+' anexo(s) enviados.':'Mensagem registrada na central.'));
    return;
   }
-  if(form.id==='send-message'){if(account?.role==='admin')throw Error('Resposta reservada ao COI.');await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general'}});form.reset();await loadMessages(selected.event.id);return;}
+  if(form.id==='send-message'){await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general',claimSession}});form.reset();await loadMessages(selected.event.id);return;}
   if(form.id==='upload-evidence'){
    const file=form.querySelector('[name=file]').files[0];if(!file)throw new Error('Selecione uma mídia');
    const at=file.lastModified||Date.now();
-   await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':selected.event.id,'X-Captured-At':String(at)}});
+   await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':selected.event.id,'X-Captured-At':String(at),'X-Treatment-Session':claimSession}});
    form.reset();await loadMedia(selected.event.id);flash('Evidência guardada no servidor.');return;
   }
  }catch(err){flash(err.message)}
@@ -707,6 +767,7 @@ document.addEventListener('submit',async e=>{
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
 setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes','treatments','notifications'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
 setInterval(()=>{if(account&&!document.hidden)void ops.refresh(account,true).catch(()=>{});},15000);
+setInterval(()=>{if(claimedEvent&&account&&!document.hidden)void api('/events/'+claimedEvent+'/claim',{method:'POST',data:{claimSession}}).catch(error=>flash(error.message));},40000);
 setInterval(()=>{if(['ronda','vistoriador'].includes(account?.role)&&!document.hidden)void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});},45000);
 setInterval(()=>{for(const e of document.querySelectorAll('[data-ops-live-clock]'))e.textContent=new Date().toLocaleTimeString('pt-BR');},1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&['ronda','vistoriador'].includes(account?.role))void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});});
@@ -716,5 +777,5 @@ document.addEventListener('change',e=>{
  if(field){occurrenceFilters[field.dataset.occFilter]=field.value;render();return;}
  routeBoard.change(e.target);
 });
-exit.addEventListener('click',async()=>{if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
+exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();

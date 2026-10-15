@@ -5,6 +5,7 @@ import {randomBytes,scryptSync,timingSafeEqual,createHash,randomUUID} from 'node
 import {addTrackSample} from '../src/field-intelligence.js';
 import {validateConclusion} from '../src/conclusion-validation.js';
 import {createOpsCenter} from './ops-center.js';
+import {createTreatments} from './treatments.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
 const roles=['ronda','operador','admin','master','coi','cliente','vistoriador'];
@@ -117,6 +118,7 @@ export function createOperationalApi(){
  const visible=(u,e)=>u.role==='cliente'?Boolean(u.site&&e.site===u.site&&['inspection','checkpoint','patrol_start','patrol_end'].includes(e.kind)):['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
  const criteriaKeys=['acessos','estrutura','equipamentos','sinalizacao'];
  const operations=db?createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}):null;
+ const treatmentService=db?createTreatments(db,{now,id,audit,resp,body,serialize,operations}):null;
  async function notifyEmail(record,template){
   const targetGroups=serialize(template.recipients)||[];
   const emails=db.prepare('SELECT email,group_name FROM recipients WHERE enabled=1').all().filter(x=>!targetGroups.length||targetGroups.includes(x.group_name)).map(x=>x.email);
@@ -151,6 +153,7 @@ export function createOperationalApi(){
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
    if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
+   if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
    if(p==='/api/users'&&m==='GET'&&reviewer(a)&&operations.allows(a,'rondas')){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,created_at,active FROM users').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
@@ -242,7 +245,7 @@ export function createOperationalApi(){
     const rows=['ronda','vistoriador'].includes(a.role)?db.prepare('SELECT * FROM events WHERE user_id=? ORDER BY occurred_at DESC LIMIT ?').all(a.id,limit):
      a.role==='cliente'?(a.site?db.prepare("SELECT * FROM events WHERE site=? AND kind IN ('patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted','inspection') ORDER BY occurred_at DESC LIMIT ?").all(a.site,limit):[]):
      db.prepare('SELECT * FROM events ORDER BY occurred_at DESC LIMIT ?').all(limit);
-    resp(res,200,{events:rows.map(x=>({...x,details:serialize(x.details),position:x.lat==null?null:{lat:x.lat,lng:x.lng,accuracy:x.accuracy}}))});return true;
+    resp(res,200,{events:rows.map(x=>reviewer(a)?treatmentService.decorate(x,a):({...x,treatment_session:undefined,details:serialize(x.details),position:x.lat==null?null:{lat:x.lat,lng:x.lng,accuracy:x.accuracy}}))});return true;
    }
    const messages=p.match(/^\/api\/events\/([0-9a-z-]+)\/messages$/i);
    if(messages){
@@ -252,42 +255,19 @@ export function createOperationalApi(){
     if(m==='GET'&&reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas'});return true;}
     if(m==='GET'){const rows=reviewer(a)?db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? ORDER BY created_at').all(ev.id):db.prepare("SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? AND audience='general' ORDER BY created_at").all(ev.id);resp(res,200,{messages:rows});return true;}
     if(m==='POST'){
-     if(['cliente','admin'].includes(a.role)){resp(res,403,{error:'Apenas COI e equipe responsável podem responder; Administração acompanha a tratativa.'});return true;}
+     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente somente consulta registros'});return true;}
      const d=serialize((await body(req)).toString())||{},b=clean(d.body),audience=d.audience||'general';
      if(b.length<1||b.length>4000||!['general','system'].includes(audience)||audience==='system'&&!reviewer(a)){resp(res,422,{error:'Mensagem inválida'});return true;}
+     if(reviewer(a)&&!treatmentService.canRespond(a,event(ev.id),d.claimSession)){resp(res,409,{error:'Tratativa concluída, reservada em outra sessão ou sem permissão para resposta.'});return true;}
      const mid=id();db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(mid,ev.id,a.id,audience,b,now());
      audit(a,'message.create',ev.id);
     operations.notifyMessage(a,ev,audience,b);
     resp(res,201,{id:mid});return true;
     }
    }
-   const review=p.match(/^\/api\/events\/([0-9a-z-]+)\/review$/i);
-   if(review&&m==='POST'&&reviewer(a)){
-    const ev=event(review[1]);
-    if(!ev){resp(res,404,{error:'Não encontrado'});return true;}
-    if(!['coi','operador','master'].includes(a.role)){resp(res,403,{error:'Tratamento reservado ao COI; Administração acompanha a conclusão.'});return true;}
-    if(!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Tratamento desabilitado pelo administrador'});return true;}
-    const d=serialize((await body(req)).toString())||{};
-    const status=clean(d.status),validation=validateConclusion(d.conclusion??d.note);
-    if(!['aberta','em_analise','resolvida','encaminhada'].includes(status)||!validation.ok){resp(res,422,{error:validation.reason||'Situação inválida'});return true;}
-    if(status==='encaminhada'&&a.role==='ronda'){resp(res,403,{error:'Sem permissão para encaminhar'});return true;}
-    const at=now(),comment=validation.value;
-    db.exec('BEGIN IMMEDIATE');
-    try{
-     db.prepare('UPDATE events SET status=?,reviewer_id=?,reviewed_at=? WHERE id=?').run(status,a.id,at,ev.id);
-     db.prepare('INSERT INTO event_treatments(id,event_id,author_id,from_status,to_status,conclusion,created_at) VALUES(?,?,?,?,?,?,?)')
-      .run(id(),ev.id,a.id,ev.status,status,comment,at);
-     db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)')
-      .run(id(),ev.id,a.id,'system','Conclusão ('+status+'): '+comment,at);
-     db.exec('COMMIT');
-    }catch(error){db.exec('ROLLBACK');throw error}
-    audit(a,'event.review.'+status,ev.id);
-    operations.notifyReview(a,ev,status,comment);
-    resp(res,200,{ok:true,status,treatedAt:at});return true;
-   }
    if(p==='/api/event-treatments'&&m==='GET'&&reviewer(a)&&operations.allows(a,'ocorrencias')){
     const limit=Math.min(2000,Math.max(1,Number(u.searchParams.get('limit'))||500));
-    const rows=db.prepare('SELECT t.*,reviewer.name concluded_by,worker.name reporter_name,e.kind,e.description,e.occurred_at,e.site,e.user_id FROM event_treatments t JOIN events e ON e.id=t.event_id JOIN users reviewer ON reviewer.id=t.author_id JOIN users worker ON worker.id=e.user_id ORDER BY t.created_at DESC LIMIT ?').all(limit);
+    const rows=db.prepare('SELECT t.*,reviewer.name concluded_by,reviewer.role author_role,worker.name reporter_name,e.kind,e.description,e.occurred_at,e.site,e.user_id FROM event_treatments t JOIN events e ON e.id=t.event_id JOIN users reviewer ON reviewer.id=t.author_id JOIN users worker ON worker.id=e.user_id ORDER BY t.created_at DESC LIMIT ?').all(limit);
     resp(res,200,{treatments:rows});return true;
    }
    if(p==='/api/templates'&&m==='GET'){
@@ -365,6 +345,7 @@ export function createOperationalApi(){
      resp(res,422,{error:'Identificação da foto inválida'});return true;
     }
     const bytes=await body(req,25*1024*1024);
+    if(reviewer(a)&&!treatmentService.canRespond(a,event(eid),req.headers['x-treatment-session'])){resp(res,409,{error:'Assuma uma tratativa pendente antes de anexar evidências.'});return true;}
     const magic=bytes.subarray(0,12);
     const correct=(mime==='image/jpeg'&&magic[0]===255&&magic[1]===216)
       ||(mime==='image/png'&&magic.subarray(1,4).toString()==='PNG')
@@ -385,7 +366,7 @@ export function createOperationalApi(){
     db.prepare('INSERT INTO media(id,event_id,author_id,mimetype,filename,captured_at,latitude,longitude,battery,evidence_view,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
      .run(mediaId,eid,a.id,mime,mediaId,Number.isFinite(captured)&&captured>0?captured:now(),
        hasGeo?geoLat:null,hasGeo?geoLng:null,hasBattery?battery:null,evidenceView,now());
-    audit(a,'media.upload',eid);resp(res,201,{id:mediaId});return true;
+    audit(a,'media.upload',eid);operations.notifyMessage(a,ev,'system','Nova evidência anexada ao registro');resp(res,201,{id:mediaId});return true;
    }
    const mediaPath=p.match(/^\/api\/media\/([0-9a-f-]+)$/i);
    if(mediaPath&&m==='GET'){

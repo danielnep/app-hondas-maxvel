@@ -1,19 +1,16 @@
+import {typeInfo,EVENT_TYPES} from './treatment-policy.js';
 /* UI da central COI: notificações, despachos e permissões com dados do servidor. */
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'Não informado';
 const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
-const activeKinds=new Set(['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message','inspection']);
-export function createOpsCenterUI({api,flash,openNotice}){
- let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,noticeFilter='pending';
+const activeKinds=new Set([...Object.keys(EVENT_TYPES),'panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message','inspection']);
+export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
+ let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,attention=0,unreadTotal=0,nextCursor=null,treatmentSummary={total:0,categories:[]},refreshing=null,generation=0;
  const manager=()=>['admin','master'].includes(current?.role);
  const reviewer=()=>['admin','master','operador','coi'].includes(current?.role);
  const allowed=key=>manager()||!!modules.find(x=>x.module===key)?.enabled;
  const unread=()=>notifications.filter(x=>!x.read_at);
- const pendingActions=()=>notifications.filter(x=>activeKinds.has(x.kind)&&(
-  x.dispatch_id?!x.dispatch_completed_at:
-  x.event_id?x.event_status!=='resolvida':
-  !x.read_at
-  ));
+ const pendingActions=()=>notifications.filter(x=>x.event_id?x.event_status!=='resolvida':x.dispatch_id?!x.dispatch_completed_at:false);
  const permissionRows=()=>modules.map(x=>'<label class="permission-switch"><span><strong>'+esc(labels[x.module]||x.module)+'</strong><small>'+esc(x.enabled?'Habilitado':'Desabilitado')+'</small></span><input type="checkbox" data-coi-toggle="'+esc(x.module)+'" '+(x.enabled?'checked':'')+' aria-label="Habilitar '+esc(labels[x.module]||x.module)+'"></label>').join('');
  function showPopup(n,reminder=false){
   const existing=document.querySelector('#ops-priority-toast');existing?.remove();
@@ -39,20 +36,32 @@ export function createOpsCenterUI({api,flash,openNotice}){
   }
  }
  async function refresh(user,withPopup=true){
-  current=user;
+  if(refreshing&&current?.id===user.id)return refreshing;
+  current=user;const epoch=++generation;
+  const task=refreshData(user,withPopup,epoch);refreshing=task;
+  try{return await task}finally{if(refreshing===task)refreshing=null}
+ }
+ async function refreshData(user,withPopup=true,epoch){
   const requests=[api('/notifications')];
   if(reviewer()){
    requests.push(api('/coi-permissions'));
    requests.push(api('/dispatches'));
    requests.push(api('/availability'));
    requests.push(api('/inspection-destinations'));
+   requests.push(api('/treatment-summary'));
   }else if(['ronda','vistoriador'].includes(user.role)){
    requests.push(Promise.resolve(null));
    requests.push(api('/dispatches'));
   }
   const results=await Promise.allSettled(requests);
+  if(epoch!==generation||current?.id!==user.id)return;
   if(results[0].status==='fulfilled'){
-   notifications=results[0].value.notifications||[];
+   let incoming=results[0].value,items=incoming.notifications||[];
+   const wanted=notifications.length;
+   while(items.length<wanted&&incoming.nextCursor){incoming=await api('/notifications?cursor='+encodeURIComponent(incoming.nextCursor));items.push(...incoming.notifications);}
+   if(epoch!==generation||current?.id!==user.id)return;
+   notifications=[...new Map(items.map(n=>[n.id,n])).values()];nextCursor=incoming.nextCursor;
+   attention=results[0].value.attention||0;unreadTotal=results[0].value.unread||0;
    // Notificações antigas não devem gerar um popup novo a cada atualização.
    if(!initialized){seen=new Set(notifications.map(item=>item.id));initialized=true;lastReminder=Date.now();}
    const bell=document.querySelector('.ops-bell-bar');
@@ -62,6 +71,8 @@ export function createOpsCenterUI({api,flash,openNotice}){
   if(results[2]?.status==='fulfilled')dispatches=results[2].value.dispatches||[];
   if(results[3]?.status==='fulfilled'){availability=results[3].value.guards||[];inspectors=results[3].value.inspectors||[];}
   if(results[4]?.status==='fulfilled')destinations=results[4].value.destinations||[];
+  if(results[5]?.status==='fulfilled')treatmentSummary=results[5].value;
+  onUpdate({summary:treatmentSummary,attention,remote:withPopup});
   if(withPopup)present();
  }
  function connectLive(token){
@@ -88,7 +99,8 @@ export function createOpsCenterUI({api,flash,openNotice}){
   })();
  }
  function stopLive(){
-  streamController?.abort();streamController=null;initialized=false;seen.clear();notifications=[];dispatches=[];availability=[];inspectors=[];destinations=[];modules=[];
+  generation++;current=null;refreshing=null;
+  streamController?.abort();streamController=null;initialized=false;seen.clear();notifications=[];attention=0;unreadTotal=0;nextCursor=null;treatmentSummary={total:0,categories:[]};dispatches=[];availability=[];inspectors=[];destinations=[];modules=[];
   document.querySelector('#ops-priority-toast')?.remove();
  }
  async function requireLocation(){
@@ -105,27 +117,25 @@ export function createOpsCenterUI({api,flash,openNotice}){
   return active?'<button type="button" class="ops-assignment-banner" data-ops-page="dispatches"><span>⌖ NOVA ATRIBUIÇÃO</span><strong>'+esc(active.address)+'</strong><small>'+(active.started_at?'Atendimento em andamento':'Toque para visualizar e iniciar')+'</small></button>':'';
  }
  function badge(){
-  const count=unread().length;
-  return '<button type="button" data-ops-page="notifications" class="ops-notification-bell" aria-label="Abrir notificações, '+count+' não lidas">🔔 <span>Notificações</span>'+(count?'<b class="ops-notification-count">'+count+'</b>':'')+'</button>';
+  return '<button type="button" data-ops-page="notifications" class="ops-notification-bell" aria-label="Abrir notificações, '+attention+' pendências operacionais">🔔 <span>Notificações</span><span class="rp-pending-dot" data-pending-scope="notifications" '+(!attention?'hidden':'')+' aria-label="Há pendências operacionais"></span>'+(unreadTotal?'<b class="ops-notification-count">'+unreadTotal+'</b>':'')+'</button>';
  }
  function cards(list){
   return list.map(n=>{
-   const state=n.event_id?(n.event_status==='resolvida'?'Tratativa concluída':n.event_status==='em_analise'?'Em análise':'Tratativa em aberto'):
-    n.dispatch_id?(n.dispatch_completed_at?'Despacho concluído':n.dispatch_started_at?'Em atendimento':'Despacho pendente'):
-    n.read_at?'Visualizada':'Nova';
-   return '<button type="button" class="ops-notification-row '+(!n.read_at?'is-unread':'')+'" data-ops-notification="'+esc(n.id)+'"><span class="ops-notice-dot '+esc(n.kind)+'"></span><span><strong>'+esc(n.title)+'</strong><small>'+esc(n.body)+'</small><small>'+stamp(n.created_at)+' · '+esc(state)+'</small></span><b aria-hidden="true">↗</b></button>';
+   const pending=n.event_id?n.event_status!=='resolvida':n.dispatch_id?!n.dispatch_completed_at:false;
+   const state=n.event_id?(n.event_status==='resolvida'?'Tratativa concluída':n.event_status==='em_analise'?'Em análise':'Tratativa pendente'):
+    n.dispatch_id?(n.dispatch_completed_at?'Despacho concluído':n.dispatch_started_at?'Em atendimento':'Despacho pendente'):n.read_at?'Visualizada':'Nova';
+   const info=typeInfo(n.kind==='review'?n.event_kind:n.kind),icon=n.kind==='review'?'✓':n.kind==='dispatch'?'➜':info.icon;
+   return '<button type="button" class="ops-notification-row '+(pending?'is-pending':'is-completed')+' '+(!n.read_at?'is-unread':'')+'" data-ops-notification="'+esc(n.id)+'">'+
+    '<span class="rp-notice-icon" aria-hidden="true">'+esc(icon)+'</span><span><strong>'+esc(n.title)+'</strong><small>'+esc(n.body)+'</small><small>'+esc(n.origin_name||'Central operacional')+' · '+esc(n.kind==='review'?'Tratativa':info.label)+' · '+stamp(n.created_at)+'</small><small>'+esc(state)+' · '+(n.read_at?'Lida':'Não lida')+'</small></span><b aria-hidden="true">↗</b></button>';
   }).join('');
  }
  function notificationsView(){
-  const isAdmin=manager(),counts={pending:pendingActions().length,all:notifications.length,audit:notifications.filter(n=>n.kind==='review').length};
-  const result=noticeFilter==='pending'?pendingActions():noticeFilter==='audit'?notifications.filter(n=>n.kind==='review'):notifications;
-  const filters=[['pending','Exigem atenção',counts.pending],['all','Todas',counts.all],...(isAdmin?[['audit','COI · Tratativas',counts.audit]]:[])];
-  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · COMUNICAÇÕES RECEBIDAS</div><h1>Notificações</h1><p class="muted">'+(isAdmin?'Acompanhe despachos, mensagens e decisões registradas pelo COI.':'Abra a mensagem, o laudo ou a ocorrência para responder e registrar o tratamento.')+'</p></div>'+badge()+'</header>'+
-   '<nav class="coi3-notification-tabs" aria-label="Filtros das notificações">'+filters.map(([key,title,count])=>'<button type="button" data-ops-filter="'+key+'" aria-pressed="'+(noticeFilter===key)+'" class="'+(noticeFilter===key?'is-active':'')+'">'+esc(title)+' <span>'+count+'</span></button>').join('')+'</nav>'+
-   '<section class="surface ops-notifications"><div class="toolbar"><h2>Caixa de entrada</h2><span class="pill warning">'+unread().length+' não lidas</span></div>'+
-   (result.length?cards(result):'<p class="empty">Nenhuma notificação nesta categoria.</p>')+'</section>'+
-   '<p class="coi3-footnote">Leitura e conclusão são ações diferentes. A pendência continua até o COI registrar o encerramento no evento ou o profissional concluir o despacho.</p></section>';
+  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · COMUNICAÇÕES RECEBIDAS</div><h1>Notificações</h1><p class="muted">Todas as comunicações, da mais recente para a mais antiga. Abra o registro para consultar ou realizar a tratativa.</p></div></header>'+
+   '<section class="surface ops-notifications" aria-label="Feed de notificações">'+(notifications.length?cards(notifications):'<p class="empty">Nenhuma notificação recebida.</p>')+'</section>'+
+   (nextCursor?'<button type="button" data-ops-more>Carregar notificações anteriores</button>':'')+
+   '<p class="coi3-footnote">Ler uma notificação não conclui a tratativa. Notificações e Tratativas abrem o mesmo registro e histórico.</p></section>';
  }
+
  function dispatchesView({users,rounds,events}){
   const guards=availability.map(w=>({...w,dispatchStatus:w.status,lastActivity:w.last_seen}));
   return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">COI · DESPACHO SOB DEMANDA</div><h1>Disponibilidade e direcionamento</h1><p class="muted">Selecione um vigia disponível para abrir o despacho. Status exige atividade recente sincronizada, não basta cadastro ativo.</p></div>'+badge()+'</header>'+
@@ -188,7 +198,12 @@ export function createOpsCenterUI({api,flash,openNotice}){
    '<section class="surface"><h2>Módulos de operação</h2><div class="permission-list">'+permissionRows()+'</div></section></section>';
  }
  async function click(target){
-  if(target.dataset.opsFilter&&['pending','all','audit'].includes(target.dataset.opsFilter)){noticeFilter=target.dataset.opsFilter;openNotice({page:'notifications'});return true;}
+  if(target.hasAttribute('data-ops-more')){
+   if(!nextCursor)return true;
+   target.disabled=true;
+   try{const result=await api('/notifications?cursor='+encodeURIComponent(nextCursor));notifications=[...new Map([...notifications,...result.notifications].map(n=>[n.id,n])).values()];nextCursor=result.nextCursor;await openNotice({page:'notifications'});}finally{if(target.isConnected)target.disabled=false}
+   return true;
+  }
   if(target.dataset.opsSelectInspector){
    const dialog=document.querySelector('#ops-inspector-modal');if(!dialog)return true;
    dialog.querySelector('[name="workerId"]').value=target.dataset.opsSelectInspector;
@@ -226,8 +241,8 @@ export function createOpsCenterUI({api,flash,openNotice}){
   if(target.dataset.opsNotification){
    const n=notifications.find(x=>x.id===target.dataset.opsNotification);if(!n)return true;
    await api('/notifications/'+n.id+'/read',{method:'POST'});
-   n.read_at=Date.now();document.querySelector('#ops-priority-toast')?.remove();
-   openNotice(n.event_id?{eventId:n.event_id}:{page:n.dispatch_id?'dispatches':'notifications'});
+   n.read_at=Date.now();unreadTotal=Math.max(0,unreadTotal-1);document.querySelector('#ops-priority-toast')?.remove();
+   await openNotice(n.event_id?{eventId:n.event_id}:{page:n.dispatch_id?'dispatches':'notifications'});
    return true;
   }
   return false;
@@ -273,5 +288,5 @@ export function createOpsCenterUI({api,flash,openNotice}){
    return true;
   }catch(error){input.checked=!enabled;throw error}
  }
- return {refresh,allowed,badge,assignmentBanner,present,connectLive,stopLive,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread,monitoringData:()=>({availability:[...availability,...inspectors],dispatches}),activeInspection:()=>dispatches.find(d=>d.kind==='vistoria'&&d.started_at&&!d.completed_at)||null};
+ return {refresh,allowed,badge,summary:()=>treatmentSummary,attention:()=>attention,assignmentBanner,present,connectLive,stopLive,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread,monitoringData:()=>({availability:[...availability,...inspectors],dispatches}),activeInspection:()=>dispatches.find(d=>d.kind==='vistoria'&&d.started_at&&!d.completed_at)||null};
 }
