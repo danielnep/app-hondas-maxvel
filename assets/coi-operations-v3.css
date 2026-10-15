@@ -1,0 +1,121 @@
+/* Rondas Pro 3 · COI centrado em pessoas, comunicação e tratativas.
+ * Escopo central autenticada; fundo zinc e vermelho Maxvel preservados.
+ */
+#central-root .coi3-app,#central-root .coi3-treatments{--coi3-bg:#09090b;--coi3-panel:#131316;--coi3-edge:#37373f;--coi3-text:#f5f5f6;--coi3-muted:#a1a1aa;--coi3-red:#f5223d;--coi3-cyan:#38bdf8;color:var(--coi3-text);min-width:0}
+#central-root .coi3-app button,#central-root .coi3-treatments button{transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+#central-root .coi3-app :is(button,a):focus-visible,#central-root .coi3-treatments button:focus-visible{outline:2px solid var(--coi3-cyan);outline-offset:3px}
+#central-root .coi3-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding:9px 0 20px;border-bottom:1px solid #404049}
+#central-root .coi3-heading-copy{flex:1;min-width:200px}
+#central-root .coi3-heading-copy .eyebrow{color:#f68b9b;margin-bottom:8px;letter-spacing:.12em}
+#central-root .coi3-heading h1{font-size:clamp(23px,3.2vw,33px);letter-spacing:-.035em;line-height:1.18}
+#central-root .coi3-heading-copy>p{font-size:13px;color:#c4c4cb;line-height:1.55;margin:6px 0 10px}
+#central-root .coi3-site{display:inline-flex;border:1px solid #45454d;background:#19191d;border-radius:999px;padding:6px 11px;font-size:11px;color:#d7d7db;max-width:100%}
+#central-root .coi3-onair{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:10px 13px;background:linear-gradient(110deg,rgba(39,39,42,.72),rgba(15,15,17,.85));border:1px solid #45454d;border-radius:12px}
+#central-root .coi3-onair>span:nth-child(2){display:grid;font-size:12px;font-weight:720;line-height:1.3}
+#central-root .coi3-onair small{font-weight:400;color:#a1a1aa;margin-top:3px}
+#central-root .coi3-onair strong{font:750 15px/1.1 ui-monospace,monospace;font-variant-numeric:tabular-nums;margin-left:10px}
+#central-root .coi3-led{height:9px;width:9px;border-radius:50%;background:#10b981;box-shadow:0 0 0 4px #10b98120,0 0 12px #10b981aa}
+#central-root .coi3-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:19px 0 14px}
+#central-root .coi3-stats>div{display:grid;align-content:center;gap:4px;min-height:83px;border:1px solid #37373f;background:linear-gradient(145deg,#1b1b20,#111114);border-radius:12px;padding:13px 16px}
+#central-root .coi3-stats strong{font-size:clamp(23px,3vw,29px);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+#central-root .coi3-stats span{font-size:11px;color:#b8b8c0;line-height:1.35}
+#central-root .coi3-stats .coi3-count-attention{border-color:#c73a50;background:linear-gradient(120deg,#3a171e,#201216)}
+#central-root .coi3-stats .coi3-count-attention strong{color:#ffa8b5}
+#central-root .coi3-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:11px 0 23px}
+#central-root .coi3-actions button{min-height:45px;background:#232329;border:1px solid #555560;border-radius:999px;padding:9px 16px;font-size:12px;font-weight:720;color:#efeff1}
+#central-root .coi3-actions button:hover{background:#33333c;border-color:#8e8e99;transform:translateY(-1px)}
+#central-root .coi3-actions .coi3-action-urgent{border-color:#f5223d83;background:#4a1821;color:#fff}
+#central-root .coi3-actions .coi3-action-urgent:hover{background:#66202e}
+#central-root .coi3-section{background:linear-gradient(140deg,rgba(28,28,31,.67),rgba(15,15,17,.85));border:1px solid #3d3d46;border-radius:14px;padding:clamp(12px,2vw,22px)}
+#central-root .coi3-section-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#central-root .coi3-section-header h2{font-size:clamp(17px,2vw,21px);letter-spacing:-.02em}
+#central-root .coi3-section-header p{font-size:12px;color:#b1b1b8;margin:4px 0 13px;line-height:1.5}
+#central-root .coi3-tabs{display:flex;gap:5px;margin:0 0 17px;padding:4px;border:1px solid #34343c;border-radius:999px;background:#09090b;width:fit-content;max-width:100%}
+#central-root .coi3-tabs button{display:flex;gap:9px;align-items:center;justify-content:center;min-height:42px;border:1px solid transparent;border-radius:999px;background:transparent;padding:9px 21px;color:#aeb0ba;font-size:13px;font-weight:780}
+#central-root .coi3-tabs button span{display:grid;place-items:center;min-width:24px;height:24px;padding:0 6px;background:#313139;border-radius:999px;font-size:11px;color:#e9e9ea}
+#central-root .coi3-tabs button.is-active{color:#fff;background:#3b1b24;border-color:#bc3650;box-shadow:inset 0 1px #ffffff15}
+#central-root .coi3-tabs button.is-active span{background:#af2842}
+#central-root .coi3-record-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#central-root .coi3-record{display:grid;gap:11px;align-content:start;min-width:0;border:1px solid #3d3d46;border-radius:12px;background:linear-gradient(160deg,rgba(30,30,34,.92),rgba(13,13,16,.95));padding:14px;box-shadow:inset 0 1px #ffffff06}
+#central-root .coi3-record.is-active{border-color:#618c7f;background:linear-gradient(160deg,rgba(28,37,35,.75),rgba(14,16,17,.96))}
+#central-root .coi3-record-title{display:flex;gap:10px;align-items:center;min-width:0}
+#central-root .coi3-person-icon{flex:0 0 36px;width:36px;height:36px;border-radius:10px;border:1px solid #52525b;background:#25252b;display:grid;place-items:center;font-size:12px;font-weight:800;color:#e1e1e4}
+#central-root .coi3-record-title>div{display:grid;gap:3px;min-width:0;flex:1}
+#central-root .coi3-record-title small{font-size:11px;color:#a1a1aa;overflow-wrap:anywhere}
+#central-root .coi3-record-title h3{font-size:15px;letter-spacing:-.01em}
+#central-root .coi3-record-title p{font-size:11px;color:#a9abb4;line-height:1.4;overflow-wrap:anywhere}
+#central-root .coi3-record-state{font-size:10px;color:#dedee3;padding:6px 9px;border:1px solid #4a4a54;background:#24242a;border-radius:999px;text-align:center;white-space:nowrap;align-self:start}
+#central-root .coi3-record-state.coi3-inprogress{color:#9ef0ce;background:#133428;border-color:#337d59}
+#central-root .coi3-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#central-root .coi3-facts span{display:grid;gap:4px;padding:8px 10px;background:#0d0d10;border:1px solid #32323b;border-radius:8px;font-size:10px;color:#b4b4be}
+#central-root .coi3-facts strong{color:#eeeeef;font-size:12px;font-weight:730;line-height:1.4}
+#central-root .coi3-location{display:grid;gap:8px;margin-top:1px}
+#central-root .coi3-map{height:192px;border-radius:10px;background:#111116;border:1px solid #51515b;overflow:hidden;z-index:0}
+#central-root .coi3-map .leaflet-container{background:#09090b}
+#central-root .coi3-map .leaflet-control-attribution{background:#111a!important;color:#e4e4e7!important;font-size:9px!important}
+#central-root .coi3-map .leaflet-control-attribution a{color:#8adcfb!important}
+#central-root .coi3-map-empty{padding:20px;border-radius:9px;border:1px dashed #555561;background:#131317;color:#a1a1aa;font-size:12px;line-height:1.6}
+#central-root .coi3-position-status{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;color:#c4c4cc;font-size:10px}
+#central-root .coi3-position-status .coi3-fresh{color:#71e7b6}
+#central-root .coi3-record-detail{background:rgba(58,58,66,.5);border:1px solid #656571;border-radius:999px;min-height:43px;color:#fafafa;font-size:12px;text-align:center}
+#central-root .coi3-record-detail:hover{background:#35353c}
+#central-root .coi3-empty{color:#adaeb9;font-size:13px;padding:25px 12px;line-height:1.6}
+#central-root .coi3-secondary{margin-top:23px;background:#151519;border:1px solid #40404b;border-radius:13px;padding:17px}
+#central-root .coi3-secondary header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-bottom:11px}
+#central-root .coi3-secondary h2{font-size:17px}
+#central-root .coi3-secondary header button{background:#2b2b32;border:1px solid #51515a;border-radius:999px;min-height:39px;padding:7px 13px}
+#central-root .coi3-alert-list{display:grid;gap:6px}
+#central-root .coi3-alert{width:100%;display:grid;gap:4px;min-width:0;text-align:left;padding:13px;border:1px solid #38383f;border-radius:9px;background:#1d1d22;color:#f4f4f5}
+#central-root .coi3-alert:hover{border-color:#787880;background:#292930}
+#central-root .coi3-alert.is-panic{border-color:#db3850;background:#341920}
+#central-root .coi3-alert strong{font-size:12px}
+#central-root .coi3-alert span{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+#central-root .coi3-alert small{font-size:10px;color:#b8b8bf}
+#central-root .coi3-footnote{color:#a1a1aa;border-left:2px solid #38bdf8;padding:10px 12px;font-size:11px;line-height:1.5;margin-top:15px}
+#central-root .coi3-treatments{gap:15px}
+#central-root .coi3-treatments .coi3-heading{margin-bottom:0}
+#central-root .coi3-treat-stats{grid-template-columns:repeat(3,minmax(0,1fr));margin:4px 0 0}
+#central-root .coi3-treatment-surface{background:#17171a;border-color:#37373f}
+#central-root .coi3-treatment-surface .toolbar{padding-bottom:13px;border-bottom:1px solid #393940}
+#central-root .coi3-treatment-list{display:grid}
+#central-root .coi3-treatment-row{width:100%;display:flex;gap:12px;align-items:flex-start;min-height:71px;padding:15px 4px;text-align:left;background:transparent;border:0;border-bottom:1px solid #3a3a42;border-radius:0;color:#fafafa}
+#central-root .coi3-treatment-row:hover{background:#25252a}
+#central-root .coi3-treatment-row:last-child{border-bottom:0}
+#central-root .coi3-treatment-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;border:1px solid #555560;background:#2b2b32;color:#d4d4d8;font-size:13px;flex:0 0 34px}
+#central-root .coi3-treatment-icon.danger{color:#ffadb7;background:#421721;border-color:#d4324c;font-size:18px}
+#central-root .coi3-treatment-copy{display:grid;gap:3px;flex:1;min-width:0}
+#central-root .coi3-treatment-copy strong{font-size:13px}
+#central-root .coi3-treatment-copy>span{font-size:12px;color:#d4d4da;overflow-wrap:anywhere;line-height:1.5}
+#central-root .coi3-treatment-copy small{color:#aeb0b9;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+#central-root .coi3-treatment-badge{display:inline-block;max-width:135px;border:1px solid #b36f3a;background:#33251c;border-radius:999px;padding:6px 9px;color:#f5d199;font-size:10px;flex:0 0 auto;text-align:center}
+#central-root .coi3-treatment-badge.done{background:#142a20;border-color:#408465;color:#a2eaca}
+#central-root .rp2-role-nav .rp2-nav-item[data-page="monitor"].active svg{color:#f5223d}
+#central-root .rp2-role-nav .rp2-nav-item[data-page="treatments"].active svg{color:#f5223d}
+@media(max-width:1100px){
+ #central-root .coi3-record-stack{grid-template-columns:minmax(0,1fr)}
+ #central-root .coi3-map{height:208px}
+}
+@media(max-width:760px){
+ #central-root .coi3-heading{align-items:stretch}
+ #central-root .coi3-onair{justify-content:space-between}
+ #central-root .coi3-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:13px 0}
+ #central-root .coi3-stats>div{padding:10px 12px;min-height:77px}
+ #central-root .coi3-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:18px}
+ #central-root .coi3-actions button{width:100%;padding:9px 10px;line-height:1.35}
+ #central-root .coi3-actions button:first-child{grid-column:1/-1}
+ #central-root .coi3-section{padding:12px}
+ #central-root .coi3-tabs{width:100%}
+ #central-root .coi3-tabs button{flex:1;min-width:0;padding:9px 13px}
+ #central-root .coi3-map{height:181px}
+ #central-root .coi3-treatment-row{flex-wrap:wrap}
+ #central-root .coi3-treatment-badge{margin-left:46px}
+ #central-root .coi3-treat-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:380px){
+ #central-root .coi3-treat-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #central-root .coi3-record-title{flex-wrap:wrap}
+ #central-root .coi3-record-state{margin-left:46px}
+}
+@media(prefers-reduced-motion:reduce){
+ #central-root .coi3-app button,#central-root .coi3-treatments button{transition:none!important;transform:none!important}
+}
