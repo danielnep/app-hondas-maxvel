@@ -38,7 +38,7 @@ export function openConclusionDialog({title='Concluir análise',eventLabel='',ac
    pane.remove();
   }catch(error){
    busy=false;button.textContent='Finalizar';feedback.textContent=error.message||'Não foi possível registrar.';
-   update();
+   update();feedback.textContent=error.message||'Não foi possível registrar. Seu texto foi preservado.';
   }
  });
  area.addEventListener('input',update);

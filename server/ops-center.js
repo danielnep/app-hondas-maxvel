@@ -1,3 +1,4 @@
+import {EVENT_TYPES,primaryRole} from '../src/treatment-policy.js';
 /* Centro operacional: configurações COI, despachos e notificações persistidas. */
 const MODULES=['mapa','despachos','rondas','ocorrencias','alertas','relatorios'];
 const REVIEW_ROLES=['operador','coi','admin','master'];
@@ -50,18 +51,18 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   }
  }
  function notifyEvent(actor,record){
-  const title=EVENT_LABELS[record.kind];if(!title)return;
-  notify(FIRST_RESPONSE_ROLES,record.kind,title,actor.name+' · '+clean(record.description).slice(0,280),{eventId:record.id,except:[actor.id]});
+  const title=EVENT_LABELS[record.kind]||EVENT_TYPES[record.kind]?.label||'Registro operacional';
+  notify(REVIEW_ROLES,record.kind,title,actor.name+' · '+clean(record.description).slice(0,280),{eventId:record.id,except:[actor.id]});
  }
  function notifyReview(actor,record,status,conclusion){
-  if(['em_analise','encaminhada','resolvida'].includes(status))notify(ADMIN_ROLES,'review','Tratativa do COI registrada',actor.name+' · '+status.replaceAll('_',' ')+' · '+clean(conclusion).slice(0,350),{eventId:record.id,except:[actor.id]});
+  if(['aberta','em_analise','encaminhada','resolvida'].includes(status))notify(primaryRole(actor.role)?ADMIN_ROLES:REVIEW_ROLES,'review',primaryRole(actor.role)?'Tratativa do COI registrada':'Tratativa administrativa registrada',actor.name+' · '+status.replaceAll('_',' ')+' · '+clean(conclusion).slice(0,350),{eventId:record.id,except:[actor.id]});
   if(['resolvida','em_analise'].includes(status)&&record.user_id!==actor.id){
    insert.run(id(),record.user_id,'review',status==='resolvida'?'Ocorrência tratada':'Ocorrência em análise',clean(conclusion).slice(0,350),record.id,null,now());
    announce(record.user_id);
   }
  }
  function notifyMessage(actor,record,audience,message){
-  const recipients=FIRST_RESPONSE_ROLES;
+  const recipients=REVIEW_ROLES;
   notify(recipients,'message',audience==='system'?'Nota interna da central':'Nova mensagem operacional',
    actor.name+' · '+clean(message).slice(0,200),{eventId:record.id,except:[actor.id]});
   if(actor.id!==record.user_id&&audience==='general'){
@@ -122,13 +123,20 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    resp(res,200,{ok:true});return true;
   }
   if(p==='/api/notifications'&&method==='GET'){
-   const items=db.prepare('SELECT n.*,e.status event_status,d.started_at dispatch_started_at,d.completed_at dispatch_completed_at FROM notifications n LEFT JOIN events e ON e.id=n.event_id LEFT JOIN dispatches d ON d.id=n.dispatch_id WHERE n.user_id=? ORDER BY n.created_at DESC LIMIT 120').all(user.id);
+   const url=new URL(req.url,'http://local'),limit=Math.min(120,Math.max(1,Number(url.searchParams.get('limit'))||120));
+   const cursor=url.searchParams.get('cursor'),parts=cursor?.split(':');
+   if(cursor&&(!parts||parts.length!==2||!/^\d+$/.test(parts[0])||!/[a-f0-9-]{36}/i.test(parts[1]))){resp(res,422,{error:'Cursor inválido'});return true;}
+   const query='SELECT n.*,e.kind event_kind,e.status event_status,reporter.name origin_name,reporter.role origin_role,d.started_at dispatch_started_at,d.completed_at dispatch_completed_at FROM notifications n LEFT JOIN events e ON e.id=n.event_id LEFT JOIN users reporter ON reporter.id=e.user_id LEFT JOIN dispatches d ON d.id=n.dispatch_id WHERE n.user_id=? ';
+   const rows=cursor?db.prepare(query+'AND (n.created_at<? OR (n.created_at=? AND n.id<?)) ORDER BY n.created_at DESC,n.id DESC LIMIT ?').all(user.id,Number(parts[0]),Number(parts[0]),parts[1],limit+1):db.prepare(query+'ORDER BY n.created_at DESC,n.id DESC LIMIT ?').all(user.id,limit+1);
+   const items=rows.slice(0,limit),last=items.at(-1);
    const count=db.prepare('SELECT COUNT(*) n FROM notifications WHERE user_id=? AND read_at IS NULL').get(user.id).n;
-   resp(res,200,{notifications:items,unread:count});return true;
+   const attention=db.prepare("SELECT COUNT(DISTINCT CASE WHEN e.id IS NOT NULL AND e.status<>'resolvida' THEN 'e:'||e.id WHEN d.id IS NOT NULL AND d.completed_at IS NULL THEN 'd:'||d.id END) n FROM notifications n LEFT JOIN events e ON e.id=n.event_id LEFT JOIN dispatches d ON d.id=n.dispatch_id WHERE n.user_id=?").get(user.id).n;
+   resp(res,200,{notifications:items,unread:count,attention,hasMore:rows.length>limit,nextCursor:rows.length>limit&&last?last.created_at+':'+last.id:null});return true;
   }
   const seen=p.match(/^\/api\/notifications\/([a-f0-9-]{36})\/read$/i);
   if(seen&&method==='POST'){
    const change=db.prepare('UPDATE notifications SET read_at=COALESCE(read_at,?) WHERE id=? AND user_id=?').run(now(),seen[1],user.id);
+   if(change.changes)announce(user.id);
    resp(res,change.changes?200:404,change.changes?{ok:true}:{error:'Notificação não encontrada'});return true;
   }
   if(p==='/api/inspection-destinations'&&method==='GET'){
@@ -209,21 +217,22 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    }
    const position=data.position;
    const validPosition=position&&Number.isFinite(position.lat)&&Number.isFinite(position.lng)&&Math.abs(position.lat)<=90&&Math.abs(position.lng)<=180;
-   const kind=task[2]==='start'?'patrol_start':'patrol_end',description=task[2]==='start'?'Despacho iniciado: '+item.address:'Despacho concluído: '+comment;
+   const eventId=id(),kind=task[2]==='start'?'patrol_start':'patrol_end',description=task[2]==='start'?'Despacho iniciado: '+item.address:'Despacho concluído: '+comment;
    db.exec('BEGIN IMMEDIATE');
    try{
     if(task[2]==='start'){
      db.prepare('UPDATE dispatches SET started_at=?,acknowledged_at=COALESCE(acknowledged_at,?) WHERE id=?').run(at,at,item.id);
     }else db.prepare('UPDATE dispatches SET completed_at=?,completion_note=? WHERE id=?').run(at,comment,item.id);
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-     .run(id(),user.id,kind,item.id,at,at,validPosition?position.lat:null,validPosition?position.lng:null,validPosition?position.accuracy??null:null,null,description,JSON.stringify({dispatchId:item.id,address:item.address,reason:item.reason,destinationId:item.destination_id}),item.site||user.site||'');
+     .run(eventId,user.id,kind,item.id,at,at,validPosition?position.lat:null,validPosition?position.lng:null,validPosition?position.accuracy??null:null,null,description,JSON.stringify({dispatchId:item.id,address:item.address,reason:item.reason,destinationId:item.destination_id}),item.site||user.site||'');
     db.exec('COMMIT');
    }catch(error){db.exec('ROLLBACK');throw error}
    audit(user,'dispatch.'+task[2],item.id);
-   notify(REVIEW_ROLES,'dispatch',task[2]==='start'?'Atendimento iniciado':'Atendimento concluído',user.name+' · '+item.address+' · '+(comment||item.reason),{dispatchId:item.id,except:[user.id]});
+   notify(REVIEW_ROLES,'dispatch',task[2]==='start'?'Atendimento iniciado':'Atendimento concluído',user.name+' · '+item.address+' · '+(comment||item.reason),{eventId,dispatchId:item.id,except:[user.id]});
    resp(res,200,{ok:true,at,roundId:item.id});return true;
   }
   return false;
  }
- return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability};
+ function broadcast(){for(const key of clients.keys())announce(key);}
+ return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast};
 }
