@@ -80,6 +80,19 @@ test('tratativas compartilhadas: leitura, COI, atuação subsidiária, concorrê
    assert.equal((await call('/events/'+key+'/review',tokens.admin,'POST',{status:'resolvida',conclusion:note,version:0})).status,409);
    assert.equal((await call('/events/'+key+'/review',tokens.admin,'POST',{status:'resolvida',conclusion:note,version:1})).status,200);
   });
+  await t.test('conclusões concorrentes gravam uma única decisão e reserva expirada pode ser recuperada',async()=>{
+   const key=await create();
+   const results=await Promise.all([tokens.coi,tokens.admin].map(token=>call('/events/'+key+'/review',token,'POST',{status:'resolvida',conclusion:note,version:0,requestId:randomUUID()})));
+   assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+   assert.equal((await call('/events/'+key,tokens.admin)).body.treatments.length,1);
+   const abandoned=await create(),first=randomUUID(),replacement=randomUUID();
+   await call('/events/'+abandoned+'/claim',tokens.coi,'POST',{claimSession:first});
+   const db=new DatabaseSync(process.env.RONDA_PRO_DB_PATH);
+   db.prepare('UPDATE events SET treatment_lease_until=? WHERE id=?').run(Date.now()-1,abandoned);db.close();
+   assert.equal((await call('/events/'+abandoned+'/claim',tokens.admin,'POST',{claimSession:replacement})).status,200);
+   assert.equal((await call('/events/'+abandoned+'/review',tokens.coi,'POST',{status:'resolvida',conclusion:note,claimSession:first,version:0})).status,409);
+   assert.equal((await call('/events/'+abandoned+'/review',tokens.admin,'POST',{status:'resolvida',conclusion:note,claimSession:replacement,version:0})).status,200);
+  });
   await t.test('totais independem de limites; feed cronológico paginado e evento antigo acessível',async()=>{
    // Volume sintético direto no banco de teste: não toca dados de produção.
    const db=new DatabaseSync(process.env.RONDA_PRO_DB_PATH);

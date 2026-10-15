@@ -5,7 +5,7 @@ const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle
 const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
 const activeKinds=new Set([...Object.keys(EVENT_TYPES),'panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message','inspection']);
 export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
- let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,attention=0,unreadTotal=0,nextCursor=null,treatmentSummary={total:0,categories:[]},refreshing=null;
+ let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,attention=0,unreadTotal=0,nextCursor=null,treatmentSummary={total:0,categories:[]},refreshing=null,generation=0;
  const manager=()=>['admin','master'].includes(current?.role);
  const reviewer=()=>['admin','master','operador','coi'].includes(current?.role);
  const allowed=key=>manager()||!!modules.find(x=>x.module===key)?.enabled;
@@ -36,12 +36,12 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }
  }
  async function refresh(user,withPopup=true){
-  if(refreshing)return refreshing;
-  refreshing=refreshData(user,withPopup);
-  try{return await refreshing}finally{refreshing=null}
+  if(refreshing&&current?.id===user.id)return refreshing;
+  current=user;const epoch=++generation;
+  const task=refreshData(user,withPopup,epoch);refreshing=task;
+  try{return await task}finally{if(refreshing===task)refreshing=null}
  }
- async function refreshData(user,withPopup=true){
-  current=user;
+ async function refreshData(user,withPopup=true,epoch){
   const requests=[api('/notifications')];
   if(reviewer()){
    requests.push(api('/coi-permissions'));
@@ -54,10 +54,12 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    requests.push(api('/dispatches'));
   }
   const results=await Promise.allSettled(requests);
+  if(epoch!==generation||current?.id!==user.id)return;
   if(results[0].status==='fulfilled'){
    let incoming=results[0].value,items=incoming.notifications||[];
    const wanted=notifications.length;
    while(items.length<wanted&&incoming.nextCursor){incoming=await api('/notifications?cursor='+encodeURIComponent(incoming.nextCursor));items.push(...incoming.notifications);}
+   if(epoch!==generation||current?.id!==user.id)return;
    notifications=[...new Map(items.map(n=>[n.id,n])).values()];nextCursor=incoming.nextCursor;
    attention=results[0].value.attention||0;unreadTotal=results[0].value.unread||0;
    // Notificações antigas não devem gerar um popup novo a cada atualização.
@@ -97,6 +99,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   })();
  }
  function stopLive(){
+  generation++;current=null;refreshing=null;
   streamController?.abort();streamController=null;initialized=false;seen.clear();notifications=[];attention=0;unreadTotal=0;nextCursor=null;treatmentSummary={total:0,categories:[]};dispatches=[];availability=[];inspectors=[];destinations=[];modules=[];
   document.querySelector('#ops-priority-toast')?.remove();
  }
