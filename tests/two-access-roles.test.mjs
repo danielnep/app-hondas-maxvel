@@ -46,7 +46,7 @@ test('vigia executa ronda e consulta o próprio histórico, sem acessar relatór
 });
 
 test('relatório inteligente aparece só na rota Relatórios do administrador',()=>{
- const panel=range(extra,"if(user?.role==='admin'){","if(view==='notificacoes'){");
+ const panel=range(extra,"if(user?.role==='admin'){","if(view==='configuracoes')");
  assert.match(panel,/if\(view==='relatorios'\)/);
  assert.match(panel,/reportSmart\(\)/);
  assert.doesNotMatch(panel,/if\(view==='overview'\)/);

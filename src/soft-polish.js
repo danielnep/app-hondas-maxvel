@@ -7,7 +7,7 @@
 const SHORTHAND = Object.freeze({
   'app-nav': Object.freeze({
     'Minha ronda':'Ronda', 'Meu histórico':'Hist.', 'Monitoramento':'GPS',
-    'Notificações':'Alertas', 'Ocorrências':'Ocorr.', 'Configurações':'Config.',
+    'Ocorrências':'Ocorr.', 'Configurações':'Config.',
     'Visão geral':'Geral', 'Relatórios':'Relat.', 'Equipe':'Equipe', 'Vigias':'Vigias'
   }),
   'app-tabs': Object.freeze({

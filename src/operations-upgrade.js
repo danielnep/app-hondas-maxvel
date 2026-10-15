@@ -339,16 +339,22 @@ export function createOperationsUpgrade(api){
    if(view==='relatorios'){
     main.querySelector('.report-page')?.insertAdjacentHTML('afterbegin',adminQuick()+reportSmart());
    }
-   if(view==='notificacoes'){
-    const pending=events.filter(x=>x.kind==='panic');
-    main.querySelector('.alerts-command-page')?.insertAdjacentHTML('afterbegin',section('Pânico · registros deste dispositivo',
-     pending.length?pending.map(x=>'<p>🚨 <strong>'+safe(x.payload?.vigia)+'</strong> acionou PÂNICO em '+safe(nowText(x.at))+' · registro local, envio remoto pendente.</p>').join(''):'<p>Nenhum acionamento de pânico neste dispositivo.</p>'));
-   }
    if(view==='configuracoes')main.insertAdjacentHTML('beforeend',qrSetting());
+  }
+  if(['admin','operador','coi'].includes(user?.role)&&view==='notificacoes'){
+   // Preserva os pânicos avulsos já registrados, no mesmo feed e sem duplicação.
+   const feed=main.querySelector('.rp-notice-feed');
+   const known=new Set(context.sessions.flatMap(s=>s.notifications??[]).filter(n=>n.kind==='panic').map(n=>n.at));
+   const standalone=events.filter(e=>e.kind==='panic'&&!known.has(e.at));
+   if(feed&&standalone.length){
+    feed.querySelector('.empty')?.remove();
+    for(const e of standalone)feed.insertAdjacentHTML('beforeend','<article class="rp-notice-row is-pending" data-notice-at="'+Number(e.at)+'"><span class="event-icon alert" aria-hidden="true">!</span><span class="rp-notice-copy"><small>Pânico · '+safe(nowText(e.at))+'</small><strong>'+safe(e.payload?.vigia||'Vigia')+' solicitou atendimento</strong><small>Registro local sem notificação de ronda vinculada.</small><span class="rp-notice-state">Envio remoto pendente</span></span></article>');
+    [...feed.children].sort((a,b)=>Number(b.dataset.noticeAt||0)-Number(a.dataset.noticeAt||0)).forEach(row=>feed.append(row));
+   }
   }
   
  }
- function mediaFields(){return '<section class="ops-media-fields" data-evidence-host><strong>Evidências contextuais (opcionais)</strong><p>Capture e anexe diretamente foto, vídeo ou áudio, sem selecionar arquivos manualmente.</p>'+evidenceButtons()+'</section>';}
+ function mediaFields(){return '<section class="ops-media-fields" data-evidence-host><strong>Evidências contextuais (opcionais)</strong><p>Anexe fotos, vídeos ou áudio que ajudem a explicar o ocorrido.</p>'+evidenceButtons()+'</section>';}
  async function attachIncidentMedia(incident,form){
   const files=Array.isArray(form.__evidenceFiles)?form.__evidenceFiles:[];
   incident.media??=[];

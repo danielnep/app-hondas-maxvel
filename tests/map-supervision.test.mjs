@@ -37,13 +37,13 @@ test('estado de ponto, 25 m e tempo de permanência constam no popup',()=>{
  assert.match(map,/Number\(p\.radius\)\|\|25/);
 });
 
-test('central de alertas alterna pendentes e todos e identifica limites da simulação',()=>{
- assert.match(app,/let alertFilter='pending'/);
- assert.match(app,/data-action="filter-alerts"/);
- assert.match(app,/data-filter="pending"/);
- assert.match(app,/data-filter="all"/);
- assert.match(app,/Não há envio para supervisores remotos/);
- assert.match(app,/Um alerta é uma indicação para avaliação/);
+test('notificações mostram feed único e tratativas mantêm categorias distintas',()=>{
+ const feed=app.slice(app.indexOf('function notificationsView(){'),app.indexOf('function occurrences(){'));
+ assert.match(feed,/Feed único de notificações/);
+ assert.doesNotMatch(feed,/data-action="filter-alerts"|data-filter=|tablist/);
+ const treatment=app.slice(app.indexOf('function occurrences(){'),app.indexOf('\nfunction ',app.indexOf('function occurrences(){')+10));
+ assert.match(treatment,/demo-treatment-tab/);
+ assert.match(treatment,/rp-demo-pending/);
 });
 
 test('mapa, alertas e elementos touch possuem regras responsivas',()=>{

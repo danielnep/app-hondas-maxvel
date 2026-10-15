@@ -1,12 +1,13 @@
 /** Regressão: o perfil COI da demonstração abre e trata os registros locais. */
 import {chromium} from 'playwright-core';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,mkdirSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createAppServer} from '../server.js';
 const dir=mkdtempSync(join(tmpdir(),'coi-demo-'));
 process.env.RONDA_PRO_DB_PATH=join(dir,'test.sqlite');
 const server=createAppServer();let browser;
+const out='artifacts/uiux-refinement';mkdirSync(out,{recursive:true});
 try{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
@@ -21,10 +22,40 @@ try{
   await page.locator('.dashboard').waitFor();
   if(await page.locator('.location-entry-grant').count())await page.locator('.location-entry-grant').click();
   await page.emulateMedia({reducedMotion:'reduce'});
+  if(await page.locator('.location-entry-gate').count())await page.locator('.location-entry-gate').waitFor({state:'detached'});
+  await page.locator('.patrol-actions [data-action="start"]').click();
+  await page.locator('#declaration-check').check();
+  await page.locator('[data-action="confirm-start"]').click();
+  await page.locator('.patrol-actions [data-action="toggle-patrol-sheet"]').click();
+  if(width<=900){
+   await page.locator('#dialog [data-action="incident-form"]').click();
+  }else await page.locator('.patrol-actions [data-action="incident-form"]').click();
+  await page.locator('#incident-form [name="title"]').fill('Teste de interface');
+  await page.locator('#incident-form [name="description"]').fill('Registro fictício de validação do formulário contínuo.');
+  if(await page.locator('#dialog .ux-dialog-pagination').count())throw Error('Formulário não deve ter paginação automática');
+  await page.locator('#dialog').evaluate(el=>el.scrollTop=0);
+  await page.screenshot({path:out+'/formulario-'+width+'.png'});
+  await page.locator('#incident-form [name="truth"]').check();
+  await page.locator('#incident-form button[type="submit"]').click();
+  await page.locator('#dialog').waitFor({state:'hidden'});
+  // Chegada simulada: valida a conferência sem alterar o estado por JavaScript.
+  await page.locator('.patrol-actions [data-action="demo-arrive"]').click();
+  await page.locator('.patrol-actions [data-action="checkin-now"]').waitFor({state:'visible',timeout:25000});
+  await page.locator('.patrol-actions [data-action="checkin-now"]').click();
+  await page.locator('.checkpoint-curtain-panel').waitFor({state:'visible'});
+  await page.locator('[data-curtain-submit]:not(:disabled)').waitFor({state:'visible',timeout:40000});
+  await page.locator('.checkpoint-curtain-panel').evaluate(el=>el.scrollTop=el.scrollHeight);
+  await page.screenshot({path:out+'/ponto-'+width+'.png'});
+  await page.locator('[data-curtain-submit]').click();
+  await page.locator('.checkpoint-curtain').waitFor({state:'hidden'});
   // Entradas de preparação; os registros e formulários usam cliques reais abaixo.
   await page.locator('[data-action="sim-role-picker"]').first().evaluate(el=>el.click());
   await page.locator('#dialog [data-action="sim-role"][data-role="operador"]').click();
+  await page.locator('#toast.toast-visible').waitFor({state:'hidden'});
+  await page.screenshot({path:out+'/coi-'+width+'.png',fullPage:true});
   await page.locator('[data-view="notificacoes"]').first().evaluate(el=>el.click());
+  if(await page.locator('.alert-filter-tabs').count())throw Error('Feed deve ser único, sem filtros');
+  await page.screenshot({path:out+'/notificacoes-'+width+'.png',fullPage:true});
   await page.locator('[data-action="notification-detail"][data-id="rev3-fixture-notice-v03"]').click();
   await page.locator('[data-action="acknowledge"]').waitFor({state:'visible'});
   await page.locator('[data-action="acknowledge"]').click();
@@ -34,10 +65,13 @@ try{
   await page.locator('#incident-review-form [name="note"]').fill('Conferência solicitada pela equipe COI.');
   await page.locator('[data-action="incident-review"]').click();
   await page.locator('[data-view="ocorrencias"]').first().evaluate(el=>el.click());
-  await page.locator('[data-action="incident-detail"]').first().click();
+  await page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
+  await page.locator('[data-action="incident-detail"][data-id="rev3-fixture-incident"]').click();
   await page.locator('#incident-review-form [name="status"]').selectOption('Resolvida');
   await page.locator('#incident-review-form [name="note"]').fill('Iluminação conferida e providência concluída pelo COI.');
   await page.locator('[data-action="incident-review"]').click();
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
+  if(overflow)throw Error('Rolagem horizontal indevida em '+width+'px');
   const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('horizon-maxvel-v1')));
   const incident=state.sessions.flatMap(s=>s.incidents).find(i=>i.id==='rev3-fixture-incident');
   if(incident.status!=='Resolvida'||incident.history.length!==2||errors.length)throw Error(JSON.stringify({incident,errors}));

@@ -9,7 +9,7 @@ test('Premium Dark aplicado às duas entradas do sistema e atualizado na PWA',()
  assert.match(web,/maxvel-premium-system-20261014\.css\?v=3/);
  assert.match(central,/maxvel-premium-system-20261014\.css\?v=3/);
  assert.match(sw,/maxvel-premium-system-20261014\.css/);
- assert.match(sw,/rondas-pro-interface-v31/);
+ assert.match(sw,/rondas-pro-interface-v32/);
 });
 test('Tokens do sistema respeitam o vermelho Maxvel, celeste, aviso e fundo escuro',()=>{
  for(const [key,hex] of [['--mxp-red','#f5223d'],['--mxp-cyan','#38bdf8'],['--mxp-alert','#f7cb35'],['--mxp-canvas','#09090b']]){

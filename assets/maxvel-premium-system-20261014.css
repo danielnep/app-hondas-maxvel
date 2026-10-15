@@ -651,7 +651,7 @@ body:has(#central-root) main{max-width:1600px}
 .checkpoint-curtain .checkpoint-evidence-hint{margin:8px 0;color:var(--mxp-muted);font-size:11px}
 .checkpoint-curtain .checkpoint-evidence-extra-label{font-size:12px;font-weight:650;color:var(--mxp-muted);margin:12px 0 4px}
 .checkpoint-curtain .checkpoint-note textarea{background:var(--mxp-canvas);color:var(--mxp-ink);border-color:var(--mxp-rule-strong)}
-.checkpoint-curtain .checkpoint-submit:not(:disabled){background:var(--mxp-cyan);color:var(--mxp-canvas)}
+.checkpoint-curtain .checkpoint-submit:not(:disabled){background:#153c30!important;color:#f5fff9!important;border-color:#35b38a!important;}
 @media(max-width:350px){
   .checkpoint-curtain .checkpoint-view-grid{gap:4px}
   .checkpoint-curtain .checkpoint-view-action{font-size:9px;min-height:58px}
