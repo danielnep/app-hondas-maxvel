@@ -15,7 +15,7 @@ let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='d
 let occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
-const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[];
+const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[];
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
@@ -355,7 +355,7 @@ function sendView(){
    '<label>Descreva o alerta<textarea name="description" required minlength="10" maxlength="2000" placeholder="O que a central precisa saber?"></textarea></label><button class="primary">Enviar alerta</button></form>'
   :composeKind==='incident'
    ?'<form id="register-incident" class="surface stack"><h2>Registrar ocorrência</h2><p class="muted">Documente um fato observado. Depois de registrar, você poderá adicionar evidências e acompanhar as respostas.</p><label>Assunto<input name="title" minlength="3" maxlength="100" required placeholder="Ex.: Acesso não autorizado"></label><label>Descrição<textarea name="description" required minlength="10" maxlength="1800" placeholder="Descreva o que aconteceu..."></textarea></label><button class="primary">Registrar ocorrência</button></form>'
-   :'<form id="send-note" class="surface stack"><h2>Enviar mensagem à central</h2><p class="muted">Comunicação cotidiana, sem classificar automaticamente como emergência ou ocorrência.</p><label>Mensagem<textarea name="description" required minlength="3" maxlength="2000" placeholder="Escreva sua mensagem..."></textarea></label><button class="primary">Enviar mensagem</button></form>';
+   :'<form id="send-note" class="surface stack"><h2>Enviar mensagem à central</h2><p class="muted">Comunicação cotidiana, sem classificar automaticamente como emergência ou ocorrência.</p><label>Mensagem<textarea name="description" required minlength="3" maxlength="2000" placeholder="Escreva sua mensagem..."></textarea></label><div class="coi3-evidence-compose"><h3>Áudio ou registro de apoio</h3><p class="muted">Grave uma mensagem de voz, fotografe ou filme sem sair do aplicativo.</p>'+evidenceButtons()+'</div><button class="primary">Enviar mensagem e anexos</button></form>';
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CONTATO OPERACIONAL</div><h1>Comunicar à central</h1><p class="muted">Escolha o tipo de comunicação. O botão de pânico permanece disponível para urgências.</p></div></div>'+composeActionButtons()+form+'</section>';
 }
 function exportView(){
@@ -565,14 +565,17 @@ async function printAllConversations(){
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
-  if(target.dataset.evidenceKind&&account?.role==='vistoriador'&&page==='inspections'){
+  if(target.dataset.evidenceKind&&['ronda','vistoriador'].includes(account?.role)&&['send','inspections'].includes(page)){
+   const isInspection=page==='inspections',form=document.querySelector(isInspection?'#inspection-form':'#send-note');
+   if(!form)return;
    try{
     const file=await inspectorCapture.request(target.dataset.evidenceKind);
-    if(!document.querySelector('#inspection-form'))return;
-    if(inspectorEvidence.length>=8){flash('Máximo de oito evidências por laudo.');return}
-    inspectorEvidence.push(file);
-    const holder=document.querySelector('#inspection-form [data-evidence-attachments]');
-    if(holder)holder.textContent=inspectorEvidence.map(x=>x.name).join(' · ');
+    if(!form.isConnected)return;
+    const store=isInspection?inspectorEvidence:fieldMessageEvidence;
+    if(store.length>=8){flash('Máximo de oito anexos por registro.');return}
+    store.push(file);
+    const holder=form.querySelector('[data-evidence-attachments]');
+    if(holder)holder.textContent=store.map(x=>x.name).join(' · ');
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
@@ -659,7 +662,16 @@ document.addEventListener('submit',async e=>{
    const title=String(d.title||'').trim();
    const description=kind==='incident'?title+' · '+String(d.description||'').trim():String(d.description||'').trim();
    const details=kind==='alert'&&d.templateId?{templateId:d.templateId}:kind==='incident'?{title}:{channel:'central',category:'routine'};
-   await api('/events',{method:'POST',data:{kind,occurredAt:Date.now(),description,details,...await eventTelemetry()}});
+   const event=await api('/events',{method:'POST',data:{kind,occurredAt:Date.now(),description,details,...await eventTelemetry()}});
+   const attachments=kind==='message'?[...fieldMessageEvidence]:[];
+   if(kind==='message')fieldMessageEvidence=[];
+   let uploads=0;
+   for(const file of attachments)try{
+    await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(file.lastModified||Date.now())}});
+    uploads++;
+   }catch(error){console.warn('Anexo não entregue',error)}
+   if(attachments.length&&uploads!==attachments.length)flash('Mensagem enviada, mas '+(attachments.length-uploads)+' anexo(s) não foram entregues.');
+
    page='history';await load();
    flash(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':'Mensagem registrada na central.');
    return;
