@@ -30,7 +30,7 @@ test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados'
 
 test('vigia executa ronda e consulta o próprio histórico, sem acessar relatórios administrativos',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
- assert.match(nav,/ronda:\[\['minha-ronda','Minha ronda','compass'\],\['historico','Meu histórico','clipboard'\]\]/);
+ assert.match(nav,/ronda:\[\['minha-ronda','Minha ronda','compass'\],\['historico','Meu histórico','clipboard'\],\['meus-envios','Meus alertas e ocorrências','bell'\]\]/);
  assert.doesNotMatch(nav,/ronda:\[\['relatorios'/);
  assert.match(app,/function myPatrolHistory\(\)/);
  assert.match(app,/sessionList\(\)\.filter\(x=>x.name===name\)/);

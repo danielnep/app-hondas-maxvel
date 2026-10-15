@@ -65,6 +65,24 @@ test('tratativas compartilhadas: leitura, COI, atuação subsidiária, concorrê
    assert.equal((await call('/treatment-summary',tokens.coi)).body.total,0);
    assert.equal((await call('/notifications',tokens.coi)).body.attention,0);
   });
+  await t.test('resolução é somente consulta e a resposta chega ao autor',async()=>{
+   const thread=await call('/events/'+incident+'/messages',tokens.ronda);
+   assert.ok(thread.body.messages.some(m=>m.body.includes(note)&&m.author==='Teste coi'));
+   assert.equal((await call('/events/'+incident+'/messages',tokens.ronda,'POST',{body:'Tentativa após concluir'})).status,409);
+   const upload=await fetch(base+'/media',{method:'POST',headers:{Authorization:'Bearer '+tokens.ronda,'Content-Type':'image/jpeg','x-ronda-event-id':incident},body:new Uint8Array([255,216,255])});
+   assert.equal(upload.status,409);
+   assert.equal((await call('/events/'+incident+'/review',tokens.coi,'POST',{status:'em_analise',conclusion:note,version:1})).status,409);
+  });
+  await t.test('alerta exige check e resposta; em análise continua aberto',async()=>{
+   const key=await create('alert',tokens.vistoriador);
+   assert.equal((await call('/events/'+key+'/review',tokens.coi,'POST',{status:'em_analise',conclusion:note,version:0})).status,422);
+   assert.equal((await call('/events/'+key+'/review',tokens.coi,'POST',{status:'em_analise',acknowledged:true,conclusion:'',version:0})).status,422);
+   assert.equal((await call('/events/'+key+'/review',tokens.coi,'POST',{status:'em_analise',acknowledged:true,conclusion:note,version:0,author_id:'forged'})).status,200);
+   const detail=(await call('/events/'+key,tokens.coi)).body;
+   assert.equal(detail.event.can_treat,true);assert.equal(detail.treatments[0].concluded_by,'Teste coi');
+   assert.equal((await call('/events/'+key+'/messages',tokens.vistoriador,'POST',{body:'Complemento durante análise'})).status,201);
+   assert.equal((await call('/events/'+key+'/review',tokens.coi,'POST',{status:'resolvida',acknowledged:true,conclusion:note,version:1})).status,200);
+  });
   await t.test('Administração assume ausência de COI pelo mesmo protocolo',async()=>{
    const key=await create('message',tokens.vistoriador),session=randomUUID();
    assert.ok((await call('/notifications',tokens.coi)).body.notifications.some(n=>n.event_id===key));
@@ -76,9 +94,9 @@ test('tratativas compartilhadas: leitura, COI, atuação subsidiária, concorrê
   });
   await t.test('encaminhamento libera atuação administrativa e rejeita versão antiga',async()=>{
    const key=await create('alert');
-   assert.equal((await call('/events/'+key+'/review',tokens.coi,'POST',{status:'encaminhada',conclusion:note,version:0})).status,200);
-   assert.equal((await call('/events/'+key+'/review',tokens.admin,'POST',{status:'resolvida',conclusion:note,version:0})).status,409);
-   assert.equal((await call('/events/'+key+'/review',tokens.admin,'POST',{status:'resolvida',conclusion:note,version:1})).status,200);
+   assert.equal((await call('/events/'+key+'/review',tokens.coi,'POST',{status:'encaminhada',conclusion:note,acknowledged:true,version:0})).status,200);
+   assert.equal((await call('/events/'+key+'/review',tokens.admin,'POST',{status:'resolvida',conclusion:note,acknowledged:true,version:0})).status,409);
+   assert.equal((await call('/events/'+key+'/review',tokens.admin,'POST',{status:'resolvida',conclusion:note,acknowledged:true,version:1})).status,200);
   });
   await t.test('conclusões concorrentes gravam uma única decisão e reserva expirada pode ser recuperada',async()=>{
    const key=await create();

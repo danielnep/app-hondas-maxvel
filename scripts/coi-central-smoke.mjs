@@ -48,6 +48,7 @@ try{
   await page.locator('[data-claim-treatment]').click();
   await page.locator('[data-review-status="resolvida"]').click();
   await page.locator('.conclusion-overlay textarea').fill('Conferi o relato e os horários, solicitei verificação no posto e registrei as providências adotadas com a equipe.');
+  if(await page.locator('.conclusion-overlay [data-ack]').count())await page.locator('.conclusion-overlay [data-ack]').check();
   await page.locator('.conclusion-overlay [type=submit]').click();
   await page.locator('.conclusion-overlay').waitFor({state:'detached'});
  }
@@ -83,7 +84,7 @@ try{
   await coi.page.locator('.conclusion-overlay textarea').fill('Conferi o relato e os horários, solicitei verificação no posto e registrei as providências adotadas com a equipe.');
   await coi.page.locator('.conclusion-overlay [type=submit]').click();
   await coi.page.locator('.conclusion-overlay').waitFor({state:'detached'});
-  await admin.page.waitForFunction(()=>document.querySelector('[data-event-operational-status]')?.textContent==='resolvida',null,{timeout:18000});
+  await admin.page.waitForFunction(()=>document.querySelector('[data-event-operational-status]')?.textContent==='Concluída',null,{timeout:18000});
   assert(await admin.page.locator('[data-claim-treatment],[data-review-status]').count()===0,'Registro concluído permite tratamento duplicado');
   assert((await request('/events/'+event.id,adminToken)).treatments.length===1,'Caminhos criaram tratativas duplicadas');
   await navigate(coi.page,'notifications');

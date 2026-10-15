@@ -103,14 +103,16 @@ async function syncOperational({remote=false}={}){
    if(selected?.event?.id!==key)return;
    selected={event:result.event};eventHistory=result.treatments;
    // Atualizar os avisos sem apagar respostas ou conclusões em edição.
-   const busy=document.querySelector('.conclusion-overlay')||Array.from(document.querySelectorAll('#send-message textarea')).some(el=>el.value.trim());
-   if(!busy)render();
+   const busy=isPending(result.event)&&(document.querySelector('.conclusion-overlay')||Array.from(document.querySelectorAll('#send-message textarea')).some(el=>el.value.trim()));
+   if(!busy){if(!isPending(result.event))document.querySelector('.conclusion-overlay')?.remove();render();}
    else{
     void loadMessages(key);
     const status=document.querySelector('[data-event-operational-status]');if(status)status.textContent=stateLabel(result.event);
     const feedback=document.querySelector('[data-live-treatment-state]');if(feedback)feedback.textContent=result.event.status==='resolvida'?'Este registro foi concluído em outra sessão. O texto em edição foi preservado.':result.event.treatment_owner?'Atendimento: '+result.event.treatment_owner:'';
    }
-  }else if(page==='treatments'&&review()){await readTreatmentRows();render();}
+  }else if(selected?.event&&!review()){const result=await api('/activity/events/'+encodeURIComponent(selected.event.id));selected={event:result.event};if(!document.querySelector('#send-message textarea')?.value.trim()||!isPending(result.event))render();else void loadMessages(result.event.id);}
+  else if(page==='history'){const result=await api('/events?limit=500');events=result.events||[];render();}
+  else if(page==='treatments'&&review()){await readTreatmentRows();render();}
   else if(page==='notifications'){
    const host=document.querySelector('.ops-inbox-3');
    if(host){const holder=document.createElement('div');holder.innerHTML=ops.notificationsView();host.replaceWith(holder.firstElementChild);}
@@ -125,7 +127,7 @@ function treatmentActions(e){
   '<div class="row treatment-actions" role="group" aria-label="Opções de tratamento"><button type="button" data-review-status="em_analise">Registrar análise</button>'+(!privileged()?'<button type="button" data-review-status="encaminhada">Encaminhar ao administrativo</button>':'')+'<button type="button" class="primary" data-review-status="resolvida">Concluir tratativa</button><button type="button" data-release-treatment>Liberar atendimento</button></div>':
   e.can_treat?'<button type="button" class="primary" data-claim-treatment>'+ (privileged()?'Realizar tratativa':'Iniciar ou continuar tratativa')+'</button>':
   '<p>'+(e.treatment_owner?'Em atendimento por '+escape(e.treatment_owner)+'.':'Acompanhe o tratamento registrado pelo COI. Registros encaminhados ficam disponíveis à Administração.')+'</p>';
- return '<section class="surface no-print" data-treatment-panel><h2>Tratativa operacional</h2>'+absence+'<p data-live-treatment-state role="status"></p>'+actions+'</section><section class="surface"><h2>Histórico de tratativas</h2>'+(history?'<ol class="rp-treatment-history">'+history+'</ol>':'<p>Nenhuma tratativa registrada.</p>')+'</section>';
+ return '<section class="surface no-print" data-treatment-panel><h2>Tratativa operacional</h2><p>Responsável pela providência: <strong>'+escape(active?account.name:eventHistory[0]?.concluded_by||e.treatment_owner||'Aguardando atendimento')+'</strong></p>'+absence+'<p data-live-treatment-state role="status"></p>'+actions+'</section><section class="surface"><h2>Histórico de tratativas</h2>'+(history?'<ol class="rp-treatment-history">'+history+'</ol>':'<p>Nenhuma tratativa registrada.</p>')+'</section>';
 }
 function loginView(error=''){
  roleTag.textContent='';exit.hidden=true;
@@ -146,6 +148,7 @@ async function load(){
    if(['admin','master'].includes(account.role)&&requestedCompose==='routes'){
     page='routes';history.replaceState(null,'',location.pathname+location.search);
    }
+   if(requestedCompose==='history'&&['ronda','vistoriador'].includes(account.role)){page='history';history.replaceState(null,'',location.pathname+location.search);}
    if(requestedCompose==='chat'){page='chat';history.replaceState(null,'',location.pathname+location.search);}
    if(account.role==='ronda'&&['alert','incident','message'].includes(requestedCompose)){
     composeKind=requestedCompose;page=requestedCompose==='message'?'chat':'send';history.replaceState(null,'',location.pathname+location.search);
@@ -175,13 +178,13 @@ async function load(){
  }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
- ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
+ ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
  operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
- vistoriador:[['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Eventos','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
+ vistoriador:[['history','Meus alertas e ocorrências','▤'],['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Eventos','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
 for(const entries of Object.values(roleMenus)){entries.push(['chat','Chat interno','✉']);if(!entries.some(e=>e[0]==='activity-history'))entries.push(['activity-history','Histórico de rondas','▤']);}
 
@@ -345,7 +348,7 @@ function roundTable(rows){
  }).join('')+'</div>';
 }
 function eventList(rows){
- return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span data-event-operational-status class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
+ return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span data-event-operational-status class="pill '+(isPending(e)?'treatment-open':'treatment-resolved')+'">'+escape(e.status==='em_analise'?'Em aberto · Em análise':stateLabel(e))+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
 function treatmentsView(){
  const summary=ops.summary(),kinds=[...new Set(['incident','alert','message',...summary.categories.map(c=>c.kind)])];
@@ -436,16 +439,16 @@ function eventView(e){
  const details=Array.isArray(e.details?.mediaIds)?e.details.mediaIds.length:0;
  return '<section class="stack" id="print-conversation">'+
  '<div class="toolbar"><div><button data-page="'+back+'" class="no-print">← Voltar</button><h1 style="margin-top:12px">'+escape(friendly[e.kind]||e.kind)+'</h1><p class="muted">'+fmt(e.occurred_at)+' · '+escape(e.id)+'</p></div><div class="row no-print"><button id="print-chat">Salvar conversa em PDF</button><button data-refresh>Atualizar</button></div></div>'+
- '<section class="surface"><div class="row" style="justify-content:space-between"><span data-event-operational-status class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span><small>'+escape(users.find(u=>u.id===e.user_id)?.name||account.name)+'</small></div><p style="font-size:14px;margin:14px 0">'+escape(e.description||'Sem descrição')+'</p>'+
+ '<section class="surface"><div class="row" style="justify-content:space-between"><span data-event-operational-status class="pill '+(isPending(e)?'treatment-open':'treatment-resolved')+'">'+escape(e.status==='em_analise'?'Em aberto · Em análise':stateLabel(e))+'</span><small>'+escape(users.find(u=>u.id===e.user_id)?.name||account.name)+'</small></div><p style="font-size:14px;margin:14px 0">'+escape(e.description||'Sem descrição')+'</p>'+
  '<div class="detail-grid">'+[['Data e hora',fmt(e.occurred_at)],['Bateria',e.battery==null?'Não informada':e.battery+'%'],['Localização',Number.isFinite(e.lat)?'Disponível no mapa':'Indisponível'],['Status',e.status]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>'+
  (Number.isFinite(e.lat)&&Number.isFinite(e.lng)?positionMap({lat:e.lat,lng:e.lng}):'<p class="muted">Sem geolocalização confiável anexada a este registro.</p>')+
  '</section>'+
  (e.kind==='panic'?'<section class="surface rp-panic-contact"><h2>Contato do profissional</h2><div data-panic-contact>Carregando telefone…</div></section>':'')+
  (review()?treatmentActions(e):'')+
   '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
- (account.role==='cliente'||review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'':'<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form>')+'</section>'+
+ (!isPending(e)||account.role==='cliente'||review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'':'<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form>')+'</section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
- (account.role==='cliente'?'<p class="muted">Consulta do registro. Use o Chat interno para conversar com a equipe.</p>':review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'<p class="muted">Assuma a tratativa disponível para registrar respostas. Concluídas ficam somente para consulta.</p>':'<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
+ (!isPending(e)||account.role==='cliente'?'<p class="muted">Consulta do registro. Use o Chat interno para conversar com a equipe.</p>':review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'<p class="muted">Assuma a tratativa disponível para registrar respostas. Concluídas ficam somente para consulta.</p>':'<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
  (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · vigia pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
  '<button class="primary">Enviar resposta</button></div></form>')+'</section>'+
  '<details class="details-toggle"><summary>Dados técnicos completos</summary><div class="surface"><div class="detail-grid">'+
@@ -582,7 +585,7 @@ function render(){
  let content=page==='chat'?chat.view():page==='activity-history'?activity.view():page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(['ronda','vistoriador'].includes(account.role)?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):page==='treatments'&&review()?treatmentsView():
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
-   account.role==='vistoriador'?(page==='send'?sendView():inspectionView()):
+   account.role==='vistoriador'?(page==='history'?ownHistory():page==='send'?sendView():inspectionView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  if(selected?.event)content='<dialog id="central-event-dialog" class="rp-record-dialog"><button type="button" data-close-event>Fechar ✕</button>'+content+'</dialog>';
  const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
@@ -710,8 +713,8 @@ document.addEventListener('click',async e=>{
    if(!titles[status])return;
    const selectedEventId=selected.event.id,version=selected.event.version,requestId=crypto.randomUUID();
    openConclusionDialog({title:titles[status],eventLabel:(friendly[selected.event.kind]||selected.event.kind)+' · '+selected.event.description,
-    action:status,onConfirm:async({conclusion})=>{
-     await api('/events/'+selectedEventId+'/review',{method:'POST',data:{status,conclusion,claimSession,version,requestId}});
+    action:status,responsible:account.name,requireAcknowledgement:selected.event.kind==='alert',onConfirm:async({conclusion,acknowledged})=>{
+     await api('/events/'+selectedEventId+'/review',{method:'POST',data:{status,conclusion,acknowledged,claimSession,version,requestId}});
      claimedEvent=null;await load();flash('Tratativa registrada e estados sincronizados.');
     }});return;
   }

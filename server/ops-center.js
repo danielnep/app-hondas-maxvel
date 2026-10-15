@@ -56,8 +56,8 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  }
  function notifyReview(actor,record,status,conclusion){
   if(['aberta','em_analise','encaminhada','resolvida'].includes(status))notify(primaryRole(actor.role)?ADMIN_ROLES:REVIEW_ROLES,'review',primaryRole(actor.role)?'Tratativa do COI registrada':'Tratativa administrativa registrada',actor.name+' · '+status.replaceAll('_',' ')+' · '+clean(conclusion).slice(0,350),{eventId:record.id,except:[actor.id]});
-  if(['resolvida','em_analise'].includes(status)&&record.user_id!==actor.id){
-   insert.run(id(),record.user_id,'review',status==='resolvida'?'Ocorrência tratada':'Ocorrência em análise',clean(conclusion).slice(0,350),record.id,null,now());
+  if(['resolvida','em_analise','encaminhada','aberta'].includes(status)&&record.user_id!==actor.id){
+   insert.run(id(),record.user_id,'review',status==='resolvida'?'Registro resolvido':'Registro em aberto · '+status.replaceAll('_',' '),clean(conclusion).slice(0,350),record.id,null,now());
    announce(record.user_id);
   }
  }

@@ -43,9 +43,13 @@ export function createCheckpointCurtain(api){
   if(!s||s.status!=='active'||!point||key!==s.id+':'+s.index||hasBlock(s)){close();return}
   const elapsed=Math.round(s.checkpoints[s.index].dwellMs/1000),target=Math.round(requiredDwellMs(s)/1000);
   const remain=Math.max(0,target-elapsed);
-  root.querySelector('[data-dwell-seconds]').textContent=String(remain).padStart(2,'0');
+  root.querySelector('[data-dwell-seconds]').textContent=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');
   root.querySelector('[data-dwell-seconds]').parentElement?.setAttribute('aria-label',remain+' segundos restantes');
-  root.querySelector('[data-curtain-observation-wrap]').hidden=remain>0;
+  for(const el of root.querySelectorAll('.checkpoint-after-timer,.checkpoint-condition,.checkpoint-submit,.checkpoint-footnote'))el.hidden=remain>0;
+  root.querySelector('.checkpoint-stopwatch').hidden=remain===0;
+  root.querySelector('.checkpoint-curtain-panel > h2').hidden=remain>0;
+  root.querySelector('.checkpoint-curtain-panel > p').hidden=remain>0;
+  root.querySelector('.checkpoint-curtain-eyebrow').hidden=remain>0;
   root.querySelector('.checkpoint-curtain-panel')?.classList.toggle('is-ready',remain===0);
   root.querySelector('[data-curtain-observation-wrap]').setAttribute('aria-hidden',String(remain>0));
   root.querySelector('.checkpoint-curtain-panel')?.setAttribute('data-rp2-phase',s.insideSince==null?'paused':remain===0?'ready':'counting');
@@ -60,7 +64,7 @@ export function createCheckpointCurtain(api){
   const evidenceReady=required.every(view=>evidenceFiles.some(item=>item.view===view));
   button.disabled=saving||!canCompletePoint(s)||!noteReady||!evidenceReady;
   const hint=root.querySelector('[data-evidence-required-hint]');
-  if(hint)hint.textContent=required.length?(evidenceReady?'Fotos obrigatórias registradas.':'Registre as fotos exigidas nesta rota: '+required.map(view=>EVIDENCE_VIEWS.find(([key])=>key===view)[1]).join(', ')+'.'):'As cinco posições de foto estão disponíveis. Nesta rota, o envio é opcional.';
+  if(hint){hint.hidden=!required.length;hint.textContent=required.length?(evidenceReady?'Fotos obrigatórias registradas.':'Registre as fotos exigidas nesta rota: '+required.map(view=>EVIDENCE_VIEWS.find(([key])=>key===view)[1]).join(', ')+'.'):'Fotos opcionais nesta rota.';}
   root.querySelector('textarea').required=Boolean(concern);
   root.querySelector('textarea').minLength=concern?10:0;
   root.querySelector('[data-curtain-note-hint]').textContent=concern?'Descreva o que aconteceu. Obrigatório, mínimo de 10 caracteres.':'Observações complementares (opcionais).';
@@ -76,12 +80,12 @@ export function createCheckpointCurtain(api){
   root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel" tabindex="-1">'+
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
-   '<div class="checkpoint-stopwatch" role="timer" aria-live="off"><strong><span data-dwell-seconds>00</span><small> s</small></strong><small data-dwell-message role="status" aria-live="polite">Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
-   '<div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">0 de 5 posições fotografadas</small></div>'+
-   '<div class="checkpoint-view-grid" role="group" aria-label="Captura de fotos por direção">'+EVIDENCE_VIEWS.map(([view,label],i)=>'<button type="button" class="checkpoint-view-action" data-evidence-view="'+view+'" aria-label="Capturar ou substituir foto: '+label+'" aria-pressed="false"><span class="rp2-view-number" aria-hidden="true">'+(i+1)+'</span><span>'+label+'</span><small data-view-state>+</small></button>').join('')+'</div>'+
+   '<div class="checkpoint-stopwatch" role="timer" aria-live="off"><strong><span data-dwell-seconds>00</span><small> min:seg</small></strong><small data-dwell-message role="status" aria-live="polite">Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
+   '<div class="checkpoint-after-timer"><div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">0 de 5 posições fotografadas</small></div>'+
+   '<div class="checkpoint-view-grid" role="group" aria-label="Fotos do ponto"><button type="button" class="checkpoint-view-action" data-evidence-kind="point-photo" aria-label="Adicionar foto do ponto"><span aria-hidden="true">▧<b>+</b></span><small>Foto</small></button><button type="button" class="checkpoint-view-action" data-evidence-view="selfie" aria-label="Adicionar selfie"><span aria-hidden="true">▧<b>+</b></span><small>Selfie</small></button></div>'+
+   '<label class="checkpoint-photo-direction">Direção da foto<select data-photo-direction>'+EVIDENCE_VIEWS.filter(([v])=>v!=='selfie').map(([v,label])=>'<option value="'+v+'">'+label+'</option>').join('')+'</select></label>'+
    '<p class="checkpoint-evidence-hint" data-evidence-required-hint></p>'+
-   '<div class="checkpoint-evidence-extra-label">Outras evidências</div>'+
-   '<div class="checkpoint-tools">'+evidenceButtons()+'</div>'+
+   '<details class="checkpoint-extra"><summary>Outras evidências</summary><div class="checkpoint-tools">'+evidenceButtons()+'</div></details></div>'+
    '<div class="checkpoint-utility-row" aria-label="Ferramentas do ponto"><button type="button" data-curtain-torch aria-label="Autorizar câmera e ativar lanterna"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-2 7 4 4-6 8-6-8 4-4-2-7Z"/><path d="M11 11l2 2M18 18h3M3 18h3"/></svg> <span>Lanterna</span></button>'+
    '<button type="button" class="checkpoint-panic" data-ops="panic-confirm">⚠ PÂNICO</button></div>'+
    '<fieldset class="checkpoint-condition" data-curtain-observation-wrap hidden><legend>Condições encontradas neste ponto</legend>'+
@@ -89,7 +93,7 @@ export function createCheckpointCurtain(api){
    '<label><input type="radio" name="point-state" value="attention"> Situação que exige atenção</label>'+
    '<label class="checkpoint-note"><span data-curtain-note-hint>Observações complementares (opcionais).</span><textarea maxlength="1400" placeholder="Descreva as condições do ponto e, se necessário, informe o que encontrou." data-checkpoint-observation></textarea></label></fieldset>'+
    '<button class="checkpoint-submit" data-curtain-submit disabled>Finalizar ponto e seguir para o próximo</button>'+
-   '<small class="checkpoint-footnote">As observações, evidências e horário são registrados no dispositivo. A entrega remota exige sessão operacional autenticada.</small>'+
+   '<small class="checkpoint-footnote">Finalize para registrar as condições e evidências do ponto.</small>'+
    '</div>';
   document.body.append(root);root.querySelector('textarea').addEventListener('input',status);root.querySelectorAll('[name="point-state"]').forEach(input=>input.addEventListener('change',status));
   root.querySelector('[data-curtain-torch]').addEventListener('click',toggleTorch);
@@ -102,7 +106,7 @@ export function createCheckpointCurtain(api){
     const index=Number(button.dataset.evidenceRemove);
     if(Number.isInteger(index)&&index>=0&&index<evidenceFiles.length)evidenceFiles.splice(index,1);
    }else if(!saving)try{
-    const view=button.dataset.evidenceView||null;
+    const view=button.dataset.evidenceKind==='point-photo'?root.querySelector('[data-photo-direction]').value:button.dataset.evidenceView||null;
     if(!view&&evidenceFiles.filter(item=>!item.view).length>=3){api.notify('Limite de três anexos adicionais.');return}
     const file=await mediaCapture.request(view?(view==='selfie'?'selfie':'photo'):button.dataset.evidenceKind);
     if(!root?.isConnected)return;

@@ -265,10 +265,12 @@ export function createOperationalApi(){
     if(m==='GET'&&reviewer(a)&&!operations.allows(a,'ocorrencias')){resp(res,403,{error:'Ocorrências desabilitadas'});return true;}
     if(m==='GET'){const rows=reviewer(a)?db.prepare('SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? ORDER BY created_at').all(ev.id):db.prepare("SELECT m.*,u.name author FROM messages m JOIN users u ON u.id=m.author_id WHERE m.event_id=? AND audience='general' ORDER BY created_at").all(ev.id);resp(res,200,{messages:rows});return true;}
     if(m==='POST'){
+     if(ev.status==='resolvida'){resp(res,409,{error:'Registro resolvido: somente consulta.'});return true;}
      if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente somente consulta registros'});return true;}
      const d=serialize((await body(req)).toString())||{},b=clean(d.body),audience=d.audience||'general';
      if(b.length<1||b.length>4000||!['general','system'].includes(audience)||audience==='system'&&!reviewer(a)){resp(res,422,{error:'Mensagem inválida'});return true;}
      if(reviewer(a)&&!treatmentService.canRespond(a,event(ev.id),d.claimSession)){resp(res,409,{error:'Tratativa concluída, reservada em outra sessão ou sem permissão para resposta.'});return true;}
+     if(event(ev.id).status==='resolvida'){resp(res,409,{error:'Registro resolvido: somente consulta.'});return true;}
      const mid=id();db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(mid,ev.id,a.id,audience,b,now());
      audit(a,'message.create',ev.id);
     operations.notifyMessage(a,ev,audience,b);
@@ -336,6 +338,7 @@ export function createOperationalApi(){
     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente não envia evidências'});return true;}
     const eid=clean(req.headers['x-ronda-event-id']),ev=event(eid);
     if(!ev||!visible(a,ev)){resp(res,404,{error:'Evento não encontrado'});return true;}
+    if(ev.status==='resolvida'){resp(res,409,{error:'Registro resolvido: somente consulta.'});return true;}
     const mime=clean(req.headers['content-type']).split(';')[0];
     const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm','audio/webm','audio/mp4','audio/ogg'];
     if(!types.includes(mime)){resp(res,415,{error:'Formato não autorizado'});return true;}
@@ -355,6 +358,7 @@ export function createOperationalApi(){
      resp(res,422,{error:'Identificação da foto inválida'});return true;
     }
     const bytes=await body(req,25*1024*1024);
+    if(event(eid).status==='resolvida'){resp(res,409,{error:'Registro resolvido: somente consulta.'});return true;}
     if(reviewer(a)&&!treatmentService.canRespond(a,event(eid),req.headers['x-treatment-session'])){resp(res,409,{error:'Assuma uma tratativa pendente antes de anexar evidências.'});return true;}
     const magic=bytes.subarray(0,12);
     const correct=(mime==='image/jpeg'&&magic[0]===255&&magic[1]===216)

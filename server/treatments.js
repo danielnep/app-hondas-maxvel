@@ -76,7 +76,8 @@ export function createTreatments(db,{now,id,resp,body,serialize,audit,operations
     if(duplicate){
      if(duplicate.event_id===event.id&&duplicate.author_id===user.id&&duplicate.conclusion===validation.value&&duplicate.to_status===data.status)response={ok:true,already:true,status:duplicate.to_status};
      else{status=409;response={error:'Identificador de envio já utilizado'};}
-    }else if(conflict){status=409;response={error:conflict,event:decorate(event,user)};}
+    }else if(action==='review'&&event.kind==='alert'&&data.acknowledged!==true){status=422;response={error:'Confirme a conferência do alerta e informe a resposta ao profissional.'};}
+    else if(conflict){status=409;response={error:conflict,event:decorate(event,user)};}
     else if((data.version!=null&&data.version!==event.version)||(action==='review'&&data.version==null&&event.version>0)){status=409;response={error:'O registro foi atualizado em outra sessão. Atualize antes de continuar.',event:decorate(event,user)};}
     else if(action==='claim'){
      db.prepare('UPDATE events SET treatment_owner_id=?,treatment_session=?,treatment_lease_until=? WHERE id=?').run(user.id,session,now()+LEASE_MS,event.id);
@@ -87,7 +88,7 @@ export function createTreatments(db,{now,id,resp,body,serialize,audit,operations
       .run(data.status,user.id,at,event.id);
      db.prepare('INSERT INTO event_treatments(id,event_id,author_id,from_status,to_status,conclusion,created_at,submission_id) VALUES(?,?,?,?,?,?,?,?)')
       .run(id(),event.id,user.id,event.status,data.status,conclusion,at,data.requestId||null);
-     db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(id(),event.id,user.id,'system','Conclusão ('+data.status+'): '+conclusion,at);
+     db.prepare('INSERT INTO messages(id,event_id,author_id,audience,body,created_at) VALUES(?,?,?,?,?,?)').run(id(),event.id,user.id,'general','Resposta do COI ('+data.status+'): '+conclusion,at);
      audit(user,'event.review.'+data.status,event.id);
      operations.notifyReview(user,event,data.status,conclusion);
      response={ok:true,status:data.status,treatedAt:at,event:decorate(read(event.id),user)};changed=true;

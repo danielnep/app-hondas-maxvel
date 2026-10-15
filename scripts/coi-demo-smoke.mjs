@@ -11,8 +11,8 @@ const out='artifacts/uiux-refinement';mkdirSync(out,{recursive:true});
 try{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
- for(const width of [390,1366]){
-  const context=await browser.newContext({viewport:{width,height:900},permissions:['geolocation'],geolocation:{latitude:-20.14,longitude:-44.88}}),page=await context.newPage(),errors=[];
+ for(const width of [320,390,1366]){
+  const context=await browser.newContext({viewport:{width,height:width===320?600:900},permissions:['geolocation'],geolocation:{latitude:-20.14,longitude:-44.88}}),page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
    localStorage.setItem('horizon-maxvel-tour-v2','seen');
@@ -24,6 +24,7 @@ try{
   await page.emulateMedia({reducedMotion:'reduce'});
   if(await page.locator('.location-entry-gate').count())await page.locator('.location-entry-gate').waitFor({state:'detached'});
   await page.locator('.patrol-actions [data-action="start"]').click();
+  if(await page.locator('#dialog').evaluate(el=>el.scrollHeight>el.clientHeight+2))throw Error('Confirmação inicial deve caber sem rolagem');
   await page.locator('#declaration-check').check();
   await page.locator('[data-action="confirm-start"]').click();
   await page.locator('.patrol-actions [data-action="toggle-patrol-sheet"]').click();
@@ -43,8 +44,13 @@ try{
   await page.locator('.patrol-actions [data-action="checkin-now"]').waitFor({state:'visible',timeout:25000});
   await page.locator('.patrol-actions [data-action="checkin-now"]').click();
   await page.locator('.checkpoint-curtain-panel').waitFor({state:'visible'});
+  if(await page.locator('.checkpoint-after-timer').isVisible())throw Error('Fotos só aparecem após o relógio');
+  if(!/\d{2}:\d{2}/.test(await page.locator('[data-dwell-seconds]').innerText()))throw Error('Relógio deve mostrar min:seg');
   await page.locator('[data-curtain-submit]:not(:disabled)').waitFor({state:'visible',timeout:40000});
-  await page.locator('.checkpoint-curtain-panel').evaluate(el=>el.scrollTop=el.scrollHeight);
+  if(await page.locator('.checkpoint-stopwatch').isVisible())throw Error('Relógio deve desaparecer');
+  if(await page.locator('.checkpoint-view-grid button').count()!==2)throw Error('Devem existir dois ícones de fotos');
+  await page.screenshot({path:out+'/ponto-'+width+'.png'});
+  if(await page.locator('.checkpoint-curtain-panel').evaluate(el=>el.scrollHeight>el.clientHeight+2))throw Error('Formulário de ponto deve caber na tela');
   await page.screenshot({path:out+'/ponto-'+width+'.png'});
   await page.locator('[data-curtain-submit]').click();
   await page.locator('.checkpoint-curtain').waitFor({state:'hidden'});
@@ -58,6 +64,8 @@ try{
   await page.screenshot({path:out+'/notificacoes-'+width+'.png',fullPage:true});
   await page.locator('.rp-event-columns [data-action="notification-detail"][data-id="rev3-fixture-notice-v03"]').click();
   await page.locator('[data-action="acknowledge"]').waitFor({state:'visible'});
+  await page.locator('[data-alert-check]').check();
+  await page.locator('[data-alert-response]').fill('Conferi o alerta e orientei o profissional no local.');
   await page.locator('[data-action="acknowledge"]').click();
   await page.locator('.rp-event-columns [data-action="notification-detail"][data-id="rev3-fixture-notice-v04"]').click();
   await page.locator('#incident-review-form').waitFor({state:'visible'});
@@ -70,6 +78,9 @@ try{
   await page.locator('#incident-review-form [name="status"]').selectOption('Resolvida');
   await page.locator('#incident-review-form [name="note"]').fill('Iluminação conferida e providência concluída pelo COI.');
   await page.locator('[data-action="incident-review"]').click();
+  await page.locator('[data-action="incident-detail"][data-id="rev3-fixture-incident"]').click();
+  if(await page.locator('#incident-review-form').count())throw Error('Resolvida não pode ter campos editáveis');
+  await page.locator('#dialog .dialog-close').click();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
   if(overflow)throw Error('Rolagem horizontal indevida em '+width+'px');
   const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('horizon-maxvel-v1')));

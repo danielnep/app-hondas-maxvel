@@ -18,6 +18,12 @@ try{
   await page.locator('#field-alert-form input').fill('Portão aberto');
   await page.locator('#field-alert-form button').click();
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rondas-pro-field-notices'))[0].label),'Portão aberto');
+  await page.locator('[data-view="meus-envios"]').first().evaluate(el=>el.click());
+  await page.locator('[data-action="own-notice-detail"]').first().click();
+  assert.match(await page.locator('#dialog').innerText(),/Aguardando resposta/);
+  assert.equal(await page.locator('#dialog textarea').count(),0);
+  await page.locator('#dialog .dialog-close').click();
+  await page.locator('[data-view="minha-ronda"]').first().evaluate(el=>el.click());
   await page.locator('[data-ops="incident-quick"]').click();
   await page.locator('#incident-form [name=title]').fill('Acesso lateral');
   await page.locator('#incident-form [name=description]').fill('Portão lateral encontrado aberto durante a inspeção.');
