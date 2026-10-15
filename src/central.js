@@ -688,10 +688,10 @@ document.addEventListener('submit',async e=>{
     await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':event.id,'X-Captured-At':String(file.lastModified||Date.now())}});
     uploads++;
    }catch(error){console.warn('Anexo não entregue',error)}
-   if(attachments.length&&uploads!==attachments.length)flash('Mensagem enviada, mas '+(attachments.length-uploads)+' anexo(s) não foram entregues.');
-
+   const attachmentFailure=attachments.length&&uploads!==attachments.length
+    ?'Mensagem enviada, mas '+(attachments.length-uploads)+' anexo(s) não foram entregues.':'';
    page='history';await load();
-   flash(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':'Mensagem registrada na central.');
+   flash(attachmentFailure||(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':attachments.length?'Mensagem e '+uploads+' anexo(s) enviados.':'Mensagem registrada na central.'));
    return;
   }
   if(form.id==='send-message'){if(account?.role==='admin')throw Error('Resposta reservada ao COI.');await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general'}});form.reset();await loadMessages(selected.event.id);return;}
