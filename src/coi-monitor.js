@@ -84,7 +84,7 @@ export function createCoiMonitor(){
    const live=recent(entry.at);
    const dot=L.circleMarker([entry.point.lat,entry.point.lng],{radius:8,color:'#fff',weight:2,fillColor:live?'#10b981':'#f7cb35',fillOpacity:1,interactive:false}).addTo(map);
    const prior=previous.get(el.dataset.coiMap);
-   if(prior&&coords(prior)&&live&&Math.abs(prior.lat-entry.point.lat)+Math.abs(prior.lng-entry.point.lng)<.02){
+   if(prior&&coords(prior)&&live&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&Math.abs(prior.lat-entry.point.lat)+Math.abs(prior.lng-entry.point.lng)<.02){
     const start=performance.now(),duration=1200;
     const animate=t=>{
      if(!el.isConnected)return;
