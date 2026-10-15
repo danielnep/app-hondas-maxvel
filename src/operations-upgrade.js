@@ -499,7 +499,7 @@ export function createOperationsUpgrade(api){
   }
   if(cmd==='panic-now'){await panic();return;}
   if(cmd==='central-alert'){window.location.assign('/central.html#alert');return;}
-  if(cmd==='central-message'){window.location.assign('/central.html#message');return;}
+  if(cmd==='central-message'){window.location.assign('/central.html#chat');return;}
   if(cmd==='incident-quick'){
    if(current().session?.status==='active')api.incidentDialog();
    else window.location.assign('/central.html#incident');
