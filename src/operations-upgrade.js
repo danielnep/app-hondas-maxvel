@@ -117,8 +117,8 @@ export function createOperationsUpgrade(api){
  const state=()=>current().operationalSettings;
  const supported=()=>typeof indexedDB!=='undefined';
  const persistEvent=async event=>{
+  await store.put('events',event);
   events.unshift(event);
-  try{await store.put('events',event);}catch(err){api.notify('Falha ao salvar evento offline no dispositivo.');console.warn(err);}
   if(event.status==='pending')void syncPending().catch(console.warn);
  };
  const allowedSyncedKinds=new Set(['panic','gps','battery','checkpoint','incident','alert','patrol_start','patrol_end','gps_issue','route_deviation']);
@@ -208,7 +208,7 @@ export function createOperationsUpgrade(api){
   await persistEvent({id:incident.id,at:incident.at,kind:'incident',status:'pending',payload:{
     sessionId:session.id,mode:'real',description:incident.title+': '+incident.description,
     position:incident.location,battery:lastBattery?.level??null,
-    severity:incident.severity,mediaIds:(incident.media??[]).map(x=>x.id)}});
+    severity:incident.severity,category:incident.category,mediaIds:(incident.media??[]).map(x=>x.id)}});
  }
  async function recordCheckpoint(checkpoint,files,point){
   const c=current(),session=c.session,at=checkpoint.observedAt||Date.now(),saved=[];
@@ -324,7 +324,7 @@ export function createOperationsUpgrade(api){
   const dashboard=document.querySelector('.dashboard'),main=dashboard?.querySelector('.app-content');
   if(!main)return;
   if(user?.role==='ronda'){
-   dashboard.insertAdjacentHTML('beforeend',panicButton());
+   (view==='minha-ronda'?main.querySelector('.patrol-map-panel'):dashboard)?.insertAdjacentHTML('beforeend',panicButton());
    if(view==='minha-ronda'){
     // Os três comandos são sempre visíveis na tela inicial, mesmo antes de iniciar a ronda.
     // No desktop acompanham as ações; no celular ficam logo após a ação principal.
@@ -498,11 +498,10 @@ export function createOperationsUpgrade(api){
     '<button type="button" class="button full" data-action="close-dialog">Cancelar</button></div>',true);return;
   }
   if(cmd==='panic-now'){await panic();return;}
-  if(cmd==='central-alert'){window.location.assign('/central.html#alert');return;}
-  if(cmd==='central-message'){window.location.assign('/central.html#chat');return;}
+  if(cmd==='central-alert'){api.alertDialog();return;}
+  if(cmd==='central-message'){api.openChat();return;}
   if(cmd==='incident-quick'){
-   if(current().session?.status==='active')api.incidentDialog();
-   else window.location.assign('/central.html#incident');
+   api.incidentDialog();
    return;
   }
   if(cmd==='export'){if(current().user?.role!=='admin')return;exportDialog();return;}
@@ -544,7 +543,7 @@ export function createOperationsUpgrade(api){
  load();
  setInterval(()=>{autoReport().catch(console.warn);sampleBattery().catch(console.warn);syncPending().catch(console.warn);},60000);
  sampleBattery().catch(console.warn);
- return {allEvents:()=>[...events],decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordGpsIssue,gpsQualityRecovered,recordNativeFixes,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
+ return {queueEvent:persistEvent,allEvents:()=>[...events],decorate,customerView,mediaFields,incidentMediaList,attachIncidentMedia,recordFix,recordGpsIssue,gpsQualityRecovered,recordNativeFixes,recordIncident,recordCheckpoint,recordLifecycle,syncPending,autoReport,requestEntryGPS,guideSection:()=>
   '<details class="ops-guide-details"><summary>Recursos operacionais adicionais e modo offline</summary><p><b>GPS contínuo:</b> acompanhe a ronda durante o serviço. No Android o serviço nativo pode registrar posições em segundo plano, sujeito às permissões do sistema.</p>'+
   '<p><b>Sequência e validação:</b> 25 m, 30 segundos e QR opcional; Administração configura GPS, QR ou ambos.</p>'+
   '<p><b>Sem conexão:</b> coordenadas ficam no SQLite do Android; registros e evidências ficam no IndexedDB do dispositivo. Envio ao servidor ocorre somente com login autenticado, servidor configurado e conexão disponível.</p>'+

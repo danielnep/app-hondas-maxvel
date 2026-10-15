@@ -57,7 +57,7 @@ test('visual transversal mantém Maxvel, layout mobile legível e movimento redu
  assert.match(css,/rp2-role-nav/);
  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
- assert.match(sw,/rondas-pro-interface-v33/);
+ assert.match(sw,/rondas-pro-interface-v34/);
  assert.match(entry,/rp2-gate-brand/);
  assert.match(entry,/maxvel-logo.webp/);
  assert.match(entry,/<svg viewBox/);

@@ -25,13 +25,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Configurar Playwright Core
         run: npm install --no-save --no-package-lock playwright-core@1.56.1
       - name: Verificar navegador
         run: command -v chromium || command -v google-chrome || command -v chromium-browser
       - name: Executar fluxos em 8 larguras
         run: node scripts/ux-mobile-audit.mjs
+      - name: Validar ações compactas do vigia
+        run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/field-compact-smoke.mjs
       - name: Publicar capturas e relatório
         if: always()
         uses: actions/upload-artifact@v4

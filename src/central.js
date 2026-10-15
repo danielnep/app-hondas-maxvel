@@ -422,9 +422,9 @@ function sendView(){
  const form=composeKind==='alert'
   ?'<form id="send-alert" class="surface stack"><h2>Enviar alerta à central</h2><p class="muted">Para situações que precisam de atenção. O evento é salvo no servidor; o envio de e-mail depende dos modelos e destinatários configurados.</p>'+
    (manual.length?'<label>Tipo de alerta<select name="templateId">'+manual.map(t=>'<option value="'+id(t.id)+'">'+escape(t.title)+'</option>').join('')+'</select></label>':'<p class="muted">Sem modelo de e-mail habilitado. O alerta ainda será registrado na central.</p>')+
-   '<label>Descreva o alerta<textarea name="description" required minlength="10" maxlength="2000" placeholder="O que a central precisa saber?"></textarea></label><button class="primary">Enviar alerta</button></form>'
+   '<label>Descreva o alerta<input name="description" required minlength="3" maxlength="240" placeholder="O que aconteceu?"></label><button class="primary">Enviar alerta</button></form>'
   :composeKind==='incident'
-   ?'<form id="register-incident" class="surface stack"><h2>Registrar ocorrência</h2><p class="muted">Documente um fato observado. Depois de registrar, você poderá adicionar evidências e acompanhar as respostas.</p><label>Assunto<input name="title" minlength="3" maxlength="100" required placeholder="Ex.: Acesso não autorizado"></label><label>Descrição<textarea name="description" required minlength="10" maxlength="1800" placeholder="Descreva o que aconteceu..."></textarea></label><button class="primary">Registrar ocorrência</button></form>'
+   ?'<form id="register-incident" class="surface stack"><h2>Registrar ocorrência</h2><p class="muted">Documente um fato observado. Depois de registrar, você poderá adicionar evidências e acompanhar as respostas.</p><div class="field-composer-row"><label>Tipo<select name="category"><option>Segurança</option><option>Acesso</option><option>Patrimônio</option><option>Manutenção</option><option>Outros</option></select></label><label>Gravidade<select name="severity"><option>Baixa</option><option selected>Média</option><option>Alta</option></select></label></div><label>Assunto<input name="title" minlength="3" maxlength="100" required placeholder="Ex.: Acesso não autorizado"></label><label>Descrição<textarea name="description" required minlength="10" maxlength="1800" placeholder="Descreva o que aconteceu..."></textarea></label><button class="primary">Registrar ocorrência</button></form>'
    :'<form id="send-note" class="surface stack"><h2>Enviar mensagem à central</h2><p class="muted">Comunicação cotidiana, sem classificar automaticamente como emergência ou ocorrência.</p><label>Mensagem<textarea name="description" required minlength="3" maxlength="2000" placeholder="Escreva sua mensagem..."></textarea></label><div class="coi3-evidence-compose"><h3>Áudio ou registro de apoio</h3><p class="muted">Grave uma mensagem de voz, fotografe ou filme sem sair do aplicativo.</p>'+evidenceButtons()+'</div><button class="primary">Enviar mensagem e anexos</button></form>';
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">CONTATO OPERACIONAL</div><h1>Comunicar à central</h1><p class="muted">Escolha o tipo de comunicação. O botão de pânico permanece disponível para urgências.</p></div></div>'+composeActionButtons()+form+'</section>';
 }
@@ -681,7 +681,7 @@ document.addEventListener('click',async e=>{
   if(await ops.click(target))return;
   if(await routeBoard.click(target))return;
   if(target.dataset.compose==='message'){selected=null;page='chat';render();return;}
-  if(target.dataset.compose){if(!['ronda','vistoriador'].includes(account?.role)||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;page='send';render();return;}
+  if(target.dataset.compose){if(!['ronda','vistoriador'].includes(account?.role)||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;page=composeKind==='message'?'chat':'send';render();return;}
   if(target.id==='central-panic'){document.querySelector('#central-panic-dialog')?.showModal();return;}
   if(target.id==='panic-cancel'){document.querySelector('#central-panic-dialog')?.close();return;}
   if(target.id==='panic-send'){
@@ -770,7 +770,7 @@ document.addEventListener('submit',async e=>{
    const kind=form.id==='send-alert'?'alert':form.id==='register-incident'?'incident':'message';
    const title=String(d.title||'').trim();
    const description=kind==='incident'?title+' · '+String(d.description||'').trim():String(d.description||'').trim();
-   const details=kind==='alert'&&d.templateId?{templateId:d.templateId}:kind==='incident'?{title}:{channel:'central',category:'routine'};
+   const details=kind==='alert'&&d.templateId?{templateId:d.templateId}:kind==='incident'?{title,severity:d.severity,category:d.category}:{channel:'central',category:'routine'};
    const event=await api('/events',{method:'POST',data:{kind,occurredAt:Date.now(),description,details,...await eventTelemetry()}});
    const attachments=kind==='message'?[...fieldMessageEvidence]:[];
    if(kind==='message')fieldMessageEvidence=[];
