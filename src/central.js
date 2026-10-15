@@ -2,6 +2,7 @@ import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
 import {openConclusionDialog} from './conclusion-dialog.js';
 import {createOpsCenterUI} from './ops-center-ui.js';
+import {createCoiMonitor} from './coi-monitor.js';
 import {createMediaCapture,evidenceButtons} from './media-capture.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9,6 +10,7 @@ const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'
 const id=x=>escape(x);
 const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término',inspection:'Vistoria de qualidade',patrol_interrupted:'Ronda interrompida',patrol_incomplete:'Ronda incompleta'};
 let composeKind='message';
+const coi=createCoiMonitor();
 let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
 let occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
@@ -70,7 +72,7 @@ async function load(){
     composeKind=requestedCompose;page='send';history.replaceState(null,'',location.pathname+location.search);
    }
   }
-  if(['ronda','vistoriador'].includes(account.role))try{await api('/presence',{method:'POST'});}catch{}
+  if(['ronda','vistoriador'].includes(account.role))try{const context=await eventTelemetry();await api('/presence',{method:'POST',data:{position:context.position||null}})}catch{}
   await ops.refresh(account,false);
   const [e,r,planned]=await Promise.allSettled([review()&&!ops.allowed('ocorrencias')?Promise.resolve({events:[]}):api('/events?limit=500'),api('/rounds'),review()&&!ops.allowed('rondas')?Promise.resolve({routes:[]}):api('/routes')]);
   events=e.status==='fulfilled'?e.value.events||[]:[];rounds=r.status==='fulfilled'?r.value.rounds||[]:[];routes=planned.status==='fulfilled'?planned.value.routes||[]:[];
@@ -90,25 +92,26 @@ async function load(){
 }
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Notificações','✉'],['history','Meu histórico','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','Agenda de Rondas','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- coi:[['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','COI · Monitoramento','◉'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Auditoria de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Auditoria de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Notificações','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
 const rp2Priority={
  ronda:['dashboard','dispatches','notifications','send'],
- operador:['monitor','notifications','dispatches','events'],
- coi:['monitor','notifications','dispatches','events'],
- admin:['dashboard','monitor','notifications','dispatches'],
- master:['dashboard','monitor','notifications','dispatches'],
+ operador:['monitor','treatments','notifications','dispatches'],
+ coi:['monitor','treatments','notifications','dispatches'],
+ admin:['dashboard','monitor','treatments','notifications'],
+ master:['dashboard','monitor','treatments','notifications'],
  cliente:['client'],
  vistoriador:['inspections','dispatches','notifications','send']
 };
 const rp2GlyphPaths={
  dashboard:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
- monitor:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 22h8M12 18v4M6 13l3-4 3 2 5-5"/>',
+ monitor:'<path d="M4 14v-3a8 8 0 0 1 16 0v3"/><rect x="2" y="12" width="4" height="8" rx="2"/><rect x="18" y="12" width="4" height="8" rx="2"/><path d="M20 19a5 5 0 0 1-5 3h-3"/>',
+ treatments:'<rect x="5" y="3" width="14" height="19" rx="2"/><path d="M9 3V2h6v2M8 12l2.5 2.5L16 9M9 18h6"/>',
  dispatches:'<path d="m3 7 8-4 10 6-8 4zM3 7v10l10 5V13M13 22l8-5V9"/>',
  notifications:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 10h18c0-2-3-3-3-10M10 21h4"/>',
  history:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/>',
@@ -221,34 +224,7 @@ function mountOperationalMap(){
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
- const active=rounds.filter(r=>r.status==='em_andamento'),
-  open=events.filter(e=>['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message'].includes(e.kind)&&e.status!=='resolvida'),
-  urgent=open.filter(e=>e.kind==='panic');
- const priorityRank={panic:0,route_deviation:1,incident:2,gps_issue:3,patrol_interrupted:4,patrol_incomplete:5,alert:6,message:7};
- const triage=open.slice().sort((a,b)=>(priorityRank[a.kind]??9)-(priorityRank[b.kind]??9)||(b.occurred_at||0)-(a.occurred_at||0));
- const agenda=routes.slice(0,9).map(route=>{
-  const item=rounds.find(r=>r.routeId===route.id)||null;
-  return {route,round:item};
- });
- const rows=agenda.map(({route,round})=>{
-  const pointCount=Array.isArray(route.points)?route.points.length:0,
-   status=round?roundStatus(round):'Programação pendente',
-   attention=!!round&&(round.panics>0||round.alerts>0||round.incidents>0);
-  const tag=attention?'Ocorrência':round?.status==='em_andamento'?'Em andamento':round?.status==='concluida'?'Tudo OK':status;
-  return '<article class="ops-agenda-row"><div class="ops-agenda-thumb" data-agenda-map="'+escape(route.id)+'" aria-label="Mini-mapa ilustrativo da rota '+escape(route.name)+'"><span>Carregando mapa…</span></div>'+
-   '<div class="ops-agenda-copy"><small>'+escape(route.site||'Posto não informado')+'</small><h3>'+escape(route.name||'Ronda sem nome')+'</h3>'+
-   '<div class="ops-agenda-facts"><span>Início <b>'+fmt(round?.start)+'</b></span><span>Término <b>'+fmt(round?.end)+'</b></span><span>Pontos <b>'+Number(round?.checkpoints||0)+' / '+pointCount+'</b></span></div>'+
-   '<span class="pill '+(attention?'flag':round?.status==='concluida'?'ok':'warning')+'">'+escape(tag)+'</span></div></article>';
- }).join('');
- return '<section class="stack ops-monitor"><header class="ops-agenda-header"><div><div class="eyebrow">CENTRAL OPERACIONAL · COI</div><h1>Agenda de Rondas</h1>'+
- '<p class="muted">Local / posto: '+escape(account.site||'Todos os locais autorizados')+'</p></div>'+
- '<div class="ops-agenda-live"><span class="ops-live-led"></span><span>Monitoramento ativo</span><strong data-ops-live-clock>'+escape(new Date().toLocaleTimeString('pt-BR'))+'</strong></div></header>'+
- '<div class="ops-monitor-kpis">'+[['Em ronda',active.length],['Pendentes',open.length],['Pânicos',urgent.length],['Vigias',users.filter(w=>w.role==='ronda').length]].map(([label,num],i)=>'<div class="ops-monitor-kpi'+(i===2&&num?' critical':'')+'"><strong>'+num+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
- '<section class="surface rp2-attention-queue" aria-label="Pendências em prioridade"><div class="toolbar"><div><h2>Fila de atenção</h2><p class="muted">Pânicos e ocorrências no topo; GPS sem leitura não prova desvio.</p></div><button data-page="events">Abrir triagem</button></div>'+(triage.length?eventList(triage.slice(0,5)):'<p class="empty">Nenhuma pendência registrada.</p>')+'</section>'+
- '<section class="surface ops-agenda-surface"><div class="toolbar"><div><h2>Agenda de Rondas</h2><p class="muted">Mapa compacto, horários e verificação por local</p></div><button data-page="routes">Programar / consultar</button></div>'+
- '<div class="ops-agenda-list">'+(rows||'<p class="empty">Nenhuma rota cadastrada. A Administração pode preparar os percursos.</p>')+'</div></section>'+
- '<section class="surface"><div class="toolbar"><div><h2>Vigias e localização</h2><p class="muted">A última leitura GPS não comprova presença contínua.</p></div><button data-page="dispatches">Despachar vigia</button></div>'+monitorRows(active.length?active:rounds.slice(0,6))+'</section>'+
- '<div class="rp2-monitor-footnote">As informações são de eventos recebidos pelo servidor. A ausência de atualização não confirma ausência de atividade.</div></section>';
+ return coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -284,6 +260,28 @@ function roundTable(rows){
 }
 function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span class="pill '+(e.kind==='panic'?'flag':'')+'">'+escape(e.status)+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
+}
+const ACTIONABLE=new Set(['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','message','inspection']);
+function treatmentsView(){
+ const adminView=account&&['admin','master'].includes(account.role);
+ const work=events.filter(e=>ACTIONABLE.has(e.kind));
+ const unresolved=work.filter(e=>e.status!=='resolvida').sort((a,b)=>(a.kind==='panic'?-1:0)-(b.kind==='panic'?-1:0)||(b.occurred_at||0)-(a.occurred_at||0));
+ const completed=work.filter(e=>e.status==='resolvida').sort((a,b)=>(b.reviewed_at||b.occurred_at)-(a.reviewed_at||a.occurred_at));
+ const lastFor=e=>treatments.find(t=>t.event_id===e.id);
+ const status=e=>e.status==='resolvida'?'Finalizada':e.status==='encaminhada'?'Encaminhada':e.status==='em_analise'?'Em análise':'Aguardando tratativa';
+ const renderRow=e=>{
+  const last=lastFor(e),worker=users.find(u=>u.id===e.user_id);
+  return '<button type="button" class="coi3-treatment-row" data-event="'+escape(e.id)+'">'+
+   '<span class="coi3-treatment-icon '+(e.kind==='panic'?'danger':'')+'" aria-hidden="true">'+(e.kind==='panic'?'!':e.kind==='inspection'?'▤':'●')+'</span>'+
+   '<span class="coi3-treatment-copy"><strong>'+escape(friendly[e.kind]||e.kind)+'</strong><span>'+escape(e.description||'Registro sem descrição').slice(0,250)+'</span><small>'+fmt(e.occurred_at)+' · '+escape(e.site||'Sem local')+' · '+escape(worker?.name||'Equipe de campo')+'</small>'+
+   (last?'<small>Último tratativo: '+escape(last.concluded_by||'COI')+' · '+fmt(last.created_at)+' · '+escape(last.conclusion).slice(0,150)+'</small>':'')+'</span>'+
+   '<span class="coi3-treatment-badge '+(e.status==='resolvida'?'done':'')+'">'+status(e)+'</span></button>';
+ };
+ return '<section class="stack coi3-treatments"><header class="coi3-heading"><div class="coi3-heading-copy"><div class="eyebrow">'+(adminView?'ADMINISTRAÇÃO · CONFERÊNCIA':'COI · RESPONSABILIDADE DE RESPOSTA')+'</div><h1>'+(adminView?'Auditoria de tratativas':'Tratativas')+'</h1><p>'+(adminView?'Consulte o que o COI analisou, encaminhou e concluiu. O administrativo não altera a conclusão operacional.':'Toda ocorrência permanece aberta até o COI registrar análise e conclusão descritiva.')+'</p></div></header>'+
+ '<div class="coi3-stats coi3-treat-stats"><div><strong>'+unresolved.length+'</strong><span>Pendentes / em análise</span></div><div><strong>'+unresolved.filter(e=>e.kind==='panic').length+'</strong><span>Pânicos pendentes</span></div><div><strong>'+completed.length+'</strong><span>Concluídas</span></div></div>'+
+ '<section class="surface coi3-treatment-surface"><div class="toolbar"><h2>Tratativas em aberto</h2><span class="pill warning">'+unresolved.length+' aguardando COI</span></div><div class="coi3-treatment-list">'+(unresolved.length?unresolved.map(renderRow).join(''):'<p class="coi3-empty">Nenhuma pendência encontrada.</p>')+'</div></section>'+
+ '<section class="surface coi3-treatment-surface"><div class="toolbar"><h2>Concluídas e auditáveis</h2><span class="pill ok">'+completed.length+' finalizadas</span></div><div class="coi3-treatment-list">'+(completed.length?completed.slice(0,80).map(renderRow).join(''):'<p class="coi3-empty">Nenhuma conclusão registrada.</p>')+'</div></section>'+
+ '<p class="coi3-footnote">Marcar uma notificação como lida não encerra a tratativa. A conclusão fica registrada no servidor, com responsável, horário e justificativa.</p></section>';
 }
 function eventsView(){
  const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
@@ -364,7 +362,7 @@ function exportView(){
  return '<div class="stack"><h1>Relatório inteligente</h1><div class="cards">'+[['Rondas',events.filter(e=>e.kind==='patrol_start').length],['Pânicos',events.filter(e=>e.kind==='panic').length],['Ocorrências',events.filter(e=>e.kind==='incident').length],['Registros GPS',events.filter(e=>e.kind==='gps').length]].map(([x,y])=>'<div class="metric"><strong>'+y+'</strong><span>'+x+'</span></div>').join('')+'</div><section class="surface"><h2>Exportar Excel completo</h2><p>O XLSX inclui uma primeira aba Dashboard formatada, seguida de abas com eventos e conversas. Os dados dependem dos registros efetivamente sincronizados.</p><div class="row"><button class="primary" id="download-xlsx">Baixar XLSX com abas</button><button id="download-json">Exportar JSON</button><button id="download-csv">Conversas CSV</button></div></section><section class="surface"><h2>Conversas em PDF</h2><p>Histórico com remetente, data e hora de cada mensagem. O navegador permite salvar como PDF.</p><button id="print-all-chats">Imprimir todas as conversas / PDF</button></section></div>';
 }
 function eventView(e){
- const back=account.role==='ronda'?'history':'events';
+ const back=account.role==='ronda'?'history':page==='treatments'?'treatments':'events';
  const details=Array.isArray(e.details?.mediaIds)?e.details.mediaIds.length:0;
  return '<section class="stack" id="print-conversation">'+
  '<div class="toolbar"><div><button data-page="'+back+'" class="no-print">← Voltar</button><h1 style="margin-top:12px">'+escape(friendly[e.kind]||e.kind)+'</h1><p class="muted">'+fmt(e.occurred_at)+' · '+escape(e.id)+'</p></div><div class="row no-print"><button id="print-chat">Salvar conversa em PDF</button><button data-refresh>Atualizar</button></div></div>'+
@@ -490,12 +488,12 @@ function inspectionView(){
 
 function render(){
  for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
- routeBoard.resetMaps();resetOperationalMap();
+ routeBoard.resetMaps();resetOperationalMap();coi.reset();
  if(!account){loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
  const required=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[page];
  if(review()&&required&&!ops.allowed(required)){page='notifications';selected=null;}
- const content=page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(['ronda','vistoriador'].includes(account.role)?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):
+ const content=page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(['ronda','vistoriador'].includes(account.role)?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):page==='treatments'&&review()?treatmentsView():
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?(page==='send'?sendView():inspectionView()):
@@ -506,7 +504,7 @@ function render(){
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
- if(page==='monitor')requestAnimationFrame(mountOperationalMap);
+ if(page==='monitor')requestAnimationFrame(()=>coi.mount());
  if(account.role==='cliente'&&page==='client')void loadClientInspectionMedia();
 }
 async function loadMessages(eventId){
@@ -607,7 +605,8 @@ document.addEventListener('click',async e=>{
     }});
    return;
   }
-  if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}selected=null;page=target.dataset.page;render();return;}
+  if(target.dataset.coiTab){if(page==='monitor'&&coi.selectTab(target.dataset.coiTab))render();return;}
+   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}selected=null;page=target.dataset.page;render();return;}
   if(target.dataset.event){if(['cliente','vistoriador'].includes(account.role))return;const chosen=events.find(x=>x.id===target.dataset.event);if(!chosen)return;selected={event:chosen};render();return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
   if(target.dataset.template){
@@ -676,11 +675,11 @@ document.addEventListener('submit',async e=>{
 });
 // A central do operador acompanha o servidor sem depender de recarregar a página.
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
-setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
+setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes','treatments','notifications'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
 setInterval(()=>{if(account&&!document.hidden)void ops.refresh(account,true).catch(()=>{});},15000);
-setInterval(()=>{if(['ronda','vistoriador'].includes(account?.role)&&!document.hidden)void api('/presence',{method:'POST'}).catch(()=>{});},45000);
+setInterval(()=>{if(['ronda','vistoriador'].includes(account?.role)&&!document.hidden)void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});},45000);
 setInterval(()=>{for(const e of document.querySelectorAll('[data-ops-live-clock]'))e.textContent=new Date().toLocaleTimeString('pt-BR');},1000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&['ronda','vistoriador'].includes(account?.role))void api('/presence',{method:'POST'}).catch(()=>{});});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&['ronda','vistoriador'].includes(account?.role))void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});});
 document.addEventListener('change',e=>{
  if(e.target?.dataset?.coiToggle){void ops.change(e.target).then(()=>load()).catch(error=>flash(error.message));return;}
  const field=e.target.closest('[data-occ-filter]');
