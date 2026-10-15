@@ -3,6 +3,7 @@ export function createRouteBoard({api,getContext,redraw,notify}){
  let watcher='',editing=null,editor=false,points=[],maps=[],draftMap=null,previewPoints=null;
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const stamp=t=>Number.isFinite(t)&&t>0?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'Não registrado';
+ const datetimeLocal=t=>{if(!Number.isFinite(t))return '';const d=new Date(t),pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
  const canEdit=()=>['admin','master'].includes(getContext().account?.role);
  const statuses={em_andamento:'Em andamento',concluida:'Concluída',interrompida:'Interrompida',incompleta:'Incompleta',sem_inicio:'Sem início'};
  const shortStatus=r=>statuses[r.status]||'Aguardando sincronização';
@@ -62,6 +63,7 @@ export function createRouteBoard({api,getContext,redraw,notify}){
   const worker=chosenWorker();
   return '<section class="surface route-editor" id="route-editor"><div class="toolbar"><div><div class="eyebrow">ADMINISTRAÇÃO · CADASTRO DE ROTAS</div><h2>'+(editing?'Editar rota':'Criar nova rota')+'</h2><p class="muted">Colaborador: '+esc(worker?.name||'Não selecionado')+' · '+esc(worker?.site||'Sem local')+'</p></div><button type="button" data-route-cancel>Fechar</button></div>'+
    '<form id="route-form" class="stack"><label>Nome da rota<input name="name" required minlength="3" maxlength="120" value="'+esc(editing?.name||'')+'" placeholder="Ex.: Ronda noturna · Perímetro externo"></label>'+
+   '<label>Início programado (opcional)<input type="datetime-local" name="plannedStart" value="'+esc(datetimeLocal(editing?.plannedStart))+'"></label><p class="muted">O horário informado será exibido ao cliente do posto e utilizado para estimar o término da ronda. Deixe vazio quando não houver programação confirmada.</p>'+
    '<p class="muted">Toque no mapa para marcar pontos em ordem. Também é possível inserir coordenadas manualmente.</p>'+
    '<div id="route-editor-map" class="route-editor-map" aria-label="Mapa para escolher pontos"><span class="muted">O mapa será exibido quando a cartografia carregar.</span></div>'+
    '<div class="route-coordinate-entry"><label>Nome do ponto<input id="route-point-name" placeholder="Portaria principal" maxlength="100"></label>'+
@@ -170,7 +172,10 @@ export function createRouteBoard({api,getContext,redraw,notify}){
   if(!worker||name.length<3||points.length<2||points.some(p=>p.name.trim().length<1)){
    notify('Informe vigia, nome da rota e ao menos dois pontos identificados.');return true;
   }
-  const data={userId:worker.id,name,points};
+  const scheduled=String(new FormData(form).get('plannedStart')||'').trim();
+  const plannedStart=scheduled?Date.parse(scheduled):null;
+  if(scheduled&&!Number.isFinite(plannedStart))throw Error('Data e horário de início inválidos.');
+  const data={userId:worker.id,name,points,plannedStart};
   const routeId=editing?.id;
   await api(routeId?'/routes/'+routeId:'/routes',{method:routeId?'PUT':'POST',data});
   notify(routeId?'Rota atualizada no servidor.':'Rota cadastrada para '+worker.name+'.');

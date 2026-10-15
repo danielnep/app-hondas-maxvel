@@ -37,6 +37,7 @@ const ICONS={
  chart:'<path d="M3 3v18h18"/><path d="m6 16 4-4 3 2 6-7"/>',
  settings:'<circle cx="12" cy="12" r="3"/><path d="m10 2-.6 2.4-2 1-2.3-1-2 3.4 1.8 1.7v2.5l-1.8 1.7 2 3.4 2.3-1 2 1 .6 2.4h4l.6-2.4 2-1 2.3 1 2-3.4-1.8-1.7v-2.5l1.8-1.7-2-3.4-2.3 1-2-1L14 2z"/>',
  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2.3-2.5 4M12 17h.01"/>',
+ headset:'<path d="M4 14v-3a8 8 0 0 1 16 0v3"/><rect x="2" y="12" width="4" height="8" rx="2"/><rect x="18" y="12" width="4" height="8" rx="2"/><path d="M20 19a5 5 0 0 1-5 3h-3"/>',
  arrow:'<path d="M4 12h16m-7-7 7 7-7 7"/>',
  arrowleft:'<path d="M20 12H4m7 7-7-7 7-7"/>',
  play:'<path d="m8 5 11 7-11 7z"/>',
@@ -442,12 +443,12 @@ function landing(){
  const examples=[['shield','Acompanhamento contínuo','Histórico de etapas e condições da ronda'],['map','Cartografia contextual','Pontos, raio e progresso sobre ruas reais'],['bell','Desvios documentados','Justificativa vinculada à supervisão'],['clipboard','Histórico consultável','Eventos e registros em ordem cronológica']];
  return `<div class="hero product-home"><div class="hero-container"><header class="topnav">${brand()}<nav class="nav-actions" aria-label="Acesso rápido">${btn(ic('help')+' Guia da plataforma','guide','','')} ${btn('Explorar '+ic('arrow'),'login','primary small')}</nav></header><main id="main"><section class="product-hero"><div class="product-hero-copy"><div class="eyebrow">${ic('shield')} HONDAS MAXVEL · OPERAÇÕES EM CAMPO</div><h1>Uma visão completa<br>de cada <span>ronda.</span></h1><p>Acompanhe o trabalho em campo e a supervisão em um só ambiente. Pontos, trajetos, permanência e ocorrências apresentados com clareza, do celular ao computador.</p><div class="hero-buttons">${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}${btn('Explorar sem login','login')}</div><div class="product-benefits"><span>${ic('checkcircle')} Passo a passo para o colaborador</span><span>${ic('checkcircle')} Visão da supervisão</span><span>${ic('checkcircle')} Registros com contexto</span></div><p class="product-fineprint">${ic('help')} Ambiente de avaliação: trajeto, pessoas e alertas ilustrativos. A cartografia é real quando online.</p></div><div class="product-showcase"><div class="showcase-main"><div class="showcase-toolbar"><div class="showcase-title">${ic('map')} <strong>Central de acompanhamento</strong><small>Prévia funcional do mapa</small></div><span class="showcase-status"><i></i> Visualização de rota</span></div><div id="hero-map" class="showcase-map"></div><div class="showcase-map-badge">${ic('pin')} Rota Centro · Divinópolis <span>4 pontos · raio 25 m</span></div><div class="showcase-overlay-stats"><div><small>Próxima verificação</small><strong>Portaria principal</strong></div><span>${ic('crosshair')} 25 m</span></div></div><div class="showcase-detail-grid"><div class="showcase-detail"><span class="showcase-detail-icon">${ic('clock')}</span><span><small>Permanência por ponto</small><strong>30 segundos contínuos</strong></span></div><div class="showcase-detail"><span class="showcase-detail-icon">${ic('bell')}</span><span><small>Desvios de percurso</small><strong>Justificativa e análise</strong></span></div></div><div class="showcase-disclaimer">Mapa OpenStreetMap · cenário operacional fictício</div></div></section><section class="product-capabilities"><div class="capabilities-intro"><div class="eyebrow">UMA PLATAFORMA · QUATRO FRENTES</div><h2>Feita para acompanhar a operação, não para complicá-la.</h2><p>O mesmo processo apresentado de forma específica para quem executa e para quem supervisiona.</p></div><div class="capability-grid">${examples.map(([ico,title,desc],i)=>`<article class="capability"><span class="capability-index">0${i+1}</span><span class="capability-icon">${ic(ico)}</span><h3>${title}</h3><p>${desc}</p></article>`).join('')}</div></section><section class="product-endcap"><div><div class="eyebrow">VEJA O FLUXO COMPLETO</div><h2>Do primeiro ponto ao relatório final.</h2><p>Explore as telas reais da experiência proposta para ronda e supervisão, com cenário operacional interativo.</p></div>${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}</section></main><footer class="hero-foot"><span>Grupo Maxvel | Daniel N. Xavier</span><a href="#" data-action="privacy">Privacidade e requisitos técnicos</a></footer></div></div>`;
 }
-const coiNavigation=[['overview','COI · Monitoramento','map'],['notificacoes','Alertas','bell'],['ocorrencias','Ocorrências','alert'],['equipe','Vigias','users']];
+const coiNavigation=[['overview','COI · Acompanhamento','headset'],['notificacoes','Notificações','bell'],['ocorrencias','Tratativas','alert'],['equipe','Equipe de campo','users']];
 const allNav={ronda:[['minha-ronda','Minha ronda','compass'],['historico','Meu histórico','clipboard']],operador:coiNavigation,coi:coiNavigation,cliente:[['cliente','Meu acompanhamento','eye']],vistoriador:[['vistoriador','Vistorias e qualidade','clipboard']],admin:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Notificações','bell'],['ocorrencias','Ocorrências','alert'],['equipe','Equipe','users'],['relatorios','Relatórios','clipboard'],['configuracoes','Configurações','settings']]};
-const roleName={ronda:'Operação de Ronda',operador:'COI · Monitoramento',coi:'COI · Monitoramento',cliente:'Visão Cliente',vistoriador:'Vistoriador',admin:'Administração'};
+const roleName={ronda:'Operação de Ronda',operador:'COI · Acompanhamento',coi:'COI · Acompanhamento',cliente:'Visão Cliente',vistoriador:'Vistoriador',admin:'Administração'};
 function simRoleBar(){
  if(!presentation)return '';
- const roles=[['ronda','Vigia','compass','Vigia'],['operador','COI · Monitoramento','map','COI'],['cliente','Cliente','eye','Cliente'],['vistoriador','Vistoriador','clipboard','Vistoria'],['admin','Administração','settings','Admin']];
+ const roles=[['ronda','Vigia','compass','Vigia'],['operador','COI · Acompanhamento','headset','COI'],['cliente','Cliente','eye','Cliente'],['vistoriador','Vistoriador','clipboard','Vistoria'],['admin','Administração','settings','Admin']];
  const currentRole=user?.role??'ronda',point=session?.status==='active'?session.index+1:0,total=session?.route?.points.length??4;
  return `<div class="simulation-rolebar" aria-label="Ambiente interativo do aplicativo"><div class="simulation-caption"><span class="simulation-signal"></span><strong>Rondas Pro</strong><small>Demonstração sem login · cada usuário terá acesso e senha individuais cadastrados pelo administrador na implantação</small></div><nav class="simulation-roles" aria-label="Alternar perfis do aplicativo">${roles.map(([role,label,icon,short])=>`<button type="button" data-action="sim-role" data-role="${role}" aria-label="${label}" aria-pressed="${currentRole===role||(currentRole==='coi'&&role==='operador')}" class="${currentRole===role||(currentRole==='coi'&&role==='operador')?'selected':''}">${ic(icon)}<span class="role-long">${label}</span><span class="role-short" aria-hidden="true">${short}</span></button>`).join('')}</nav><div class="simulation-actions">${helpButton('profiles','perfil de acesso')}<span class="simulation-progress">${session?`Ponto ${Math.min(point,total)} / ${total}`:'Pronto para iniciar'}</span><button type="button" data-action="end-presentation" aria-label="Sair da simulação" title="Sair da simulação">${ic('close')}<span> Sair</span></button></div></div>`;
 }
@@ -596,8 +597,34 @@ function dashboardV4(){
   tabHtml+'<div class="v4-stage">'+summaryPane+mapPane+rosterPane+alertsPane+insightPane+historyPane+'</div></div>';
 }
 
+let demoCoiTab='rondas';
+function demoCoiView(){
+ const local=sessionList().slice().sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
+ const insp=demoInspectionRecords();
+ const total=local.filter(x=>x.status==='active').length;
+ const current=local[0],summary=[
+  ['Rondas em curso',total],['Vistorias registradas',insp.length],
+  ['Histórico de rondas',local.length],['Avisos do cenário',recentNotification().filter(x=>!x.seenAt).length]
+ ];
+ const tabs='<div class="coi-demo-tabs" role="group" aria-label="Acompanhamento por atividade"><button type="button" data-action="demo-coi-tab" data-tab="rondas" aria-pressed="'+(demoCoiTab==='rondas')+'" class="'+(demoCoiTab==='rondas'?'selected':'')+'">Rondas</button><button type="button" data-action="demo-coi-tab" data-tab="vistorias" aria-pressed="'+(demoCoiTab==='vistorias')+'" class="'+(demoCoiTab==='vistorias'?'selected':'')+'">Vistorias</button></div>';
+ const roundRows=local.length?local.slice(0,10).map((record,i)=>{
+  const live=record.status==='active';
+  return '<article class="coi-demo-record"><header><div><span>'+esc(record.route?.name||'Ronda')+'</span><h3>'+esc(record.name||'Vigia')+'</h3></div><b>'+(live?'Em andamento':record.status==='completed'?'Concluída':'Histórico')+'</b></header><div class="coi-demo-facts"><span>Início <strong>'+fmt(record.startedAt)+'</strong></span><span>Pontos <strong>'+Number(record.checkpoints?.filter(x=>x.completedAt).length||0)+'</strong></span></div>'+
+   (i===0?'<div id="ops-map" class="map-container large coi-demo-map" aria-label="Mapa ilustrativo da ronda selecionada"></div><small>Mapa e posição ilustrativos neste navegador. O COI real usa GPS enviado pelo campo.</small>':'')+
+   '</article>';
+ }).join(''):'<div class="empty">Nenhuma ronda registrada no cenário.</div>';
+ const inspRows=insp.length?insp.slice(0,10).map((entry,i)=>'<article class="coi-demo-record"><header><div><span>Laudo de vistoria</span><h3>'+esc(DEMO_WATCHERS[0].unit)+'</h3></div><b>Enviada</b></header><div class="coi-demo-facts"><span>Data <strong>'+fmt(entry.at)+'</strong></span><span>Conformidade <strong>'+entry.score+'%</strong></span></div><p>'+esc(entry.notes)+'</p>'+(i===0?'<div id="ops-map" class="map-container large coi-demo-map" aria-label="Mapa ilustrativo do posto"></div><small>Referência ilustrativa do posto; nenhuma posição real do vistoriador foi transmitida.</small>':'')+'</article>').join(''):'<div class="empty">Sem vistorias neste navegador. Use o perfil Vistoriador para registrar um laudo demonstrativo.</div>';
+ return '<section class="coi-demo-page">'+pageTitle('COI · Central de acompanhamento','Acompanhe a equipe e responda às ocorrências. Os dados abaixo são somente uma demonstração.')+
+ '<div class="coi-demo-topline"><span class="ops-live-dot"></span><strong>Atendimento e acompanhamento</strong><small>Posto demonstrativo · '+esc(DEMO_WATCHERS[0].unit)+'</small><span>Dados locais</span></div>'+
+ '<div class="coi-demo-metrics">'+summary.map(([k,v])=>'<div><b>'+v+'</b><span>'+k+'</span></div>').join('')+'</div>'+
+ '<div class="coi-demo-shortcuts"><button type="button" data-view="notificacoes">'+ic('bell')+' Notificações</button><button type="button" data-view="ocorrencias">'+ic('clipboard')+' Tratativas</button></div>'+
+ '<section class="coi-demo-content"><h2>Rondas e vistorias</h2><p>Selecione a atividade. O mapa, quando disponível, aparece no registro correspondente.</p>'+tabs+
+ '<div class="coi-demo-list">'+(demoCoiTab==='rondas'?roundRows:inspRows)+'</div></section>'+
+ '<p class="map-caption">Demonstração: os registros não representam uma operação de vigilância ao vivo. Para o COI autenticado, acesse a Central Operacional.</p></section>';
+}
 function overview(){
  if(user?.role==='admin')return dashboardV4();
+ if(['operador','coi'].includes(user?.role))return demoCoiView();
  const all=sessionList(),alerts=recentNotification(),open=alerts.filter(x=>!x.seenAt),inc=recentIncidents(),finished=all.filter(s=>s.status==='completed'),active=all.filter(s=>s.status==='active');
  const schedule= scheduleTotals(programs,sessions),pending=schedule.programada+schedule.atrasada;
  const metricRows=[
@@ -665,14 +692,23 @@ function watcherChooser(){
 
 const DEMO_INSPECTIONS='maxvel-demo-inspections-v1';
 function demoInspectionRecords(){try{const r=JSON.parse(localStorage.getItem(DEMO_INSPECTIONS)||'[]');return Array.isArray(r)?r.slice(0,100):[]}catch{return []}}
+// Contatos totalmente sintéticos: apenas demonstração local, jamais cadastrados no servidor.
+const DEMO_CLIENTS=[
+ {name:'Maxvel Logística',unit:DEMO_WATCHERS[0].unit,contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'maxvel@exemplo.invalid'},
+ {name:'Condomínio Reserva da Serra',unit:'Posto Condomínio (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'condominio@exemplo.invalid'},
+ {name:'Metalúrgica Xavier',unit:'Posto Metalúrgica (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'metalurgica@exemplo.invalid'}
+];
+let selectedDemoClientIndex=0;
 function demoClientView(){
- const unit=DEMO_WATCHERS[0].unit,workers=DEMO_WATCHERS.filter(w=>w.unit===unit);
+ const client=DEMO_CLIENTS[selectedDemoClientIndex]||DEMO_CLIENTS[0];
+ const unit=client.unit,workers=DEMO_WATCHERS.filter(w=>w.unit===unit);
  const mine=sessionList().filter(s=>workers.some(w=>w.name===s.name)),active=mine.filter(s=>s.status==='active'),past=mine.filter(s=>s.status!=='active');
  const rows=a=>a.length?a.map(s=>'<button class="demo-ops-row" data-action="session-detail" data-id="'+esc(s.id)+'"><span><strong>'+esc(s.name)+'</strong><small>'+esc(s.route.name)+' · '+fmt(s.startedAt)+'</small></span><b>'+esc(s.status==='completed'?'Concluída':'Em andamento')+'</b></button>').join(''):'<p class="empty">Nenhum registro nesta categoria.</p>';
  return '<section class="demo-role-view">'+pageTitle('Visão do cliente','Rondas do local autorizado. Esta área usa dados ilustrativos.')+
- '<header class="demo-role-site"><span>LOCAL ACOMPANHADO</span><h2>'+esc(unit)+'</h2><p>Cliente acompanha serviço e horários; não altera a programação dos vigias.</p></header>'+
+ '<header class="demo-role-site"><span>CLIENTE DE DEMONSTRAÇÃO · DADOS FICTÍCIOS</span><h2>'+esc(client.name)+'</h2><p>Posto: '+esc(unit)+' · '+esc(client.contact)+'</p><p>'+esc(client.phone)+' · '+esc(client.email)+'</p></header>'+
+ '<label class="demo-client-selector">Alternar cliente demonstrativo <select data-demo-client>'+DEMO_CLIENTS.map((x,i)=>'<option value="'+i+'" '+(i===selectedDemoClientIndex?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
  '<div class="demo-role-metrics"><div><strong>'+active.length+'</strong><small>Em andamento</small></div><div><strong>'+past.length+'</strong><small>Últimas rondas</small></div></div>'+
- '<div class="demo-role-columns"><section><h3>Mapa da unidade</h3><div id="ops-map" class="map-container large"></div><p class="map-caption">Trajeto e GPS ilustrativos. Localização real depende de envio efetivo ao servidor.</p></section>'+
+ '<div class="demo-role-columns"><section><h3>Mapa da unidade</h3>'+(mine.length?'<div id="ops-map" class="map-container large"></div><p class="map-caption">Trajeto e GPS ilustrativos. Localização real depende de envio efetivo ao servidor.</p>':'<p class="empty">Nenhum trajeto cadastrado para este cliente fictício.</p>')+'</section>'+
  '<section><h3>Em andamento</h3>'+rows(active)+'<h3>Histórico recente</h3>'+rows(past.slice(0,12))+'</section></div></section>';
 }
 function demoInspectorView(){
@@ -1014,6 +1050,7 @@ window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status=
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(act==='demo-coi-tab'){if(['rondas','vistorias'].includes(el.dataset.tab)){demoCoiTab=el.dataset.tab;render();}return;}
  if(act==='close-dialog'){if(modal.dataset.mandatoryNotice==='true')return;modal.close();return;}
  if(act==='accept-location-notice'){if(!modal.querySelector('#location-intro-check')?.checked)return;try{saveConsent()}catch{notify('Não foi possível registrar a ciência neste navegador.');return;}modal.dataset.mandatoryNotice='false';modal.close();notify('Orientações registradas. O GPS será solicitado apenas ao iniciar uma ronda real.');return;}
  if(act==='decline-location-notice'){modal.dataset.mandatoryNotice='false';modal.close();notify('Você pode explorar a simulação sem conceder localização.');return;}
@@ -1043,7 +1080,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='demo-evidence-confirm'){if(!session||!confirmDemoEvidence(session,session.index)){notify('Complete quatro etapas e giro.');return;}save();modal.close();notify('Exemplo registrado sem câmera e sem sensor.');return;}
  if(act==='sim-role-picker'){
   if(!presentation)return;
-  const roles=[['ronda','Vigia','compass'],['operador','COI · Monitoramento','map'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
+  const roles=[['ronda','Vigia','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
   showDialog(`<div class="eyebrow">ÁREAS DO RONDAS PRO · DEMONSTRAÇÃO</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.</p><a class="button full" href="/central.html">Entrar na operação real ↗</a>`);
   modal.classList.add('role-picker-dialog');
   return;
@@ -1252,6 +1289,7 @@ if(act==='profile-menu'){profileDialog();return;}
 }
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
 document.addEventListener('change',e=>{
+ if(e.target.matches('[data-demo-client]')){selectedDemoClientIndex=Math.max(0,Math.min(DEMO_CLIENTS.length-1,Number(e.target.value)||0));render();return;}
  if(e.target.matches('[data-supervisor-watcher]')){const choice=watcherById(e.target.value);if(!choice)return;selectedSupervisedWatcherId=choice.id;render();return;}
   if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;schedulePage=0;render();}
  if(e.target.matches('[data-schedule-unit]')){scheduleUnit=e.target.value;scheduleWatcher='all';schedulePage=0;render();}

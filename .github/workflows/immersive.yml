@@ -6,6 +6,10 @@ on:
     branches: [main, maxvel-06-ux-mobile]
     paths:
       - 'scripts/app-immersive-test.mjs'
+      - 'scripts/coi-central-smoke.mjs'
+      - 'src/coi-monitor.js'
+      - 'src/central.js'
+      - 'assets/coi-operations-v3.css'
       - 'src/app.js'
       - 'assets/horizon-operacional.css'
       - 'assets/horizon-graphite.css'
@@ -25,15 +29,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Instalar controlador de navegador
         run: npm install --no-save --no-package-lock playwright-core@1.56.1
       - name: Executar fluxos do próprio app em sete tamanhos
         run: node scripts/app-immersive-test.mjs
+      - name: Validar COI autenticado (mobile e desktop)
+        run: node scripts/coi-central-smoke.mjs
       - name: Guardar capturas e medidas
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: maxvel-app-immersive-ux
-          path: artifacts/app-immersive/
+          path: |
+            artifacts/app-immersive/
+            artifacts/coi-authenticated/
           if-no-files-found: warn

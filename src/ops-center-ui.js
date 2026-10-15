@@ -2,9 +2,9 @@
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'Não informado';
 const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
-const activeKinds=new Set(['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message']);
+const activeKinds=new Set(['panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message','inspection']);
 export function createOpsCenterUI({api,flash,openNotice}){
- let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null;
+ let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,noticeFilter='pending';
  const manager=()=>['admin','master'].includes(current?.role);
  const reviewer=()=>['admin','master','operador','coi'].includes(current?.role);
  const allowed=key=>manager()||!!modules.find(x=>x.module===key)?.enabled;
@@ -108,13 +108,23 @@ export function createOpsCenterUI({api,flash,openNotice}){
   const count=unread().length;
   return '<button type="button" data-ops-page="notifications" class="ops-notification-bell" aria-label="Abrir notificações, '+count+' não lidas">🔔 <span>Notificações</span>'+(count?'<b class="ops-notification-count">'+count+'</b>':'')+'</button>';
  }
- function cards(){
-  return notifications.slice(0,100).map(n=>'<button type="button" class="ops-notification-row '+(!n.read_at?'is-unread':'')+'" data-ops-notification="'+esc(n.id)+'"><span class="ops-notice-dot '+esc(n.kind)+'"></span><span><strong>'+esc(n.title)+'</strong><small>'+esc(n.body)+'</small><small>'+stamp(n.created_at)+(n.read_at?' · Visualizada':' · NOVA')+'</small></span><b aria-hidden="true">↗</b></button>').join('');
+ function cards(list){
+  return list.map(n=>{
+   const state=n.event_id?(n.event_status==='resolvida'?'Tratativa concluída':n.event_status==='em_analise'?'Em análise':'Tratativa em aberto'):
+    n.dispatch_id?(n.dispatch_completed_at?'Despacho concluído':n.dispatch_started_at?'Em atendimento':'Despacho pendente'):
+    n.read_at?'Visualizada':'Nova';
+   return '<button type="button" class="ops-notification-row '+(!n.read_at?'is-unread':'')+'" data-ops-notification="'+esc(n.id)+'"><span class="ops-notice-dot '+esc(n.kind)+'"></span><span><strong>'+esc(n.title)+'</strong><small>'+esc(n.body)+'</small><small>'+stamp(n.created_at)+' · '+esc(state)+'</small></span><b aria-hidden="true">↗</b></button>';
+  }).join('');
  }
  function notificationsView(){
-  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">ALERTAS OPERACIONAIS</div><h1>Notificações</h1><p class="muted">Avisos registrados, com destinatário, horário e estado de leitura.</p></div>'+badge()+'</header>'+
-   '<section class="surface ops-notifications"><div class="toolbar"><h2>Caixa de entrada</h2><span class="pill warning">'+unread().length+' pendentes</span></div>'+
-   (notifications.length?cards():'<p class="empty">Nenhuma notificação registrada.</p>')+'</section></section>';
+  const isAdmin=manager(),counts={pending:pendingActions().length,all:notifications.length,audit:notifications.filter(n=>n.kind==='review').length};
+  const result=noticeFilter==='pending'?pendingActions():noticeFilter==='audit'?notifications.filter(n=>n.kind==='review'):notifications;
+  const filters=[['pending','Exigem atenção',counts.pending],['all','Todas',counts.all],...(isAdmin?[['audit','COI · Tratativas',counts.audit]]:[])];
+  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · COMUNICAÇÕES RECEBIDAS</div><h1>Notificações</h1><p class="muted">'+(isAdmin?'Acompanhe despachos, mensagens e decisões registradas pelo COI.':'Abra a mensagem, o laudo ou a ocorrência para responder e registrar o tratamento.')+'</p></div>'+badge()+'</header>'+
+   '<nav class="coi3-notification-tabs" aria-label="Filtros das notificações">'+filters.map(([key,title,count])=>'<button type="button" data-ops-filter="'+key+'" aria-pressed="'+(noticeFilter===key)+'" class="'+(noticeFilter===key?'is-active':'')+'">'+esc(title)+' <span>'+count+'</span></button>').join('')+'</nav>'+
+   '<section class="surface ops-notifications"><div class="toolbar"><h2>Caixa de entrada</h2><span class="pill warning">'+unread().length+' não lidas</span></div>'+
+   (result.length?cards(result):'<p class="empty">Nenhuma notificação nesta categoria.</p>')+'</section>'+
+   '<p class="coi3-footnote">Leitura e conclusão são ações diferentes. A pendência continua até o COI registrar o encerramento no evento ou o profissional concluir o despacho.</p></section>';
  }
  function dispatchesView({users,rounds,events}){
   const guards=availability.map(w=>({...w,dispatchStatus:w.status,lastActivity:w.last_seen}));
@@ -178,6 +188,7 @@ export function createOpsCenterUI({api,flash,openNotice}){
    '<section class="surface"><h2>Módulos de operação</h2><div class="permission-list">'+permissionRows()+'</div></section></section>';
  }
  async function click(target){
+  if(target.dataset.opsFilter&&['pending','all','audit'].includes(target.dataset.opsFilter)){noticeFilter=target.dataset.opsFilter;openNotice({page:'notifications'});return true;}
   if(target.dataset.opsSelectInspector){
    const dialog=document.querySelector('#ops-inspector-modal');if(!dialog)return true;
    dialog.querySelector('[name="workerId"]').value=target.dataset.opsSelectInspector;
@@ -262,5 +273,5 @@ export function createOpsCenterUI({api,flash,openNotice}){
    return true;
   }catch(error){input.checked=!enabled;throw error}
  }
- return {refresh,allowed,badge,assignmentBanner,present,connectLive,stopLive,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread,activeInspection:()=>dispatches.find(d=>d.kind==='vistoria'&&d.started_at&&!d.completed_at)||null};
+ return {refresh,allowed,badge,assignmentBanner,present,connectLive,stopLive,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread,monitoringData:()=>({availability:[...availability,...inspectors],dispatches}),activeInspection:()=>dispatches.find(d=>d.kind==='vistoria'&&d.started_at&&!d.completed_at)||null};
 }

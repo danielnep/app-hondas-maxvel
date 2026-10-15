@@ -17,12 +17,17 @@ test('perfis conservam comandos existentes mas separam acesso frequente e áreas
  assert.match(central,/ops\.allowed/);
 });
 
-test('COI apresenta triagem por prioridade antes da agenda',()=>{
- const flow=central.slice(central.indexOf('function monitorView()'),central.indexOf('function monitorRows('));
- assert.ok(flow.includes('priorityRank={panic:0'),'Pânico deve ser primeira prioridade');
- assert.ok(flow.indexOf('rp2-attention-queue')<flow.indexOf('ops-agenda-surface'));
- assert.match(flow,/eventList\(triage\.slice\(0,5\)\)/);
- assert.match(flow,/GPS sem leitura não prova desvio/);
+test('COI prioriza pessoas, tratativas, rondas e vistorias em vez de mapa genérico',()=>{
+ const monitor=read('src/coi-monitor.js');
+ assert.match(central,/function monitorView\(\)\{/);
+ assert.match(central,/coi\.render/);
+ assert.match(central,/\['treatments','Tratativas'/);
+ assert.match(central,/function treatmentsView\(\)/);
+ assert.match(monitor,/data-coi-tab="rondas"/);
+ assert.match(monitor,/data-coi-tab="vistorias"/);
+ assert.match(monitor,/coi3-record-stack/);
+ assert.match(monitor,/priority=\{panic:0/);
+ assert.match(monitor,/GPS recente/);
 });
 
 test('Vistoriador e Cliente preservam dados reais com organização guiada',()=>{
@@ -52,7 +57,7 @@ test('visual transversal mantém Maxvel, layout mobile legível e movimento redu
  assert.match(css,/rp2-role-nav/);
  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
- assert.match(sw,/rondas-pro-interface-v28/);
+ assert.match(sw,/rondas-pro-interface-v29/);
  assert.match(entry,/rp2-gate-brand/);
  assert.match(entry,/maxvel-logo.webp/);
  assert.match(entry,/<svg viewBox/);
