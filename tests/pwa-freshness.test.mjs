@@ -17,7 +17,7 @@ test('publicação atualiza scripts e estilos a partir da rede antes de usar cac
 
 test('demo móvel oferece somente cinco áreas e unifica COI com Monitoramento',()=>{
  const picker=app.slice(app.indexOf("if(act==='sim-role-picker'){"),app.indexOf("if(act==='schedule-tab')"));
- assert.match(picker,/COI · Monitoramento/);
+ assert.match(picker,/COI · Acompanhamento/);
  assert.equal((picker.match(/data-role=/g)||[]).length,1,'itens gerados por um único seletor');
  assert.doesNotMatch(picker,/\['coi','Central COI'/);
  assert.match(app,/operador:coiNavigation,coi:coiNavigation/);
