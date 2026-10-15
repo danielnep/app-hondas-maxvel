@@ -13,7 +13,7 @@ const range=(source,start,end)=>{
 test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
  for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])assert.match(nav,new RegExp(role+':'));
- assert.match(app,/const coiNavigation=\[\['overview','COI · Monitoramento','map'\]/);
+ assert.match(app,/const coiNavigation=\[\['overview','COI · Acompanhamento','headset'\]/);
  assert.match(nav,/operador:coiNavigation,coi:coiNavigation/);
  for(const obsolete of ['supervisor','gestor'])assert.doesNotMatch(nav,new RegExp(obsolete+':'));
  assert.doesNotMatch(app,/function loginDialog\(\)/,'A demonstração não deve exibir formulário de acesso');
@@ -24,7 +24,7 @@ test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados'
   assert.ok(picker.includes("['"+role+"',"),'perfil '+role+' disponível no seletor');
  assert.doesNotMatch(picker,/\['coi','Central COI'/,'Não duplicar COI como área independente');
  assert.match(picker,/modal\.classList\.add\('role-picker-dialog'\)/);
- assert.match(picker,/\['operador','COI · Monitoramento','map'\]/);
+ assert.match(picker,/\['operador','COI · Acompanhamento','headset'\]/);
  assert.match(picker,/não representa autenticação/);
 });
 
