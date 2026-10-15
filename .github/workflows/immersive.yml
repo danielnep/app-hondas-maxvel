@@ -7,6 +7,7 @@ on:
     paths:
       - 'scripts/app-immersive-test.mjs'
       - 'scripts/coi-central-smoke.mjs'
+      - 'scripts/coi-demo-smoke.mjs'
       - 'src/coi-monitor.js'
       - 'src/central.js'
       - 'assets/coi-operations-v3.css'
@@ -36,6 +37,10 @@ jobs:
         run: node scripts/app-immersive-test.mjs
       - name: Validar COI autenticado (mobile e desktop)
         run: node scripts/coi-central-smoke.mjs
+      - name: Validar abertura de tratativas no COI demonstrativo
+        run: node scripts/coi-demo-smoke.mjs
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
       - name: Guardar capturas e medidas
         if: always()
         uses: actions/upload-artifact@v4
