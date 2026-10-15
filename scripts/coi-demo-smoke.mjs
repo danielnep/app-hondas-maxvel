@@ -54,12 +54,12 @@ try{
   await page.locator('#toast.toast-visible').waitFor({state:'hidden'});
   await page.screenshot({path:out+'/coi-'+width+'.png',fullPage:true});
   await page.locator('[data-view="notificacoes"]').first().evaluate(el=>el.click());
-  if(await page.locator('.alert-filter-tabs').count())throw Error('Feed deve ser único, sem filtros');
+  if(!await page.locator('.rp-event-columns .rp-event-column').count())throw Error('Eventos devem ser separados em colunas por tipo');
   await page.screenshot({path:out+'/notificacoes-'+width+'.png',fullPage:true});
-  await page.locator('[data-action="notification-detail"][data-id="rev3-fixture-notice-v03"]').click();
+  await page.locator('.rp-event-columns [data-action="notification-detail"][data-id="rev3-fixture-notice-v03"]').click();
   await page.locator('[data-action="acknowledge"]').waitFor({state:'visible'});
   await page.locator('[data-action="acknowledge"]').click();
-  await page.locator('[data-action="notification-detail"][data-id="rev3-fixture-notice-v04"]').click();
+  await page.locator('.rp-event-columns [data-action="notification-detail"][data-id="rev3-fixture-notice-v04"]').click();
   await page.locator('#incident-review-form').waitFor({state:'visible'});
   await page.locator('#incident-review-form [name="status"]').selectOption('Em análise');
   await page.locator('#incident-review-form [name="note"]').fill('Conferência solicitada pela equipe COI.');

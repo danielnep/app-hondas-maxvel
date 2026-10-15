@@ -241,10 +241,12 @@ try{
    await click(page,'#dialog [data-action="sim-role"][data-role="operador"]');
    await state(page,width,height,'07-central-monitoramento');
    if(width<=900)await checkRoleGuide(page,width,height,'operador','COI · Monitoramento');
-   if(!await page.locator('.operations-page').count())throw Error('Operador sem área de monitoramento.');
+   if(!await page.locator('.coi-demo-page').count())throw Error('Operador sem área de monitoramento.');
    if(!await page.locator('#ops-map').count())throw Error('Operador sem mapa de rondas.');
    if(await page.locator('[data-view="relatorios"]').count())throw Error('Operador recebeu menu de relatórios administrativos.');
-   await page.locator('[data-supervisor-watcher]').selectOption('v03');
+   await page.locator('.coi-demo-content [data-action="session-detail"]').first().click();
+   await page.locator('#dialog #patrol-detail-map').waitFor({state:'visible'});
+   await page.locator('#dialog [data-action="close-dialog"]').click();
    await state(page,width,height,'08-monitorar-vigia');
 
    // Administrador: seus indicadores próprios e ferramentas analíticas.

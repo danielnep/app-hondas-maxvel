@@ -42,6 +42,7 @@ export function openConclusionDialog({title='Concluir análise',eventLabel='',ac
   }
  });
  area.addEventListener('input',update);
- document.body.append(pane);area.focus();
+ // A confirmação pertence à camada modal do registro aberto.
+ (document.querySelector('#central-event-dialog[open]')||document.body).append(pane);area.focus();
  return {close,element:pane};
 }

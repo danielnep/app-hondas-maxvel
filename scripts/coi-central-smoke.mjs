@@ -39,6 +39,7 @@ try{
   return {context,page};
  }
  async function navigate(page,name){
+  if(await page.locator('#central-event-dialog[open]').count())await page.locator('[data-close-event]').click();
   const button=page.locator('button[data-page="'+name+'"]').first();
   if(!await button.isVisible())await page.locator('[data-central-menu]').click();
   await button.click();
@@ -56,8 +57,8 @@ try{
   const errors=[];coi.page.on('pageerror',e=>errors.push(e.message));admin.page.on('pageerror',e=>errors.push(e.message));
   const token=await coi.page.evaluate(()=>sessionStorage.getItem('rondaspro_api_token'));
   const adminToken=await admin.page.evaluate(()=>sessionStorage.getItem('rondaspro_api_token'));
-  assert(await coi.page.locator('[data-coi-tab="rondas"]').count()===1,'Aba Rondas ausente');
-  await coi.page.locator('[data-coi-tab="vistorias"]').click();
+  assert(await coi.page.locator('.rp-recent-activity').count()===1,'Resumo de última ronda e atividades ausente');
+  assert(await coi.page.locator('[data-page="activity-history"]').count()>0,'Histórico de rondas ausente');
   await coi.page.screenshot({path:out+'/coi-'+width+'.png',fullPage:true});
   await navigate(coi.page,'treatments');
   await coi.page.locator('[data-treatment-tab="incident"]').waitFor();
@@ -66,7 +67,7 @@ try{
   await navigate(coi.page,'notifications');
   assert(await coi.page.locator('[data-ops-filter],.coi3-notification-tabs').count()===0,'Feed não pode possuir filtros ou abas');
   const notice=(await request('/notifications',token)).notifications.find(n=>n.event_id===event.id);
-  await coi.page.locator('.ops-notifications [data-ops-notification="'+notice.id+'"]').click();
+  await coi.page.locator('.rp-event-columns [data-ops-notification="'+notice.id+'"]').click();
   await coi.page.locator('[data-claim-treatment]').waitFor();
   assert((await request('/treatment-summary',token)).total===1,'Ler não pode resolver a pendência');
   await coi.page.locator('[data-claim-treatment]').click();
@@ -86,15 +87,15 @@ try{
   assert(await admin.page.locator('[data-claim-treatment],[data-review-status]').count()===0,'Registro concluído permite tratamento duplicado');
   assert((await request('/events/'+event.id,adminToken)).treatments.length===1,'Caminhos criaram tratativas duplicadas');
   await navigate(coi.page,'notifications');
-  assert(await coi.page.locator('.ops-notifications [data-ops-notification="'+notice.id+'"].is-completed').count()===1,'Notificação concluída não foi atenuada');
+  assert(await coi.page.locator('.rp-event-columns [data-ops-notification="'+notice.id+'"].is-completed').count()===1,'Notificação concluída não foi atenuada');
   await coi.page.waitForTimeout(600);
   await coi.page.screenshot({path:out+'/notificacoes-'+width+'.png',fullPage:true});
-  const fallback=await request('/events',guard,{kind:'message',occurredAt:Date.now(),description:'Solicitação sem tratamento do COI '+width});
+  const fallback=await request('/events',guard,{kind:'alert',occurredAt:Date.now(),description:'Solicitação sem tratamento do COI '+width});
   await navigate(admin.page,'notifications');
   // Receber a alteração em outra sessão é parte do aceite.
   await admin.page.waitForFunction(text=>document.querySelector('.ops-inbox-3')?.textContent.includes(text),'Solicitação sem tratamento do COI '+width,{timeout:18000});
   const n=(await request('/notifications',adminToken)).notifications.find(n=>n.event_id===fallback.id);
-  await admin.page.locator('.ops-notifications [data-ops-notification="'+n.id+'"]').click();
+  await admin.page.locator('.rp-event-columns [data-ops-notification="'+n.id+'"]').click();
   await admin.page.locator('.rp-coi-missing').waitFor();
   await conclude(admin.page);
   assert((await request('/events/'+fallback.id,token)).treatments[0].author_role==='admin','Atuação subsidiária não foi persistida');
