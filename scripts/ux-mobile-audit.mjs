@@ -246,7 +246,7 @@ try{
    if(await page.locator('[data-view="relatorios"]').count())throw Error('Operador recebeu menu de relatórios administrativos.');
    await page.locator('.coi-demo-content [data-action="session-detail"]').first().click();
    await page.locator('#dialog #patrol-detail-map').waitFor({state:'visible'});
-   await page.locator('#dialog [data-action="close-dialog"]').click();
+   await page.locator('#dialog .dialog-close[data-action="close-dialog"]').click();
    await state(page,width,height,'08-monitorar-vigia');
 
    // Administrador: seus indicadores próprios e ferramentas analíticas.
