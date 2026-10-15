@@ -692,14 +692,23 @@ function watcherChooser(){
 
 const DEMO_INSPECTIONS='maxvel-demo-inspections-v1';
 function demoInspectionRecords(){try{const r=JSON.parse(localStorage.getItem(DEMO_INSPECTIONS)||'[]');return Array.isArray(r)?r.slice(0,100):[]}catch{return []}}
+// Contatos totalmente sintéticos: apenas demonstração local, jamais cadastrados no servidor.
+const DEMO_CLIENTS=[
+ {name:'Maxvel Logística',unit:DEMO_WATCHERS[0].unit,contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'maxvel@exemplo.invalid'},
+ {name:'Condomínio Reserva da Serra',unit:'Posto Condomínio (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'condominio@exemplo.invalid'},
+ {name:'Metalúrgica Xavier',unit:'Posto Metalúrgica (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'metalurgica@exemplo.invalid'}
+];
+let selectedDemoClientIndex=0;
 function demoClientView(){
- const unit=DEMO_WATCHERS[0].unit,workers=DEMO_WATCHERS.filter(w=>w.unit===unit);
+ const client=DEMO_CLIENTS[selectedDemoClientIndex]||DEMO_CLIENTS[0];
+ const unit=client.unit,workers=DEMO_WATCHERS.filter(w=>w.unit===unit);
  const mine=sessionList().filter(s=>workers.some(w=>w.name===s.name)),active=mine.filter(s=>s.status==='active'),past=mine.filter(s=>s.status!=='active');
  const rows=a=>a.length?a.map(s=>'<button class="demo-ops-row" data-action="session-detail" data-id="'+esc(s.id)+'"><span><strong>'+esc(s.name)+'</strong><small>'+esc(s.route.name)+' · '+fmt(s.startedAt)+'</small></span><b>'+esc(s.status==='completed'?'Concluída':'Em andamento')+'</b></button>').join(''):'<p class="empty">Nenhum registro nesta categoria.</p>';
  return '<section class="demo-role-view">'+pageTitle('Visão do cliente','Rondas do local autorizado. Esta área usa dados ilustrativos.')+
- '<header class="demo-role-site"><span>LOCAL ACOMPANHADO</span><h2>'+esc(unit)+'</h2><p>Cliente acompanha serviço e horários; não altera a programação dos vigias.</p></header>'+
+ '<header class="demo-role-site"><span>CLIENTE DE DEMONSTRAÇÃO · DADOS FICTÍCIOS</span><h2>'+esc(client.name)+'</h2><p>Posto: '+esc(unit)+' · '+esc(client.contact)+'</p><p>'+esc(client.phone)+' · '+esc(client.email)+'</p></header>'+
+ '<label class="demo-client-selector">Alternar cliente demonstrativo <select data-demo-client>'+DEMO_CLIENTS.map((x,i)=>'<option value="'+i+'" '+(i===selectedDemoClientIndex?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label>'+
  '<div class="demo-role-metrics"><div><strong>'+active.length+'</strong><small>Em andamento</small></div><div><strong>'+past.length+'</strong><small>Últimas rondas</small></div></div>'+
- '<div class="demo-role-columns"><section><h3>Mapa da unidade</h3><div id="ops-map" class="map-container large"></div><p class="map-caption">Trajeto e GPS ilustrativos. Localização real depende de envio efetivo ao servidor.</p></section>'+
+ '<div class="demo-role-columns"><section><h3>Mapa da unidade</h3>'+(mine.length?'<div id="ops-map" class="map-container large"></div><p class="map-caption">Trajeto e GPS ilustrativos. Localização real depende de envio efetivo ao servidor.</p>':'<p class="empty">Nenhum trajeto cadastrado para este cliente fictício.</p>')+'</section>'+
  '<section><h3>Em andamento</h3>'+rows(active)+'<h3>Histórico recente</h3>'+rows(past.slice(0,12))+'</section></div></section>';
 }
 function demoInspectorView(){
@@ -1280,6 +1289,7 @@ if(act==='profile-menu'){profileDialog();return;}
 }
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
 document.addEventListener('change',e=>{
+ if(e.target.matches('[data-demo-client]')){selectedDemoClientIndex=Math.max(0,Math.min(DEMO_CLIENTS.length-1,Number(e.target.value)||0));render();return;}
  if(e.target.matches('[data-supervisor-watcher]')){const choice=watcherById(e.target.value);if(!choice)return;selectedSupervisedWatcherId=choice.id;render();return;}
   if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;schedulePage=0;render();}
  if(e.target.matches('[data-schedule-unit]')){scheduleUnit=e.target.value;scheduleWatcher='all';schedulePage=0;render();}
