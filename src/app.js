@@ -1,4 +1,5 @@
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
+import {createInspectionRouteMap} from './inspection-route-map.js';
 import {PatrolMap} from './map.js';
 import {createRoundWizard} from './wizard.js';
 import {withExampleRondas} from './demo-scenarios.js';
@@ -365,7 +366,9 @@ function installViewportViews(){
  if(view==='equipe')paginateRows(main,'.team-row','Equipe',4);
 }
 
-function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+const demoRouteMap=createInspectionRouteMap({onPosition:fix=>{const state=document.querySelector('[data-demo-inspection-gps]');if(state)state.textContent='GPS ativo · precisão '+Math.round(fix.accuracy)+' m · '+fix.samples+' posições registradas';},onError:notify});
+let demoMapControls=null;
+function render(){demoRouteMap.destroy();demoMapControls=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(presentation&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
@@ -437,6 +440,7 @@ function attachMaps(){
     history.forEach((item,index)=>registerMap('admin-route-mini-'+index,item.route,item,item.lastFix??item.route.base,true));
    }
   if(view==='minha-ronda'){const selectedRoute=session?.route??routeForWatcher(selectedWatcherId);registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
+  if(view==='vistoriador'){const host=document.querySelector('#demo-inspection-map');if(host)demoMapControls=demoRouteMap.mount(host,demoPendingInspection(),{demo:true});}
  }
 }
 function entryScreen(){
@@ -726,7 +730,7 @@ function demoInspectorView(){
  const records=demoInspectionRecords(),pending=demoPendingInspection();
  const checks=[['acessos','Acessos em condições adequadas'],['estrutura','Estrutura verificada'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização adequada']];
  return '<section class="demo-role-view rp-demo-inspector">'+pageTitle('Minhas vistorias','Atendimento sob solicitação do COI, com mapa e registro das verificações.')+
- '<div class="rp-inspection-viewport '+(pending?'has-task':'is-idle')+'"><div id="demo-inspection-map" class="rp-inspection-map map-container large" role="img" aria-label="Mapa exclusivo da vistoria"></div><div class="rp-inspection-map-note">'+(pending?'<span class="rp-inspection-status">● NOVA VISTORIA · '+esc(pending.routine?'ROTINA':'SOLICITADA')+'</span><strong>'+esc(pending.address)+'</strong><span>'+esc(pending.instructions)+'</span>':'<div class="rp-inspection-empty"><strong>Sem vistoria pendente</strong><span>Aguardando solicitação do COI</span><small>O mapa permanece disponível para referência.</small></div>')+'</div></div>'+
+ '<div class="rp-inspection-viewport '+(pending?'has-task':'is-idle')+'"><div id="demo-inspection-map" class="rp-inspection-map map-container large" role="img" aria-label="Mapa exclusivo da vistoria"></div><div class="rp-inspection-map-note">'+(pending?'<span class="rp-inspection-status">● NOVA VISTORIA · '+esc(pending.routine?'ROTINA':'SOLICITADA')+'</span><strong>'+esc(pending.address)+'</strong><span>'+esc(pending.instructions)+'</span>':'<div class="rp-inspection-empty"><strong>Sem vistoria pendente</strong><span>Aguardando solicitação do COI</span><small>O mapa permanece disponível para referência.</small></div>')+'</div></div>'+(pending?'<div class="rp-inspection-navigation"><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(pending.address)+'" target="_blank" rel="noopener noreferrer">Navegar ao destino ↗</a><button type="button" data-action="demo-inspection-track">Acompanhar GPS</button><span data-demo-inspection-gps>GPS desligado · o mapa é exclusivo da vistoria</span></div>':'')+
  (pending?'<form id="demo-inspection-form" class="demo-inspection-form rp-demo-inspection-form"><div class="rp-demo-inspection-head"><span class="eyebrow">MISSÃO RECEBIDA</span><h2>Conferir o local</h2><p>Preencha os quatro critérios após chegar ao endereço. Fotos serão utilizadas somente nesta demonstração.</p></div>'+
  '<input type="hidden" name="requestId" value="'+esc(pending.id)+'">'+
  checks.map(([k,label])=>'<label class="rp-demo-check"><span>'+esc(label)+'</span><select name="'+k+'" required><option value="">Avaliar</option><option value="ok">Sem anormalidades</option><option value="no">Não conformidade identificada</option></select></label>').join('')+
@@ -1126,6 +1130,12 @@ window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status=
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&view!==nav)demoChatScreen=['ronda','vistoriador'].includes(user.role)?'thread':'list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(act==='demo-inspection-track'){
+  if(!demoMapControls){notify('Aguardando a inicialização do mapa.');return;}
+  if(demoRouteMap.getActive()){demoRouteMap.stop();el.textContent='Retomar GPS';}
+  else if(demoMapControls.track())el.textContent='Pausar GPS';
+  return;
+ }
  if(act==='demo-chat-open'){demoChatScreen='thread';render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
  if(act==='demo-chat-list'){demoChatScreen='list';render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
