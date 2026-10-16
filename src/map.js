@@ -61,7 +61,7 @@ export class PatrolMap{
    mount.style.cssText='position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .2s ease';
    this.container.appendChild(mount);this.liveLayer=mount;
   }else this.container.innerHTML='';
-  const m=L.map(mount,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:true});this.instance=m;
+  const m=L.map(mount,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:true,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});this.instance=m;
   if(typeof this.onMapClick==='function')m.on('click',event=>this.onMapClick({lat:event.latlng.lat,lng:event.latlng.lng}));
   const credit='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
   // CARTO can return an HTTP-200 image saying API KEY REQUIRED, which tileerror cannot detect.
@@ -219,5 +219,12 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
  fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds(this.route.inspectionMode&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
  invalidate(){this.instance?.invalidateSize(false)}
- destroy(){this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();clearTimeout(this.tileFallbackTimer);this.instance?.remove();this.instance=null;this.liveLayer=null;if(this.container)this.container.innerHTML=''}
+ destroy(){
+  this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();
+  clearTimeout(this.tileFallbackTimer);
+  const map=this.instance;this.instance=null;
+  if(map){try{map.stop();map.off();map.remove();}catch{}}
+  this.liveLayer=null;
+  if(this.container)this.container.innerHTML='';
+ }
 }
