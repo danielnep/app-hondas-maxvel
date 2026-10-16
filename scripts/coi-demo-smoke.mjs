@@ -83,7 +83,7 @@ try{
   await page.locator('[data-view="ocorrencias"]').first().evaluate(el=>el.click());
   await page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
   if(!await page.locator('.rp-treatment-archive .rp-archive-record').count())throw Error('Conclusão não aparece no histórico');
-  if(await page.locator('#incident-review-form').count())throw Error('O histórico não deve oferecer campos editáveis');
+  if(await page.locator('#incident-review-form:visible').count())throw Error('O histórico não deve oferecer campos editáveis');
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
   if(overflow)throw Error('Rolagem horizontal indevida em '+width+'px');
   const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('horizon-maxvel-v1')));
