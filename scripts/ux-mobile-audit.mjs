@@ -218,10 +218,12 @@ try{
     if(dims.gap>15||dims.mapHeight<125||dims.actionBottom>dims.viewportBottom+2)
      throw Error('Mapa ou limite inferior não ocupam a área útil: '+JSON.stringify(dims));
     await click(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');
-    const sheet=await page.locator('#dialog[open].ux06-fullscreen .ux06-sheet').count();
-    if(!sheet)throw Error('Menu da ronda não abriu em janela ampla');
-    const modalSize=await page.locator('#dialog').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height}));
-    if(modalSize.w<width*.87||modalSize.h<height*.8)throw Error('Janela de ferramentas pequena demais: '+JSON.stringify(modalSize));
+    const sheet=await page.locator('#dialog[open].ux06-compact .ux06-sheet').count();
+    if(!sheet)throw Error('Menu da ronda não abriu como janela compacta');
+    const modalSize=await page.locator('#dialog').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,scrollHeight:el.scrollHeight}));
+    if(modalSize.w>Math.min(490,width-10)||modalSize.h>height-15||modalSize.h<100)
+      throw Error('Janela de ferramentas não se adaptou ao conteúdo: '+JSON.stringify(modalSize));
+    if(await page.locator('#dialog .dialog-close').count())throw Error('Controles de fechar duplicados');
     await click(page,'#dialog .ux06-sheet-back');
     if(await page.locator('#dialog').evaluate(el=>el.open))throw Error('Voltar não fechou ferramentas');
    }
