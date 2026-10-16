@@ -25,7 +25,7 @@
   inset:auto auto calc(86px + env(safe-area-inset-bottom,0px)) 50%!important;
   transform:translateX(-50%)!important;width:min(318px,calc(100% - 28px))!important;
   min-height:0!important;height:max-content!important;
-  max-height:min(33dvh,218px)!important;border-radius:12px!important;
+  max-height:min(40dvh,250px)!important;border-radius:12px!important;
   overflow:hidden!important;box-sizing:border-box!important;
  }
  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-heading{
@@ -37,7 +37,7 @@
  }
  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-action-body{
   flex:0 1 auto!important;min-height:0!important;height:auto!important;
-  max-height:calc(min(33dvh,218px) - 35px)!important;
+  max-height:calc(min(40dvh,250px) - 35px)!important;
   padding:7px 9px 9px!important;overflow-y:auto!important;overflow-x:hidden!important;
  }
  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-primary-flow{display:flex!important;flex-direction:column!important;gap:4px!important}
@@ -274,3 +274,21 @@ body .checkpoint-curtain .checkpoint-footnote{display:none!important}
 body .checkpoint-curtain .checkpoint-condition[hidden],body .checkpoint-curtain .checkpoint-after-timer[hidden],body .checkpoint-curtain .checkpoint-submit[hidden],body .checkpoint-curtain .checkpoint-footnote[hidden]{display:none!important}
 
 body .checkpoint-curtain .checkpoint-stopwatch[hidden]{display:none!important}
+
+/* Não exibir seletor de modo desabilitado na apresentação.
+   Em aparelhos pequenos o seletor redundante cobria Iniciar ronda. */
+.dashboard.simulation-mode .ronda-page .patrol-workspace.sheet-collapsed .patrol-mode-toggle{
+ display:none!important;
+}
+@media(max-width:900px){
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions{
+  margin:3px 0 0!important;padding:5px!important;gap:5px!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions a{
+  min-height:34px!important;padding:5px!important;font-size:11px!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .rondas-directions small{
+  display:none!important;
+ }
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-primary-flow .rondas-main-action{margin:3px 0!important}
+}
