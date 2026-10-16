@@ -13,8 +13,8 @@ test('eventos pendentes em colunas e histórico somente finalizado',()=>{
  assert.match(app,/const pending=demoEventNotifications\(\)\.filter\(n=>!n\.seenAt\)/);
  assert.match(app,/data-column-kind/);
  assert.match(app,/const done=demoEventNotifications\(\)\.filter\(n=>!!n\.seenAt\)/);
- assert.match(central,/const queue=events\.filter\(isPending\)/);
- assert.match(central,/const finished=events\.filter\(e=>!isPending\(e\)\)/);
+ assert.match(central,/const queue=events\.filter\(e=>isPending\(e\)&&e\.kind!=='message'\)/);
+ assert.match(central,/const finished=events\.filter\(e=>!isPending\(e\)&&e\.kind!=='message'\)/);
  assert.match(css,/grid-auto-flow:column!important/);
  assert.match(css,/grid-auto-columns:minmax\(165px,1fr\)!important/);
  assert.match(css,/border-right:1px solid #484851/);
