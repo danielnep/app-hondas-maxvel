@@ -72,12 +72,14 @@ try{
   await page.locator('#incident-review-form [name="status"]').selectOption('Em análise');
   await page.locator('#incident-review-form [name="note"]').fill('Conferência solicitada pela equipe COI.');
   await page.locator('[data-action="incident-review"]').click();
-  await page.locator('[data-view="ocorrencias"]').first().evaluate(el=>el.click());
-  await page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
-  await page.locator('[data-action="incident-detail"][data-id="rev3-fixture-incident"]').click();
+  // Em análise permanece entre os pendentes; histórico exibe apenas finalizados.
+  await page.locator('[data-view="notificacoes"]').first().evaluate(el=>el.click());
+  await page.locator('.rp-event-columns [data-action="notification-detail"][data-id="rev3-fixture-notice-v04"]').click();
   await page.locator('#incident-review-form [name="status"]').selectOption('Resolvida');
   await page.locator('#incident-review-form [name="note"]').fill('Iluminação conferida e providência concluída pelo COI.');
   await page.locator('[data-action="incident-review"]').click();
+  await page.locator('[data-view="ocorrencias"]').first().evaluate(el=>el.click());
+  await page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
   await page.locator('[data-action="incident-detail"][data-id="rev3-fixture-incident"]').click();
   if(await page.locator('#incident-review-form').count())throw Error('Resolvida não pode ter campos editáveis');
   await page.locator('#dialog .dialog-close').click();

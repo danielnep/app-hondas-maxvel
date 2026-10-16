@@ -15,6 +15,7 @@ import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
 import {createLocationEntryGate} from './location-entry-gate.js';
 import {createFieldTorch} from './field-torch.js';
+import {createMediaCapture} from './media-capture.js';
 import {mobileGuideFor} from './mobile-role-guides.js';
 import {summarizePatrol} from './field-intelligence.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
@@ -382,6 +383,11 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBl
  // Lanterna aparece somente na área operacional, nunca em histórico ou chat.
  if(dash)dash.dataset.torchRole=(user?.role==='ronda'&&view==='minha-ronda')||(user?.role==='vistoriador'&&view==='vistoriador')?user.role:'';
  torch.decorate();
+ // Lanterna sobre o mapa do vistoriador, sem flutuar sobre os títulos.
+ if(user?.role==='vistoriador'&&view==='vistoriador'){
+  const inspectorMap=dash?.querySelector('.rp-inspector-map'),torchButton=dash?.querySelector('[data-field-torch]');
+  if(inspectorMap&&torchButton)inspectorMap.append(torchButton);
+ }
  // Ajuda da cartografia pertence ao nível do cockpit: atrás do painel o ícone
  // fica visível mas não recebe clique, mesmo com z-index elevado no filho.
  if(window.innerWidth<=900&&workspace){
@@ -447,9 +453,9 @@ function landing(){
  const examples=[['shield','Acompanhamento contínuo','Histórico de etapas e condições da ronda'],['map','Cartografia contextual','Pontos, raio e progresso sobre ruas reais'],['bell','Desvios documentados','Justificativa vinculada à supervisão'],['clipboard','Histórico consultável','Eventos e registros em ordem cronológica']];
  return `<div class="hero product-home"><div class="hero-container"><header class="topnav">${brand()}<nav class="nav-actions" aria-label="Acesso rápido">${btn(ic('help')+' Guia da plataforma','guide','','')} ${btn('Explorar '+ic('arrow'),'login','primary small')}</nav></header><main id="main"><section class="product-hero"><div class="product-hero-copy"><div class="eyebrow">${ic('shield')} HONDAS MAXVEL · OPERAÇÕES EM CAMPO</div><h1>Uma visão completa<br>de cada <span>ronda.</span></h1><p>Acompanhe o trabalho em campo e a supervisão em um só ambiente. Pontos, trajetos, permanência e ocorrências apresentados com clareza, do celular ao computador.</p><div class="hero-buttons">${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}${btn('Explorar sem login','login')}</div><div class="product-benefits"><span>${ic('checkcircle')} Passo a passo para o colaborador</span><span>${ic('checkcircle')} Visão da supervisão</span><span>${ic('checkcircle')} Registros com contexto</span></div><p class="product-fineprint">${ic('help')} Ambiente de avaliação: trajeto, pessoas e alertas ilustrativos. A cartografia é real quando online.</p></div><div class="product-showcase"><div class="showcase-main"><div class="showcase-toolbar"><div class="showcase-title">${ic('map')} <strong>Central de acompanhamento</strong><small>Prévia funcional do mapa</small></div><span class="showcase-status"><i></i> Visualização de rota</span></div><div id="hero-map" class="showcase-map"></div><div class="showcase-map-badge">${ic('pin')} Rota Centro · Divinópolis <span>4 pontos · raio 25 m</span></div><div class="showcase-overlay-stats"><div><small>Próxima verificação</small><strong>Portaria principal</strong></div><span>${ic('crosshair')} 25 m</span></div></div><div class="showcase-detail-grid"><div class="showcase-detail"><span class="showcase-detail-icon">${ic('clock')}</span><span><small>Permanência por ponto</small><strong>30 segundos contínuos</strong></span></div><div class="showcase-detail"><span class="showcase-detail-icon">${ic('bell')}</span><span><small>Desvios de percurso</small><strong>Justificativa e análise</strong></span></div></div><div class="showcase-disclaimer">Mapa OpenStreetMap · cenário operacional fictício</div></div></section><section class="product-capabilities"><div class="capabilities-intro"><div class="eyebrow">UMA PLATAFORMA · QUATRO FRENTES</div><h2>Feita para acompanhar a operação, não para complicá-la.</h2><p>O mesmo processo apresentado de forma específica para quem executa e para quem supervisiona.</p></div><div class="capability-grid">${examples.map(([ico,title,desc],i)=>`<article class="capability"><span class="capability-index">0${i+1}</span><span class="capability-icon">${ic(ico)}</span><h3>${title}</h3><p>${desc}</p></article>`).join('')}</div></section><section class="product-endcap"><div><div class="eyebrow">VEJA O FLUXO COMPLETO</div><h2>Do primeiro ponto ao relatório final.</h2><p>Explore as telas reais da experiência proposta para ronda e supervisão, com cenário operacional interativo.</p></div>${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}</section></main><footer class="hero-foot"><span>Grupo Maxvel | Daniel N. Xavier</span><a href="#" data-action="privacy">Privacidade e requisitos técnicos</a></footer></div></div>`;
 }
-const coiNavigation=[['overview','COI · Acompanhamento','headset'],['notificacoes','Eventos','bell'],['ocorrencias','Tratativas','alert'],['equipe','Equipe de campo','users']];
+const coiNavigation=[['overview','COI · Acompanhamento','headset'],['notificacoes','Eventos','bell'],['ocorrencias','Histórico de eventos','clipboard'],['equipe','Equipe de campo','users']];
 const allNav={ronda:[['minha-ronda','Minha ronda','compass'],['historico','Meu histórico','clipboard'],['meus-envios','Meus alertas e ocorrências','bell']],operador:coiNavigation,coi:coiNavigation,cliente:[['cliente','Meu acompanhamento','eye']],vistoriador:[['vistoriador','Vistorias e qualidade','clipboard'],['meus-envios','Meus alertas e ocorrências','bell']],admin:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Eventos','bell'],['ocorrencias','Ocorrências','alert'],['equipe','Equipe','users'],['relatorios','Relatórios','clipboard'],['configuracoes','Configurações','settings']]};
-for(const items of new Set(Object.values(allNav))){items.push(['chat-interno','Chat interno','bell']);if(items.some(e=>e[0]==='overview'))items.push(['historico-operacional','Histórico de rondas','clipboard']);}
+for(const items of new Set(Object.values(allNav))){items.push(['chat-interno','Chat interno','message']);if(items.some(e=>e[0]==='overview'))items.push(['historico-operacional','Histórico de rondas','clipboard']);}
 
 const roleName={ronda:'Operação de Ronda',operador:'COI · Acompanhamento',coi:'COI · Acompanhamento',cliente:'Visão Cliente',vistoriador:'Vistoriador',admin:'Administração'};
 function simRoleBar(){
@@ -607,11 +613,14 @@ let demoCoiTab='rondas';
 function demoCoiView(){
  const local=sessionList().slice().sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
  const insp=demoInspectionRecords();
+ const requested=demoInspectionTasks().filter(x=>x.status!=='done');
  const total=local.filter(x=>x.status==='active').length;
  const current=local[0],summary=[
   ['Rondas em curso',total],['Vistorias registradas',insp.length],
   ['Histórico de rondas',local.length],['Avisos do cenário',recentNotification().filter(x=>!x.seenAt).length]
  ];
+ const inspectionRequest='<section class="rp-demo-coi-dispatch"><div><span class="eyebrow">COI · VISTORIAS</span><strong>Solicitações de vistoria</strong><small>'+requested.length+' pendente(s) · rotina ou verificação sob demanda</small></div><button type="button" data-action="demo-inspection-request">+ Solicitar vistoria</button></section>'+
+ (requested.length?'<div class="rp-demo-coi-assignments">'+requested.slice(0,4).map(x=>'<div><strong>'+esc(x.place)+'</strong><span>'+esc(x.type==='routine'?'Rotina':'Solicitação do COI')+' · '+esc(x.status==='arrived'?'No local':'Aguardando atendimento')+'</span></div>').join('')+'</div>':'');
  const tabs='<div class="coi-demo-tabs" role="group" aria-label="Acompanhamento por atividade"><button type="button" data-action="demo-coi-tab" data-tab="rondas" aria-pressed="'+(demoCoiTab==='rondas')+'" class="'+(demoCoiTab==='rondas'?'selected':'')+'">Rondas</button><button type="button" data-action="demo-coi-tab" data-tab="vistorias" aria-pressed="'+(demoCoiTab==='vistorias')+'" class="'+(demoCoiTab==='vistorias'?'selected':'')+'">Vistorias</button></div>';
  const roundRows=local.length?local.slice(0,10).map((record,i)=>{
   const live=record.status==='active';
@@ -622,6 +631,7 @@ function demoCoiView(){
  const inspRows=insp.length?insp.slice(0,10).map((entry,i)=>'<article class="coi-demo-record"><header><div><span>Laudo de vistoria</span><h3>'+esc(DEMO_WATCHERS[0].unit)+'</h3></div><b>Enviada</b></header><div class="coi-demo-facts"><span>Data <strong>'+fmt(entry.at)+'</strong></span><span>Conformidade <strong>'+entry.score+'%</strong></span></div><p>'+esc(entry.notes)+'</p>'+(i===0?'<div id="ops-map" class="map-container large coi-demo-map" aria-label="Mapa ilustrativo do posto"></div><small>Referência ilustrativa do posto; nenhuma posição real do vistoriador foi transmitida.</small>':'')+'</article>').join(''):'<div class="empty">Sem vistorias neste navegador. Use o perfil Vistoriador para registrar um laudo demonstrativo.</div>';
  return '<section class="coi-demo-page">'+pageTitle('COI · Central de acompanhamento','Acompanhe a equipe e responda às ocorrências. Os dados abaixo são somente uma demonstração.')+
  '<div class="coi-demo-topline"><span class="ops-live-dot"></span><strong>Atendimento e acompanhamento</strong><small>Posto demonstrativo · '+esc(DEMO_WATCHERS[0].unit)+'</small><span>Dados locais</span></div>'+
+ inspectionRequest+
  '<div class="coi-demo-metrics">'+summary.map(([k,v])=>'<div><b>'+v+'</b><span>'+k+'</span></div>').join('')+'</div>'+
  (current?'<section class="coi-demo-record"><h2>Última ronda</h2><h3>'+esc(current.name)+' · '+esc(current.route.name)+'</h3><p>'+fmt(current.startedAt)+'</p><div id="ops-map" class="map-container large coi-demo-map"></div><button type="button" data-action="session-detail" data-id="'+esc(current.id)+'">Abrir percurso e detalhes</button><small>Mapa ilustrativo da demonstração.</small></section>':'<p class="empty">Nenhuma ronda registrada.</p>')+
  '<section class="coi-demo-content"><header class="toolbar"><h2>Rondas e vistorias recentes</h2><button type="button" data-view="historico-operacional">Ver histórico de rondas</button></header>'+demoActivityRows().slice(0,5).map(demoActivityRow).join('')+'</section>'+
@@ -696,6 +706,13 @@ function watcherChooser(){
 
 
 const DEMO_INSPECTIONS='maxvel-demo-inspections-v1';
+const DEMO_INSPECTION_TASKS='maxvel-demo-inspection-assignments-v2';
+const demoInspectionCapture=createMediaCapture({notify});
+let demoProof={photo:null,selfie:null};
+function demoInspectionTasks(){try{const rows=JSON.parse(localStorage.getItem(DEMO_INSPECTION_TASKS)||'[]');return Array.isArray(rows)?rows:[]}catch{return []}}
+function saveDemoInspectionTasks(rows){localStorage.setItem(DEMO_INSPECTION_TASKS,JSON.stringify(rows.slice(0,100)))}
+function currentDemoInspection(){return demoInspectionTasks().find(x=>x.status!=='done')||null}
+
 function demoInspectionRecords(){try{const r=JSON.parse(localStorage.getItem(DEMO_INSPECTIONS)||'[]');return Array.isArray(r)?r.slice(0,100):[]}catch{return []}}
 // Contatos totalmente sintéticos: apenas demonstração local, jamais cadastrados no servidor.
 const DEMO_CLIENTS=[
@@ -717,16 +734,12 @@ function demoClientView(){
  '<section><h3>Em andamento</h3>'+rows(active)+'<h3>Histórico recente</h3>'+rows(past.slice(0,12))+'</section></div></section>';
 }
 function demoInspectorView(){
- const records=demoInspectionRecords(),mean=records.length?Math.round(records.reduce((n,x)=>n+x.score,0)/records.length):null;
- const checks=[['acessos','Acessos em condições adequadas'],['estrutura','Estrutura verificada'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização adequada']];
- return '<section class="demo-role-view">'+pageTitle('Visão do vistoriador','Avaliações do local com indicador de qualidade e histórico cronológico.')+
- '<header class="demo-role-site"><span>POSTO DE VISTORIA</span><h2>'+esc(DEMO_WATCHERS[0].unit)+'</h2><p>Registro de demonstração salvo neste navegador.</p></header>'+
- '<div class="demo-role-metrics"><div><strong>'+(mean==null?'—':mean+'%')+'</strong><small>Média dos critérios atendidos</small></div><div><strong>'+records.length+'</strong><small>Vistorias realizadas</small></div></div>'+
- '<div class="demo-role-columns"><form id="demo-inspection-form" class="demo-inspection-form"><h3>Nova vistoria</h3>'+
- checks.map(([k,label])=>'<label><input type="checkbox" name="'+k+'"><span>'+esc(label)+'</span></label>').join('')+
- '<label>Observações<textarea name="notes" required minlength="8" placeholder="Descreva o que verificou"></textarea></label><button class="button primary">Registrar vistoria</button></form>'+
- '<section><h3>Histórico</h3>'+(records.length?records.map(r=>'<div class="demo-ops-row"><span><strong>'+fmt(r.at)+'</strong><small>'+esc(r.notes)+'</small></span><b>'+r.score+'%</b></div>').join(''):'<p class="empty">Nenhuma vistoria registrada.</p>')+
- '<p class="map-caption">O indicador mede quatro critérios de conformidade do local e não avalia pessoas.</p></section></div></section>';
+ const task=currentDemoInspection(),history=demoInspectionRecords();
+ const pin=ic('pin');
+ const waiting='<div class="rp-inspector-empty"><div class="rp-inspector-map rp-inspector-map-blurred" aria-hidden="true"><span>'+pin+'</span></div><div class="rp-inspector-empty-copy"><span class="eyebrow">VISTORIADOR · DISPONÍVEL</span><h2>Sem vistoria pendente</h2><p>O próximo destino aparecerá aqui quando o COI enviar a solicitação.</p><button type="button" data-action="demo-inspection-routine">Iniciar vistoria de rotina</button></div></div>';
+ const start=task?'<div class="rp-inspector-assignment"><div class="rp-inspector-map rp-inspector-map-active"><span class="rp-inspector-map-marker">'+pin+'</span></div><div class="rp-inspector-destination"><span class="eyebrow">'+(task.type==='routine'?'VISTORIA DE ROTINA':'SOLICITAÇÃO DO COI')+'</span><h2>'+esc(task.place)+'</h2><p>'+esc(task.reason)+'</p><small>'+esc(task.status==='arrived'?'Chegada declarada · registre as evidências':'Confirme quando chegar ao local')+'</small>'+(task.status==='pending'?'<button type="button" data-action="demo-inspection-arrive">Cheguei ao local</button>':'')+'</div></div>':waiting;
+ const evidence=task?.status==='arrived'?'<form id="demo-inspection-form" class="rp-inspector-form"><h2>Conferência do local</h2><p>Fotografe o local e registre uma selfie antes de finalizar.</p><div class="rp-inspector-photo-grid"><button type="button" data-action="demo-inspection-photo" data-proof="photo"><span>▣</span><strong>Foto do local</strong><small>'+(demoProof.photo?'✓ Registrada':'Adicionar foto')+'</small></button><button type="button" data-action="demo-inspection-photo" data-proof="selfie"><span>◎</span><strong>Selfie</strong><small>'+(demoProof.selfie?'✓ Registrada':'Adicionar selfie')+'</small></button></div><label class="rp-inspector-ok"><input type="checkbox" name="allOk" required> Tudo dentro do esperado</label><label>Observações complementares (opcionais)<textarea name="notes" maxlength="1000" placeholder="Descreva as condições observadas"></textarea></label><button type="submit" class="button primary">Finalizar vistoria</button><small>Fotos usadas nesta demonstração não são enviadas à central real.</small></form>':'';
+ return '<section class="rp-inspector-screen"><header class="rp-inspector-top"><span class="eyebrow">VISTORIADOR · RONDAS PRO</span><h1>Minhas vistorias</h1><p>Atendimento solicitado pelo COI e verificações de rotina.</p></header>'+start+evidence+'<section class="rp-inspector-history"><h2>Vistorias concluídas</h2>'+(history.length?history.slice(0,8).map(r=>'<div class="rp-inspector-history-row"><strong>'+esc(r.place||'Local vistoriado')+'</strong><small>'+fmt(r.at)+' · '+esc(r.notes||'Tudo dentro do esperado')+'</small></div>').join(''):'<p class="empty">Nenhuma vistoria concluída.</p>')+'</section></section>';
 }
 function demoAdminRouteQueue(){
  const w=watcherById(selectedSupervisedWatcherId)||DEMO_WATCHERS[0],history=sessionList().filter(s=>s.name===w.name).slice(0,5),planned=programsForWatcher(programs,w.id);
@@ -743,7 +756,7 @@ function rondas(){
 }
 function notificationRow(n,treatment=false){
  const incidentTreatment=treatment===true&&n.kind==='incident'&&n.incidentId;
- const kind=n.kind==='incident'?'clipboard':n.kind==='message'?'bell':n.kind==='panic'?'shield':'alert';
+ const kind=n.kind==='incident'?'clipboard':n.kind==='message'?'message':n.kind==='panic'?'shield':n.kind==='inspection'?'checkcircle':'alert';
  const pending=!n.seenAt,label=n.kind==='incident'?'Ocorrência':n.kind==='message'?'Mensagem':n.kind==='panic'?'Pânico':'Alerta';
  return `<button type="button" data-notice-at="${Number(n.at)||0}" class="event-item rp-notice-row ${incidentTreatment?'list-row':''} ${!n.readAt?'unread':''} ${pending?'is-pending':'is-completed'}" data-action="${incidentTreatment?'incident-detail':'notification-detail'}" data-id="${esc(incidentTreatment?n.incidentId:n.id)}" data-session="${esc(n.session.id)}"><span class="event-icon ${pending?'alert':''}">${ic(kind)}</span><span class="rp-notice-copy"><small>${label} · ${time(n.at)}</small><strong>${esc(n.label)}</strong><small>${esc(n.session.name)} · ${esc(n.session.route.name)}</small><span class="rp-notice-state">${pending?'Tratativa pendente':'Tratativa concluída'} · ${n.readAt?'Lida':'Não lida'}</span></span><span class="rp-notice-open" aria-hidden="true">${ic('arrow')}</span></button>`;
 }
@@ -770,20 +783,29 @@ function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,type:'roun
 function demoActivityRow(r){return '<button type="button" class="rp-activity-row" data-action="'+(r.type==='round'?'session-detail':'demo-inspection-detail')+'" data-id="'+esc(r.id)+'"><span><strong>'+esc(r.name)+'</strong><small>'+esc(r.site)+' · '+fmt(r.at)+'</small></span><span>'+esc(r.status==='completed'?'Concluída':r.status==='active'?'Em andamento':r.status)+' ↗</span></button>';}
 function demoHistoryView(){const all=demoActivityRows(),offset=demoHistoryPage*20;return pageTitle('Histórico de rondas e vistorias','Registros locais da demonstração. O histórico permanente está na central autenticada.')+'<section>'+all.slice(offset,offset+20).map(demoActivityRow).join('')+'</section><div class="row">'+(offset?btn('Anterior','demo-history-prev','small'):'')+'<span>'+Math.min(offset+1,all.length)+'–'+Math.min(offset+20,all.length)+' de '+all.length+'</span>'+(offset+20<all.length?btn('Próxima','demo-history-next','small'):'')+'</div>';}
 function notificationsView(){
- const all=demoEventNotifications(),groups=new Map();for(const n of all){const kind=n.kind||'alert';if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
- const labels={incident:'Ocorrências',alert:'Alertas',panic:'Pânicos',inspection:'Vistorias',deviation:'Desvios'};
- return pageTitle('Eventos','Colunas por tipo, em ordem de recebimento.',btn('Abrir tratativas '+ic('arrow'),'open-incidents','small'))+'<div class="rp-event-columns">'+([...groups].map(([kind,rows])=>'<section class="rp-event-column"><header><h2>'+esc(labels[kind]||kind)+'</h2>'+(rows.some(n=>!n.readAt)?'<b class="rp-unread-count">'+rows.filter(n=>!n.readAt).length+'</b>':'')+'</header>'+rows.map(notificationRow).join('')+'</section>').join('')||'<p class="empty">Nenhum evento recebido.</p>')+'</div>';
+ const pending=demoEventNotifications().filter(n=>!n.seenAt),priority=[
+ ['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['deviation','Desvios'],['gps_issue','Falhas de GPS']
+ ];
+ const kind=n=>n.kind||'alert';
+ const known=new Set(priority.map(([key])=>key)),groups=[
+  ...priority,...[...new Set(pending.map(kind))].filter(key=>!known.has(key)).map(key=>[key,key])
+ ];
+ const columns=groups.map(([key,label])=>{
+  const rows=pending.filter(n=>kind(n)===key).sort((a,b)=>b.at-a.at);
+  return '<section class="rp-event-column" data-column-kind="'+key+'"><header><h2>'+label+'</h2><b class="rp-column-count">'+rows.length+'</b></header><div class="rp-event-column-body">'+(rows.map(n=>notificationRow(n)).join('')||'<p class="rp-column-empty">Nenhuma pendência</p>')+'</div></section>';
+ }).join('');
+ return pageTitle('Eventos pendentes','Cada tipo em sua coluna. Abra o evento para registrar a providência.',btn('Ver histórico concluído '+ic('arrow'),'open-incidents','small'))+
+  '<section class="rp-event-columns" aria-label="Eventos pendentes organizados em colunas por tipo">'+columns+'</section>';
 }
-
 function occurrences(){
- const reviewer=canReviewDemo(),all=recentNotification();
- if(!reviewer){const rows=recentIncidents();return pageTitle('Ocorrências','Registros vinculados às rondas.')+`<section class="rp-notice-feed">${rows.map(i=>`<article class="rp-record-line"><strong>${esc(i.title)}</strong><p>${esc(i.description)}</p>${tag(i.status==='Em análise'?'Em aberto · Em análise':i.status??'Aberta',i.status==='Resolvida'?'green':'orange')}</article>`).join('')||'<div class="empty">Nenhuma ocorrência registrada.</div>'}</section>`;}
- const category=n=>n.kind==='incident'?'incident':n.kind==='message'?'message':'alert';
- const categories=[['incident','Ocorrências'],['alert','Alertas'],['message','Mensagens']];
- const rows=all.filter(n=>category(n)===demoTreatmentTab).sort((a,b)=>Number(!!a.seenAt)-Number(!!b.seenAt)||b.at-a.at);
- return pageTitle('Tratativas','Abra um registro para analisar, responder e registrar a providência.',btn('Eventos','nav-alerts','small'))+`<section class="rp-treatment-workspace"><nav class="rp-demo-treatment-tabs" aria-label="Categorias de tratativas">${categories.map(([key,label])=>{const count=all.filter(n=>category(n)===key&&!n.seenAt).length;return `<button type="button" data-action="demo-treatment-tab" data-kind="${key}" aria-pressed="${demoTreatmentTab===key}">${label}${count?`<span class="rp-demo-pending" aria-label="${count} pendentes">${count}</span>`:''}</button>`}).join('')}</nav><div class="rp-notice-feed">${rows.map(n=>notificationRow(n,true)).join('')||'<div class="empty">Nenhum registro nesta categoria.</div>'}</div></section>`;
+ const done=demoEventNotifications().filter(n=>!!n.seenAt).sort((a,b)=>b.at-a.at);
+ const priority=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['deviation','Desvios'],['gps_issue','Falhas de GPS']];
+ const kind=n=>n.kind||'alert',known=new Set(priority.map(([key])=>key));
+ const groups=[...priority,...[...new Set(done.map(kind))].filter(key=>!known.has(key)).map(key=>[key,key])];
+ return pageTitle('Histórico de eventos concluídos','Registros finalizados e respostas preservadas para consulta.',btn('Ver eventos pendentes','nav-alerts','small'))+
+ '<section class="rp-completed-history"><header><strong>'+done.length+' registro(s) concluído(s)</strong><small>Consulta sem edição</small></header>'+
+ (done.length?groups.map(([key,label])=>{const rows=done.filter(n=>kind(n)===key);return rows.length?'<section class="rp-history-category"><h2>'+label+' <span>'+rows.length+'</span></h2>'+rows.map(n=>notificationRow(n,true)).join('')+'</section>':'';}).join(''):'<div class="rp-column-empty">Ainda não há eventos concluídos.</div>')+'</section>';
 }
-
 function team(){return pageTitle('Equipe','Vigias e escalas fictícios neste navegador.',helpButton('team','equipes e permissões'))+`<section class="schedule-workspace"><header class="schedule-heading"><div><div class="eyebrow">EFETIVO OPERACIONAL</div><h2>${DEMO_WATCHERS.length} vigias cadastrados</h2><p>Colaboradores fictícios para apresentar operações com múltiplas rondas.</p></div></header><div class="team-list">${DEMO_WATCHERS.map(w=>`<div class="team-row"><span class="avatar">${esc(w.name[0])}</span><div><strong>${esc(w.name)}</strong><small>${esc(w.unit)}</small></div><span>${programsForWatcher(programs,w.id).length} rondas</span></div>`).join('')}</div></section>`}
 function reports(){
  const all=sessionList(),notices=recentNotification(),completed=all.filter(s=>s.status==='completed').length,progress=all.reduce((sum,s)=>sum+s.checkpoints.filter(p=>p.completedAt).length,0),possible=all.reduce((sum,s)=>sum+s.route.points.length,0);
@@ -1114,6 +1136,30 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='demo-chat-open'){demoChatScreen='thread';render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
  if(act==='demo-chat-list'){demoChatScreen='list';render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
+ if(act==='demo-inspection-request'){
+  if(!canReviewDemo())return;
+  const options=DEMO_CLIENTS.map((x,i)=>'<option value="'+i+'">'+esc(x.name)+' · '+esc(x.unit)+'</option>').join('');
+  showDialog('<div class="rp-inspection-request-dialog"><span class="eyebrow">COI · NOVA SOLICITAÇÃO</span><h2>Solicitar vistoria</h2><form id="demo-request-inspection"><label>Tipo<select name="type"><option value="requested">Sob demanda</option><option value="routine">Vistoria de rotina</option></select></label><label>Local cadastrado<select name="placeIndex"><option value="">Informar outro endereço</option>'+options+'</select></label><label>Endereço (quando não cadastrado)<input name="address" maxlength="250" placeholder="Rua, número, bairro e cidade"></label><label>Informações para o vistoriador<textarea name="reason" required minlength="10" maxlength="600" placeholder="O que deve ser verificado?"></textarea></label><button type="submit" class="button primary">Enviar solicitação</button><small>Demonstração local neste navegador, sem notificação remota.</small></form></div>');
+  return;
+ }
+ if(act==='demo-inspection-routine'){
+  if(user?.role!=='vistoriador'||currentDemoInspection())return;
+  const place=DEMO_CLIENTS[0].unit;
+  saveDemoInspectionTasks([{id:crypto.randomUUID(),type:'routine',place,reason:'Conferência preventiva dos acessos e condições do local.',status:'pending',at:Date.now()},...demoInspectionTasks()]);
+  demoProof={photo:null,selfie:null};render();return;
+ }
+ if(act==='demo-inspection-arrive'){
+  if(user?.role!=='vistoriador')return;
+  const items=demoInspectionTasks(),task=items.find(x=>x.status==='pending');if(!task)return;
+  task.status='arrived';task.arrivedAt=Date.now();saveDemoInspectionTasks(items);render();return;
+ }
+ if(act==='demo-inspection-photo'){
+  if(user?.role!=='vistoriador'||currentDemoInspection()?.status!=='arrived')return;
+  const type=el.dataset.proof;if(!['photo','selfie'].includes(type))return;
+  try{const file=await demoInspectionCapture.request(type==='selfie'?'selfie':'photo');demoProof[type]=file;const label=el.querySelector('small');if(label)label.textContent='✓ Registrada';el.classList.add('is-taken')}
+  catch(error){if(!/cancelad|Nenhuma evidência/i.test(error.message))notify(error.message)}
+  return;
+ }
  if(act==='demo-coi-tab'){if(['rondas','vistorias'].includes(el.dataset.tab)){demoCoiTab=el.dataset.tab;render();}return;}
  if(act==='close-dialog'){if(modal.dataset.mandatoryNotice==='true')return;modal.close();return;}
  if(act==='accept-location-notice'){if(!modal.querySelector('#location-intro-check')?.checked)return;try{saveConsent()}catch{notify('Não foi possível registrar a ciência neste navegador.');return;}modal.dataset.mandatoryNotice='false';modal.close();notify('Orientações registradas. O GPS será solicitado apenas ao iniciar uma ronda real.');return;}
@@ -1378,14 +1424,22 @@ modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const 
 
 document.addEventListener('submit',e=>{
  if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,at:Date.now()});localStorage.setItem('rondas-pro-demo-chat',JSON.stringify(rows));render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
+ if(e.target.id==='demo-request-inspection'){
+  e.preventDefault();if(!canReviewDemo())return;
+  const f=new FormData(e.target),i=String(f.get('placeIndex')),registered=i!==''?DEMO_CLIENTS[Number(i)]:null;
+  const place=registered?.unit||String(f.get('address')||'').trim(),reason=String(f.get('reason')||'').trim();
+  if(place.length<5||reason.length<10){notify('Informe local e instruções completas.');return}
+  try{saveDemoInspectionTasks([{id:crypto.randomUUID(),type:f.get('type')==='routine'?'routine':'requested',place,reason,status:'pending',at:Date.now()},...demoInspectionTasks()]);modal.close();render();notify('Vistoria incluída na fila demonstrativa do vistoriador.')}
+  catch{notify('Não foi possível registrar a solicitação.')}return;
+ }
  if(e.target.id==='demo-inspection-form'){
-  e.preventDefault();
-  if(user?.role!=='vistoriador')return;
-  const f=new FormData(e.target),notes=String(f.get('notes')||'').trim();
-  if(notes.length<8){notify('Descreva o que foi verificado.');return;}
-  const score=['acessos','estrutura','equipamentos','sinalizacao'].filter(k=>f.has(k)).length*25;
-  try{localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify([{at:Date.now(),notes,score},...demoInspectionRecords()].slice(0,100)))}catch{notify('Não foi possível salvar a vistoria.');return;}
-  render();notify('Vistoria registrada neste navegador.');return;
+  e.preventDefault();if(user?.role!=='vistoriador')return;
+  const task=currentDemoInspection();if(!task||task.status!=='arrived')return;
+  if(!demoProof.photo||!demoProof.selfie){notify('Registre uma foto do local e uma selfie.');return;}
+  const f=new FormData(e.target);if(!f.has('allOk')){notify('Confirme as condições do local.');return;}
+  const notes=String(f.get('notes')||'').trim(),at=Date.now();
+  try{localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify([{at,notes:notes||'Tudo dentro do esperado',score:100,place:task.place,type:task.type,evidence:['Foto','Selfie']},...demoInspectionRecords()].slice(0,100)));const tasks=demoInspectionTasks(),found=tasks.find(x=>x.id===task.id);if(found){found.status='done';found.completedAt=at;saveDemoInspectionTasks(tasks);}demoProof={photo:null,selfie:null};render();notify('Vistoria concluída nesta demonstração.');}
+  catch{notify('Não foi possível salvar a vistoria.');}return;
  }
  if(e.target.id!=='operational-settings')return;
  e.preventDefault();

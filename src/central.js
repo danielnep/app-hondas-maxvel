@@ -28,7 +28,7 @@ let latestActivity='';
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 const torch=createFieldTorch({notify:flash});
-const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[];
+const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],inspectorProof={photo:null,selfie:null},pendingInspectionCommit=null,fieldMessageEvidence=[];
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
@@ -180,26 +180,27 @@ async function load(){
  }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
- ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Notificações','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
+ operador:[['monitor','COI · Acompanhamento','◉'],['events','Eventos','!'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ coi:[['monitor','COI · Acompanhamento','◉'],['events','Eventos','!'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['routes','Rotas por vigia','⌖'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['events','Eventos','!'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['events','Eventos','!'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Notificações','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
- vistoriador:[['history','Meus alertas e ocorrências','▤'],['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Eventos','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
+ vistoriador:[['history','Meus alertas e ocorrências','▤'],['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Notificações','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
 for(const entries of Object.values(roleMenus)){entries.push(['chat','Chat interno','✉']);if(!entries.some(e=>e[0]==='activity-history'))entries.push(['activity-history','Histórico de rondas','▤']);}
 
 const rp2Priority={
  ronda:['dashboard','dispatches','notifications','send'],
- operador:['monitor','treatments','notifications','dispatches'],
- coi:['monitor','treatments','notifications','dispatches'],
- admin:['dashboard','monitor','treatments','notifications'],
- master:['dashboard','monitor','treatments','notifications'],
+ operador:['monitor','events','dispatches','treatments'],
+ coi:['monitor','events','dispatches','treatments'],
+ admin:['dashboard','monitor','events','treatments'],
+ master:['dashboard','monitor','events','treatments'],
  cliente:['client'],
  vistoriador:['inspections','dispatches','notifications','send']
 };
 const rp2GlyphPaths={
+ chat:'<path d="M4 5h16v13H9l-5 4V5z"/><path d="M8 10h8M8 14h6"/>',
  dashboard:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
  monitor:'<path d="M4 14v-3a8 8 0 0 1 16 0v3"/><rect x="2" y="12" width="4" height="8" rx="2"/><rect x="18" y="12" width="4" height="8" rx="2"/><path d="M20 19a5 5 0 0 1-5 3h-3"/>',
  treatments:'<rect x="5" y="3" width="14" height="19" rx="2"/><path d="M9 3V2h6v2M8 12l2.5 2.5L16 9M9 18h6"/>',
@@ -315,7 +316,7 @@ function mountOperationalMap(){
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
- return coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
+ return '<div class="rp-monitor-cta"><button type="button" class="primary" data-page="dispatches">+ Solicitar vistoria</button><button type="button" data-page="events">Eventos pendentes</button></div>'+coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -353,54 +354,21 @@ function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span data-event-operational-status class="pill '+(isPending(e)?'treatment-open':'treatment-resolved')+'">'+escape(e.status==='em_analise'?'Em aberto · Em análise':stateLabel(e))+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
 function treatmentsView(){
- const summary=ops.summary(),kinds=[...new Set(['incident','alert','message',...summary.categories.map(c=>c.kind)])];
- const tabs=kinds.map(kind=>{const info=typeInfo(kind),category=summary.categories.find(c=>c.kind===kind);return '<button type="button" role="tab" data-treatment-tab="'+escape(kind)+'" aria-selected="'+(treatmentTab===kind)+'" aria-controls="treatment-record-list">'+escape(info.label)+pendingDot(kind,category?.pending||0)+'</button>';}).join('');
- const rows=treatmentRows.map(e=>'<button type="button" class="coi3-treatment-row '+(isPending(e)?'is-pending':'is-completed')+'" data-event="'+escape(e.id)+'"><span class="coi3-treatment-icon" aria-hidden="true">'+escape(typeInfo(e.kind).icon)+'</span><span class="coi3-treatment-copy"><strong>'+escape(friendly[e.kind]||typeInfo(e.kind).label)+'</strong><span>'+escape(e.description||'Sem descrição')+'</span><small>'+escape(e.reporter_name)+' · '+escape(e.site||'Sem posto')+' · '+fmt(e.occurred_at)+'</small>'+(privileged()&&isPending(e)&&!e.coi_treated?'<small class="rp-coi-missing">Sem tratativa pelo COI</small>':'')+(e.treatment_owner?'<small>Em atendimento por '+escape(e.treatment_owner)+'</small>':'')+'</span><span class="coi3-treatment-badge '+(!isPending(e)?'done':'')+'">'+stateLabel(e)+'</span></button>').join('');
- return '<section class="stack coi3-treatments"><header class="toolbar"><div><div class="eyebrow">'+(privileged()?'ADMINISTRAÇÃO · SUPERVISÃO E APOIO':'COI · TRATAMENTO OPERACIONAL')+'</div><h1>Tratativas</h1><p>Pendências primeiro. Registros concluídos permanecem acessíveis para consulta.</p></div><strong>'+summary.total+' pendentes</strong></header><div class="rp-treatment-tabs" role="tablist" aria-label="Categorias de tratativas">'+tabs+'</div><section class="surface" id="treatment-record-list" role="tabpanel" aria-label="'+escape(typeInfo(treatmentTab).label)+'">'+(rows||'<p class="empty">Nenhum registro nesta categoria.</p>')+'</section>'+(treatmentMore?'<button type="button" data-treatment-more>Carregar mais registros</button>':'')+'</section>';
+ const finished=events.filter(e=>!isPending(e)&&e.kind!=='message').sort((a,b)=>b.occurred_at-a.occurred_at);
+ return '<section class="rp-coi-event-screen"><header class="rp-coi-section-header"><div><div class="eyebrow">CONSULTA E AUDITORIA</div><h1>Histórico de eventos concluídos</h1><p>Eventos finalizados, com responsáveis e respostas registrados. Esta tela é somente leitura.</p></div><button type="button" data-page="events">Ver pendências</button></header>'+
+ '<section class="rp-coi-history"><div class="rp-history-count">'+finished.length+' evento(s) concluído(s)</div>'+
+ (finished.length?finished.map(e=>'<button type="button" class="rp-finished-line" data-event="'+escape(e.id)+'"><span class="rp-finished-symbol">'+escape(typeInfo(e.kind).icon)+'</span><span><strong>'+escape(friendly[e.kind]||typeInfo(e.kind).label)+'</strong><small>'+escape(e.description||'Sem descrição')+'</small><small>'+escape(e.reporter_name||'Equipe de campo')+' · '+fmt(e.occurred_at)+'</small></span><b>Concluído</b></button>').join(''):'<p class="empty">Nenhum evento concluído neste período.</p>')+'</section></section>';
 }
 function eventsView(){
- const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
- const routineMessages=events.filter(e=>e.kind==='message');
- const lastTreatment=e=>treatments.find(t=>t.event_id===e.id);
- const option=(v,key)=>occurrenceFilters[key]===v?'selected':'';
- const workerOptions=users.filter(u=>u.role==='ronda').map(u=>'<option value="'+id(u.id)+'" '+option(u.id,'worker')+'>'+escape(u.name)+'</option>').join('');
- const reviewerOptions=users.filter(u=>['operador','coi','admin','master'].includes(u.role)).map(u=>'<option value="'+id(u.id)+'" '+option(u.id,'reviewer')+'>'+escape(u.name)+'</option>').join('');
- const passed=priority.filter(e=>{
-  const t=lastTreatment(e),f=occurrenceFilters;
-  if(f.status==='pending'&&e.status==='resolvida')return false;
-  if(f.status==='resolved'&&e.status!=='resolvida')return false;
-  if(f.status==='forwarded'&&e.status!=='encaminhada')return false;
-  if(f.kind!=='all'&&e.kind!==f.kind)return false;
-  if(f.worker!=='all'&&e.user_id!==f.worker)return false;
-  if(f.reviewer!=='all'&&t?.author_id!==f.reviewer)return false;
-  if(f.dateFrom&&e.occurred_at<new Date(f.dateFrom+'T00:00:00').getTime())return false;
-  if(f.dateTo&&e.occurred_at>new Date(f.dateTo+'T23:59:59').getTime())return false;
-  if(f.query&&!String([e.description,e.id,t?.conclusion,t?.concluded_by,t?.reporter_name].join(' ')).toLocaleLowerCase('pt-BR').includes(f.query.toLocaleLowerCase('pt-BR')))return false;
-  return true;
- });
- const rows=passed.length?passed.map(e=>{
-  const t=lastTreatment(e),who=users.find(u=>u.id===e.user_id)?.name||'Colaborador';
-  return '<button type="button" class="list-item occurrence-row" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b>'+
-   '<small>'+fmt(e.occurred_at)+' · '+escape(who)+' · '+escape(e.description||'Sem descrição')+'</small>'+
-   (t?'<small>Último tratamento: '+escape(t.concluded_by)+' · '+fmt(t.created_at)+' · '+escape(t.conclusion.slice(0,150))+'</small>':'<small>Aguardando tratamento e conclusão</small>')+'</span>'+
-   '<span class="pill '+(e.status==='resolvida'?'':'flag')+'">'+escape(e.status.replaceAll('_',' '))+'</span></button>';
- }).join(''):'<div class="empty">Nenhuma ocorrência corresponde aos filtros.</div>';
- return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">HISTÓRICO AUDITÁVEL</div><h1>Ocorrências</h1>'+
- '<p class="muted">Pendentes, encaminhadas e tratadas, com responsável, conclusão e linha do tempo.</p></div><button data-refresh>Atualizar</button></header>'+
- '<div class="cards"><div class="metric"><strong>'+priority.filter(e=>e.status!=='resolvida').length+'</strong><span>Pendentes</span></div>'+
- '<div class="metric"><strong>'+priority.filter(e=>e.status==='resolvida').length+'</strong><span>Tratadas</span></div>'+
- '<div class="metric"><strong>'+priority.filter(e=>e.status==='encaminhada').length+'</strong><span>Encaminhadas</span></div></div>'+
- '<section class="surface"><div class="toolbar"><h2>Histórico de ocorrências</h2><button type="button" data-occ-reset>Limpar filtros</button></div>'+
- '<div class="occurrence-filters">'+
- '<label>Situação<select data-occ-filter="status"><option value="pending" '+option('pending','status')+'>Pendentes</option><option value="resolved" '+option('resolved','status')+'>Tratadas</option><option value="forwarded" '+option('forwarded','status')+'>Encaminhadas</option><option value="all" '+option('all','status')+'>Todas</option></select></label>'+
- '<label>Tipo<select data-occ-filter="kind"><option value="all">Todos</option>'+['incident','panic','alert','route_deviation','gps_issue'].map(k=>'<option value="'+k+'" '+option(k,'kind')+'>'+escape(friendly[k])+'</option>').join('')+'</select></label>'+
- '<label>Quem registrou<select data-occ-filter="worker"><option value="all">Todos os vigias</option>'+workerOptions+'</select></label>'+
- '<label>Quem concluiu<select data-occ-filter="reviewer"><option value="all">Toda a equipe</option>'+reviewerOptions+'</select></label>'+
- '<label>De<input type="date" data-occ-filter="dateFrom" value="'+escape(occurrenceFilters.dateFrom)+'"></label>'+
- '<label>Até<input type="date" data-occ-filter="dateTo" value="'+escape(occurrenceFilters.dateTo)+'"></label>'+
- '<label class="occurrence-search">Busca / tratamento<input type="search" data-occ-filter="query" value="'+escape(occurrenceFilters.query)+'" placeholder="Descrição, conclusão, responsável"></label></div>'+
- '<div class="list">'+rows+'</div><p class="muted">Exibindo '+passed.length+' de '+priority.length+' ocorrências encontradas. A conclusão fica preservada no histórico de tratamento do servidor.</p></section>'+
- '<details class="details-toggle"><summary>Mensagens à central · '+routineMessages.length+'</summary><section class="surface">'+eventList(routineMessages)+'</section></details></section>';
+ const queue=events.filter(e=>isPending(e)&&e.kind!=='message').sort((a,b)=>b.occurred_at-a.occurred_at);
+ const priority=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['route_deviation','Desvios de rota'],['gps_issue','GPS']];
+ const defined=new Set(priority.map(([kind])=>kind));
+ const categories=[...priority,...[...new Set(queue.map(e=>e.kind))].filter(kind=>!defined.has(kind)).map(kind=>[kind,typeInfo(kind).label])];
+ const columns=categories.map(([kind,label])=>{
+  const items=queue.filter(e=>e.kind===kind);
+  return '<section class="rp-coi-event-column" data-column-kind="'+kind+'"><header><h2>'+label+'</h2><span>'+items.length+'</span></header><div class="rp-coi-event-list">'+(items.map(e=>'<button type="button" class="rp-coi-event-item" data-event="'+escape(e.id)+'"><span class="rp-coi-kind">'+escape(typeInfo(e.kind).icon)+'</span><strong>'+escape(e.description||label)+'</strong><small>'+escape(e.reporter_name||'Campo')+' · '+fmt(e.occurred_at)+'</small><em>'+escape(stateLabel(e))+'</em></button>').join('')||'<p class="rp-column-empty">Sem pendências</p>')+'</div></section>';
+ }).join('');
+ return '<section class="rp-coi-event-screen"><header class="rp-coi-section-header"><div><div class="eyebrow">COI · FILA DE ATENDIMENTO</div><h1>Eventos pendentes</h1><p>'+queue.length+' evento(s) aguardando providência. Cada tipo possui sua própria coluna.</p></div><button type="button" data-page="treatments">Histórico concluído</button></header><div class="rp-coi-event-columns">'+columns+'</div></section>';
 }
 function teamView(){
  return '<section class="stack"><h1>Equipe e indicadores individuais</h1><div class="surface"><div class="list">'+(dashboard?.team||[]).map(w=>'<button data-person="'+id(w.id)+'" class="list-item"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Descrição pendente')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' acionamentos</span></button>').join('')+'</div></div>'+
@@ -569,13 +537,15 @@ async function loadClientInspectionMedia(){
  }
 }
 function inspectionView(){
- const assignment=ops.activeInspection();
- const entries=events.filter(e=>e.kind==='inspection'),scored=entries.filter(e=>Number.isFinite(e.details?.qualityPercent));
- const avg=scored.length?Math.round(scored.reduce((n,e)=>n+e.details.qualityPercent,0)/scored.length):null;
- const criteria=[['acessos','Acessos verificados'],['estrutura','Estrutura em conformidade'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização em conformidade']];
- return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?'<div class="surface rp2-assignment"><div class="eyebrow">ETAPA 1 · DESTINO AUTORIZADO PELO COI</div><h2>'+escape(assignment.site||assignment.address)+'</h2><p>'+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack rp2-inspection-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><div class="rp2-inspection-header"><span class="rp2-step">02</span><div><h2>Conferir o local</h2><p class="muted">Avalie os quatro critérios. Um campo vazio nunca significa conforme.</p></div></div><div class="rp2-inspection-checklist">'+criteria.map(([key,label],i)=>'<label class="inspection-check rp2-inspection-item"><span class="rp2-inspection-number">'+(i+1)+'</span><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Avaliar</option><option value="ok">Conforme</option><option value="no">Não conforme</option></select></label>').join('')+'</div><label>Observações da vistoria<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Registre somente o que foi verificado"></textarea></label><div class="rp2-inspection-header"><span class="rp2-step">03</span><div><h3>Evidências</h3><p class="muted">Anexe fotos, vídeo ou áudio quando necessário.</p></div></div>'+evidenceButtons()+'<button class="primary rp2-inspection-submit">Registrar vistoria e evidências</button></form>':'<div class="surface"><h2>Aguardando despacho do COI</h2><p>O COI escolhe o destino autorizado. Consulte <button type="button" data-page="dispatches">Meus despachos</button>.</p></div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
+ const assignment=ops.currentInspection(),entries=events.filter(e=>e.kind==='inspection');
+ const pin='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.4"/></svg>';
+ const pending=assignment?'<section class="rp-inspector-assignment"><div class="rp-inspector-map rp-inspector-map-active" role="img" aria-label="Destino informado pelo COI; abra o endereço para navegação"><span class="rp-inspector-map-marker">'+pin+'</span></div><div class="rp-inspector-destination"><span class="eyebrow">'+(assignment.inspection_type==='routine'?'VISTORIA DE ROTINA':'VISTORIA SOLICITADA PELO COI')+'</span><h2>'+escape(assignment.site||'Destino de vistoria')+'</h2><p>'+escape(assignment.address)+'</p><small>'+escape(assignment.reason||'Verifique as condições do local.')+'</small><a href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(assignment.address)+'" target="_blank" rel="noopener noreferrer">Abrir navegação até o local ↗</a>'+(assignment.started_at?'<small class="rp-inspector-arrived">Atendimento iniciado. Registre as evidências.</small>':'<button type="button" class="rp-inspector-start" data-ops-start="'+escape(assignment.id)+'">Iniciar vistoria e confirmar chegada</button>')+'</div></section>':
+ '<section class="rp-inspector-empty"><div class="rp-inspector-map rp-inspector-map-blurred" aria-hidden="true"><span>'+pin+'</span></div><div class="rp-inspector-empty-copy"><span class="eyebrow">AGUARDANDO COI</span><h2>Sem vistoria pendente</h2><p>Quando o COI solicitar uma vistoria, o destino e as instruções aparecerão aqui.</p><button type="button" data-refresh>Verificar novas solicitações</button><button type="button" data-page="dispatches">Ver vistorias de rotina e atribuições</button></div></section>';
+ const checks=[['acessos','Acessos'],['estrutura','Estrutura'],['equipamentos','Equipamentos'],['sinalizacao','Sinalização']];
+ const form=assignment?.started_at?'<form id="inspection-form" class="rp-inspector-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><header><span class="eyebrow">CONFERÊNCIA DO LOCAL</span><h2>Registrar vistoria</h2><p>Registre uma foto do local, uma selfie e informe o resultado.</p></header><div class="rp-inspector-photo-grid"><button type="button" data-inspection-role="photo" aria-label="Fotografar local"><span>▣</span><strong>Foto do local</strong><small data-proof-label="photo">'+(inspectorProof.photo?'Foto registrada':'Adicionar foto')+'</small></button><button type="button" data-inspection-role="selfie" aria-label="Registrar selfie"><span>◎</span><strong>Selfie</strong><small data-proof-label="selfie">'+(inspectorProof.selfie?'Selfie registrada':'Adicionar selfie')+'</small></button></div><label class="rp-inspector-ok"><input type="checkbox" name="allOk"> Tudo dentro do esperado</label><details class="rp-inspector-criteria"><summary>Verificação detalhada / irregularidades</summary><p>Use os critérios abaixo quando houver algo que exija atenção.</p>'+checks.map(([key,label])=>'<label>'+label+'<select name="'+key+'"><option value="">Avaliar</option><option value="ok">Conforme</option><option value="no">Exige atenção</option></select></label>').join('')+'</details><label>Observações<textarea name="observation" rows="2" maxlength="1000" placeholder="Descreva o que encontrou, se necessário"></textarea></label><button class="primary rp-inspector-submit" type="submit">Finalizar vistoria</button></form>':'';
+ return '<section class="rp-inspector-screen"><header class="rp-inspector-top"><div class="eyebrow">VISTORIADOR · OPERAÇÃO DE CAMPO</div><h1>Minhas vistorias</h1><p>Atenda a solicitação do COI. As vistorias de rotina também aparecem nas atribuições.</p></header>'+pending+form+
+ '<section class="rp-inspector-history"><h2>Últimas vistorias</h2>'+(entries.length?entries.slice(0,8).map(e=>'<div class="rp-inspector-history-row"><strong>'+escape(e.description||'Vistoria concluída')+'</strong><span>'+fmt(e.occurred_at)+'</span></div>').join(''):'<p class="empty">Nenhuma vistoria concluída.</p>')+'</section></section>';
 }
-
 function render(){
  for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
  routeBoard.resetMaps();resetOperationalMap();coi.reset();
@@ -595,8 +565,12 @@ function render(){
   (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  // A lanterna acompanha as ações de campo e é desligada nas áreas administrativas.
- root.dataset.torchRole=(['ronda','vistoriador'].includes(account.role)&&['dashboard','send','dispatches'].includes(page))?account.role:'';
+ root.dataset.torchRole=(['ronda','vistoriador'].includes(account.role)&&['dashboard','send','dispatches','inspections'].includes(page))?account.role:'';
  torch.decorate();
+ if(account.role==='vistoriador'&&page==='inspections'){
+  const map=root.querySelector('.rp-inspector-map'),lantern=root.querySelector('[data-field-torch]');
+  if(map&&lantern)map.append(lantern);
+ }
  const headerActions=document.querySelector('.top-actions');
  if(headerActions){headerActions.querySelector('[data-operational-header]')?.remove();const holder=document.createElement('div');holder.dataset.operationalHeader='';holder.className='rp-header-tools';holder.innerHTML='<div class="ops-bell-bar">'+ops.badge()+'</div><div data-chat-badge>'+chat.badge()+'</div>';headerActions.prepend(holder);}
  const eventDialog=document.querySelector('#central-event-dialog');if(eventDialog){eventDialog.addEventListener('cancel',async e=>{e.preventDefault();try{await releaseTreatment();selected=null;page=detailOrigin;render()}catch(error){flash(error.message)}});eventDialog.showModal();}
@@ -682,6 +656,13 @@ document.addEventListener('click',async e=>{
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
+  if(target.dataset.inspectionRole&&page==='inspections'){
+   const kind=target.dataset.inspectionRole;
+   if(!['photo','selfie'].includes(kind))return;
+   try{const file=await inspectorCapture.request(kind==='selfie'?'selfie':'photo');inspectorProof[kind]=file;const label=document.querySelector('[data-proof-label="'+kind+'"]');if(label)label.textContent='✓ '+(kind==='selfie'?'Selfie registrada':'Foto registrada');target.classList.add('is-taken');}
+   catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
+   return;
+  }
   if(target.hasAttribute('data-close-event')){await releaseTreatment();selected=null;page=detailOrigin;render();return;}
   if(await calls.click(target))return;
   if(await chat.click(target))return;
@@ -760,15 +741,29 @@ document.addEventListener('submit',async e=>{
   if(form.id==='inspection-form'){
    const keys=['acessos','estrutura','equipamentos','sinalizacao'];
    if(!ops.activeInspection()||d.dispatchId!==ops.activeInspection().id)throw Error('Inicie o despacho autorizado pelo COI antes de registrar vistoria.');
-   if(keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Avalie todos os quatro critérios da vistoria.');
-   const criteria=Object.fromEntries(keys.map(k=>[k,d[k]==='ok']));
-   const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
-   const files=[...inspectorEvidence];inspectorEvidence=[];let uploaded=0;
-   for(const file of files){
-    try{await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':record.id,'X-Captured-At':String(file.lastModified||Date.now())}});uploaded++}
-    catch(err){console.warn('Evidência não enviada',err)}
+   if(!inspectorProof.photo||!inspectorProof.selfie)throw Error('Registre uma foto do local e uma selfie para finalizar.');
+   const allOk=d.allOk==='on';
+   if(!allOk&&keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Marque Tudo dentro do esperado ou avalie os quatro critérios.');
+   if(!allOk&&String(d.observation||'').trim().length<8)throw Error('Descreva a condição que exige atenção.');
+   const criteria=Object.fromEntries(keys.map(k=>[k,allOk||d[k]==='ok']));
+   // Cria o laudo uma única vez por tentativa; não encerra o despacho antes
+   // de confirmar os dois uploads e registrar o encerramento no backend.
+   let report=pendingInspectionCommit?.dispatchId===d.dispatchId?pendingInspectionCommit:null;
+   if(!report){
+    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria realizada. Tudo dentro do esperado.').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
+    report={dispatchId:d.dispatchId,eventId:record.id,uploaded:new Set()};pendingInspectionCommit=report;
    }
-   flash(files.length&&uploaded!==files.length?'Laudo salvo; '+uploaded+' de '+files.length+' evidências enviadas.':'Vistoria e '+uploaded+' evidência(s) salvas.');
+   const files=[['photo',inspectorProof.photo],['selfie',inspectorProof.selfie],...inspectorEvidence.map((file,i)=>['extra-'+i,file])];
+   for(const [kind,file] of files){
+    if(report.uploaded.has(kind))continue;
+    await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':report.eventId,'X-Captured-At':String(file.lastModified||Date.now())}});
+    report.uploaded.add(kind);
+   }
+   const note=String(d.observation||'Vistoria realizada. Tudo dentro do esperado.').trim();
+   const context=await eventTelemetry();
+   await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note,position:context.position||null}});
+   inspectorProof={photo:null,selfie:null};inspectorEvidence=[];pendingInspectionCommit=null;
+   flash('Vistoria e evidências registradas. Despacho concluído.');
    await load();return;
   }
   if(form.id==='new-user'){await api('/users',{method:'POST',data:d});flash('Colaborador cadastrado.');await load();return;}

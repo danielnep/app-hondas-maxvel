@@ -36,6 +36,25 @@ test('COI cadastra destino, solicita vistoriador e portal isola laudo por client
   assert.equal(available.status,200);
   const worker=available.body.inspectors.find(w=>w.status==='Disponível');
   assert.ok(worker);
+  // O COI pode informar endereço ainda não cadastrado, com trilha de auditoria
+  // e separação explícita entre rotina e solicitação sob demanda.
+  const custom=await req('/dispatches','POST',{
+   kind:'inspection',inspectionType:'routine',workerId:worker.id,
+   address:'Rua dos Ipês, 145, Centro, Divinópolis',
+   reason:'Vistoria preventiva de rotina para conferir acessos e equipamentos.'
+  },admin);
+  assert.equal(custom.status,201);
+  const customItem=(await req('/dispatches','GET',null,inspector)).body.dispatches.find(d=>d.id===custom.body.id);
+  assert.equal(customItem.kind,'vistoria');
+  assert.equal(customItem.inspection_type,'routine');
+  assert.equal(customItem.address,'Rua dos Ipês, 145, Centro, Divinópolis');
+  assert.equal((await req('/dispatches/'+custom.body.id+'/start','POST',{position:{lat:-20.14,lng:-44.89,accuracy:10}},inspector)).status,200);
+  assert.equal((await req('/dispatches/'+custom.body.id+'/complete','POST',{note:'Vistoria preventiva efetuada no endereço informado, sem anormalidades.'},inspector)).status,200);
+  const invalid=await req('/dispatches','POST',{
+   kind:'inspection',workerId:worker.id,destinationId:'00000000-0000-0000-0000-000000000000',
+   address:'Rua indevida, 123, Centro',reason:'Esta solicitação não deve aceitar identificador de cliente inválido.'
+  },admin);
+  assert.equal(invalid.status,422);
   const sent=await req('/dispatches','POST',{kind:'inspection',workerId:worker.id,destinationId:destination.body.id,reason:'Realizar vistoria de rotina no imóvel protegido.'},admin);
   assert.equal(sent.status,201);
   assert.equal((await req('/dispatches/'+sent.body.id+'/start','POST',{position:{lat:-20.14,lng:-44.89,accuracy:10}},inspector)).status,200);
