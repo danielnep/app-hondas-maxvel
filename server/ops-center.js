@@ -81,7 +81,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   const busy=new Set(recentRounds().filter(r=>r.status==='em_andamento').map(r=>r.userId));
   const inspecting=new Set(db.prepare("SELECT worker_id FROM dispatches WHERE kind='vistoria' AND completed_at IS NULL AND started_at IS NOT NULL").all().map(x=>x.worker_id));
   const workers=db.prepare("SELECT u.id,u.name,u.role,u.site,u.active,p.last_seen,p.lat,p.lng,p.accuracy,p.fix_at FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role IN ('ronda','vistoriador') ORDER BY u.name").all();
-  return workers.map(w=>({...w,status:!w.active?'Fora de serviço':busy.has(w.id)?'Em ronda':w.role==='vistoriador'&&inspecting.has(w.id)?'Em vistoria':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço',
+  return workers.map(w=>({...w,status:!w.active?'Fora de serviço':w.role==='vistoriador'&&inspecting.has(w.id)?'Em vistoria':busy.has(w.id)?'Em ronda':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço',
    position:w.fix_at&&now()-w.fix_at<120000&&Number.isFinite(w.lat)&&Number.isFinite(w.lng)?{lat:w.lat,lng:w.lng,accuracy:w.accuracy,at:w.fix_at}:null}));
  }
  async function handle(req,res,user,p,method){
