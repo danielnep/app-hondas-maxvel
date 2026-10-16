@@ -14,7 +14,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
   distance=coords&&p?Math.round(metersBetween(coords,p)):null;
  const action=current?started(current)?arrived(current)?
   '<span class="rp-inspection-ready">Chegada registrada · preencha o laudo abaixo</span>':
-  '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':'data-inspection-arrive')+'>Confirmar chegada ao local</button>':
+  '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':'data-inspection-arrive')+'>Estou aqui · iniciar vistoria</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-depart"':'data-inspection-depart')+'>Sair da base · iniciar deslocamento</button>':
   '<span class="rp-inspection-ready">Nenhuma vistoria pendente</span>';
  const first=html(current?.address||current?.site||'Aguardando solicitação do COI');
@@ -29,6 +29,10 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
   '<div class="rp-inspection-map-hud"><span class="rp-inspection-hud-label">'+(current?started(current)?arrived(current)?'● NO DESTINO':'● EM DESLOCAMENTO':'● NOVA VISTORIA':'● SEM VISTORIAS')+'</span><strong data-inspection-current-title>'+first+'</strong><small data-inspection-distance>'+(distance!==null?'Distância em linha reta: '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m'):'Localização ou destino sem coordenadas')+'</small></div></div>'+
   '<div class="patrol-map-footer"><span data-inspection-gps-state>'+ (gpsActive?'GPS acompanhando':'GPS não iniciado')+'</span><span data-inspection-road-state>Preparando percurso…</span></div>'+
  '</section>'+
+ '<div class="rp-inspection-shared-tools" aria-label="Ferramentas de campo">'+
+ '<button type="button" data-field-torch aria-label="Lanterna" title="Lanterna">Lanterna</button>'+
+ '<button type="button" data-field-panic aria-label="Pânico" title="Pânico">Pânico</button>'+
+ '</div>'+
  '<section class="patrol-actions rp-inspection-commands" aria-label="Próximo atendimento">'+
   '<div class="patrol-action-heading"><strong>PRÓXIMO DESTINO · <span data-inspection-current-count>'+(queue.length?'1 de '+queue.length:'Sem tarefas')+'</span></strong></div>'+
   '<div class="rp-inspection-commands-body"><p data-inspection-instructions>'+html(current?.instructions||current?.reason||'O COI enviará os locais que precisam de vistoria.')+'</p>'+
