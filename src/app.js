@@ -796,7 +796,7 @@ function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,selectionK
 let demoHistorySelection=new Set();
 function demoActivityRow(r,selectable=false){
  const item='<button type="button" class="rp-activity-row" data-action="'+(r.type==='round'?'session-detail':'demo-inspection-detail')+'" data-id="'+esc(r.id)+'"><span><strong>'+esc(r.type==='round'?'Ronda · '+r.name:'Vistoria · '+r.name)+'</strong><small>'+esc(r.site||'Local não informado')+' · '+fmt(r.at)+'</small></span><span>'+esc(r.status==='completed'?'Concluída':r.status==='active'?'Em andamento':r.status)+' ↗</span></button>';
- return selectable?'<div class="rp-history-entry" role="listitem"><label title="Selecionar registro"><input type="checkbox" data-action="demo-history-toggle" data-key="'+esc(r.selectionKey)+'" aria-label="Selecionar registro" '+(demoHistorySelection.has(r.selectionKey)?'checked':'')+'></label>'+item+'</div>':item;
+ return selectable===true?'<div class="rp-history-entry" role="listitem"><label title="Selecionar registro"><input type="checkbox" data-action="demo-history-toggle" data-key="'+esc(r.selectionKey)+'" aria-label="Selecionar registro" '+(demoHistorySelection.has(r.selectionKey)?'checked':'')+'></label>'+item+'</div>':item;
 }
 function demoHistoryView(){
  const all=demoActivityRows(),maxPage=Math.max(0,Math.ceil(all.length/20)-1);
