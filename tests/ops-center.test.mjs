@@ -27,6 +27,20 @@ test('COI: presença, despacho, início e conclusão auditáveis, alertas e perm
   assert.equal((await post('/users',{name:'Operador COI',email:'operador-coi@example.test',password:'SenhaForteTeste2026!',role:'operador',description:'Operador de monitoramento'},master)).status,201);
   const guard=(await (await post('/login',{email:'vigia-coi@example.test',password:'SenhaForteTeste2026!'})).json()).token;
   const operator=(await (await post('/login',{email:'operador-coi@example.test',password:'SenhaForteTeste2026!'})).json()).token;
+  const extra=await post('/users',{name:'Outro Vigia',email:'outro-vigia-coi@example.test',password:'SenhaForteTeste2026!',role:'ronda',site:'Unidade Centro',description:'Profissional de campo sem relação com aviso dirigido'},master);
+  assert.equal(extra.status,201);
+  const otherGuard=(await (await post('/login',{email:'outro-vigia-coi@example.test',password:'SenhaForteTeste2026!'})).json()).token;
+  assert.equal((await post('/field-communications',{workerId,kind:'alert',title:'Teste indevido',message:'Mensagem indevida enviada por campo'},guard)).status,403);
+  const sentNotice=await post('/field-communications',{workerId,kind:'notice',title:'Verificar perímetro',message:'COE solicitou vistoria do portão da unidade.'},operator);
+  assert.equal(sentNotice.status,201);
+  const personal=(await (await get('/notifications?channel=events',guard)).json()).notifications;
+  assert.ok(personal.some(n=>n.kind==='notice'&&n.title==='Verificar perímetro'));
+  const unrelated=(await (await get('/notifications?channel=events',otherGuard)).json()).notifications;
+  assert.equal(unrelated.some(n=>n.kind==='notice'),false,'outro vigia não recebe o comunicado');
+  const directedAlert=await post('/field-communications',{workerId,kind:'alert',title:'Alerta de câmera',message:'COE observou presença no acesso lateral.'},operator);
+  assert.equal(directedAlert.status,201);
+  assert.ok((await (await get('/notifications?channel=events',guard)).json()).notifications.some(n=>n.kind==='field_alert'));
+
   const streamController=new AbortController();
   const stream=await request('/notifications/stream',{token:operator,signal:streamController.signal});
   assert.equal(stream.status,200);

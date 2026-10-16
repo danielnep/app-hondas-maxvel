@@ -2,6 +2,7 @@ import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canComplet
 import {createInspectionRouteMap} from './inspection-route-map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf} from './inspection-queue.js';
 import {inspectionCockpit,inspectionStops} from './inspection-cockpit.js';
+import {emptyInspectionDraft,inspectionWizardHtml,updateInspectionDraft,inspectionProblems,inspectionPayload,stepCount} from './field-inspection-wizard.js';
 import {PatrolMap} from './map.js';
 import {createRoundWizard} from './wizard.js';
 import {withExampleRondas} from './demo-scenarios.js';
@@ -370,6 +371,7 @@ function installViewportViews(){
 
 const demoCoiRouteMap=createInspectionRouteMap({onError:notify});
 let demoInspectorMap=null,demoInspectorLocation=null,demoInspectorWatch=null,demoInspectorQueueSignature='';
+let demoInspectionDraft=null,demoWizardAutoId=null;
 function demoInspectionQueue(){
  const items=demoInspectionRequests().map(item=>{
   // Local demonstrativo conhecido: restaurar coordenadas em dados antigos.
@@ -421,6 +423,7 @@ function render(){demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
  attachMaps();ops.decorate();
+ if(user?.role==='vistoriador'&&view==='vistoriador'&&demoInspectionDraft?.id&&!demoWizardAutoId&&demoPendingInspection()?.arrivedAt){demoWizardAutoId=demoInspectionDraft.id;requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());}
  const dash=document.querySelector('.dashboard');
  // Lanterna aparece somente na área operacional, nunca em histórico ou chat.
  if(dash)dash.dataset.torchRole=(user?.role==='ronda'&&view==='minha-ronda')||(user?.role==='vistoriador'&&view==='vistoriador')?user.role:'';
@@ -789,16 +792,12 @@ function demoClientView(){
 }
 function demoInspectorView(){
  const records=demoInspectionRecords(),queue=demoInspectionQueue(),pending=queue[0]||null;
- const checks=[['acessos','Acessos em condições adequadas'],['estrutura','Estrutura verificada'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização adequada']];
+ if(pending&&demoInspectionDraft?.id!==pending.id)demoInspectionDraft=emptyInspectionDraft(pending.id);
  const map=inspectionCockpit({queue,mapId:'demo-inspection-map',mode:'demo',
   position:demoInspectorLocation||DEMO_ROUTE.base,base:DEMO_ROUTE.base,gpsActive:!!demoInspectorLocation,fullTitle:'Minhas vistorias'});
- const form=pending?.arrivedAt?'<form id="demo-inspection-form" class="demo-inspection-form rp-demo-inspection-form rp-inspection-visit-form"><div class="rp-demo-inspection-head"><span class="eyebrow">VISTORIA · CHEGADA REGISTRADA</span><h2>Conferir o local</h2><p>'+esc(pending.address)+'</p></div>'+
- '<input type="hidden" name="requestId" value="'+esc(pending.id)+'">'+
- checks.map(([k,label])=>'<label class="rp-demo-check"><span>'+esc(label)+'</span><select name="'+k+'" required><option value="">Avaliar</option><option value="ok">Sem anormalidades</option><option value="no">Não conformidade identificada</option></select></label>').join('')+
- '<div class="rp-demo-photo-pair"><label>Selfie da chegada<input type="file" name="selfie" accept="image/*" capture="user" required></label><label>Fotos do local (múltiplas)<input type="file" name="localPhoto" accept="image/*" multiple required></label></div>'+
- '<label>Relatório da vistoria<textarea name="notes" required minlength="8" maxlength="1000" placeholder="Descreva o que foi verificado"></textarea></label>'+
- '<label class="rp-demo-confirm"><input type="checkbox" name="confirmation" required> Confirmo que verifiquei o local pessoalmente.</label>'+
- '<button class="button primary" type="submit">Concluir vistoria e seguir para a próxima</button></form>':'';
+ const form=pending?.arrivedAt?'<dialog id="rp-demo-wizard-dialog" class="rp-field-wizard-dialog"><form id="demo-inspection-form" novalidate>'+
+ '<div class="rp-field-wizard-head"><div><strong>Vistoria · '+esc(pending.address)+'</strong><small>Verificações por etapa · demonstração</small></div><button type="button" data-action="demo-wizard-close">✕</button></div>'+
+ '<input type="hidden" name="requestId" value="'+esc(pending.id)+'">'+inspectionWizardHtml(demoInspectionDraft,{demo:true})+'</form></dialog>':'';
  return '<section class="demo-role-view rp-demo-inspector">'+map+form+
  '<section class="rp-demo-inspection-history"><h2>Histórico de vistorias</h2>'+
  (records.length?records.map(r=>'<div class="demo-ops-row"><span><strong>'+fmt(r.at)+'</strong><small>'+esc(r.address||DEMO_WATCHERS[0].unit)+' · '+esc(r.notes)+'</small></span><b>'+r.score+'%</b></div>').join(''):'<p class="empty">Nenhuma vistoria finalizada.</p>')+
@@ -826,10 +825,25 @@ function notificationRow(n,treatment=false){
 }
 
 let demoTreatmentTab='incident';
-function demoEventNotifications(){return [...recentNotification().filter(n=>n.kind!=='message'),...localCommunications().map(n=>({...n,id:'field:'+n.id,session:{id:'field',name:n.name,route:{name:n.route}}}))].sort((a,b)=>b.at-a.at);}
+function demoEventNotifications(){
+ const field=['ronda','vistoriador'].includes(user?.role);
+ const own=recentNotification().filter(n=>n.kind!=='message').filter(n=>!field||n.session?.name===user.name);
+ const incoming=localCommunications().filter(n=>!field||n.name===user.name).map(n=>({...n,id:'field:'+n.id,session:{id:'field',name:n.name,route:{name:n.route}}}));
+ return [...own,...incoming].sort((a,b)=>b.at-a.at);
+}
 function demoHeaderButtons(){
- const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length,extra=all.slice(5).filter(n=>!n.readAt).length;
- return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Nenhum evento recebido.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details>' + (['ronda','vistoriador'].includes(user?.role)?'<button type="button" data-view="chat-interno" class="rp-blue-button rp-direct-chat" aria-label="Abrir chat interno">'+ic('message')+'<span>Mensagens</span></button>':'<button type="button" data-view="chat-interno" class="rp-blue-button rp-direct-chat" aria-label="Abrir chat interno">'+ic('message')+'<span>Mensagens</span></button>')+'</div>';
+ const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length;
+ const messages=demoChatRows(),last=messages.at(-1),unread=0;
+ return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos destinados ao perfil: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos recebidos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Sem eventos para este perfil.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais</button>':'')+'</div></details>'+
+ '<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens do COE">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Conversas recentes</strong><button type="button" data-action="demo-chat-overlay"><b>COE · Central de Operações</b><small>'+(last?esc(last.body.slice(0,90)):'Sem mensagens recentes')+'</small></button><button type="button" data-action="demo-chat-overlay-more">Ver mais conversas</button></div></details></div>';
+}
+function openDemoChatOverlay(list=false){
+ demoChatScreen=list?'list':'thread';
+ let overlay=document.querySelector('#rp-demo-chat-overlay');
+ if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';
+  document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
+ overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens · demonstração local</strong><button type="button" data-action="demo-chat-overlay-close">✕</button></div>'+demoChatView();
+ if(!overlay.open)overlay.showModal();
 }
 let demoChatScreen='thread';
 function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows:[]}catch{return []}}
@@ -1203,8 +1217,13 @@ setInterval(()=>{if(session?.status==='active')save()},10000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&session?.status==='active'){if(!window.AndroidTracking){session.insideSince=null;const p=currentCheckpoint(session);if(p)session.checkpoints[session.index].dwellMs=0;}movement=null;save();}else if(screen!=='landing'&&session?.status==='active'){syncNativeHistory();render()}});
 window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status==='active'&&mode==='real')syncNativeHistory()});
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
- const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&view!==nav)demoChatScreen=['ronda','vistoriador'].includes(user.role)?'thread':'list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
+ const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(act==='demo-wizard-open'){const d=document.querySelector('#rp-demo-wizard-dialog');if(d&&!d.open)d.showModal();return;}
+ if(act==='demo-wizard-close'){document.querySelector('#rp-demo-wizard-dialog')?.close();return;}
+ if(act==='demo-chat-overlay'){openDemoChatOverlay(false);return;}
+ if(act==='demo-chat-overlay-more'){openDemoChatOverlay(true);return;}
+ if(act==='demo-chat-overlay-close'){document.querySelector('#rp-demo-chat-overlay')?.close();return;}
  if(act==='demo-inspection-fit'){demoInspectorMap?.fit();return;}
  if(act==='demo-inspection-depart'){
   const pending=demoPendingInspection();if(!pending)return;
@@ -1215,11 +1234,11 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   const pending=demoPendingInspection();if(!pending?.startedAt)return;
   saveDemoInspectionRequests(demoInspectionRequests().map(r=>r.id===pending.id?{...r,arrivedAt:r.arrivedAt||Date.now()}:r));
   render();
-  requestAnimationFrame(()=>document.querySelector('#demo-inspection-form')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());
   notify('Chegada registrada na simulação. Preencha a vistoria.');return;
  }
- if(act==='demo-chat-open'){demoChatScreen='thread';render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
- if(act==='demo-chat-list'){demoChatScreen='list';render();return;}
+ if(act==='demo-chat-open'){demoChatScreen='thread';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
+ if(act==='demo-chat-list'){demoChatScreen='list';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(true);else render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
  if(act==='demo-coi-tab'){if(['rondas','vistorias'].includes(el.dataset.tab)){demoCoiTab=el.dataset.tab;render();}return;}
  if(act==='close-dialog'){if(modal.dataset.mandatoryNotice==='true')return;modal.close();return;}
@@ -1525,6 +1544,25 @@ if(act==='profile-menu'){profileDialog();return;}
  if(act==='clear-prompt'){showDialog(`<h2>Apagar os dados deste navegador?</h2><p>As rondas, justificativas, ocorrências e notificações locais da demonstração serão apagadas.</p><div class="modal-actions">${btn('Cancelar','close-dialog')}${btn('Apagar dados','confirm-clear','danger')}</div>`);return;}
  if(act==='confirm-clear'){clearState();sessions=[];programs=demoSchedule();selectedWatcherId='v01';selectedProgramId=null;session=null;stopLocation();movement=null;locationFix=null;render();notify('Dados locais apagados.');return;}
 }
+document.addEventListener('click',e=>{
+ const target=e.target.closest('[data-wizard-next],[data-wizard-back]');if(!target||!document.querySelector('#rp-demo-wizard-dialog[open]'))return;
+ const form=document.querySelector('#demo-inspection-form');if(!form||!demoInspectionDraft)return;
+ const updated=updateInspectionDraft(demoInspectionDraft,form),errors=inspectionProblems(updated);
+ if(target.hasAttribute('data-wizard-next')&&errors.length){const el=form.querySelector('[data-wizard-error]');el.hidden=false;el.textContent=errors[0];return;}
+ updated.step=Math.max(0,Math.min(stepCount()-1,updated.step+(target.hasAttribute('data-wizard-back')?-1:1)));
+ demoInspectionDraft=updated;form.querySelector('.rp-field-wizard').outerHTML=inspectionWizardHtml(demoInspectionDraft,{demo:true});
+});
+document.addEventListener('click',async e=>{
+ const button=e.target.closest('[data-field-tool-torch],[data-field-tool-panic],[data-field-tool-chat],[data-field-tool-alert],[data-field-tool-incident]');
+ if(!button||!presentation||user?.role!=='vistoriador')return;
+ try{
+  if(button.hasAttribute('data-field-tool-torch'))await torch.toggle();
+  else if(button.hasAttribute('data-field-tool-chat'))openDemoChatOverlay(false);
+  else if(button.hasAttribute('data-field-tool-incident'))incidentDialog();
+  else if(button.hasAttribute('data-field-tool-alert'))alertDialog();
+  else if(button.hasAttribute('data-field-tool-panic'))showDialog('<h2>Pânico · demonstração</h2><p>O acionamento real fica na Central autenticada. Esta tela não envia alarmes.</p><a class="button primary" href="/central.html">Abrir operação real</a>');
+ }catch{notify('Ferramenta indisponível neste aparelho.')}
+});
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
 document.addEventListener('change',e=>{
  if(e.target.matches('[data-demo-client]')){selectedDemoClientIndex=Math.max(0,Math.min(DEMO_CLIENTS.length-1,Number(e.target.value)||0));render();return;}
@@ -1542,22 +1580,23 @@ document.addEventListener('change',e=>{
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
 document.addEventListener('submit',e=>{
- if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,at:Date.now()});localStorage.setItem('rondas-pro-demo-chat',JSON.stringify(rows));render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
+ if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,at:Date.now()});localStorage.setItem('rondas-pro-demo-chat',JSON.stringify(rows));if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
  if(e.target.id==='demo-inspection-form'){
-  e.preventDefault();
-  if(user?.role!=='vistoriador')return;
-  const f=new FormData(e.target),pending=demoPendingInspection(),notes=String(f.get('notes')||'').trim();
-  if(!pending||!pending.arrivedAt||pending.id!==f.get('requestId')){notify('Solicitação indisponível. Atualize as vistorias.');return;}
-  if(notes.length<8){notify('Descreva o que foi verificado.');return;}
-  const criteria=['acessos','estrutura','equipamentos','sinalizacao'];
-  if(criteria.some(k=>!['ok','no'].includes(f.get(k)))){notify('Avalie todos os critérios.');return;}
-  if(!f.get('confirmation')||!f.get('selfie')?.size||!f.getAll('localPhoto').some(file=>file?.size)){notify('Confirme a vistoria e capture selfie e foto do local.');return;}
-  const score=criteria.filter(k=>f.get(k)==='ok').length*25,at=Date.now();
+  e.preventDefault();if(user?.role!=='vistoriador')return;
+  const f=new FormData(e.target),pending=demoPendingInspection();
+  if(!pending||!pending.arrivedAt||pending.id!==f.get('requestId')){notify('Solicitação indisponível.');return;}
+  demoInspectionDraft=updateInspectionDraft(demoInspectionDraft,e.target);
+  if(demoInspectionDraft.step!==stepCount()-1){notify('Avance até a última etapa.');return;}
+  const problems=inspectionProblems(demoInspectionDraft,{final:true});if(problems.length){notify(problems[0]);return;}
+  if(!f.get('confirmation')||!f.get('selfie')?.size||!f.getAll('localPhoto').some(file=>file?.size)){notify('Confirme a vistoria, selfie e fotos do local.');return;}
+  const result=inspectionPayload(demoInspectionDraft),verified=Object.values(result.verified),
+   checked=verified.filter(x=>x.checked.length),normal=checked.filter(x=>!x.anomaly);
+  const score=checked.length?Math.round(normal.length/checked.length*100):null,at=Date.now();
   try{
-   localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify([{at,notes,score,address:pending.address,requestId:pending.id},...demoInspectionRecords()].slice(0,100)));
+   localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify([{at,notes:result.observation,score,address:pending.address,requestId:pending.id,verified:result.verified},...demoInspectionRecords()].slice(0,100)));
    saveDemoInspectionRequests(demoInspectionRequests().map(r=>r.id===pending.id?{...r,completedAt:at}:r));
   }catch{notify('Não foi possível salvar a vistoria.');return;}
-  render();notify('Vistoria finalizada neste navegador. Fotos não foram enviadas.');return;
+  demoInspectionDraft=null;demoWizardAutoId=null;render();notify('Vistoria concluída na demonstração. Fotos não enviadas ao servidor.');return;
  }
  if(e.target.id!=='operational-settings')return;
  e.preventDefault();

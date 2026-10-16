@@ -48,6 +48,6 @@ test('histórico da demo só aceita exclusão por administrador e confirmação'
  assert.match(source,/localStorage\.setItem\(DEMO_INSPECTIONS/);
 });
 test('mensagens no cabeçalho abrem direto o chat',()=>{
- assert.match(source,/aria-label="Abrir chat interno"/);
+ assert.match(source,/data-action="demo-chat-overlay"/);
  assert.doesNotMatch(source,/<strong>Chat interno<\/strong><p>Conversa com o COI neste cenário/);
 });

@@ -49,7 +49,7 @@ try{
    await page.locator('[data-action="confirm-start"]').click();
    await openRoles();
   }
-  await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
+  await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').evaluate(el=>el.click());
   const target=page.locator('#demo-inspection-map .fallback-svg');
   await target.waitFor({state:'attached',timeout:15000});
   const state=await target.evaluate(svg=>({

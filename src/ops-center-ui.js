@@ -3,7 +3,7 @@ import {typeInfo,EVENT_TYPES} from './treatment-policy.js';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'Não informado';
 const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
-const activeKinds=new Set([...Object.keys(EVENT_TYPES),'panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','message','inspection']);
+const activeKinds=new Set([...Object.keys(EVENT_TYPES),'field_alert','notice','panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','inspection']);
 export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,attention=0,unreadTotal=0,notificationTotal=0,nextCursor=null,treatmentSummary={total:0,categories:[]},refreshing=null,generation=0;
  const manager=()=>['admin','master'].includes(current?.role);
@@ -132,7 +132,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }).join('');
  }
  function notificationsView(){
-  const list=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message').filter(n=>n.event_id?n.event_status!=='resolvida':n.dispatch_id?!n.dispatch_completed_at:!n.read_at);
+  const list=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message').filter(n=>n.kind==='notice'||n.kind==='field_alert'||(n.event_id?n.event_status!=='resolvida':n.dispatch_id?!n.dispatch_completed_at:!n.read_at));
   const groups=new Map(['panic','incident','alert','inspection','dispatch','gps_issue','route_deviation'].map(k=>[k,[]]));
   for(const n of list){const kind=n.kind==='review'?n.event_kind:n.kind;if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
   return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · EVENTOS RECEBIDOS</div><h1>Eventos</h1><p class="muted">Apenas pendências, separadas em colunas por tipo. Ler não equivale a concluir.</p></div></header><div class="rp-event-columns">'+([...groups].filter(([,items])=>items.length).sort((a,b)=>b[1].length-a[1].length).map(([kind,items])=>'<section class="rp-event-column"><header><h2>'+esc(kind==='dispatch'?'Despachos':typeInfo(kind).label)+'</h2>'+(items.some(n=>!n.read_at)?'<b class="rp-unread-count">'+items.filter(n=>!n.read_at).length+'</b>':'')+'</header>'+cards(items.slice().sort((a,b)=>b.created_at-a.created_at||b.id.localeCompare(a.id)))+'</section>').join('')||'<p class="empty">Nenhum evento recebido.</p>')+'</div>'+(nextCursor?'<button type="button" data-ops-more>Carregar eventos anteriores</button>':'')+'</section>';
@@ -172,6 +172,13 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  '<label>Endereço completo<input name="address" required minlength="5" maxlength="350"></label></div>'+
  '<button type="submit" class="primary">Cadastrar cliente / posto</button></form>'+
  '<p class="muted">'+destinations.length+' local(is) cadastrado(s) para despacho</p></section>':'')+
+ '<section class="surface rp-coe-communications"><h2>Alertas e comunicados para a equipe de campo</h2><p class="muted">O aviso chega somente aos profissionais selecionados. Mensagens de conversa devem ser enviadas pelo Chat interno, não pelo sino.</p>'+
+ '<form id="coi-field-notice-form" class="stack"><label>Profissional destinatário<select name="workerId" required><option value="">Selecionar profissional</option>'+
+ [...availability,...inspectors].map(w=>'<option value="'+esc(w.id)+'">'+esc(w.name)+' · '+esc(w.role==='vistoriador'?'Vistoriador':w.role==='ronda'?'Vigia':w.status)+'</option>').join('')+
+ '</select></label><label>Categoria<select name="kind"><option value="notice">Comunicado operacional</option><option value="alert">Alerta de segurança</option></select></label>'+
+ '<label>Assunto<input name="title" minlength="3" maxlength="100" required placeholder="Ex.: Atenção à entrada lateral"></label>'+
+ '<label>Orientações<textarea name="message" minlength="8" maxlength="650" required placeholder="Descreva o que foi observado e a providência solicitada"></textarea></label>'+
+ '<button class="primary" type="submit">Enviar ao profissional selecionado</button></form></section>'+
  '<section class="surface"><h2>Últimos despachos</h2>'+dispatchList()+'</section></section>';
  }
  function dispatchList(){
@@ -299,7 +306,14 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    await api('/inspection-destinations',{method:'POST',data});
    flash('Cliente autorizado cadastrado.');await refresh(current,false);openNotice({page:'dispatches'});return true;
   }
-  if(form.id==='ops-inspector-form'){
+  if(form.id==='coi-field-notice-form'){
+    const data=Object.fromEntries(new FormData(form));
+    if(!data.workerId||!['notice','alert'].includes(data.kind))throw Error('Escolha o profissional e a categoria.');
+    const result=await api('/field-communications',{method:'POST',data});
+    if(!result.ok)throw Error('Não foi possível entregar o comunicado.');
+    form.reset();flash('Comunicado entregue ao profissional destinatário.');return true;
+   }
+   if(form.id==='ops-inspector-form'){
    const data=Object.fromEntries(new FormData(form));
    if(!data.workerId||(!data.destinationId&&!String(data.address||'').trim()))throw Error('Selecione o vistoriador e informe um local cadastrado ou endereço.');
    data.reason=(data.inspectionType==='routine'?'[ROTINA] ':'[PONTUAL] ')+String(data.reason||'').trim();

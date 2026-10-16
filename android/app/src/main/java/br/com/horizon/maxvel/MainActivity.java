@@ -25,12 +25,13 @@ import android.webkit.WebViewClient;
 import androidx.webkit.WebViewAssetLoader;
 import org.json.JSONObject;
 
-/** Web UI compartilhada com a versão de demonstração, com acesso nativo controlado.
+/** Central operacional autenticada de campo com acesso nativo controlado.
  * Tracking começa a partir de uma ação visível durante a ronda, não ao instalar/abrir o app.
  */
 public class MainActivity extends Activity {
     private static final String TRUSTED_HOST="appassets.androidplatform.net";
-    private static final String APP_URL="https://appassets.androidplatform.net/assets/site/index.html";
+    private static final String REAL_APP_HOST="ronda-pro-production.up.railway.app";
+    private static final String APP_URL="https://"+REAL_APP_HOST+"/central.html";
     private static final int LOCATION_REQUEST=88;
     private static final int MEDIA_PICKER_REQUEST=101;
     private static final int CAMERA_PERMISSION_REQUEST=102;
@@ -48,20 +49,25 @@ public class MainActivity extends Activity {
 
     private boolean hasLocation(){return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED ||checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED;}
 
+    private boolean trustedAppOrigin(Uri uri){
+        return uri!=null&&"https".equalsIgnoreCase(uri.getScheme())&&
+            (TRUSTED_HOST.equalsIgnoreCase(uri.getHost())||REAL_APP_HOST.equalsIgnoreCase(uri.getHost()));
+    }
+
     @Override public void onCreate(Bundle state){super.onCreate(state);
-        getWindow().setStatusBarColor(Color.rgb(10,49,70));getWindow().setNavigationBarColor(Color.rgb(10,49,70));
+        getWindow().setStatusBarColor(Color.rgb(19,18,21));getWindow().setNavigationBarColor(Color.rgb(19,18,21));
         trace=new TraceStore(this);
         WebViewAssetLoader assets=new WebViewAssetLoader.Builder().setDomain(TRUSTED_HOST)
                 .addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
         webView=new WebView(this);
-        webView.setBackgroundColor(Color.WHITE);
+        webView.setBackgroundColor(Color.rgb(19,18,21));
         WebSettings settings=webView.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setGeolocationEnabled(true);
         settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);
         webView.addJavascriptInterface(new NativeBridge(),"AndroidTracking");
         webView.setWebViewClient(new WebViewClient(){
             @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return assets.shouldInterceptRequest(request.getUrl());}
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
-                Uri u=request.getUrl();if(TRUSTED_HOST.equals(u.getHost()))return false;
+                Uri u=request.getUrl();if(trustedAppOrigin(u))return false;
                 if(request.isForMainFrame()){
                     try{startActivity(new Intent(Intent.ACTION_VIEW,u));}catch(Exception ignored){}
                     return true;
@@ -72,7 +78,7 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient(){
             @Override public void onPermissionRequest(PermissionRequest request){
                 runOnUiThread(()->{
-                    if(!TRUSTED_HOST.equals(request.getOrigin().getHost())){request.deny();return;}
+                    if(!trustedAppOrigin(request.getOrigin())){request.deny();return;}
                     boolean wantsVideo=false;
                     for(String resource:request.getResources())if(PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource))wantsVideo=true;
                     if(!wantsVideo){request.deny();return;}
@@ -101,7 +107,7 @@ public class MainActivity extends Activity {
                 }
             }
             @Override public void onGeolocationPermissionsShowPrompt(String origin,GeolocationPermissions.Callback callback){
-                if(!origin.startsWith("https://"+TRUSTED_HOST)){callback.invoke(origin,false,false);return;}
+                if(!trustedAppOrigin(Uri.parse(origin))){callback.invoke(origin,false,false);return;}
                 if(hasLocation()){callback.invoke(origin,true,false);return;}
                 geoOrigin=origin;geoCallback=callback;requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION_REQUEST);
             }

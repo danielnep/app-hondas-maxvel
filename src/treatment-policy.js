@@ -1,6 +1,6 @@
 /* Vocabulário único dos tipos já aceitos pela API operacional. */
 export const EVENT_TYPES={
- incident:{label:'Ocorrências',icon:'▤'},alert:{label:'Alertas',icon:'⚠'},message:{label:'Mensagens',icon:'✉'},
+ incident:{label:'Ocorrências',icon:'▤'},alert:{label:'Alertas',icon:'⚠'},field_alert:{label:'Alerta do COE',icon:'⚠'},notice:{label:'Comunicado operacional',icon:'▧'},message:{label:'Mensagens',icon:'✉'},
  panic:{label:'Pânicos',icon:'!'},inspection:{label:'Vistorias',icon:'✓'},
  gps_issue:{label:'Falhas de GPS',icon:'⌖'},route_deviation:{label:'Desvios de rota',icon:'↗'},
  patrol_incomplete:{label:'Rondas incompletas',icon:'◷'},patrol_interrupted:{label:'Rondas interrompidas',icon:'Ⅱ'},

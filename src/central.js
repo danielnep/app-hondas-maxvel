@@ -11,6 +11,8 @@ import {createMediaCapture,evidenceButtons} from './media-capture.js';
 import {PatrolMap} from './map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf,metersBetween} from './inspection-queue.js';
 import {inspectionCockpit,inspectionStops} from './inspection-cockpit.js';
+import {emptyInspectionDraft,inspectionWizardHtml,updateInspectionDraft,inspectionProblems,inspectionPayload,stepCount} from './field-inspection-wizard.js';
+import {buildGuardRoute,nextGuardState,markGuardPoint,initialGuardState,guardCockpit,GUARD_RADIUS_METERS,GUARD_DWELL_MS} from './field-guard-circuit.js';
 import {createFieldTorch} from './field-torch.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -81,6 +83,62 @@ function refreshInspectorStops(){
  if(!editing)render();
  else flash('Nova vistoria recebida: circuito atualizado no mapa.');
 }
+let guardRound=null,guardMap=null,guardFix=null,guardWatch=null,guardSampleAt=0,guardCurrentUserId='';
+const guardStorageKey=()=>account?'rondas-pro-real-guard-'+account.id:null;
+function guardLoadState(){
+ if(account?.role!=='ronda'){guardRound=null;guardCurrentUserId='';return;}
+ if(guardCurrentUserId===account.id)return;
+ guardCurrentUserId=account.id;
+ try{
+  guardRound=JSON.parse(localStorage.getItem(guardStorageKey())||'null');
+  if(!guardRound||guardRound.completedAt||!Array.isArray(guardRound.points)||!guardRound.startedAt)guardRound=null;
+ }catch{guardRound=null;}
+}
+function guardSave(){
+ const key=guardStorageKey();if(!key)return;
+ if(guardRound)localStorage.setItem(key,JSON.stringify(guardRound));else localStorage.removeItem(key);
+}
+function guardPlannedRoute(){return routes.find(r=>r.id===guardRound?.routeId)||routes[0]||null;}
+function guardStopGps(){if(guardWatch!=null){navigator.geolocation?.clearWatch(guardWatch);guardWatch=null;}}
+function guardUpdateFix(fix){
+ if(!pointOf(fix)||!Number.isFinite(fix.accuracy)||fix.accuracy>GUARD_RADIUS_METERS)return;
+ guardFix=fix;if(guardMap){
+  // Primeiro GPS real define a base visual antes mesmo de iniciar a ronda.
+  if(!guardRound&&!guardMap.route.baseKnown){const planned=guardPlannedRoute();if(planned){const revised=buildGuardRoute(planned,fix);if(revised){guardMap.standbyClean=false;guardMap.setRoute(revised,null);}}}
+  guardMap.update({position:fix});
+ }
+ const info=guardRound?nextGuardState(guardRound,guardFix):null;
+ if(info&&guardRound.insideSince!=null&&!info.inside){guardRound=info.state;guardSave();render();}
+ const gps=document.querySelector('[data-guard-gps]');if(gps)gps.textContent='GPS ativo · precisão '+Math.round(fix.accuracy)+' m';
+ const distance=document.querySelector('[data-guard-distance]');if(distance&&info)distance.textContent=Math.round(info.distance)+' m do próximo ponto';
+ if(guardRound&&Date.now()-guardSampleAt>15000){guardSampleAt=Date.now();void api('/events',{method:'POST',data:{kind:'gps',roundId:guardRound.id,occurredAt:Date.now(),description:'Posição GPS da ronda',position:fix}}).catch(()=>{});}
+}
+function guardStartGps(){
+ if(guardWatch!=null||account?.role!=='ronda'||!navigator.geolocation)return;
+ guardWatch=navigator.geolocation.watchPosition(p=>guardUpdateFix({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,at:p.timestamp}),e=>{
+  const el=document.querySelector('[data-guard-gps]');if(el)el.textContent='GPS indisponível · '+e.message;
+ },{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+}
+function guardRequireGps(){return new Promise((resolve,reject)=>{
+ if(!navigator.geolocation){reject(Error('Este aparelho não fornece GPS.'));return;}
+ navigator.geolocation.getCurrentPosition(p=>{
+  const fix={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,at:p.timestamp};
+  if(fix.accuracy>GUARD_RADIUS_METERS){reject(Error('GPS impreciso: '+Math.round(fix.accuracy)+' m. Aguarde até '+GUARD_RADIUS_METERS+' m.'));return;}
+  guardUpdateFix(fix);resolve(fix);
+ },()=>reject(Error('Autorize o GPS para comprovar presença no ponto.')),{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+});}
+function guardEvent(kind,description,details={},position=guardFix){
+ return api('/events',{method:'POST',data:{kind,roundId:guardRound.id,occurredAt:Date.now(),description,details,position}});
+}
+function guardTick(){
+ if(account?.role!=='ronda'||page!=='dashboard'||!guardRound||!guardRound.insideSince)return;
+ const checked=nextGuardState(guardRound,guardFix);
+ if(!checked.inside){guardRound=checked.state;guardSave();const el=document.querySelector('[data-guard-timer]');if(el)el.textContent='Você saiu do raio: cronômetro reiniciado.';return;}
+ const remaining=Math.max(0,Math.ceil((GUARD_DWELL_MS-checked.elapsed)/1000));
+ const el=document.querySelector('[data-guard-timer]');if(el)el.textContent=remaining?'Permanência GPS: '+remaining+' s restantes':'Permanência concluída. Confirme o ponto.';
+ const button=document.querySelector('[data-guard-checkpoint]');if(button)button.disabled=remaining>0;
+}
+let inspectorDraft=null,inspectorWizardAutoId=null;
 let treatmentTab='incident',treatmentRows=[],treatmentMore=false,treatmentOffset=0,eventHistory=[],detailOrigin='events',claimedEvent=null,remoteSyncing=false,inspectionMap=null,inspectorSelfie=null;
 const claimSession=sessionStorage.getItem('rondaspro-treatment-session')||crypto.randomUUID();
 sessionStorage.setItem('rondaspro-treatment-session',claimSession);
@@ -101,6 +159,11 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
 const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId,notification}={})=>{
+ if(notification&&['field_alert','notice'].includes(notification.kind)&&['ronda','vistoriador'].includes(account?.role)){
+  const d=document.createElement('dialog');d.id='rp-field-notification-dialog';d.className='rp-record-dialog rp-notification-dialog';
+  d.innerHTML='<div class="eyebrow">'+(notification.kind==='field_alert'?'ALERTA OPERACIONAL':'COMUNICADO DO COE')+'</div><h2>'+escape(notification.title)+'</h2><p>'+escape(notification.body)+'</p><small>'+fmt(notification.created_at)+'</small><button type="button" data-field-notification-close class="primary">Fechar</button>';
+  document.querySelector('#rp-field-notification-dialog')?.remove();document.body.append(d);d.addEventListener('close',()=>d.remove(),{once:true});d.showModal();return;
+ }
  if(eventId){
   try{await openEvent(eventId,'notifications');return;}
   catch(error){
@@ -217,7 +280,7 @@ function loginView(error=''){
 async function load(){
  if(!token){loginView();return}
  try{
-  account=(await api('/me')).user;roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
+  account=(await api('/me')).user;guardLoadState();roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
   const previousRole=root.dataset.loadedRole;
   if(previousRole!==account.role){
    page=['operador','coi'].includes(account.role)?'monitor':account.role==='cliente'?'client':account.role==='vistoriador'?'inspections':'dashboard';selected=null;root.dataset.loadedRole=account.role;
@@ -324,10 +387,11 @@ function dashboardView(){
  '<details class="details-toggle"><summary>Comparações, telemetria e indicadores adicionais</summary><div class="surface">'+kpis()+'<h2 style="margin-top:16px">Histórico geral</h2>'+roundTable(rounds.slice(0,30))+'</div></details></section>';
 }
 function ownDashboard(){
+ const planned=guardPlannedRoute();const map=guardCockpit({round:guardRound,planned,position:guardFix,gpsStatus:guardWatch!=null?'GPS em acompanhamento':'Aguardando GPS'});
  const mine=mySummary||{},all=mine.rounds||rounds,activity=events.filter(e=>e.kind!=='gps'&&e.kind!=='battery');
  const open=activity.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
  const latest=all.find(r=>r.status==='em_andamento')||all[0];
- return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">ACESSO DO VIGIA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
+ return '<section class="stack rp-guard-workspace">'+map+'<div class="toolbar"><div><div class="eyebrow">ACESSO DO VIGIA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
  composeActionButtons()+'<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','message','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
  '<section class="surface"><div class="toolbar"><h2>Minha execução mais recente</h2><button data-page="history">Histórico completo</button></div>'+
  (latest?'<div class="detail-grid">'+[['Início',fmt(latest.start)],['Estado',latest.status.replaceAll('_',' ')],['Percorrido',latest.km.toFixed(2)+' km'],['Tempo em trajeto',latest.minutes==null?'Sem registro':latest.minutes+' min'],['Alertas',latest.alerts],['Pânico',latest.panics],['Bateria',latest.lastBattery==null?'Não informada':latest.lastBattery+'%']].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>':'<div class="empty">Nenhuma ronda real sincronizada para sua conta.</div>')+
@@ -648,20 +712,12 @@ async function loadClientInspectionMedia(){
 function inspectionView(){
  const queue=inspectionQueueNow(),assignment=queue[0]||null;
  const entries=events.filter(e=>e.kind==='inspection');
- const criteria=[['acessos','Acessos verificados'],['estrutura','Estrutura em conformidade'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização em conformidade']];
- const current=pointOf(inspectorPosition)||pointOf(inspectorBase)||pointOf(assignment);
+ if(assignment&&inspectorDraft?.id!==assignment.id){inspectorDraft=emptyInspectionDraft(assignment.id);inspectorSelfie=null;inspectorEvidence=[];inspectorSubmission=null;}
  const stage=inspectionCockpit({queue,mapId:'inspection-map',mode:'real',position:inspectorPosition,base:inspectorBase,
   gpsActive:inspectorWatch!=null,fullTitle:'Minhas vistorias'});
- const form=assignment?.arrived_at?'<form id="inspection-form" class="surface stack rp2-inspection-form rp-inspection-visit-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'">'+
- '<div class="rp2-inspection-header"><span class="rp2-step">02</span><div><h2>Vistoria no local · '+escape(assignment.address)+'</h2><p class="muted">Registre o que foi encontrado. Envie selfie e fotos do local antes de concluir esta visita.</p></div></div>'+
- '<div class="rp2-inspection-checklist">'+criteria.map(([key,label],i)=>'<label class="inspection-check rp2-inspection-item"><span class="rp2-inspection-number">'+(i+1)+'</span><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Avaliar</option><option value="ok">Sem anormalidades</option><option value="no">Não conformidade identificada</option></select></label>').join('')+'</div>'+
- '<label>Observações da vistoria<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Descreva as verificações realizadas"></textarea></label>'+
- '<div class="rp2-inspection-header"><span class="rp2-step">03</span><div><h3>Evidências</h3><p class="muted">Selfie e fotografias do local obrigatórias. Pode selecionar várias imagens.</p></div></div>'+
- '<button type="button" class="rp-inspection-selfie" data-evidence-kind="selfie">Tirar selfie <span>Câmera frontal</span></button>'+evidenceButtons()+
- '<label class="rp-inspection-multi-photo">Selecionar várias fotos do local<input type="file" accept="image/*" multiple data-inspection-photo-upload><span>Galeria do aparelho</span></label>'+
- '<p class="muted" data-evidence-attachments>Fotos anexadas aparecerão aqui.</p>'+
- '<label class="rp-inspection-declaration"><input type="checkbox" name="confirmation" required><span>Confirmo que estive no local e registrei pessoalmente as condições verificadas.</span></label>'+
- '<button type="submit" class="primary rp2-inspection-submit">Concluir vistoria e seguir para a próxima</button></form>':'';
+ const form=assignment?.arrived_at?'<dialog id="rp-inspection-wizard-dialog" class="rp-field-wizard-dialog"><form id="inspection-form" novalidate>'+
+  '<div class="rp-field-wizard-head"><div><strong>Vistoria · '+escape(assignment.address)+'</strong><small>Checklist operacional e evidências</small></div><button type="button" data-wizard-close aria-label="Fechar checklist">✕</button></div>'+
+  '<input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'">'+inspectionWizardHtml(inspectorDraft)+'</form></dialog>':'';
  return '<section class="stack rp-inspector-workspace">'+stage+form+
  '<section class="surface rp-inspector-history"><header class="toolbar"><h2>Vistorias concluídas</h2><span>'+entries.length+' registro(s)</span></header>'+
  (entries.length?entries.slice(0,12).map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<p class="empty">Ainda não há vistorias concluídas.</p>')+'</section>'+
@@ -671,7 +727,7 @@ function inspectionView(){
 function render(){
  for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
  routeBoard.resetMaps();resetOperationalMap();coi.reset();
- if(!account){stopInspectorGps();torch.stop();loginView();return}
+ if(!account){stopInspectorGps();guardStopGps();torch.stop();loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
  const required=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[page];
  if(review()&&required&&!ops.allowed(required)){page='notifications';selected=null;}
@@ -683,12 +739,12 @@ function render(){
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  if(selected?.event)content='<dialog id="central-event-dialog" class="rp-record-dialog"><button type="button" data-close-event>Fechar ✕</button>'+content+'</dialog>';
  const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
- if(inspectionMap){inspectionMap.destroy();inspectionMap=null;}
+ if(inspectionMap){inspectionMap.destroy();inspectionMap=null;}if(guardMap){guardMap.destroy();guardMap=null;}
  root.innerHTML='<button type="button" class="rp-central-menu-button" data-central-menu aria-expanded="false" aria-controls="central-navigation">☰ Menu '+pendingDot('total',ops.summary().total)+'</button><div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+
   (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
  // A lanterna acompanha as ações de campo e é desligada nas áreas administrativas.
- root.dataset.torchRole=(['ronda','vistoriador'].includes(account.role)&&['dashboard','send','dispatches'].includes(page))?account.role:'';
+ root.dataset.torchRole=(['ronda','vistoriador'].includes(account.role)&&['dashboard','inspections','send','dispatches'].includes(page))?account.role:'';
  torch.decorate();
  const headerActions=document.querySelector('.top-actions');
  if(headerActions){headerActions.querySelector('[data-operational-header]')?.remove();const holder=document.createElement('div');holder.dataset.operationalHeader='';holder.className='rp-header-tools';holder.innerHTML='<div class="ops-bell-bar">'+ops.badge()+'</div><div data-chat-badge>'+chat.badge()+'</div>';headerActions.prepend(holder);}
@@ -701,7 +757,17 @@ function render(){
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(()=>coi.mount());
- if(account.role==='vistoriador'&&page==='inspections')requestAnimationFrame(()=>{
+ if(account.role==='ronda'&&page==='dashboard')requestAnimationFrame(()=>{
+   const host=document.querySelector('#guard-real-map'),planned=guardPlannedRoute();if(!host||!planned)return;
+   const route=buildGuardRoute(planned,guardRound?.base||guardFix);
+   if(route){guardMap=new PatrolMap(host,{route,session:guardRound?{mode:'real',index:guardRound.index,checkpoints:route.points.map((_,i)=>({completedAt:guardRound.checkpoints.some(c=>c.index===i)?Date.now():null}))}:null,
+     position:guardFix||guardRound?.base||route.base,positionVerified:!!guardFix,standbyClean:!route.baseKnown,interactive:true,onStreetRoute:status=>{const label=document.querySelector('[data-guard-road]');if(label)label.textContent=status;}});guardStartGps();}
+  });
+  if(account.role==='vistoriador'&&page==='inspections'&&inspectorDraft?.id&&!inspectorWizardAutoId&&ops.activeInspection()?.arrived_at){
+   inspectorWizardAutoId=inspectorDraft.id;
+   requestAnimationFrame(()=>document.querySelector('#rp-inspection-wizard-dialog')?.showModal());
+  }
+  if(account.role==='vistoriador'&&page==='inspections')requestAnimationFrame(()=>{
   const host=document.querySelector('#inspection-map'),item=ops.activeInspection();
   if(host){
     const ordered=inspectionQueueNow();
@@ -803,7 +869,58 @@ document.addEventListener('click',async e=>{
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
-  if(target.hasAttribute('data-inspection-fit')){inspectionMap?.fit();return;}
+  if(target.hasAttribute('data-guard-fit')){guardMap?.fit();return;}
+  if(target.hasAttribute('data-guard-start')){
+   if(account?.role!=='ronda'||guardRound)return;
+   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COE.');
+   const fix=await guardRequireGps(),route=buildGuardRoute(planned,fix);if(!route?.points?.length)throw Error('Rota sem coordenadas.');
+   const state=initialGuardState(route,fix);target.disabled=true;
+   try{
+    const e=await api('/events',{method:'POST',data:{kind:'patrol_start',roundId:state.id,occurredAt:Date.now(),description:'Ronda iniciada · '+planned.name,details:{routeId:planned.id},position:fix}});
+    if(!e?.id)throw Error('COE não confirmou o início.');guardRound=state;guardSave();guardStartGps();render();flash('Ronda iniciada e sincronizada.');
+   }finally{if(target.isConnected)target.disabled=false;}return;
+  }
+  if(target.hasAttribute('data-guard-arrive')){
+   if(!guardRound?.points?.[guardRound.index])return;
+   const fix=await guardRequireGps(),state=nextGuardState(guardRound,fix,{action:'arrive'});
+   if(!state.inside)throw Error('Fora do raio de '+GUARD_RADIUS_METERS+' m do ponto.');
+   guardRound=state.state;guardSave();render();flash('Estou aqui confirmado. Permaneça 30 segundos.');return;
+  }
+  if(target.hasAttribute('data-guard-checkpoint')){
+   if(!guardRound?.points?.[guardRound.index])return;
+   const fix=await guardRequireGps(),check=nextGuardState(guardRound,fix);
+   if(!check.ready)throw Error('Aguarde 30 segundos dentro do raio com GPS confiável.');
+   const current=guardRound.points[guardRound.index];target.disabled=true;
+   try{
+    const result=await guardEvent('checkpoint','Ponto verificado: '+current.name,{routeId:guardRound.routeId,index:guardRound.index,name:current.name},fix);
+    if(!result?.id)throw Error('COE não confirmou o ponto.');
+    guardRound=markGuardPoint(guardRound);guardSave();render();flash('Ponto registrado no COE.');
+   }finally{if(target.isConnected)target.disabled=false;}return;
+  }
+  if(target.hasAttribute('data-guard-finish')){
+   if(!guardRound||guardRound.index!==guardRound.points.length)return;
+   const fix=await guardRequireGps();if(metersBetween(fix,guardRound.base)>GUARD_RADIUS_METERS)throw Error('Retorne à base para concluir a ronda.');
+   target.disabled=true;
+   try{
+    const result=await guardEvent('patrol_end','Ronda concluída e retorno à base registrado.',{routeId:guardRound.routeId,completedPoints:guardRound.index},fix);
+    if(!result?.id)throw Error('COE não confirmou o encerramento.');
+    guardRound=null;guardSave();render();flash('Ronda concluída e sincronizada.');
+   }finally{if(target.isConnected)target.disabled=false;}return;
+  }
+  if(target.hasAttribute('data-wizard-open')){const d=document.querySelector('#rp-inspection-wizard-dialog');if(d&&!d.open)d.showModal();return;}
+   if(target.hasAttribute('data-wizard-close')){document.querySelector('#rp-inspection-wizard-dialog')?.close();return;}
+   if(target.hasAttribute('data-wizard-next')||target.hasAttribute('data-wizard-back')){
+    const form=document.querySelector('#inspection-form');if(!form||!inspectorDraft)return;
+    const updated=updateInspectionDraft(inspectorDraft,form),errors=inspectionProblems(updated);
+    if(target.hasAttribute('data-wizard-next')&&errors.length){const node=form.querySelector('[data-wizard-error]');node.hidden=false;node.textContent=errors[0];return;}
+    updated.step=Math.max(0,Math.min(stepCount()-1,updated.step+(target.hasAttribute('data-wizard-back')?-1:1)));
+    inspectorDraft=updated;form.querySelector('.rp-field-wizard').outerHTML=inspectionWizardHtml(inspectorDraft);return;
+   }
+   if(target.hasAttribute('data-field-tool-torch')){await torch.toggle();return;}
+   if(target.hasAttribute('data-field-tool-panic')){document.querySelector('#central-panic-dialog')?.showModal();return;}
+   if(target.hasAttribute('data-field-tool-chat')){const button=document.querySelector('[data-chat-page]');if(button)await chat.click(button);else {page='chat';render();}return;}
+   if(target.hasAttribute('data-field-tool-alert')||target.hasAttribute('data-field-tool-incident')){composeKind=target.hasAttribute('data-field-tool-alert')?'alert':'incident';page='send';render();return;}
+   if(target.hasAttribute('data-inspection-fit')){inspectionMap?.fit();return;}
   if(target.hasAttribute('data-inspection-depart')){
    const task=inspectionQueueNow()[0];if(!task)return;
    target.disabled=true;
@@ -915,15 +1032,16 @@ document.addEventListener('submit',async e=>{
  try{
   if(form.id==='central-login'){const result=await api('/login',{method:'POST',data:d});token=result.token;sessionStorage.setItem('rondaspro_api_token',token);await load();return;}
   if(form.id==='inspection-form'){
-   const keys=['acessos','estrutura','equipamentos','sinalizacao'];
-   if(!inspectionQueueNow()[0]||d.dispatchId!==inspectionQueueNow()[0].id||!inspectionQueueNow()[0].arrived_at)throw Error('Registre a chegada ao destino antes de enviar a vistoria.');
-   if(keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Avalie todos os quatro critérios da vistoria.');
-   if(!d.confirmation)throw Error('Confirme a verificação presencial.');
-   if(!inspectorSelfie||!inspectorEvidence.some(file=>file.type.startsWith('image/')))throw Error('Capture uma selfie e uma foto do local para concluir.');
-   const criteria=Object.fromEntries(keys.map(k=>[k,d[k]==='ok']));
+   inspectorDraft=updateInspectionDraft(inspectorDraft,form);
+    if(inspectorDraft?.step!==stepCount()-1)throw Error('Avance até a última etapa.');
+    const problems=inspectionProblems(inspectorDraft,{final:true});if(problems.length)throw Error(problems[0]);
+    if(!inspectionQueueNow()[0]||d.dispatchId!==inspectionQueueNow()[0].id||!inspectionQueueNow()[0].arrived_at)throw Error('Registre a chegada antes do laudo.');
+    if(!d.confirmation)throw Error('Confirme a verificação presencial.');
+    if(!inspectorSelfie||!inspectorEvidence.some(file=>file.type.startsWith('image/')))throw Error('Capture selfie e foto do local para concluir.');
+    const {criteria,verified,observation}=inspectionPayload(inspectorDraft);
    if(inspectorSubmission?.dispatchId!==d.dispatchId)inspectorSubmission=null;
    if(!inspectorSubmission){
-    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
+    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:observation.slice(0,1000),details:{criteria,verified,dispatchId:d.dispatchId},...await eventTelemetry()}});
     inspectorSubmission={dispatchId:d.dispatchId,eventId:record.id,uploaded:new Map()};
    }
    const files=[inspectorSelfie,...inspectorEvidence];
@@ -932,9 +1050,9 @@ document.addEventListener('submit',async e=>{
     await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':inspectorSubmission.eventId,'X-Ronda-Media-Id':mediaId,'X-Captured-At':String(file.lastModified||Date.now()),'X-Media-View':file===inspectorSelfie?'selfie':file.type.startsWith('image/')?'front':''}});
     inspectorSubmission.uploaded.set(file,mediaId);
    }
-   await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note:String(d.observation).trim(),position:(await eventTelemetry()).position||null}});
+   await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note:observation,position:(await eventTelemetry()).position||null}});
    const uploaded=inspectorSubmission.uploaded.size;
-   inspectorSubmission=null;inspectorSelfie=null;inspectorEvidence=[];
+   inspectorSubmission=null;inspectorSelfie=null;inspectorEvidence=[];inspectorDraft=null;inspectorWizardAutoId=null;
    flash('Vistoria concluída com '+uploaded+' evidências enviadas.');
    await load();return;
   }
@@ -976,7 +1094,7 @@ setInterval(()=>{if(account&&!document.hidden)void ops.refresh(account,true).cat
 setInterval(()=>{if(claimedEvent&&account&&!document.hidden)void api('/events/'+claimedEvent+'/claim',{method:'POST',data:{claimSession}}).catch(error=>flash(error.message));},40000);
 setInterval(()=>{if(['ronda','vistoriador'].includes(account?.role)&&!document.hidden)void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});},45000);
 setInterval(()=>{for(const e of document.querySelectorAll('[data-ops-live-clock]'))e.textContent=new Date().toLocaleTimeString('pt-BR');},1000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&['ronda','vistoriador'].includes(account?.role))void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&guardRound?.insideSince!=null){guardRound={...guardRound,insideSince:null};guardSave();}if(!document.hidden&&['ronda','vistoriador'].includes(account?.role))void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});});
 document.addEventListener('change',e=>{
  if(e.target?.dataset?.coiToggle){void ops.change(e.target).then(()=>load()).catch(error=>flash(error.message));return;}
  const field=e.target.closest('[data-occ-filter]');
@@ -986,5 +1104,11 @@ document.addEventListener('change',e=>{
 exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
 
+setInterval(guardTick,1000);
+setInterval(()=>{
+ if(!guardRound?.insideSince||document.hidden||account?.role!=='ronda'||!navigator.geolocation)return;
+ navigator.geolocation.getCurrentPosition(pos=>guardUpdateFix({lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:pos.timestamp}),
+  ()=>{}, {enableHighAccuracy:true,maximumAge:1500,timeout:6000});
+},4000);
 setInterval(()=>{if(account&&!document.hidden)void chat.refresh().catch(()=>{});},4000);
 setInterval(()=>{if(account&&!document.hidden)void calls.poll();},2000);

@@ -138,6 +138,22 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const attention=db.prepare("SELECT COUNT(DISTINCT CASE WHEN e.id IS NOT NULL AND e.status<>'resolvida' THEN 'e:'||e.id WHEN d.id IS NOT NULL AND d.completed_at IS NULL THEN 'd:'||d.id END) n FROM notifications n LEFT JOIN events e ON e.id=n.event_id LEFT JOIN dispatches d ON d.id=n.dispatch_id WHERE n.user_id=?").get(user.id).n;
    resp(res,200,{notifications:items,total,unread:count,attention,hasMore:rows.length>limit,nextCursor:rows.length>limit&&last?last.created_at+':'+last.id:null});return true;
   }
+  if(p==='/api/field-communications'&&method==='POST'){
+   if(!review(user)||!allows(user,'despachos')){resp(res,403,{error:'Envio reservado ao COE autorizado e administração'});return true;}
+   const data=serialize((await body(req,6000)).toString())||{};
+   const kind=data.kind==='alert'?'field_alert':data.kind==='notice'?'notice':null;
+   const title=clean(data.title).slice(0,100),message=clean(data.message).slice(0,650);
+   const ids=Array.isArray(data.recipients)?[...new Set(data.recipients.map(String))]:[String(data.workerId||'')];
+   if(!kind||title.length<3||message.length<8||!ids.length||ids.length>30||ids.some(x=>!x)){resp(res,422,{error:'Informe tipo, título, mensagem e destinatários válidos'});return true;}
+   const workers=db.prepare("SELECT id FROM users WHERE active=1 AND role IN ('ronda','vistoriador')").all();
+   const allowedIds=new Set(workers.map(x=>x.id));
+   if(ids.some(x=>!allowedIds.has(x))){resp(res,422,{error:'Um ou mais destinatários não são profissionais de campo ativos'});return true;}
+   const at=now();db.exec('BEGIN IMMEDIATE');
+   try{for(const uid of ids)insert.run(id(),uid,kind,title,message,null,null,at);db.exec('COMMIT');}
+   catch(error){db.exec('ROLLBACK');throw error;}
+   audit(user,'field.communication.'+kind,ids.join(',').slice(0,500));ids.forEach(announce);
+   resp(res,201,{ok:true,recipients:ids.length,at});return true;
+  }
   const seen=p.match(/^\/api\/notifications\/([a-f0-9-]{36})\/read$/i);
   if(seen&&method==='POST'){
    const change=db.prepare('UPDATE notifications SET read_at=COALESCE(read_at,?) WHERE id=? AND user_id=?').run(now(),seen[1],user.id);

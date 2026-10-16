@@ -8,9 +8,7 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
  const conversation=()=>conversations.find(c=>c.id===active);
  const preview=(c)=>c.last?.deleted_at?'Mensagem excluída':c.last?.body||(c.last?.attachments?.length?'📎 Anexo':'Conversa iniciada');
  const convRows=list=>list.map(c=>'<button type="button" data-chat-open="'+esc(c.id)+'" class="chat-conversation '+(c.id===active?'is-selected':'')+'"><span class="chat-avatar">'+esc(c.title.slice(0,1))+'</span><span><strong>'+esc(c.title)+'</strong><small>'+esc(preview(c).slice(0,95))+'</small></span><span><small>'+stamp(c.updated_at)+'</small>'+(c.unread?'<b class="rp-unread-count">'+c.unread+'</b>':'')+'</span></button>').join('');
- function badge(){if(['ronda','vistoriador'].includes(getAccount()?.role))return '<button type="button" class="rp-blue-button rp-direct-chat '+(unread?'has-unread':'')+'" data-chat-open-quick aria-label="Abrir conversa interna">'+
- '<span aria-hidden="true">✉</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button>';
- return '<details class="rp-header-popover" data-message-popover><summary class="rp-blue-button '+(unread?'has-unread':'')+'" aria-label="Mensagens: '+unread+' não lidas"><span aria-hidden="true">✉</span><span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimas conversas</strong>'+ (conversations.length?convRows(conversations.slice(0,5)):'<p class="empty">Nenhuma conversa iniciada.</p>')+'<button type="button" data-chat-page>Ver mais'+(conversations.slice(5).some(c=>c.unread)?'<b class="rp-unread-count">'+conversations.slice(5).reduce((n,c)=>n+c.unread,0)+'</b>':'')+'</button></div></details>'}
+ function badge(){return '<details class="rp-header-popover" data-message-popover><summary class="rp-blue-button '+(unread?'has-unread':'')+'" aria-label="Mensagens: '+unread+' não lidas"><span aria-hidden="true">✉</span><span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimas conversas</strong>'+ (conversations.length?convRows(conversations.slice(0,5)):'<p class="empty">Nenhuma conversa iniciada.</p>')+'<button type="button" data-chat-page>Ver mais'+(conversations.slice(5).some(c=>c.unread)?'<b class="rp-unread-count">'+conversations.slice(5).reduce((n,c)=>n+c.unread,0)+'</b>':'')+'</button></div></details>'}
  function updateBadge(){for(const host of document.querySelectorAll('[data-chat-badge]')){const open=host.querySelector('details')?.open;host.innerHTML=badge();if(open)host.querySelector('details').open=true}}
  async function refresh(){
   if(!mine()||busy)return;busy=true;const user=mine(),v=epoch;
@@ -51,7 +49,24 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
   const more=document.querySelector('[data-chat-older]');if(more)more.hidden=!hasMore;
   const valid=new Set(rows.flatMap(m=>m.attachments.map(a=>a.id)));for(const [key,url] of urls)if(!valid.has(key)){URL.revokeObjectURL(url);urls.delete(key)}
  }
- async function open(cid){active=cid;rows=[];reply=null;search='';await loadMessages();navigate('chat');requestAnimationFrame(()=>void mount())}
+ const isField=()=>['ronda','vistoriador'].includes(getAccount()?.role);
+ function fieldOverlay(){
+  let overlay=document.querySelector('#rp-field-chat-overlay');
+  if(!overlay){
+   overlay=document.createElement('dialog');overlay.id='rp-field-chat-overlay';overlay.className='rp-field-chat-overlay';
+   overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens · Campo e COE</strong><button type="button" data-chat-overlay-close aria-label="Fechar conversas">✕</button></div>'+view();
+   document.body.append(overlay);
+   overlay.addEventListener('close',()=>{observer?.disconnect();overlay.remove()},{once:true});
+   overlay.addEventListener('cancel',()=>observer?.disconnect());
+   overlay.showModal();
+  }else{const old=overlay.querySelector('.chat-page');if(old)old.outerHTML=view();}
+  requestAnimationFrame(()=>void mount());return overlay;
+ }
+ async function open(cid){
+  active=cid;rows=[];reply=null;search='';
+  if(isField()){fieldOverlay();await loadMessages();await mount();}
+  else{navigate('chat');await loadMessages();requestAnimationFrame(()=>void mount());}
+ }
  function modal(html){document.querySelector('#chat-dialog')?.remove();const d=document.createElement('dialog');d.id='chat-dialog';d.className='rp-record-dialog';d.innerHTML='<button type="button" data-chat-close class="chat-dialog-close" aria-label="Fechar">✕</button>'+html;document.body.append(d);d.addEventListener('close',()=>d.remove(),{once:true});d.showModal();return d}
  const close=()=>document.querySelector('#chat-dialog')?.close();
  const fileData=f=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(f)});
@@ -61,11 +76,12 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
   await api('/chat/conversations/'+cid+'/messages',{method:'POST',data:payload});reply=null;await refresh();
  }
  async function click(t){
-  if(t.hasAttribute('data-chat-close')){close();return true}
-  if(t.hasAttribute('data-chat-open-quick')){if(active&&conversations.some(c=>c.id===active))await open(active);else if(conversations.length)await open(conversations[0].id);else navigate('chat');return true}
-   if(t.hasAttribute('data-chat-page')){navigate('chat');return true}
+  if(t.hasAttribute('data-chat-overlay-close')){document.querySelector('#rp-field-chat-overlay')?.close();return true}
+   if(t.hasAttribute('data-chat-close')){close();return true}
+  if(t.hasAttribute('data-chat-open-quick')){if(isField()){fieldOverlay();return true;}if(active&&conversations.some(c=>c.id===active))await open(active);else if(conversations.length)await open(conversations[0].id);else navigate('chat');return true}
+   if(t.hasAttribute('data-chat-page')){if(isField())fieldOverlay();else navigate('chat');return true}
   if(t.dataset.chatOpen){await open(t.dataset.chatOpen);return true}
-  if(t.hasAttribute('data-chat-back')){active=null;navigate('chat');return true}
+  if(t.hasAttribute('data-chat-back')){active=null;if(isField()&&document.querySelector('#rp-field-chat-overlay'))fieldOverlay();else navigate('chat');return true}
   if(t.hasAttribute('data-chat-older')){await loadMessages(true);return true}
   if(t.hasAttribute('data-chat-new')){
    contacts=(await api('/chat/contacts')).contacts;modal('<h2>Nova conversa ou grupo</h2><form data-chat-create><label>Nome do grupo (ao selecionar vários contatos)<input name="title" maxlength="100"></label><div class="chat-contact-options">'+contacts.map(c=>'<label><input type="checkbox" name="members" value="'+esc(c.id)+'">'+esc(c.name)+' · '+esc(c.role)+'</label>').join('')+'</div><button type="submit" class="primary">Iniciar conversa</button></form>');return true;
@@ -108,6 +124,6 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
  });
  document.addEventListener('change',e=>{if(e.target.matches('[data-chat-attachment]'))document.querySelector('[data-chat-files-label]').textContent=[...e.target.files].map(f=>f.name).join(' · ')});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)observer?.disconnect();else observe()});globalThis.addEventListener?.('focus',observe);
- function reset(){epoch++;conversations=[];contacts=[];active=null;rows=[];unread=0;drafts.clear();observer?.disconnect();revoke();if(recorder?.state==='recording'){recording=null;recorder.stop()}audioStream?.getTracks().forEach(t=>t.stop());document.querySelector('#chat-dialog')?.close();}
+ function reset(){epoch++;conversations=[];contacts=[];active=null;rows=[];unread=0;drafts.clear();observer?.disconnect();revoke();if(recorder?.state==='recording'){recording=null;recorder.stop()}audioStream?.getTracks().forEach(t=>t.stop());document.querySelector('#chat-dialog')?.close();document.querySelector('#rp-field-chat-overlay')?.close();}
  return {badge,view,refresh,open,mount,click,submit,reset,active:()=>active,conversation};
 }

@@ -48,7 +48,7 @@ test('cockpit preserva mapa da ronda e sequência visual, mas restringe laudo à
  const started=inspectionCockpit({mapId:'inspection-map',queue:[{...row,started_at:123}],mode:'real'});
  assert.match(started,/data-inspection-arrive/);
  const arrived=inspectionCockpit({mapId:'inspection-map',queue:[{...row,started_at:123,arrived_at:124}],mode:'real'});
- assert.match(arrived,/Chegada registrada/);
+ assert.match(arrived,/Estou aqui · Abrir checklist/);
  assert.match(inspectionStops([row,task('2',-20.15,-44.89)]),/2<\/span>/);
  assert.notEqual(inspectionSignature([row]),inspectionSignature([{...row,arrived_at:123}]));
 });

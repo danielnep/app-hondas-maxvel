@@ -32,9 +32,9 @@ test('COI prioriza pessoas, tratativas, rondas e vistorias em vez de mapa genér
 });
 
 test('Vistoriador e Cliente preservam dados reais com organização guiada',()=>{
- assert.match(central,/rp2-inspection-checklist/);
+ assert.match(central,/rp-field-wizard-dialog/);
  assert.match(central,/name="dispatchId"/);
- assert.match(central,/name="observation"/);
+ assert.match(read('src/field-inspection-wizard.js'),/name="observation"/);
  assert.match(central,/rp2-client-timeline/);
  assert.match(central,/rp2-timeline-entry/);
  assert.match(central,/Acesso autenticado/);
