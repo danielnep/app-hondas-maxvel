@@ -292,3 +292,17 @@ body .checkpoint-curtain .checkpoint-stopwatch[hidden]{display:none!important}
  }
  .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-primary-flow .rondas-main-action{margin:3px 0!important}
 }
+
+/* No chat o botão Pânico permanece acessível, mas não pode interceptar
+   a área de digitação/envio. */
+@media(max-width:900px){
+ .dashboard:has(.field-chat-screen) .field-chat-topbar{padding-right:62px!important;box-sizing:border-box!important}
+ .dashboard:has(.field-chat-screen) .ops-panic{
+  position:fixed!important;
+  inset:calc(70px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) auto auto!important;
+  width:52px!important;height:52px!important;min-width:52px!important;min-height:52px!important;
+  padding:3px!important;gap:1px!important;z-index:70!important;
+ }
+ .dashboard:has(.field-chat-screen) .ops-panic-symbol{width:19px!important;height:19px!important;font-size:17px!important}
+ .dashboard:has(.field-chat-screen) .ops-panic strong{font-size:9px!important;line-height:1!important}
+}
