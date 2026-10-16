@@ -23,7 +23,7 @@ const svg=key=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stro
 export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base=null,gpsActive=false,fullTitle='Minhas vistorias'}={}){
  const current=queue[0]||null,coords=pointOf(current),p=pointOf(position),
   distance=coords&&p?Math.round(metersBetween(coords,p)):null;
- const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Ronda de vistoria pronta':'Aguardando solicitações';
+ const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada':'Aguardando solicitações';
  const action=current?started(current)?arrived(current)?
   '<button type="button" class="rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-wizard-open"':'data-wizard-open')+'>Abrir checklist '+svg('arrow')+'</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':'data-inspection-arrive')+'>Confirmar chegada '+svg('arrow')+'</button>':
