@@ -199,7 +199,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
  }
  update({session=this.session,position=this.position}={}){
   if(this.destroyed)return;const indexWas=this.session?.index,statusWas=this.session?.status;this.session=session;this.position=position??this.route.base;
-  if(!this.positionVerified&&position&&this.route.inspectionMode){
+  if(!this.positionVerified&&position&&(this.route.inspectionMode||this.route.roadRouting)){
    this.positionVerified=true;this.tracePositions=[position];
    if(this.instance)this.refreshGeometry();
    else this.showFallback();
