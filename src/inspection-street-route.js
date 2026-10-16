@@ -9,13 +9,13 @@ export const STREET_ROUTE_ENDPOINTS=[
  'https://routing.openstreetmap.de/routed-car/route/v1/driving/'
 ];
 export function inspectionRoutingStops(route,maxPoints=24){
- if(!route?.inspectionMode||!route.baseKnown||!route.points?.length)return [];
+ if(!(route?.inspectionMode||route?.roadRouting)||!route.baseKnown||!route.points?.length)return [];
  const planned=routeWaypoints(route).filter(p=>Number.isFinite(p?.lat)&&Number.isFinite(p?.lng));
  if(planned.length<2)return [];
  if(planned.length<=maxPoints)return planned;
  // Pontos intermediários são dispensáveis para uma consulta muito longa;
  // destinos reais NUNCA são descartados do circuito.
- const essentials=[route.base,...route.points];
+ const essentials=[route.base,...route.points,...(route.roadRouting?[route.base]:[])];
  return essentials.length<=maxPoints?essentials:[];
 }
 export function streetRouteUrl(points,endpoint=STREET_ROUTE_ENDPOINTS[0]){
