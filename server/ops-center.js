@@ -30,6 +30,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  if(!fields.includes('started_at'))db.exec('ALTER TABLE dispatches ADD COLUMN started_at INTEGER');
  if(!fields.includes('completed_at'))db.exec('ALTER TABLE dispatches ADD COLUMN completed_at INTEGER');
  if(!fields.includes('completion_note'))db.exec("ALTER TABLE dispatches ADD COLUMN completion_note TEXT NOT NULL DEFAULT ''");
+ if(!fields.includes('route_points'))db.exec("ALTER TABLE dispatches ADD COLUMN route_points TEXT NOT NULL DEFAULT '[]'");
  const clients=new Map();
  const announce=userId=>{
   for(const res of clients.get(userId)||[])try{res.write('event: change\ndata: {}\n\n')}catch{}
@@ -189,9 +190,14 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
     longitude!=null&&(!Number.isFinite(longitude)||Math.abs(longitude)>180)){
     resp(res,422,{error:'Coordenadas inválidas'});return true;
    }
+   const rawRoute=Array.isArray(data.routePoints)?data.routePoints:[];
+   if(rawRoute.length>12||rawRoute.some(point=>!point||!Number.isFinite(Number(point.lat))||!Number.isFinite(Number(point.lng))||Math.abs(Number(point.lat))>90||Math.abs(Number(point.lng))>180)){
+    resp(res,422,{error:'Rota inválida. Informe até 12 pontos válidos em latitude e longitude.'});return true;
+   }
+   const routePoints=kind==='vistoria'?rawRoute.map(p=>({lat:Number(p.lat),lng:Number(p.lng),label:clean(p.label).slice(0,70)})):[];
    const dispatchId=id(),at=now();
-   db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at,kind,destination_id,site) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
-    .run(dispatchId,worker.id,user.id,address,reason,latitude,longitude,at,kind,dest?.id||null,site);
+   db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at,kind,destination_id,site,route_points) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
+    .run(dispatchId,worker.id,user.id,address,reason,latitude,longitude,at,kind,dest?.id||null,site,JSON.stringify(routePoints));
    insert.run(id(),worker.id,'dispatch',kind==='vistoria'?'Nova vistoria atribuída':'Nova ronda adicionada',
     address+' · '+reason,null,dispatchId,at);
    announce(worker.id);

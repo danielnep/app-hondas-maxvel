@@ -13,7 +13,7 @@ try{
  browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  for(const width of [320,390,1366]){
   const context=await browser.newContext({viewport:{width,height:width===320?600:900},permissions:['geolocation'],geolocation:{latitude:-20.14,longitude:-44.88}}),page=await context.newPage(),errors=[];
-  page.on('pageerror',e=>errors.push(e.message));
+  page.on('pageerror',e=>errors.push(e.stack||e.message));
   await page.addInitScript(()=>{
    localStorage.setItem('horizon-maxvel-tour-v2','seen');
    localStorage.setItem('horizon-maxvel-localizacao-ciencia-v1',JSON.stringify({version:'2026-10-11',accepted:true,at:Date.now()}));
@@ -84,6 +84,34 @@ try{
   await page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
   if(!await page.locator('.rp-treatment-archive .rp-archive-record').count())throw Error('Conclusão não aparece no histórico');
   if(await page.locator('#incident-review-form:visible').count())throw Error('O histórico não deve oferecer campos editáveis');
+  // Fluxo completo de vistoria: solicitação COI -> missão exclusiva -> selfie, fotos e conclusão.
+  await page.locator('[data-view="overview"]').first().evaluate(el=>el.click());
+  await page.locator('[data-action="demo-request-inspection"]').click();
+  await page.locator('#demo-inspection-request [name="known"]').selectOption('Maxvel Logística');
+  await page.locator('#demo-inspection-request [name="coords"]').fill('-20.145, -44.89');
+  await page.locator('#demo-inspection-request [name="routePoints"]').fill('-20.146, -44.892');
+  await page.locator('#demo-inspection-request [name="instructions"]').fill('Vistoria programada na entrada principal e no setor técnico.');
+  await page.locator('#demo-inspection-request [type="submit"]').click();
+  await page.locator('[data-action="sim-role-picker"]').first().evaluate(el=>el.click());
+  await page.locator('#toast.toast-visible').waitFor({state:'hidden'});
+  await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
+  await page.locator('#demo-inspection-map').waitFor();
+  if(await page.locator('#ops-map.rp-inspection-map').count())throw Error('Mapa da ronda reaproveitado pelo vistoriador');
+  if(!await page.locator('#demo-inspection-form [name="localPhoto"][multiple]').count())throw Error('Seleção de múltiplas fotos do local ausente');
+  await page.screenshot({path:out+'/vistoriador-'+width+'.png',fullPage:true});
+  const file={name:'evidencia.jpg',mimeType:'image/jpeg',buffer:Buffer.from([255,216,255,224,0,16])};
+  await page.locator('#demo-inspection-form [name="selfie"]').setInputFiles(file);
+  await page.locator('#demo-inspection-form [name="localPhoto"]').setInputFiles([file,{...file,name:'segunda.jpg'}]);
+  for(const criterion of ['acessos','estrutura','equipamentos','sinalizacao'])await page.locator('#demo-inspection-form [name="'+criterion+'"]').selectOption('ok');
+  await page.locator('#demo-inspection-form [name="notes"]').fill('Conferência realizada no local, sem irregularidades nos critérios observados.');
+  await page.locator('#demo-inspection-form [name="confirmation"]').check();
+  await page.locator('#demo-inspection-form [type="submit"]').click();
+  if(await page.locator('#demo-inspection-form').count())throw Error('Vistoria concluída não voltou para o mapa sem pendências');
+  await page.locator('.rp-inspection-empty').waitFor();
+  await page.locator('.rp-direct-chat[data-view="chat-interno"]').click();
+  await page.locator('#demo-chat-form').waitFor();
+  if(await page.locator('.field-chat-contact-row:visible').count())throw Error('Chat de campo abriu lista em vez de conversa direta');
+  await page.screenshot({path:out+'/chat-vistoriador-'+width+'.png',fullPage:true});
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
   if(overflow)throw Error('Rolagem horizontal indevida em '+width+'px');
   const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('horizon-maxvel-v1')));

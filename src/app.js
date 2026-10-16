@@ -1,4 +1,5 @@
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
+import {createInspectionRouteMap} from './inspection-route-map.js';
 import {PatrolMap} from './map.js';
 import {createRoundWizard} from './wizard.js';
 import {withExampleRondas} from './demo-scenarios.js';
@@ -365,7 +366,9 @@ function installViewportViews(){
  if(view==='equipe')paginateRows(main,'.team-row','Equipe',4);
 }
 
-function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+const demoRouteMap=createInspectionRouteMap({onPosition:fix=>{const state=document.querySelector('[data-demo-inspection-gps]');if(state)state.textContent='GPS ativo · precisão '+Math.round(fix.accuracy)+' m · '+fix.samples+' posições registradas';},onError:notify});
+let demoMapControls=null;
+function render(){demoRouteMap.destroy();demoMapControls=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(presentation&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
@@ -426,7 +429,7 @@ function supervisorWatcherSelector(){
 function attachMaps(){
  if(screen==='landing')registerMap('hero-map',DEMO_ROUTE,null,DEMO_ROUTE.base,true);
  if(screen==='presentation'||screen==='dashboard'){
-  if(view==='overview'||view==='rondas'||view==='cliente'||view==='vistoriador'){
+  if(view==='overview'||view==='rondas'||view==='cliente'){
     const context=supervisedContext();
     const location=context.current?.lastFix??context.route.base;
     registerMap('ops-map',context.route,context.current,location,false);
@@ -437,6 +440,7 @@ function attachMaps(){
     history.forEach((item,index)=>registerMap('admin-route-mini-'+index,item.route,item,item.lastFix??item.route.base,true));
    }
   if(view==='minha-ronda'){const selectedRoute=session?.route??routeForWatcher(selectedWatcherId);registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
+  if(view==='vistoriador'){const host=document.querySelector('#demo-inspection-map');if(host)demoMapControls=demoRouteMap.mount(host,demoPendingInspection(),{demo:true});}
  }
 }
 function entryScreen(){
@@ -726,11 +730,11 @@ function demoInspectorView(){
  const records=demoInspectionRecords(),pending=demoPendingInspection();
  const checks=[['acessos','Acessos em condições adequadas'],['estrutura','Estrutura verificada'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização adequada']];
  return '<section class="demo-role-view rp-demo-inspector">'+pageTitle('Minhas vistorias','Atendimento sob solicitação do COI, com mapa e registro das verificações.')+
- '<div class="rp-inspection-viewport '+(pending?'has-task':'is-idle')+'"><div id="ops-map" class="rp-inspection-map map-container large" role="img" aria-label="Mapa ilustrativo para vistorias"></div><div class="rp-inspection-map-note">'+(pending?'<span class="rp-inspection-status">● NOVA VISTORIA · '+esc(pending.routine?'ROTINA':'SOLICITADA')+'</span><strong>'+esc(pending.address)+'</strong><span>'+esc(pending.instructions)+'</span>':'<div class="rp-inspection-empty"><strong>Sem vistoria pendente</strong><span>Aguardando solicitação do COI</span><small>O mapa permanece disponível para referência.</small></div>')+'</div></div>'+
+ '<div class="rp-inspection-viewport '+(pending?'has-task':'is-idle')+'"><div id="demo-inspection-map" class="rp-inspection-map map-container large" role="img" aria-label="Mapa exclusivo da vistoria"></div><div class="rp-inspection-map-note">'+(pending?'<span class="rp-inspection-status">● NOVA VISTORIA · '+esc(pending.routine?'ROTINA':'SOLICITADA')+'</span><strong>'+esc(pending.address)+'</strong><span>'+esc(pending.instructions)+'</span>':'<div class="rp-inspection-empty"><strong>Sem vistoria pendente</strong><span>Aguardando solicitação do COI</span><small>O mapa permanece disponível para referência.</small></div>')+'</div></div>'+(pending?'<div class="rp-inspection-navigation"><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(pending.address)+'" target="_blank" rel="noopener noreferrer">Navegar ao destino ↗</a><button type="button" data-action="demo-inspection-track">Acompanhar GPS</button><span data-demo-inspection-gps>GPS desligado · o mapa é exclusivo da vistoria</span></div>':'')+
  (pending?'<form id="demo-inspection-form" class="demo-inspection-form rp-demo-inspection-form"><div class="rp-demo-inspection-head"><span class="eyebrow">MISSÃO RECEBIDA</span><h2>Conferir o local</h2><p>Preencha os quatro critérios após chegar ao endereço. Fotos serão utilizadas somente nesta demonstração.</p></div>'+
  '<input type="hidden" name="requestId" value="'+esc(pending.id)+'">'+
- checks.map(([k,label])=>'<label class="rp-demo-check"><span>'+esc(label)+'</span><select name="'+k+'" required><option value="">Avaliar</option><option value="ok">Tudo OK</option><option value="no">Não conforme</option></select></label>').join('')+
- '<div class="rp-demo-photo-pair"><label>Selfie da chegada<input type="file" name="selfie" accept="image/*" capture="user" required></label><label>Foto do local<input type="file" name="localPhoto" accept="image/*" capture="environment" required></label></div>'+
+ checks.map(([k,label])=>'<label class="rp-demo-check"><span>'+esc(label)+'</span><select name="'+k+'" required><option value="">Avaliar</option><option value="ok">Sem anormalidades</option><option value="no">Não conformidade identificada</option></select></label>').join('')+
+ '<div class="rp-demo-photo-pair"><label>Selfie da chegada<input type="file" name="selfie" accept="image/*" capture="user" required></label><label>Fotos do local (múltiplas)<input type="file" name="localPhoto" accept="image/*" multiple required></label></div>'+
  '<label>Relatório da vistoria<textarea name="notes" required minlength="8" maxlength="1000" placeholder="Descreva o que foi verificado"></textarea></label>'+
  '<label class="rp-demo-confirm"><input type="checkbox" name="confirmation" required> Confirmo que verifiquei o local pessoalmente.</label>'+
  '<button class="button primary" type="submit">Concluir vistoria</button></form>':
@@ -762,18 +766,18 @@ let demoTreatmentTab='incident';
 function demoEventNotifications(){return [...recentNotification().filter(n=>n.kind!=='message'),...localCommunications().map(n=>({...n,id:'field:'+n.id,session:{id:'field',name:n.name,route:{name:n.route}}}))].sort((a,b)=>b.at-a.at);}
 function demoHeaderButtons(){
  const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length,extra=all.slice(5).filter(n=>!n.readAt).length;
- return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Nenhum evento recebido.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details><details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Chat interno</strong><p>Conversa com o COI neste cenário.</p><button type="button" class="button" data-view="chat-interno">Abrir chat interno</button></div></details></div>';
+ return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Nenhum evento recebido.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details>' + (['ronda','vistoriador'].includes(user?.role)?'<button type="button" data-view="chat-interno" class="rp-blue-button rp-direct-chat" aria-label="Abrir chat interno">'+ic('message')+'<span>Mensagens</span></button>':'<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Chat interno</strong><p>Conversa com o COI neste cenário.</p><button type="button" class="button" data-view="chat-interno">Abrir chat interno</button></div></details>')+'</div>';
 }
-let demoChatScreen='list';
+let demoChatScreen='thread';
 function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows:[]}catch{return []}}
 function demoChatView(){
  const rows=demoChatRows(),mine=user?.name||'Vigia',last=rows.at(-1),thread=demoChatScreen==='thread';
- const back=user?.role==='ronda'?'minha-ronda':(allNav[user?.role]||[['minha-ronda']])[0][0];
- const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'" aria-label="Voltar à área de trabalho">'+ic('arrowleft')+'<span>Voltar à ronda</span></button><div><h1>Mensagens</h1><small>Comunicação operacional</small></div></header>';
+ const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':(allNav[user?.role]||[['minha-ronda']])[0][0];
+ const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'" aria-label="Voltar à área de trabalho">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Comunicação operacional</small></div></header>';
  const list='<section class="field-chat-list" aria-label="Conversas"><div class="field-chat-list-label">CONVERSAS</div><button type="button" class="field-chat-contact-row" data-action="demo-chat-open"><span class="field-chat-avatar">C</span><span class="field-chat-contact-copy"><strong>COI · Central de Operações</strong><small>'+(last?esc(last.body):'Toque para iniciar uma conversa')+'</small></span><span class="field-chat-contact-time">'+(last?time(last.at):'')+'</span></button><div class="field-chat-local-note">Demonstração local: mensagens deste aparelho. Para conversas reais entre equipes, use a central autenticada.</div><a class="field-chat-auth-link" href="/central.html#chat">Abrir mensagens da central autenticada ↗</a></section>';
  const messages=rows.map(m=>'<article class="field-chat-bubble '+(m.author===mine?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+time(m.at)+(m.author===mine?' · Salva neste aparelho':'')+'</small></article>').join('');
  const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list" aria-label="Voltar para conversas">'+ic('arrowleft')+'</button><span class="field-chat-avatar">C</span><div><strong>COI · Central de Operações</strong><small>Chat local de demonstração</small></div></header><div class="field-chat-thread" role="log" aria-label="Mensagens da conversa com o COI">'+(messages||'<div class="field-chat-empty"><strong>Conversa iniciada</strong><span>Envie uma mensagem para registrar a demonstração.</span></div>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Escrever mensagem</label><input id="demo-chat-body" name="body" required maxlength="2000" placeholder="Mensagem" autocomplete="off"><button type="submit" class="button primary" aria-label="Enviar mensagem">Enviar</button></form></section>';
- return '<section class="field-chat-screen">'+header+'<div class="field-chat-surface">'+(thread?conversation:list)+'</div></section>';
+ return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(thread?conversation:list)+'</div></section>';
 }
 let demoHistoryPage=0;
 function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,type:'round',at:r.startedAt,name:r.name,site:r.route?.name,status:r.status})),...demoInspectionRecords().map((r,i)=>({id:String(i),type:'inspection',at:r.at,name:'Vistoria',site:DEMO_WATCHERS[0].unit,status:'Enviada'}))].sort((a,b)=>b.at-a.at);}
@@ -1124,8 +1128,14 @@ setInterval(()=>{if(session?.status==='active')save()},10000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&session?.status==='active'){if(!window.AndroidTracking){session.insideSince=null;const p=currentCheckpoint(session);if(p)session.checkpoints[session.index].dwellMs=0;}movement=null;save();}else if(screen!=='landing'&&session?.status==='active'){syncNativeHistory();render()}});
 window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status==='active'&&mode==='real')syncNativeHistory()});
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
- const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
+ const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&view!==nav)demoChatScreen=['ronda','vistoriador'].includes(user.role)?'thread':'list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(act==='demo-inspection-track'){
+  if(!demoMapControls){notify('Aguardando a inicialização do mapa.');return;}
+  if(demoRouteMap.getActive()){demoRouteMap.stop();el.textContent='Retomar GPS';}
+  else if(demoMapControls.track())el.textContent='Pausar GPS';
+  return;
+ }
  if(act==='demo-chat-open'){demoChatScreen='thread';render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
  if(act==='demo-chat-list'){demoChatScreen='list';render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
@@ -1282,7 +1292,7 @@ if(act==='profile-menu'){profileDialog();return;}
   const own=el.dataset.session==='field'?localCommunications().some(n=>'field:'+n.id===el.dataset.id&&n.name===user.name):sessions.some(s=>s.id===el.dataset.session&&s.name===user.name);
   if(own)notificationDialog(el.dataset.id,el.dataset.session);return;
  }
- if(act==='notification-detail'){if(!canReviewDemo())return;notificationDialog(el.dataset.id,el.dataset.session);return;}
+ if(act==='notification-detail'){notificationDialog(el.dataset.id,el.dataset.session);return;}
  if(act==='acknowledge'){if(!canReviewDemo())return;const s=sessions.find(x=>x.id===el.dataset.session);const n=s?.notifications.find(n=>n.id===el.dataset.id),response=modal.querySelector('[data-alert-response]')?.value.trim();if(!n||n.seenAt)return;if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e informe a resposta ao profissional (mínimo 10 caracteres).');return;}if(s&&acknowledge(s,el.dataset.id)){n.response=response;n.respondedBy=user.name;persist();modal.close();render();notify('Análise registrada no cenário demonstrativo.')}return;}
  if(act==='incident-detail'){
   if(!canReviewDemo())return;
@@ -1319,7 +1329,9 @@ if(act==='profile-menu'){profileDialog();return;}
    '<label>Vistoriador<select name="worker"><option value="Vistoriador demonstrativo">Vistoriador demonstrativo</option></select></label>'+
    '<label>Local cadastrado<select name="known"><option value="">Outro endereço</option>'+clients.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select></label>'+
    '<label>Ou informe endereço<input type="text" name="address" maxlength="350" placeholder="Rua, número, bairro e cidade"></label>'+
-   '<label>Instruções para a vistoria<textarea name="instructions" required minlength="10" maxlength="1000" placeholder="Descreva o que o profissional deverá verificar"></textarea></label>'+
+   '<label>Coordenadas do destino (opcional)<input name="coords" placeholder="-20.1450, -44.8880"></label>'+
+   '<label>Rota do COI · pontos de passagem (opcional)<textarea name="routePoints" rows="3" placeholder="Um ponto por linha: latitude, longitude"></textarea></label>'+
+   '<label>Instruções para a vistoria<textarea name="instructions" required minlength="10" maxlength="1000" placeholder="Informe a finalidade e o que deve ser verificado"></textarea></label>'+
    '<div class="modal-actions"><button class="button primary" type="submit">Enviar solicitação</button></div></form>',false);
   return;
  }
@@ -1413,7 +1425,7 @@ document.addEventListener('submit',e=>{
   if(notes.length<8){notify('Descreva o que foi verificado.');return;}
   const criteria=['acessos','estrutura','equipamentos','sinalizacao'];
   if(criteria.some(k=>!['ok','no'].includes(f.get(k)))){notify('Avalie todos os critérios.');return;}
-  if(!f.get('confirmation')||!f.get('selfie')?.size||!f.get('localPhoto')?.size){notify('Confirme a vistoria e capture selfie e foto do local.');return;}
+  if(!f.get('confirmation')||!f.get('selfie')?.size||!f.getAll('localPhoto').some(file=>file?.size)){notify('Confirme a vistoria e capture selfie e foto do local.');return;}
   const score=criteria.filter(k=>f.get(k)==='ok').length*25,at=Date.now();
   try{
    localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify([{at,notes,score,address:pending.address,requestId:pending.id},...demoInspectionRecords()].slice(0,100)));
@@ -1437,7 +1449,11 @@ modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormDat
   const known=String(f.get('known')||'').trim(),address=String(f.get('address')||'').trim()||known,instructions=String(f.get('instructions')||'').trim();
   if(address.length<5||instructions.length<10){notify('Informe um destino e instruções suficientes.');return;}
   try{
-   saveDemoInspectionRequests([{id:crypto.randomUUID(),address,instructions,routine:f.get('kind')==='routine',worker:String(f.get('worker')),createdAt:Date.now(),completedAt:null},...demoInspectionRequests()]);
+   const parsePoint=value=>{const p=String(value||'').trim().split(/[,;\s]+/).map(Number);return p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=90&&Math.abs(p[1])<=180?{lat:p[0],lng:p[1]}:null;};
+   const coords=String(f.get('coords')||'').trim(),lines=String(f.get('routePoints')||'').trim();
+   const destination=coords?parsePoint(coords):null,routePoints=lines?lines.split(/\r?\n/).filter(Boolean).map(parsePoint):[];
+   if((coords&&!destination)||routePoints.length>12||routePoints.some(p=>!p)){notify('Confira as coordenadas. Informe até 12 pontos no formato latitude, longitude.');return;}
+   saveDemoInspectionRequests([{id:crypto.randomUUID(),address,instructions,routine:f.get('kind')==='routine',worker:String(f.get('worker')),latitude:destination?.lat??null,longitude:destination?.lng??null,routePoints,createdAt:Date.now(),completedAt:null},...demoInspectionRequests()]);
   }catch{notify('Não foi possível salvar a solicitação.');return;}
   modal.close();render();notify('Solicitação salva. Abra o perfil Vistoriador para recebê-la.');return;
  }

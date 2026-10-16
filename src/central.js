@@ -8,6 +8,7 @@ import {openConclusionDialog} from './conclusion-dialog.js';
 import {createOpsCenterUI} from './ops-center-ui.js';
 import {createCoiMonitor} from './coi-monitor.js';
 import {createMediaCapture,evidenceButtons} from './media-capture.js';
+import {createInspectionRouteMap} from './inspection-route-map.js';
 import {createFieldTorch} from './field-torch.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -17,6 +18,7 @@ const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS
 let composeKind='message';
 const coi=createCoiMonitor();
 let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
+const inspectionRoute=createInspectionRouteMap({onPosition:fix=>{const status=document.querySelector('[data-inspection-gps-state]');if(status)status.textContent='GPS ativo · precisão '+Math.round(fix.accuracy)+' m · '+fix.samples+' posições registradas';},onError:message=>flash(message)});
 let treatmentTab='incident',treatmentRows=[],treatmentMore=false,treatmentOffset=0,eventHistory=[],detailOrigin='events',claimedEvent=null,remoteSyncing=false,inspectionMap=null,inspectorSelfie=null;
 const claimSession=sessionStorage.getItem('rondaspro-treatment-session')||crypto.randomUUID();
 sessionStorage.setItem('rondaspro-treatment-session',claimSession);
@@ -36,8 +38,18 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
-const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId}={})=>{
- if(eventId){await openEvent(eventId,'notifications');return;}
+const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId,notification}={})=>{
+ if(eventId){
+  try{await openEvent(eventId,'notifications');return;}
+  catch(error){
+   if(!['ronda','vistoriador'].includes(account?.role)||!notification)throw error;
+   const n=notification,d=document.createElement('dialog');d.id='rp-field-notification-dialog';d.className='rp-record-dialog rp-notification-dialog';
+   const clean=x=>escape(String(x||''));
+   d.innerHTML='<div class="eyebrow">COMUNICAÇÃO DO COI</div><h2>'+clean(n.title)+'</h2><p>'+clean(n.body)+'</p><p class="muted">'+clean(n.origin_name||'Central operacional')+' · '+fmt(n.created_at)+'</p><p class="muted">Consulta ao registro recebido. Sem permissão de alteração da tratativa.</p><button type="button" class="primary" data-field-notification-close>Fechar</button>';
+   document.querySelector('#rp-field-notification-dialog')?.remove();
+   document.body.append(d);d.addEventListener('close',()=>d.remove(),{once:true});d.showModal();return;
+  }
+ }
  if(nextPage){await releaseTreatment();selected=null;page=nextPage;render();}
 }});
 const routeBoard=createRouteBoard({api,getContext:()=>({users,rounds,events,routes,account}),redraw:async(loadRemote=false)=>loadRemote?await load():render(),notify:flash});
@@ -576,8 +588,10 @@ function inspectionView(){
  const avg=scored.length?Math.round(scored.reduce((n,e)=>n+e.details.qualityPercent,0)/scored.length):null;
  const criteria=[['acessos','Acessos verificados'],['estrutura','Estrutura em conformidade'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização em conformidade']];
  const validLocation=assignment?.latitude!=null&&assignment?.longitude!=null&&Number.isFinite(Number(assignment.latitude))&&Number.isFinite(Number(assignment.longitude));
- const mapPanel='<section class="rp-inspection-viewport '+(assignment?'has-task':'is-idle')+'"><div id="inspection-map" class="rp-inspection-map" role="img" aria-label="Mapa de atendimento"></div><div class="rp-inspection-map-note">'+(assignment?'<span class="rp-inspection-status">● VISTORIA ATRIBUÍDA</span><strong>'+escape(assignment.address)+'</strong><span>'+escape(assignment.reason||'Instruções do COI')+'</span>'+(validLocation?'':'<small>Coordenadas não verificadas. Consulte o endereço informado.</small>'):'<div class="rp-inspection-empty"><strong>Sem vistoria pendente</strong><span>Aguardando solicitação de vistoria pelo COI.</span></div>')+'</div></section>';
- return '<section class="stack rp-inspector-workspace"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+mapPanel+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?.started_at?'<div class="surface rp2-assignment"><div class="eyebrow">ETAPA 1 · DESTINO AUTORIZADO PELO COI</div><h2>'+escape(assignment.site||assignment.address)+'</h2><p>'+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack rp2-inspection-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><div class="rp2-inspection-header"><span class="rp2-step">02</span><div><h2>Conferir o local</h2><p class="muted">Avalie todos os critérios ao chegar ao local. Nenhum item sem avaliação será aceito.</p></div></div><div class="rp2-inspection-checklist">'+criteria.map(([key,label],i)=>'<label class="inspection-check rp2-inspection-item"><span class="rp2-inspection-number">'+(i+1)+'</span><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Avaliar</option><option value="ok">Conforme</option><option value="no">Não conforme</option></select></label>').join('')+'</div><label>Observações da vistoria<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Registre somente o que foi verificado"></textarea></label><div class="rp2-inspection-header"><span class="rp2-step">03</span><div><h3>Evidências</h3><p class="muted">Uma selfie e uma foto do local são obrigatórias. Outras mídias são opcionais.</p></div></div><button type="button" class="rp-inspection-selfie" data-evidence-kind="selfie">Tirar selfie <span>Câmera frontal</span></button>'+evidenceButtons()+'<label class="rp-inspection-declaration"><input type="checkbox" name="confirmation" required><span>Confirmo que estive no local e registrei as condições verificadas.</span></label><button class="primary rp2-inspection-submit">Concluir vistoria</button></form>':'<div class="surface rp-inspection-awaiting">'+(assignment?'<h2>Solicitação de vistoria recebida</h2><p>Confira o endereço e as orientações no mapa. Antes do checklist, confirme o recebimento e inicie o atendimento.</p><button type="button" data-page="dispatches" class="primary">Confirmar e iniciar atendimento ↗</button>':'<h2>Pronto para a próxima vistoria</h2><p>O COI pode enviar uma vistoria de rotina ou uma solicitação específica.</p>')+'</div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
+ const routePoints=(()=>{try{return JSON.parse(assignment?.route_points||'[]')}catch{return []}})();
+ const directions=assignment?.latitude!=null&&assignment?.longitude!=null?'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(Number(assignment.latitude)+','+Number(assignment.longitude)):'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(assignment?.address||'');
+ const mapPanel='<section class="rp-inspection-viewport '+(assignment?'has-task':'is-idle')+'"><div id="inspection-map" class="rp-inspection-map" role="img" aria-label="Mapa de atendimento exclusivo do vistoriador"></div><div class="rp-inspection-map-note">'+(assignment?'<span class="rp-inspection-status">● VISTORIA ATRIBUÍDA</span><strong>'+escape(assignment.address)+'</strong><span>'+escape(assignment.reason||'Instruções do COI')+'</span>'+'<small>Percurso indicado pelo COI · '+routePoints.length+' passagem(ns) · tracejado = plano, linha clara = GPS registrado</small>'+(validLocation?'':'<small>Destino sem coordenadas. Utilize o endereço ou solicite a posição ao COI.</small>'):'<div class="rp-inspection-empty"><strong>Sem vistoria pendente</strong><span>Aguardando solicitação de vistoria pelo COI.</span></div>')+'</div></section>';
+ return '<section class="stack rp-inspector-workspace"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+mapPanel+(assignment?'<div class="rp-inspection-navigation"><a class="rp-inspection-nav-link" href="'+escape(directions)+'" target="_blank" rel="noopener noreferrer">Navegação pelas ruas ↗</a><button type="button" data-inspection-track>Iniciar acompanhamento GPS</button><span data-inspection-gps-state role="status">GPS desligado · ativação manual</span></div>':'')+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?.started_at?'<div class="surface rp2-assignment"><div class="eyebrow">ETAPA 1 · DESTINO AUTORIZADO PELO COI</div><h2>'+escape(assignment.site||assignment.address)+'</h2><p>'+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack rp2-inspection-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><div class="rp2-inspection-header"><span class="rp2-step">02</span><div><h2>Conferir o local</h2><p class="muted">Avalie todos os critérios ao chegar ao local. Nenhum item sem avaliação será aceito.</p></div></div><div class="rp2-inspection-checklist">'+criteria.map(([key,label],i)=>'<label class="inspection-check rp2-inspection-item"><span class="rp2-inspection-number">'+(i+1)+'</span><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Avaliar</option><option value="ok">Sem anormalidades</option><option value="no">Não conformidade identificada</option></select></label>').join('')+'</div><label>Observações da vistoria<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Registre somente o que foi verificado"></textarea></label><div class="rp2-inspection-header"><span class="rp2-step">03</span><div><h3>Evidências</h3><p class="muted">Selfie e fotos do local são obrigatórias. Você pode selecionar várias imagens de uma vez.</p></div></div><button type="button" class="rp-inspection-selfie" data-evidence-kind="selfie">Tirar selfie <span>Câmera frontal</span></button>'+evidenceButtons()+'<label class="rp-inspection-multi-photo">Selecionar várias fotos do local<input type="file" accept="image/*" multiple data-inspection-photo-upload><span>Selecionar na galeria do aparelho</span></label><label class="rp-inspection-declaration"><input type="checkbox" name="confirmation" required><span>Confirmo que estive no local e registrei as condições verificadas.</span></label><button class="primary rp2-inspection-submit">Concluir vistoria</button></form>':'<div class="surface rp-inspection-awaiting">'+(assignment?'<h2>Solicitação de vistoria recebida</h2><p>Confira o endereço e as orientações no mapa. Antes do checklist, confirme o recebimento e inicie o atendimento.</p><button type="button" data-page="dispatches" class="primary">Confirmar e iniciar atendimento ↗</button>':'<h2>Pronto para a próxima vistoria</h2><p>O COI pode enviar uma vistoria de rotina ou uma solicitação específica.</p>')+'</div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
 }
 
 function render(){
@@ -595,7 +609,7 @@ function render(){
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  if(selected?.event)content='<dialog id="central-event-dialog" class="rp-record-dialog"><button type="button" data-close-event>Fechar ✕</button>'+content+'</dialog>';
  const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
- if(inspectionMap){inspectionMap.remove();inspectionMap=null;}
+ if(inspectionMap){inspectionMap.destroy();inspectionMap=null;}
  root.innerHTML='<button type="button" class="rp-central-menu-button" data-central-menu aria-expanded="false" aria-controls="central-navigation">☰ Menu '+pendingDot('total',ops.summary().total)+'</button><div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+
   (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
@@ -613,14 +627,9 @@ function render(){
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(()=>coi.mount());
- if(page==='inspections')requestAnimationFrame(()=>{
+ if(account.role==='vistoriador'&&page==='inspections')requestAnimationFrame(()=>{
   const host=document.querySelector('#inspection-map'),item=ops.activeInspection();
-  if(!host||!window.L)return;
-  const ok=item?.latitude!=null&&item?.longitude!=null&&Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude));
-  const point=ok?[Number(item.latitude),Number(item.longitude)]:[-20.1437,-44.8906];
-  inspectionMap=window.L.map(host,{zoomControl:ok,scrollWheelZoom:false,dragging:ok}).setView(point,ok?16:12);
-  window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19}).addTo(inspectionMap);
-  if(ok)window.L.circleMarker(point,{radius:9,color:'#fff',fillColor:'#ec3154',fillOpacity:1}).addTo(inspectionMap);
+  if(host)inspectionMap=inspectionRoute.mount(host,item,{demo:false});
  });
  if(account.role==='cliente'&&page==='client')void loadClientInspectionMedia();
 }
@@ -679,6 +688,17 @@ async function printAllConversations(){
  popup.document.open();popup.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Conversas Rondas Pro</title><style>body{font:14px/1.5 system-ui;color:#233341;margin:18mm}h1{color:#146585}section{border-top:1px solid #ccd8e2;padding-top:12px;margin:20px 0}.bubble{padding:10px 12px;break-inside:avoid;border:1px solid #c9d8e2;border-radius:8px;margin:8px 0}.bubble p{margin:0 0 8px}.bubble small{display:block;font-size:10px;color:#687c8a}</style></head><body><h1>Rondas Pro | Conversas operacionais</h1><p>Gerado '+escape(fmt(Date.now()))+'. Documento restrito a pessoal autorizado.</p>'+(content||'<p>Sem mensagens.</p>')+'</body></html>');
  popup.document.close();popup.focus();popup.print();
 }
+document.addEventListener('change',e=>{
+ if(!e.target.matches('[data-inspection-photo-upload]'))return;
+ const form=e.target.closest('#inspection-form');if(!form)return;
+ const files=[...(e.target.files||[])],valid=files.filter(f=>f.type.startsWith('image/')&&f.size>0&&f.size<=25*1024*1024);
+ if(valid.length!==files.length)flash('Algumas imagens não foram aceitas (25 MB por arquivo).');
+ const available=Math.max(0,12-inspectorEvidence.length);inspectorEvidence.push(...valid.slice(0,available));
+ if(valid.length>available)flash('Limite de 12 anexos por vistoria.');
+ const holder=form.querySelector('[data-evidence-attachments]');
+ if(holder)holder.textContent=inspectorEvidence.length+' foto(s) e anexo(s): '+inspectorEvidence.map(f=>f.name).join(' · ');
+ e.target.value='';
+});
 document.addEventListener('click',async e=>{
  const target=e.target.closest('button');if(!target)return;
  try{
@@ -694,13 +714,21 @@ document.addEventListener('click',async e=>{
      const selfie=form.querySelector('.rp-inspection-selfie');if(selfie)selfie.innerHTML='Selfie capturada <span>Pronta para envio</span>';
      return;
     }
-    if(store.length>=8){flash('Máximo de oito anexos por registro.');return}
+    if(store.length>=(isInspection?12:8)){flash('Limite de anexos atingido.');return}
     store.push(file);
     const holder=form.querySelector('[data-evidence-attachments]');
     if(holder)holder.textContent=store.map(x=>x.name).join(' · ');
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
+  if(target.hasAttribute('data-inspection-track')){
+   if(!ops.activeInspection()){flash('Nenhuma vistoria pendente.');return;}
+   if(!inspectionMap){flash('Mapa ainda carregando.');return;}
+   if(inspectionRoute.getActive()){inspectionRoute.stop();target.textContent='Retomar GPS';}
+   else if(inspectionMap.track())target.textContent='Pausar GPS';
+   return;
+  }
+  if(target.hasAttribute('data-field-notification-close')){document.querySelector('#rp-field-notification-dialog')?.close();return;}
   if(target.hasAttribute('data-close-event')){await releaseTreatment();selected=null;page=detailOrigin;render();return;}
   if(await calls.click(target))return;
   if(await chat.click(target))return;

@@ -8,7 +8,9 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
  const conversation=()=>conversations.find(c=>c.id===active);
  const preview=(c)=>c.last?.deleted_at?'Mensagem excluída':c.last?.body||(c.last?.attachments?.length?'📎 Anexo':'Conversa iniciada');
  const convRows=list=>list.map(c=>'<button type="button" data-chat-open="'+esc(c.id)+'" class="chat-conversation '+(c.id===active?'is-selected':'')+'"><span class="chat-avatar">'+esc(c.title.slice(0,1))+'</span><span><strong>'+esc(c.title)+'</strong><small>'+esc(preview(c).slice(0,95))+'</small></span><span><small>'+stamp(c.updated_at)+'</small>'+(c.unread?'<b class="rp-unread-count">'+c.unread+'</b>':'')+'</span></button>').join('');
- function badge(){return '<details class="rp-header-popover" data-message-popover><summary class="rp-blue-button '+(unread?'has-unread':'')+'" aria-label="Mensagens: '+unread+' não lidas"><span aria-hidden="true">✉</span><span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimas conversas</strong>'+ (conversations.length?convRows(conversations.slice(0,5)):'<p class="empty">Nenhuma conversa iniciada.</p>')+'<button type="button" data-chat-page>Ver mais'+(conversations.slice(5).some(c=>c.unread)?'<b class="rp-unread-count">'+conversations.slice(5).reduce((n,c)=>n+c.unread,0)+'</b>':'')+'</button></div></details>'}
+ function badge(){if(['ronda','vistoriador'].includes(getAccount()?.role))return '<button type="button" class="rp-blue-button rp-direct-chat '+(unread?'has-unread':'')+'" data-chat-open-quick aria-label="Abrir conversa interna">'+
+ '<span aria-hidden="true">✉</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button>';
+ return '<details class="rp-header-popover" data-message-popover><summary class="rp-blue-button '+(unread?'has-unread':'')+'" aria-label="Mensagens: '+unread+' não lidas"><span aria-hidden="true">✉</span><span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimas conversas</strong>'+ (conversations.length?convRows(conversations.slice(0,5)):'<p class="empty">Nenhuma conversa iniciada.</p>')+'<button type="button" data-chat-page>Ver mais'+(conversations.slice(5).some(c=>c.unread)?'<b class="rp-unread-count">'+conversations.slice(5).reduce((n,c)=>n+c.unread,0)+'</b>':'')+'</button></div></details>'}
  function updateBadge(){for(const host of document.querySelectorAll('[data-chat-badge]')){const open=host.querySelector('details')?.open;host.innerHTML=badge();if(open)host.querySelector('details').open=true}}
  async function refresh(){
   if(!mine()||busy)return;busy=true;const user=mine(),v=epoch;
@@ -60,7 +62,8 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
  }
  async function click(t){
   if(t.hasAttribute('data-chat-close')){close();return true}
-  if(t.hasAttribute('data-chat-page')){navigate('chat');return true}
+  if(t.hasAttribute('data-chat-open-quick')){if(active&&conversations.some(c=>c.id===active))await open(active);else if(conversations.length)await open(conversations[0].id);else navigate('chat');return true}
+   if(t.hasAttribute('data-chat-page')){navigate('chat');return true}
   if(t.dataset.chatOpen){await open(t.dataset.chatOpen);return true}
   if(t.hasAttribute('data-chat-back')){active=null;navigate('chat');return true}
   if(t.hasAttribute('data-chat-older')){await loadMessages(true);return true}
