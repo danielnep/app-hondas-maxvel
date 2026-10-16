@@ -170,6 +170,14 @@
 .rp-coi-event-item small{font-size:10px;color:#b0b0ba}
 .rp-coi-event-item em{font-size:10px;color:#ff8d9f;font-style:normal}
 .rp-coi-kind{color:#fbb4bf;font-weight:800}
+.rp-notification-stream{display:flex;flex-direction:column;max-width:980px;width:100%;min-width:0;background:#19191e;border:1px solid #41414a;border-radius:14px;overflow:hidden}
+.rp-notification-stream .ops-notification-row{display:grid;grid-template-columns:28px minmax(0,1fr) 20px;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 14px!important;background:transparent!important;border:0!important;border-bottom:1px solid #393941!important;text-align:left;color:#f6f6f7}
+.rp-notification-stream .ops-notification-row:last-child{border-bottom:0!important}
+.rp-notification-stream .ops-notification-row:hover{background:#29292f!important}
+.rp-notification-stream .ops-notification-row.is-unread{border-left:3px solid #f24762!important}
+.rp-notification-stream .ops-notification-row>span:nth-child(2){display:grid;gap:3px;min-width:0}
+.rp-notification-stream .ops-notification-row strong{font-size:13px;white-space:normal;overflow-wrap:anywhere}
+.rp-notification-stream .ops-notification-row small{font-size:11px;color:#b7b7bf;line-height:1.35}
 .rp-coi-history{border:1px solid #40404a;border-radius:14px;background:#18181d;padding:14px}
 .rp-history-count{padding:0 0 12px;font-size:12px;color:#c0c0c8}
 .rp-finished-line{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;padding:12px!important;text-align:left;color:#f5f5f6;background:transparent;border:0;border-top:1px solid #383841}
