@@ -50,12 +50,12 @@ try{
   await page.locator('#incident-form button[type=submit]').click();
   await page.locator('#dialog').waitFor({state:'hidden'});
   await page.locator('[data-ops="central-message"]').click();
-  await page.locator('[data-action="demo-chat-open"]').click();
+  await page.locator('#demo-chat-body').waitFor({state:'visible'});
   await page.locator('#demo-chat-body').fill('Mensagem de teste ao COI');
   await page.locator('#demo-chat-form button').click();
   assert.match(await page.locator('.field-chat-thread').innerText(),/Mensagem de teste ao COI/);
-  await page.locator('[data-action="demo-chat-list"]').click();
-  assert.match(await page.locator('.field-chat-contact-row').innerText(),/Mensagem de teste ao COI/);
+  assert.equal(await page.locator('.field-chat-contact-row:visible').count(),0,'Chat do vigia deve abrir diretamente na conversa');
+  assert.equal(await page.locator('.field-chat-surface').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px','Chat não pode ficar dentro de card com borda');
   await page.locator('.field-chat-back').click();
   assert.ok(await page.locator('.patrol-actions').isVisible());
   assert.deepEqual(errors,[]);
