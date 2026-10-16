@@ -39,6 +39,10 @@ jobs:
         run: node scripts/coi-demo-smoke.mjs
         env:
           CHROME_BIN: /usr/bin/google-chrome
+      - name: Conferir desenho real do mapa de vistoria com 1 e 3 destinos
+        run: node scripts/inspection-map-smoke.mjs
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
       - name: Guardar prévia visual da revisão
         if: always()
         uses: actions/upload-artifact@v4
