@@ -172,6 +172,13 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  '<label>Endereço completo<input name="address" required minlength="5" maxlength="350"></label></div>'+
  '<button type="submit" class="primary">Cadastrar cliente / posto</button></form>'+
  '<p class="muted">'+destinations.length+' local(is) cadastrado(s) para despacho</p></section>':'')+
+ '<section class="surface rp-coe-communications"><h2>Alertas e comunicados para a equipe de campo</h2><p class="muted">O aviso chega somente aos profissionais selecionados. Mensagens de conversa devem ser enviadas pelo Chat interno, não pelo sino.</p>'+
+ '<form id="coi-field-notice-form" class="stack"><label>Profissional destinatário<select name="workerId" required><option value="">Selecionar profissional</option>'+
+ [...availability,...inspectors].map(w=>'<option value="'+esc(w.id)+'">'+esc(w.name)+' · '+esc(w.role==='vistoriador'?'Vistoriador':w.role==='ronda'?'Vigia':w.status)+'</option>').join('')+
+ '</select></label><label>Categoria<select name="kind"><option value="notice">Comunicado operacional</option><option value="alert">Alerta de segurança</option></select></label>'+
+ '<label>Assunto<input name="title" minlength="3" maxlength="100" required placeholder="Ex.: Atenção à entrada lateral"></label>'+
+ '<label>Orientações<textarea name="message" minlength="8" maxlength="650" required placeholder="Descreva o que foi observado e a providência solicitada"></textarea></label>'+
+ '<button class="primary" type="submit">Enviar ao profissional selecionado</button></form></section>'+
  '<section class="surface"><h2>Últimos despachos</h2>'+dispatchList()+'</section></section>';
  }
  function dispatchList(){
@@ -299,7 +306,14 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    await api('/inspection-destinations',{method:'POST',data});
    flash('Cliente autorizado cadastrado.');await refresh(current,false);openNotice({page:'dispatches'});return true;
   }
-  if(form.id==='ops-inspector-form'){
+  if(form.id==='coi-field-notice-form'){
+    const data=Object.fromEntries(new FormData(form));
+    if(!data.workerId||!['notice','alert'].includes(data.kind))throw Error('Escolha o profissional e a categoria.');
+    const result=await api('/field-communications',{method:'POST',data});
+    if(!result.ok)throw Error('Não foi possível entregar o comunicado.');
+    form.reset();flash('Comunicado entregue ao profissional destinatário.');return true;
+   }
+   if(form.id==='ops-inspector-form'){
    const data=Object.fromEntries(new FormData(form));
    if(!data.workerId||(!data.destinationId&&!String(data.address||'').trim()))throw Error('Selecione o vistoriador e informe um local cadastrado ou endereço.');
    data.reason=(data.inspectionType==='routine'?'[ROTINA] ':'[PONTUAL] ')+String(data.reason||'').trim();
