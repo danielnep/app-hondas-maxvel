@@ -41,9 +41,9 @@ const latlng=p=>[p.lat,p.lng];
 const closePositions=(a,b)=>Math.hypot((a.lat-b.lat)*111320,(a.lng-b.lng)*111320*Math.cos(a.lat*Math.PI/180))<2;
 const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${kind}">${content}</span>`;
 export class PatrolMap{
- constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false}={}){
+ constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false,positionVerified=true}={}){
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;this.standbyClean=standbyClean;
-  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.tracePositions=[this.position];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
+  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.positionVerified=positionVerified;this.tracePositions=positionVerified?[this.position]:[];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
   this.showFallback();this.setup();
  }
  showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
@@ -107,6 +107,7 @@ export class PatrolMap{
   this.layers.forEach(layer=>m.removeLayer(layer));this.layers=[];this.pointMarkers=[];
   const add=(layer)=>{layer.addTo(m);this.layers.push(layer);return layer};
   if(this.standbyClean&&!this.session){
+   if(!this.positionVerified)return;
    const icon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
    this.positionMarker=add(L.marker(latlng(this.position),{icon,interactive:false,keyboard:false}));
    this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillOpacity:.10,interactive:false}));
@@ -127,13 +128,13 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
    this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,interactive:i>0,keyboard:i>0,title:i===0?undefined:inspection?p.name:`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
   });
   const userIcon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
-  this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição ilustrativa da demonstração'}));
+  this.positionMarker=this.positionVerified?add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição ilustrativa da demonstração'})):null;
   this.traceLayer=add(L.polyline(this.tracePositions.map(latlng),{color:'#55C9F5',weight:4,opacity:.9,lineCap:'round',interactive:false}));
   for(const d of this.session?.deviations??[]){
    if(!d.position)continue;
    add(L.circleMarker(latlng(d.position),{radius:9,color:'#fff',weight:3,fillColor:'#dc4557',fillOpacity:1}).bindPopup('<b>Desvio registrado</b><br>'+escapeHtml(d.pointName)+'<br><small>'+ (d.justification?'Justificativa recebida':'Justificativa pendente')+'</small>'));
   }
-  this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillColor:'#55C9F5',fillOpacity:.14,interactive:false}));
+  this.accuracyCircle=this.positionVerified?add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillColor:'#55C9F5',fillOpacity:.14,interactive:false})):null;
  }
  setRoute(route,session=this.session){
   if(this.destroyed)return;
@@ -143,6 +144,12 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
  }
  update({session=this.session,position=this.position}={}){
   if(this.destroyed)return;const indexWas=this.session?.index,statusWas=this.session?.status;this.session=session;this.position=position??this.route.base;
+  if(!this.positionVerified&&position&&this.route.inspectionMode){
+   this.positionVerified=true;this.tracePositions=[position];
+   if(this.instance)this.refreshGeometry();
+   else this.showFallback();
+   return;
+  }
   if(this.instance){if(indexWas!==session?.index||statusWas!==session?.status)this.refreshGeometry();
    else{this.positionMarker?.setLatLng(latlng(this.position));this.accuracyCircle?.setLatLng(latlng(this.position));this.accuracyCircle?.setRadius(Math.max(3,Number(this.position.accuracy)||8));this.updateTrace();}}
   else{const holder=this.container?.querySelector('.map-fallback');if(holder)holder.innerHTML=fallbackSVG(this.route,session,this.position,!this.standbyClean||!!session);}
