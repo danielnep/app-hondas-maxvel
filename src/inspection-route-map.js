@@ -12,16 +12,17 @@ const waypoints=assignment=>{
  if(typeof points==='string')try{points=JSON.parse(points)}catch{points=[]}
  return Array.isArray(points)?points.slice(0,12).map(parsePoint).filter(Boolean):[];
 };
-export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
- let map=null,watch=null,liveLine=null,plannedLink=null,locationMarker=null,history=[],lastSend=0,assignmentId=null,planned=[],pathKey='',epoch=0;
- function destroy(){epoch++;if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}if(map){try{map.stop();map.off();map.remove();}catch{}}map=null;liveLine=null;plannedLink=null;locationMarker=null;}
- function routeData(item,{demo=false}={}){
+export function inspectionPlanPoints(item,{demo=false}={}){
   const destination=item?.latitude!=null&&item?.longitude!=null?parsePoint({lat:item.latitude,lng:item.longitude}):null;
   // Base ilustrativa apenas no cenário local; operação real exige posição configurada pelo COI.
   const base=demo?parsePoint(DEMO_ROUTE.base):parsePoint({lat:item?.base_latitude??item?.start_latitude,lng:item?.base_longitude??item?.start_longitude});
   const points=[...(base?[base]:[]),...waypoints(item),...(destination?[destination]:[])];
   return points.filter((point,i)=>i===0||point[0]!==points[i-1][0]||point[1]!==points[i-1][1]);
  }
+export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
+ let map=null,watch=null,liveLine=null,plannedLink=null,locationMarker=null,history=[],lastSend=0,assignmentId=null,planned=[],pathKey='',epoch=0;
+ function destroy(){epoch++;if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}if(map){try{map.stop();map.off();map.remove();}catch{}}map=null;liveLine=null;plannedLink=null;locationMarker=null;}
+ function routeData(item,options){return inspectionPlanPoints(item,options)}
  function mount(host,item,{demo=false}={}){
   destroy();assignmentId=item?.id??null;planned=routeData(item,{demo});pathKey='rondaspro-inspection-track-'+assignmentId;
   history=[];if(!assignmentId)return init(host,item);
