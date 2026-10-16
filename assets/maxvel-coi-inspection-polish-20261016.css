@@ -21,6 +21,7 @@
  background:#27272c!important;color:#fff!important;
  border-color:var(--mx26-red)!important;
 }
+@media(min-width:901px){
 .dashboard .app-header{
  position:relative!important;min-height:74px!important;height:auto!important;
  display:flex!important;flex-wrap:nowrap!important;
@@ -36,6 +37,8 @@
  display:flex!important;flex:0 0 auto!important;align-items:center!important;
  gap:7px!important;min-width:0!important;
 }
+}
+.top-actions .rp-header-tools{display:flex!important;align-items:center!important;gap:7px!important}
 .rp-header-popover{
  display:inline-flex!important;position:relative!important;flex:0 0 auto!important;
  vertical-align:middle!important;min-width:0!important;
@@ -76,7 +79,7 @@
  .dashboard .app-header .user-pill small{display:none}
 }
 @media(max-width:900px){
- .dashboard .app-header{min-height:62px!important;height:auto!important;padding:8px!important;gap:5px!important}
+ /* Não alterar o layout da marca móvel do cockpit validado. */
  .dashboard .app-header .rp-header-popover>summary{width:40px!important;min-width:40px!important;padding:6px!important}
  .dashboard .app-header .rp-header-popover>summary>span{display:none!important}
  .dashboard .app-header .rp-header-popover .rp-popover-list{
