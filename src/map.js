@@ -122,7 +122,7 @@ export class PatrolMap{
    const active=i>0&&(inspection?this.session?.currentId===p.id:this.session?.index===i-1);
    if(i>0&&!inspection)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#55C9F5':'#73797E',weight:2,fillColor:active?'#55C9F5':'#70767A',fillOpacity:active?.14:.08,interactive:false}));
    const ic=L.divIcon({className:'map-pin-host',html:markerHtml(i===0?'B':done?'✓':i,done?'done':active?'active':i===0?'base':'point'),iconSize:[36,36],iconAnchor:[18,18]});
-const pointState=i===0?'Base':done?'Concluído':active?'Destino atual':'Planejado';
+const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atual':'Ponto atual'):'Planejado';
    const popup=`<div class="maxvel-map-popup"><small>${inspection?'VISTORIA':'PONTO'} ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${inspection?(i===0?'Base de partida':p.inspectionVia?'Passagem definida pelo COI':'Destino de vistoria'):(i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`)}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Ponto inicial do circuito'}</em></div>`;
    this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,interactive:i>0,keyboard:i>0,title:i===0?undefined:inspection?p.name:`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
   });
