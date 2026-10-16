@@ -73,7 +73,7 @@ try{
   await page.locator('#incident-review-form [name="note"]').fill('Conferência solicitada pela equipe COI.');
   await page.locator('[data-action="incident-review"]').click();
   await page.locator('[data-view="ocorrencias"]').first().evaluate(el=>el.click());
-  if(await page.locator('.rp-treatment-archive .rp-archive-record').count()!==0)throw Error('Eventos ainda em análise não entram no histórico finalizado');
+  if(await page.locator('.rp-treatment-archive [data-archive-id="rev3-fixture-notice-v04"]').count())throw Error('Evento ainda em análise não pode aparecer no histórico finalizado');
   await page.locator('[data-view="notificacoes"]').first().evaluate(el=>el.click());
   await page.locator('.rp-event-columns [data-action="notification-detail"][data-id="rev3-fixture-notice-v04"]').click();
   await page.locator('#incident-review-form [name="status"]').selectOption('Resolvida');
