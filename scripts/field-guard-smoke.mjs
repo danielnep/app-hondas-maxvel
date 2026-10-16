@@ -40,6 +40,14 @@ try{
  await page.locator('#central-login [name=password]').fill(password);
  await page.locator('#central-login button').click();
  await page.locator('#guard-real-map').waitFor({timeout:20000});
+ // Cabeçalho da central autenticada, não o cabeçalho diferente da demonstração.
+ const headerMessage=page.locator('header.top [data-message-popover] summary');
+ await headerMessage.click();
+ assert.equal(await page.locator('header.top [data-message-popover] .rp-popover-list').isVisible(),true,
+  'As últimas conversas devem abrir acima do mapa');
+ const headerLayer=await page.locator('header.top').evaluate(el=>Number(getComputedStyle(el).zIndex));
+ assert.ok(headerLayer>=5000,'O cabeçalho autenticado deve ficar acima do cockpit de GPS');
+ await headerMessage.click();
  const tools=['torch','panic','alert','incident','chat'];
  for(const item of tools)assert.equal(await page.locator('[data-guard-cockpit] [data-field-tool-'+item+']').count(),1,item+' ausente');
  await page.locator('[data-guard-start]').click();
