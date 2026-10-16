@@ -1101,5 +1101,10 @@ exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vi
 load();
 
 setInterval(guardTick,1000);
+setInterval(()=>{
+ if(!guardRound?.insideSince||document.hidden||account?.role!=='ronda'||!navigator.geolocation)return;
+ navigator.geolocation.getCurrentPosition(pos=>guardUpdateFix({lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:pos.timestamp}),
+  ()=>{}, {enableHighAccuracy:true,maximumAge:1500,timeout:6000});
+},4000);
 setInterval(()=>{if(account&&!document.hidden)void chat.refresh().catch(()=>{});},4000);
 setInterval(()=>{if(account&&!document.hidden)void calls.poll();},2000);
