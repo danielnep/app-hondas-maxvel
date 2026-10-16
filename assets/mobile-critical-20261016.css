@@ -272,3 +272,5 @@ body .checkpoint-curtain .checkpoint-footnote{display:none!important}
 
 /* [hidden] sempre prevalece no estado do cronômetro, mesmo sobre o layout em grid. */
 body .checkpoint-curtain .checkpoint-condition[hidden],body .checkpoint-curtain .checkpoint-after-timer[hidden],body .checkpoint-curtain .checkpoint-submit[hidden],body .checkpoint-curtain .checkpoint-footnote[hidden]{display:none!important}
+
+body .checkpoint-curtain .checkpoint-stopwatch[hidden]{display:none!important}
