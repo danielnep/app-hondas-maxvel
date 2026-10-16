@@ -865,6 +865,44 @@ document.addEventListener('click',async e=>{
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
+  if(target.hasAttribute('data-guard-fit')){guardMap?.fit();return;}
+  if(target.hasAttribute('data-guard-start')){
+   if(account?.role!=='ronda'||guardRound)return;
+   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COE.');
+   const fix=await guardRequireGps(),route=buildGuardRoute(planned,fix);if(!route?.points?.length)throw Error('Rota sem coordenadas.');
+   const state=initialGuardState(route,fix);target.disabled=true;
+   try{
+    const e=await api('/events',{method:'POST',data:{kind:'patrol_start',roundId:state.id,occurredAt:Date.now(),description:'Ronda iniciada · '+planned.name,details:{routeId:planned.id},position:fix}});
+    if(!e?.id)throw Error('COE não confirmou o início.');guardRound=state;guardSave();guardStartGps();render();flash('Ronda iniciada e sincronizada.');
+   }finally{if(target.isConnected)target.disabled=false;}return;
+  }
+  if(target.hasAttribute('data-guard-arrive')){
+   if(!guardRound?.points?.[guardRound.index])return;
+   const fix=await guardRequireGps(),state=nextGuardState(guardRound,fix,{action:'arrive'});
+   if(!state.inside)throw Error('Fora do raio de '+GUARD_RADIUS_METERS+' m do ponto.');
+   guardRound=state.state;guardSave();render();flash('Estou aqui confirmado. Permaneça 30 segundos.');return;
+  }
+  if(target.hasAttribute('data-guard-checkpoint')){
+   if(!guardRound?.points?.[guardRound.index])return;
+   const fix=await guardRequireGps(),check=nextGuardState(guardRound,fix);
+   if(!check.ready)throw Error('Aguarde 30 segundos dentro do raio com GPS confiável.');
+   const current=guardRound.points[guardRound.index];target.disabled=true;
+   try{
+    const result=await guardEvent('checkpoint','Ponto verificado: '+current.name,{routeId:guardRound.routeId,index:guardRound.index,name:current.name},fix);
+    if(!result?.id)throw Error('COE não confirmou o ponto.');
+    guardRound=markGuardPoint(guardRound);guardSave();render();flash('Ponto registrado no COE.');
+   }finally{if(target.isConnected)target.disabled=false;}return;
+  }
+  if(target.hasAttribute('data-guard-finish')){
+   if(!guardRound||guardRound.index!==guardRound.points.length)return;
+   const fix=await guardRequireGps();if(metersBetween(fix,guardRound.base)>GUARD_RADIUS_METERS)throw Error('Retorne à base para concluir a ronda.');
+   target.disabled=true;
+   try{
+    const result=await guardEvent('patrol_end','Ronda concluída e retorno à base registrado.',{routeId:guardRound.routeId,completedPoints:guardRound.index},fix);
+    if(!result?.id)throw Error('COE não confirmou o encerramento.');
+    guardRound=null;guardSave();render();flash('Ronda concluída e sincronizada.');
+   }finally{if(target.isConnected)target.disabled=false;}return;
+  }
   if(target.hasAttribute('data-wizard-open')){const d=document.querySelector('#rp-inspection-wizard-dialog');if(d&&!d.open)d.showModal();return;}
    if(target.hasAttribute('data-wizard-close')){document.querySelector('#rp-inspection-wizard-dialog')?.close();return;}
    if(target.hasAttribute('data-wizard-next')||target.hasAttribute('data-wizard-back')){
@@ -1062,5 +1100,6 @@ document.addEventListener('change',e=>{
 exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
 
+setInterval(guardTick,1000);
 setInterval(()=>{if(account&&!document.hidden)void chat.refresh().catch(()=>{});},4000);
 setInterval(()=>{if(account&&!document.hidden)void calls.poll();},2000);
