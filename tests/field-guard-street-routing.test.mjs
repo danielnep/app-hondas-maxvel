@@ -45,6 +45,8 @@ test('mapa real habilita percurso viário também para ronda e informa indisponi
  assert.match(central,/onStreetRoute:status=>/);
  assert.match(central,/data-guard-road/);
  assert.match(central,/guardMap\.setRoute\(revised,null\)/);
+ assert.match(central,/standbyClean:!route\.baseKnown/);
+ assert.match(central,/guardMap\.standbyClean=false/);
  assert.match(map,/this\.route\.inspectionMode\|\|this\.route\.roadRouting/);
  assert.doesNotMatch(central,/guardRound\?\.base\|\|guardFix\|\|planned\.points\?\.\[0\]/);
 });
