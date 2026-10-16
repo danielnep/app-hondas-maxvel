@@ -55,6 +55,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
   '<div class="rp-inspection-commands-body"><span class="rp-inspection-step-label">PRÓXIMO DESTINO · <span data-inspection-current-count>'+(count?'1 de '+count:'Nenhum')+'</span></span>'+
    '<strong class="rp-inspection-destination" data-inspection-current-title>'+first+'</strong>'+
    '<p class="rp-inspection-instruction" data-inspection-instructions>'+html(current?.instructions||current?.reason||'O COI enviará os locais que precisam de vistoria.')+'</p>'+
+   '<small class="rp-inspection-distance" data-inspection-distance>'+(distance!==null?'Distância em linha reta: '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m'):'Localização ou destino sem coordenadas')+'</small>'+
    '<div class="rp-inspection-primary-actions">'+action+
    (current?'<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(directions)+'" aria-label="Abrir navegação viária para o destino">Navegar ↗</a>':'')+'</div>'+
   '</div>'+
