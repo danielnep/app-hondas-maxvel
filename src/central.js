@@ -26,7 +26,13 @@ function inspectionQueueNow(){return queueInspections(ops.inspectionDispatches()
 function inspectionPosition(){return pointOf(inspectorPosition)||pointOf(inspectorBase)}
 function updateInspectorGps(fix){
  inspectorPosition=fix;
- if(inspectionMap)inspectionMap.update({position:fix});
+ if(inspectionMap){
+  if(!inspectionMap.route.baseKnown){
+   const queue=inspectionQueueNow();
+   inspectionMap.setRoute(inspectionRoute(queue,fix),queue.length?{mode:'real',currentId:queue[0].id,checkpoints:[],deviations:[]}:null);
+  }
+  inspectionMap.update({position:fix});
+ }
  if(account?.role==='vistoriador'&&Date.now()-inspectorPresenceAt>12000){
   inspectorPresenceAt=Date.now();
   void api('/presence',{method:'POST',data:{position:fix}}).catch(()=>{});
@@ -702,7 +708,8 @@ function render(){
     inspectorSignature=inspectionSignature(ordered);
     const route=inspectionRoute(ordered,inspectionPosition());
     inspectionMap=new PatrolMap(host,{route,session:ordered.length?{mode:'real',currentId:ordered[0].id,checkpoints:[],deviations:[]}:null,
-      position:inspectorPosition||inspectorBase||route.base,positionVerified:!!inspectorPosition,standbyClean:!ordered.length,interactive:true});
+      position:inspectorPosition||inspectorBase||route.base,positionVerified:!!inspectorPosition,standbyClean:!ordered.length,interactive:true,
+      onStreetRoute:status=>{const el=document.querySelector('[data-inspection-road-state]');if(el)el.textContent=status;}});
     if(ordered.some(d=>d.started_at))startInspectorGps();
    }
  });
