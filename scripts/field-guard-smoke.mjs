@@ -31,6 +31,7 @@ try{
  const user=await request('/users',admin,{name:'Vigia Teste de Campo',email:'guard-smoke@example.test',password,role:'ronda',site:'Posto de teste',description:'Operação GPS de teste'});
  await request('/routes',admin,{userId:user.id,name:'Ronda Rua de Teste',points:[first,second]});
  browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
+ mkdirSync('artifacts/coi-authenticated',{recursive:true});
  const context=await browser.newContext({viewport:{width:390,height:844},permissions:['geolocation'],geolocation:basePos,locale:'pt-BR'});
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
