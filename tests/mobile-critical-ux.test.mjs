@@ -71,7 +71,7 @@ test('vistorias têm mapa independente, fotos múltiplas e termos profissionais'
  assert.match(app,/inspectionCockpit/);
  assert.match(central,/inspectionCockpit/);
  assert.doesNotMatch(app,/Tudo OK/);
- assert.match(app,/name="localPhoto" accept="image\/\*" multiple/);
+ assert.match(read('src/field-inspection-wizard.js'),/name="localPhoto" accept="image\/\*" multiple/);
  assert.match(central,/data-inspection-photo-upload/);
  assert.match(central,/Sem anormalidades/);
  assert.match(inspector,/watchPosition/);
