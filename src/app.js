@@ -371,7 +371,11 @@ function installViewportViews(){
 const demoCoiRouteMap=createInspectionRouteMap({onError:notify});
 let demoInspectorMap=null,demoInspectorLocation=null,demoInspectorWatch=null,demoInspectorQueueSignature='';
 function demoInspectionQueue(){
- const items=demoInspectionRequests().map(item=>({...item,kind:'vistoria'}));
+ const items=demoInspectionRequests().map(item=>{
+  // Local demonstrativo conhecido: restaurar coordenadas em dados antigos.
+  const known=DEMO_CLIENTS.find(c=>c.name===item.address);
+  return {...item,kind:'vistoria',latitude:item.latitude??known?.demoPoint?.lat??null,longitude:item.longitude??known?.demoPoint?.lng??null};
+ });
  return queueInspections(items,demoInspectorLocation||DEMO_ROUTE.base,DEMO_ROUTE.base);
 }
 function refreshDemoInspectionQueue(){
@@ -482,7 +486,8 @@ function attachMaps(){
     const tasks=demoInspectionQueue(),route=inspectionRoute(tasks,DEMO_ROUTE.base);
     demoInspectorQueueSignature=inspectionSignature(tasks);
     demoInspectorMap=new PatrolMap(host,{route,session:tasks.length?{mode:'simulation',currentId:tasks[0].id,checkpoints:[],deviations:[]}:null,
-      position:demoInspectorLocation||DEMO_ROUTE.base,standbyClean:!tasks.length,interactive:true});
+      position:demoInspectorLocation||DEMO_ROUTE.base,standbyClean:!tasks.length,interactive:true,
+      onStreetRoute:status=>{const el=document.querySelector('[data-inspection-road-state]');if(el)el.textContent=status;}});
     liveMaps.push(demoInspectorMap);
    }
   }
@@ -1450,7 +1455,7 @@ if(act==='profile-menu'){profileDialog();return;}
    '<label>Vistoriador<select name="worker"><option value="Vistoriador demonstrativo">Vistoriador demonstrativo</option></select></label>'+
    '<label>Local cadastrado<select name="known"><option value="">Outro endereço</option>'+clients.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select></label>'+
    '<label>Ou informe endereço<input type="text" name="address" maxlength="350" placeholder="Rua, número, bairro e cidade"></label>'+
-   '<label>Coordenadas do destino (opcional)<input name="coords" placeholder="-20.1450, -44.8880"></label>'+
+   '<label>Coordenadas do destino (necessárias para o mapa quando o local não está cadastrado)<input name="coords" placeholder="-20.1450, -44.8880"></label>'+
    '<label>Rota do COI · pontos de passagem (opcional)<textarea name="routePoints" rows="3" placeholder="Um ponto por linha: latitude, longitude"></textarea></label>'+
    '<label>Instruções para a vistoria<textarea name="instructions" required minlength="10" maxlength="1000" placeholder="Informe a finalidade e o que deve ser verificado"></textarea></label>'+
    '<div class="modal-actions"><button class="button primary" type="submit">Enviar solicitação</button></div></form>',false);
@@ -1575,6 +1580,7 @@ modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormDat
    const demoSite=!String(f.get('address')||'').trim()&&known?DEMO_CLIENTS.find(c=>c.name===known):null;
    const destination=coords?parsePoint(coords):demoSite?.demoPoint??null,routePoints=lines?lines.split(/\r?\n/).filter(Boolean).map(parsePoint):[];
    if((coords&&!destination)||routePoints.length>12||routePoints.some(p=>!p)){notify('Confira as coordenadas. Informe até 12 pontos no formato latitude, longitude.');return;}
+   if(!destination){notify('Para desenhar o trajeto, selecione um local conhecido ou informe as coordenadas do destino.');return;}
    saveDemoInspectionRequests([{id:crypto.randomUUID(),address,instructions,routine:f.get('kind')==='routine',worker:String(f.get('worker')),latitude:destination?.lat??null,longitude:destination?.lng??null,routePoints,illustrative:!!demoSite&&!coords,createdAt:Date.now(),completedAt:null},...demoInspectionRequests()]);
   }catch{notify('Não foi possível salvar a solicitação.');return;}
   modal.close();render();notify('Solicitação salva. Abra o perfil Vistoriador para recebê-la.');return;
