@@ -104,7 +104,7 @@ function guardUpdateFix(fix){
  if(!pointOf(fix)||!Number.isFinite(fix.accuracy)||fix.accuracy>GUARD_RADIUS_METERS)return;
  guardFix=fix;if(guardMap){
   // Primeiro GPS real define a base visual antes mesmo de iniciar a ronda.
-  if(!guardRound&&!guardMap.route.baseKnown){const planned=guardPlannedRoute();if(planned){const revised=buildGuardRoute(planned,fix);if(revised)guardMap.setRoute(revised,null);}}
+  if(!guardRound&&!guardMap.route.baseKnown){const planned=guardPlannedRoute();if(planned){const revised=buildGuardRoute(planned,fix);if(revised){guardMap.standbyClean=false;guardMap.setRoute(revised,null);}}}
   guardMap.update({position:fix});
  }
  const info=guardRound?nextGuardState(guardRound,guardFix):null;
@@ -761,7 +761,7 @@ function render(){
    const host=document.querySelector('#guard-real-map'),planned=guardPlannedRoute();if(!host||!planned)return;
    const route=buildGuardRoute(planned,guardRound?.base||guardFix);
    if(route){guardMap=new PatrolMap(host,{route,session:guardRound?{mode:'real',index:guardRound.index,checkpoints:route.points.map((_,i)=>({completedAt:guardRound.checkpoints.some(c=>c.index===i)?Date.now():null}))}:null,
-     position:guardFix||guardRound?.base||route.base,positionVerified:!!guardFix,standbyClean:false,interactive:true,onStreetRoute:status=>{const label=document.querySelector('[data-guard-road]');if(label)label.textContent=status;}});guardStartGps();}
+     position:guardFix||guardRound?.base||route.base,positionVerified:!!guardFix,standbyClean:!route.baseKnown,interactive:true,onStreetRoute:status=>{const label=document.querySelector('[data-guard-road]');if(label)label.textContent=status;}});guardStartGps();}
   });
   if(account.role==='vistoriador'&&page==='inspections'&&inspectorDraft?.id&&!inspectorWizardAutoId&&ops.activeInspection()?.arrived_at){
    inspectorWizardAutoId=inspectorDraft.id;
