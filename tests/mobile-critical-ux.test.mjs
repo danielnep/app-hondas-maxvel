@@ -10,16 +10,17 @@ const css=read('assets/mobile-critical-20261016.css');
 const index=read('index.html');
 const sw=read('sw.js');
 
-test('chat local funciona como lista e conversa, com retorno à ronda',()=>{
- assert.match(app,/let demoChatScreen='list'/);
+test('campo abre conversa diretamente e notificações permitem leitura',()=>{
+ assert.match(app,/let demoChatScreen='thread'/);
  assert.match(app,/field-chat-contact-row[^\n]+data-action="demo-chat-open"/);
  assert.match(app,/field-chat-thread/);
  assert.match(app,/field-chat-compose/);
  assert.match(app,/data-action="demo-chat-list"/);
- assert.match(app,/Voltar à ronda/);
+ assert.match(app,/Voltar/);
  assert.match(app,/if\(act==='demo-chat-open'\)/);
  assert.match(app,/if\(act==='demo-chat-list'\)/);
- assert.match(app,/if\(nav==='chat-interno'&&view!==nav\)demoChatScreen='list'/);
+ assert.match(app,/if\(nav==='chat-interno'&&view!==nav\)demoChatScreen=/);
+ assert.match(app,/if\(act==='notification-detail'\)\{notificationDialog/);
  assert.match(app,/sessionStorage\.getItem\('rondaspro_api_token'\)/);
 });
 test('cronômetro não duplica unidade nem mostra formulário cedo',()=>{
@@ -48,8 +49,8 @@ test('janelas do vigia usam altura por conteúdo e retorno único',()=>{
 });
 test('estilos críticos carregam por último e entram no PWA',()=>{
  assert.ok(index.includes('mobile-critical-20261016.css?v=1'));
- assert.match(index,/rondas-pro-updated-v41/);
- assert.match(sw,/rondas-pro-interface-v41/);
+ assert.match(index,/rondas-pro-updated-v42/);
+ assert.match(sw,/rondas-pro-interface-v42/);
  assert.ok(sw.includes('./assets/mobile-critical-20261016.css'));
  const before=index.indexOf('field-compact.css');
  const after=index.indexOf('mobile-critical-20261016.css');
@@ -62,4 +63,17 @@ test('marca Grupo Maxvel permanece visível no cabeçalho mobile',()=>{
  assert.match(style,/\.dashboard \.app-header \.brand \.maxvel-real-logo\{[^}]*display:block!important/);
  assert.doesNotMatch(style,/\.dashboard \.app-header \.brand \.brand-partner\{display:none!important/);
  assert.ok(index.includes('maxvel-atelier-20261016.css?v=2'));
+});
+
+test('vistorias têm mapa independente, fotos múltiplas e termos profissionais',()=>{
+ const central=read('src/central.js'),inspector=read('src/inspection-route-map.js'),server=read('server/ops-center.js');
+ assert.match(app,/id="demo-inspection-map"/);
+ assert.doesNotMatch(app,/Tudo OK/);
+ assert.match(app,/name="localPhoto" accept="image\/\*" multiple/);
+ assert.match(central,/data-inspection-photo-upload/);
+ assert.match(central,/Sem anormalidades/);
+ assert.match(inspector,/watchPosition/);
+ assert.match(inspector,/route_points/);
+ assert.match(server,/route_points/);
+ assert.match(index,/maxvel-field-refinement-20261016\.css/);
 });
