@@ -83,3 +83,48 @@ test('Android: ponte de torch, permissão e desligamento em pausa existem',()=>{
  assert.match(java,/onPause\(\)/);
  assert.match(java,/TORCH_PERMISSION_REQUEST/);
 });
+
+test('Lanterna do ponto utiliza o controlador compartilhado, sem segunda sessão de câmera',()=>{
+ const curtain=readFileSync(new URL('../src/checkpoint-curtain.js',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+ const central=readFileSync(new URL('../src/central.js',import.meta.url),'utf8');
+ assert.match(curtain,/api\.torch\?\.toggle\(\)/);
+ assert.match(curtain,/api\.torch\?\.subscribe/);
+ assert.match(curtain,/api\.torch\?\.stop\(\)/);
+ assert.doesNotMatch(curtain,/torchStream|torchTrack|getUserMedia/);
+ assert.match(app,/createCheckpointCurtain\([^;]+notify,torch\}/);
+ assert.match(app,/view==='minha-ronda'/);
+ assert.match(central,/\['dashboard','send','dispatches'\]\.includes\(page\)/);
+});
+test('Assinantes da lanterna mantêm o botão do ponto sincronizado com o flutuante',async()=>{
+ const ui=screen();let lit=false;
+ const track={readyState:'live',getCapabilities:()=>({torch:true}),getSettings:()=>({facingMode:'environment',torch:lit}),
+  applyConstraints:async options=>{lit=!!options.advanced[0].torch},stop:()=>{}};
+ const torch=createFieldTorch({doc:ui.doc,win:ui.win,mediaDevices:{
+  getUserMedia:async()=>({getVideoTracks:()=>[track],getTracks:()=>[track]})}});
+ const states=[];
+ const unsubscribe=torch.subscribe(state=>states.push({...state}));
+ assert.deepEqual(states[0],{on:false,busy:false});
+ await torch.toggle();
+ assert.equal(states.at(-1).on,true);
+ torch.stop();
+ assert.deepEqual(states.at(-1),{on:false,busy:false});
+ const size=states.length;unsubscribe();
+ await torch.toggle();
+ assert.equal(states.length,size);
+ torch.stop();
+});
+test('Solicitação da câmera cancelada durante navegação não acende a lanterna',async()=>{
+ const ui=screen();let release,stops=0;
+ const gate=new Promise(resolve=>release=resolve);
+ const track={getCapabilities:()=>({torch:true}),getSettings:()=>({facingMode:'environment',torch:true}),
+  applyConstraints:async()=>{throw Error('não deveria ligar')},stop:()=>{stops++}};
+ const torch=createFieldTorch({doc:ui.doc,win:ui.win,mediaDevices:{
+  getUserMedia:()=>gate}});
+ const waiting=torch.toggle();
+ ui.dashboard.dataset.torchRole='admin';torch.decorate();
+ release({getVideoTracks:()=>[track],getTracks:()=>[track]});
+ await waiting;
+ assert.equal(torch.isOn(),false);
+ assert.equal(stops,1);
+});
