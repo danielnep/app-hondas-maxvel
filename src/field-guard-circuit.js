@@ -39,7 +39,7 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  '<div class="patrol-map-canvas rp-inspection-map-canvas"><div class="map-container mini rp-inspector-map" id="guard-real-map" aria-label="Mapa da ronda em operação real"></div>'+
  '<div class="rp-inspection-map-hud"><span class="rp-inspection-hud-label">'+status+'</span><strong>'+safe(current?.name||(!round?'Rota pronta para partida':'Volte à base'))+'</strong><small data-guard-distance>'+
  (Number.isFinite(d)?'Distância ao ponto: '+Math.round(d)+' m':'Aguardando GPS real')+'</small></div></div>'+
- '<div class="patrol-map-footer"><span data-guard-gps>'+safe(gpsStatus)+'</span><span>Rota autorizada pelo COE</span></div></section>'+
+ '<div class="patrol-map-footer"><span data-guard-gps>'+safe(gpsStatus)+'</span><span data-guard-road>Traçado viário disponível com internet</span></div></section>'+
  '<section class="patrol-actions rp-inspection-commands" aria-label="Comandos da ronda">'+
  '<div class="rp-field-quicktools"><button type="button" data-field-tool-torch>Lanterna</button><button type="button" class="rp-urgent" data-field-tool-panic>Pânico</button><button type="button" data-field-tool-alert>Alerta</button><button type="button" data-field-tool-incident>Ocorrência</button><button type="button" data-field-tool-chat>Mensagens</button></div>'+
  '<div class="patrol-action-heading"><strong>'+(current?'PONTO '+(round.index+1)+' DE '+total:'PRÓXIMA RONDA')+'</strong></div>'+
