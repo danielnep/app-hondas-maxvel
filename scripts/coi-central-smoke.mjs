@@ -73,8 +73,10 @@ try{
   assert((await request('/treatment-summary',token)).total===1,'Ler não pode resolver a pendência');
   await coi.page.locator('[data-claim-treatment]').click();
   await coi.page.locator('#send-message textarea').fill('Rascunho que deve permanecer após sincronização.');
-  await navigate(admin.page,'treatments');
-  await admin.page.locator('[data-event="'+event.id+'"]').click();
+  await navigate(admin.page,'notifications');
+  const pendingAdmin=(await request('/notifications',adminToken)).notifications.find(n=>n.event_id===event.id);
+  assert(!!pendingAdmin,'Administração deve visualizar evento em aberto');
+  await admin.page.locator('.rp-event-columns [data-ops-notification="'+pendingAdmin.id+'"]').click();
   assert(await admin.page.locator('[data-claim-treatment]').count()===0,'Administração não pode assumir registro reservado pelo COI');
   await request('/events/'+event.id+'/messages',guard,{body:'Confirmação adicional enviada pelo vigia.'});
   await coi.page.waitForFunction(()=>document.querySelector('#thread')?.textContent.includes('Confirmação adicional'),null,{timeout:18000});
