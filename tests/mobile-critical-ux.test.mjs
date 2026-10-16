@@ -49,8 +49,8 @@ test('janelas do vigia usam altura por conteúdo e retorno único',()=>{
 });
 test('estilos críticos carregam por último e entram no PWA',()=>{
  assert.ok(index.includes('mobile-critical-20261016.css?v=1'));
- assert.match(index,/rondas-pro-updated-v44/);
- assert.match(sw,/rondas-pro-interface-v44/);
+ assert.match(index,/rondas-pro-updated-v45/);
+ assert.match(sw,/rondas-pro-interface-v45/);
  assert.ok(sw.includes('./assets/mobile-critical-20261016.css'));
  const before=index.indexOf('field-compact.css');
  const after=index.indexOf('mobile-critical-20261016.css');
