@@ -316,7 +316,8 @@ function mountOperationalMap(){
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
- return coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
+ const panel=coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
+ return '<div class="rp-coi-request-strip"><div><strong>Vistorias de campo</strong><span>Solicite vistorias sob demanda ou de rotina, com destino e orientações.</span></div><button type="button" class="primary" data-inspection-queue>Solicitar vistoria ↗</button></div>'+panel;
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -720,6 +721,12 @@ document.addEventListener('click',async e=>{
   }
   if(target.hasAttribute('data-occ-reset')){
    occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};render();return;
+  }
+  if(target.hasAttribute('data-inspection-queue')){
+   if(!review()||!ops.allowed('despachos')){flash('Despachos não estão habilitados neste perfil.');return;}
+   page='dispatches';selected=null;render();
+   requestAnimationFrame(()=>document.querySelector('.ops-inspector-section')?.scrollIntoView({behavior:'smooth',block:'start'}));
+   return;
   }
   if(target.hasAttribute('data-central-menu')){
    const nav=document.querySelector('#central-navigation'),open=!nav.classList.contains('is-open');nav.classList.toggle('is-open',open);target.setAttribute('aria-expanded',String(open));return;
