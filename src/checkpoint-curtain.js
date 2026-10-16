@@ -160,6 +160,6 @@ export function createCheckpointCurtain(api){
    api.notify('Ponto não concluído: falha na gravação ou mudança de localização. Tente novamente.');
   }
  }
- document.addEventListener('visibilitychange',()=>{if(document.hidden&&root)closeTorch()});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&root)api.torch?.stop()});
  return {open,close,status};
 }
