@@ -122,7 +122,8 @@
  position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;
  overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;padding:0!important;margin:0!important;border:0!important
 }
-.rp-inspection-cockpit .rp-inspection-dialog{
+.rp-inspection-cockpit .rp-inspection-dialog,
+[data-inspection-history-dialog]{
  position:fixed!important;inset:0!important;box-sizing:border-box!important;
  width:min(470px,calc(100vw - 26px))!important;max-width:470px!important;
  height:auto!important;max-height:min(76dvh,680px)!important;margin:auto!important;
@@ -130,12 +131,12 @@
  border:1px solid #58505b!important;background:#1b191f!important;color:#f7f5f7!important;
  box-shadow:0 25px 70px #000c!important
 }
-.rp-inspection-dialog::backdrop{background:#000b;backdrop-filter:blur(5px)}
-.rp-inspection-dialog header{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;
+.rp-inspection-dialog::backdrop,[data-inspection-history-dialog]::backdrop{background:#000b;backdrop-filter:blur(5px)}
+.rp-inspection-dialog header, [data-inspection-history-dialog] header{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;
  gap:12px;background:#222027;border-bottom:1px solid #443a45;padding:15px 16px}
-.rp-inspection-dialog header h2{font-size:17px;margin:3px 0}
-.rp-inspection-dialog header small{color:#f093a9;font-size:10px;letter-spacing:.1em;font-weight:800}
-.rp-inspection-dialog header button{flex:none;min-width:42px;min-height:42px;border-radius:12px;
+.rp-inspection-dialog header h2,[data-inspection-history-dialog] header h2{font-size:17px;margin:3px 0}
+.rp-inspection-dialog header small,[data-inspection-history-dialog] header small{color:#f093a9;font-size:10px;letter-spacing:.1em;font-weight:800}
+.rp-inspection-dialog header button,[data-inspection-history-dialog] header button{flex:none;min-width:42px;min-height:42px;border-radius:12px;
  border:1px solid #5b4f5b;background:#332e36;color:white;font-size:18px}
 .rp-inspection-dialog .rp-inspection-upcoming{list-style:none!important;display:grid!important;gap:8px!important;
  margin:0!important;padding:12px 14px!important;border:0!important;background:none!important}
