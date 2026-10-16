@@ -181,10 +181,10 @@ async function load(){
 }
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Eventos pendentes','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Eventos pendentes','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Eventos pendentes','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico concluído','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Eventos pendentes','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['history','Meus alertas e ocorrências','▤'],['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Eventos','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
@@ -200,6 +200,7 @@ const rp2Priority={
  vistoriador:['inspections','dispatches','notifications','send']
 };
 const rp2GlyphPaths={
+ chat:'<path d="M4 5h16v13H9l-5 4V5z"/><path d="M8 10h8M8 14h6"/>',
  dashboard:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
  monitor:'<path d="M4 14v-3a8 8 0 0 1 16 0v3"/><rect x="2" y="12" width="4" height="8" rx="2"/><rect x="18" y="12" width="4" height="8" rx="2"/><path d="M20 19a5 5 0 0 1-5 3h-3"/>',
  treatments:'<rect x="5" y="3" width="14" height="19" rx="2"/><path d="M9 3V2h6v2M8 12l2.5 2.5L16 9M9 18h6"/>',
@@ -315,7 +316,7 @@ function mountOperationalMap(){
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
- return coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
+ return '<div class="rp-monitor-cta"><button type="button" class="primary" data-page="dispatches">+ Solicitar vistoria</button><button type="button" data-page="events">Eventos pendentes</button></div>'+coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -353,54 +354,19 @@ function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span data-event-operational-status class="pill '+(isPending(e)?'treatment-open':'treatment-resolved')+'">'+escape(e.status==='em_analise'?'Em aberto · Em análise':stateLabel(e))+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
 function treatmentsView(){
- const summary=ops.summary(),kinds=[...new Set(['incident','alert','message',...summary.categories.map(c=>c.kind)])];
- const tabs=kinds.map(kind=>{const info=typeInfo(kind),category=summary.categories.find(c=>c.kind===kind);return '<button type="button" role="tab" data-treatment-tab="'+escape(kind)+'" aria-selected="'+(treatmentTab===kind)+'" aria-controls="treatment-record-list">'+escape(info.label)+pendingDot(kind,category?.pending||0)+'</button>';}).join('');
- const rows=treatmentRows.map(e=>'<button type="button" class="coi3-treatment-row '+(isPending(e)?'is-pending':'is-completed')+'" data-event="'+escape(e.id)+'"><span class="coi3-treatment-icon" aria-hidden="true">'+escape(typeInfo(e.kind).icon)+'</span><span class="coi3-treatment-copy"><strong>'+escape(friendly[e.kind]||typeInfo(e.kind).label)+'</strong><span>'+escape(e.description||'Sem descrição')+'</span><small>'+escape(e.reporter_name)+' · '+escape(e.site||'Sem posto')+' · '+fmt(e.occurred_at)+'</small>'+(privileged()&&isPending(e)&&!e.coi_treated?'<small class="rp-coi-missing">Sem tratativa pelo COI</small>':'')+(e.treatment_owner?'<small>Em atendimento por '+escape(e.treatment_owner)+'</small>':'')+'</span><span class="coi3-treatment-badge '+(!isPending(e)?'done':'')+'">'+stateLabel(e)+'</span></button>').join('');
- return '<section class="stack coi3-treatments"><header class="toolbar"><div><div class="eyebrow">'+(privileged()?'ADMINISTRAÇÃO · SUPERVISÃO E APOIO':'COI · TRATAMENTO OPERACIONAL')+'</div><h1>Tratativas</h1><p>Pendências primeiro. Registros concluídos permanecem acessíveis para consulta.</p></div><strong>'+summary.total+' pendentes</strong></header><div class="rp-treatment-tabs" role="tablist" aria-label="Categorias de tratativas">'+tabs+'</div><section class="surface" id="treatment-record-list" role="tabpanel" aria-label="'+escape(typeInfo(treatmentTab).label)+'">'+(rows||'<p class="empty">Nenhum registro nesta categoria.</p>')+'</section>'+(treatmentMore?'<button type="button" data-treatment-more>Carregar mais registros</button>':'')+'</section>';
+ const finished=events.filter(e=>!isPending(e)).sort((a,b)=>b.occurred_at-a.occurred_at);
+ return '<section class="rp-coi-event-screen"><header class="rp-coi-section-header"><div><div class="eyebrow">CONSULTA E AUDITORIA</div><h1>Histórico de eventos concluídos</h1><p>Eventos finalizados, com responsáveis e respostas registrados. Esta tela é somente leitura.</p></div><button type="button" data-page="events">Ver pendências</button></header>'+
+ '<section class="rp-coi-history"><div class="rp-history-count">'+finished.length+' evento(s) concluído(s)</div>'+
+ (finished.length?finished.map(e=>'<button type="button" class="rp-finished-line" data-event="'+escape(e.id)+'"><span class="rp-finished-symbol">'+escape(typeInfo(e.kind).icon)+'</span><span><strong>'+escape(friendly[e.kind]||typeInfo(e.kind).label)+'</strong><small>'+escape(e.description||'Sem descrição')+'</small><small>'+escape(e.reporter_name||'Equipe de campo')+' · '+fmt(e.occurred_at)+'</small></span><b>Concluído</b></button>').join(''):'<p class="empty">Nenhum evento concluído neste período.</p>')+'</section></section>';
 }
 function eventsView(){
- const priority=events.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind));
- const routineMessages=events.filter(e=>e.kind==='message');
- const lastTreatment=e=>treatments.find(t=>t.event_id===e.id);
- const option=(v,key)=>occurrenceFilters[key]===v?'selected':'';
- const workerOptions=users.filter(u=>u.role==='ronda').map(u=>'<option value="'+id(u.id)+'" '+option(u.id,'worker')+'>'+escape(u.name)+'</option>').join('');
- const reviewerOptions=users.filter(u=>['operador','coi','admin','master'].includes(u.role)).map(u=>'<option value="'+id(u.id)+'" '+option(u.id,'reviewer')+'>'+escape(u.name)+'</option>').join('');
- const passed=priority.filter(e=>{
-  const t=lastTreatment(e),f=occurrenceFilters;
-  if(f.status==='pending'&&e.status==='resolvida')return false;
-  if(f.status==='resolved'&&e.status!=='resolvida')return false;
-  if(f.status==='forwarded'&&e.status!=='encaminhada')return false;
-  if(f.kind!=='all'&&e.kind!==f.kind)return false;
-  if(f.worker!=='all'&&e.user_id!==f.worker)return false;
-  if(f.reviewer!=='all'&&t?.author_id!==f.reviewer)return false;
-  if(f.dateFrom&&e.occurred_at<new Date(f.dateFrom+'T00:00:00').getTime())return false;
-  if(f.dateTo&&e.occurred_at>new Date(f.dateTo+'T23:59:59').getTime())return false;
-  if(f.query&&!String([e.description,e.id,t?.conclusion,t?.concluded_by,t?.reporter_name].join(' ')).toLocaleLowerCase('pt-BR').includes(f.query.toLocaleLowerCase('pt-BR')))return false;
-  return true;
- });
- const rows=passed.length?passed.map(e=>{
-  const t=lastTreatment(e),who=users.find(u=>u.id===e.user_id)?.name||'Colaborador';
-  return '<button type="button" class="list-item occurrence-row" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b>'+
-   '<small>'+fmt(e.occurred_at)+' · '+escape(who)+' · '+escape(e.description||'Sem descrição')+'</small>'+
-   (t?'<small>Último tratamento: '+escape(t.concluded_by)+' · '+fmt(t.created_at)+' · '+escape(t.conclusion.slice(0,150))+'</small>':'<small>Aguardando tratamento e conclusão</small>')+'</span>'+
-   '<span class="pill '+(e.status==='resolvida'?'':'flag')+'">'+escape(e.status.replaceAll('_',' '))+'</span></button>';
- }).join(''):'<div class="empty">Nenhuma ocorrência corresponde aos filtros.</div>';
- return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">HISTÓRICO AUDITÁVEL</div><h1>Ocorrências</h1>'+
- '<p class="muted">Pendentes, encaminhadas e tratadas, com responsável, conclusão e linha do tempo.</p></div><button data-refresh>Atualizar</button></header>'+
- '<div class="cards"><div class="metric"><strong>'+priority.filter(e=>e.status!=='resolvida').length+'</strong><span>Pendentes</span></div>'+
- '<div class="metric"><strong>'+priority.filter(e=>e.status==='resolvida').length+'</strong><span>Tratadas</span></div>'+
- '<div class="metric"><strong>'+priority.filter(e=>e.status==='encaminhada').length+'</strong><span>Encaminhadas</span></div></div>'+
- '<section class="surface"><div class="toolbar"><h2>Histórico de ocorrências</h2><button type="button" data-occ-reset>Limpar filtros</button></div>'+
- '<div class="occurrence-filters">'+
- '<label>Situação<select data-occ-filter="status"><option value="pending" '+option('pending','status')+'>Pendentes</option><option value="resolved" '+option('resolved','status')+'>Tratadas</option><option value="forwarded" '+option('forwarded','status')+'>Encaminhadas</option><option value="all" '+option('all','status')+'>Todas</option></select></label>'+
- '<label>Tipo<select data-occ-filter="kind"><option value="all">Todos</option>'+['incident','panic','alert','route_deviation','gps_issue'].map(k=>'<option value="'+k+'" '+option(k,'kind')+'>'+escape(friendly[k])+'</option>').join('')+'</select></label>'+
- '<label>Quem registrou<select data-occ-filter="worker"><option value="all">Todos os vigias</option>'+workerOptions+'</select></label>'+
- '<label>Quem concluiu<select data-occ-filter="reviewer"><option value="all">Toda a equipe</option>'+reviewerOptions+'</select></label>'+
- '<label>De<input type="date" data-occ-filter="dateFrom" value="'+escape(occurrenceFilters.dateFrom)+'"></label>'+
- '<label>Até<input type="date" data-occ-filter="dateTo" value="'+escape(occurrenceFilters.dateTo)+'"></label>'+
- '<label class="occurrence-search">Busca / tratamento<input type="search" data-occ-filter="query" value="'+escape(occurrenceFilters.query)+'" placeholder="Descrição, conclusão, responsável"></label></div>'+
- '<div class="list">'+rows+'</div><p class="muted">Exibindo '+passed.length+' de '+priority.length+' ocorrências encontradas. A conclusão fica preservada no histórico de tratamento do servidor.</p></section>'+
- '<details class="details-toggle"><summary>Mensagens à central · '+routineMessages.length+'</summary><section class="surface">'+eventList(routineMessages)+'</section></details></section>';
+ const queue=events.filter(isPending).sort((a,b)=>b.occurred_at-a.occurred_at);
+ const categories=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['route_deviation','Desvios de rota'],['gps_issue','GPS']];
+ const columns=categories.map(([kind,label])=>{
+  const items=queue.filter(e=>e.kind===kind);
+  return '<section class="rp-coi-event-column" data-column-kind="'+kind+'"><header><h2>'+label+'</h2><span>'+items.length+'</span></header><div class="rp-coi-event-list">'+(items.map(e=>'<button type="button" class="rp-coi-event-item" data-event="'+escape(e.id)+'"><span class="rp-coi-kind">'+escape(typeInfo(e.kind).icon)+'</span><strong>'+escape(e.description||label)+'</strong><small>'+escape(e.reporter_name||'Campo')+' · '+fmt(e.occurred_at)+'</small><em>'+escape(stateLabel(e))+'</em></button>').join('')||'<p class="rp-column-empty">Sem pendências</p>')+'</div></section>';
+ }).join('');
+ return '<section class="rp-coi-event-screen"><header class="rp-coi-section-header"><div><div class="eyebrow">COI · FILA DE ATENDIMENTO</div><h1>Eventos pendentes</h1><p>'+queue.length+' evento(s) aguardando providência. Cada tipo possui sua própria coluna.</p></div><button type="button" data-page="treatments">Histórico concluído</button></header><div class="rp-coi-event-columns">'+columns+'</div></section>';
 }
 function teamView(){
  return '<section class="stack"><h1>Equipe e indicadores individuais</h1><div class="surface"><div class="list">'+(dashboard?.team||[]).map(w=>'<button data-person="'+id(w.id)+'" class="list-item"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Descrição pendente')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' acionamentos</span></button>').join('')+'</div></div>'+
