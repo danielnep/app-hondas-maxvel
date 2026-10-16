@@ -90,7 +90,10 @@ try{
   assert(await admin.page.locator('[data-claim-treatment],[data-review-status]').count()===0,'Registro concluído permite tratamento duplicado');
   assert((await request('/events/'+event.id,adminToken)).treatments.length===1,'Caminhos criaram tratativas duplicadas');
   await navigate(coi.page,'notifications');
-  assert(await coi.page.locator('.rp-event-columns [data-ops-notification="'+notice.id+'"].is-completed').count()===1,'Notificação concluída não foi atenuada');
+  assert(await coi.page.locator('.rp-event-columns [data-ops-notification="'+notice.id+'"]').count()===0,'Evento concluído permanece nas pendências');
+  await navigate(coi.page,'treatments');
+  await coi.page.locator('[data-event="'+event.id+'"]').waitFor({state:'visible'});
+  await navigate(coi.page,'notifications');
   await coi.page.waitForTimeout(600);
   await coi.page.screenshot({path:out+'/notificacoes-'+width+'.png',fullPage:true});
   const fallback=await request('/events',guard,{kind:'alert',occurredAt:Date.now(),description:'Solicitação sem tratamento do COI '+width});
