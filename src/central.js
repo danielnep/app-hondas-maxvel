@@ -28,7 +28,7 @@ let latestActivity='';
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 const torch=createFieldTorch({notify:flash});
-const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[];
+const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[],inspectorSubmission=null;
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
@@ -789,13 +789,21 @@ document.addEventListener('submit',async e=>{
    if(!d.confirmation)throw Error('Confirme a verificação presencial.');
    if(!inspectorSelfie||!inspectorEvidence.some(file=>file.type.startsWith('image/')))throw Error('Capture uma selfie e uma foto do local para concluir.');
    const criteria=Object.fromEntries(keys.map(k=>[k,d[k]==='ok']));
-   const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
-   const files=[inspectorSelfie,...inspectorEvidence];let uploaded=0;
+   if(inspectorSubmission?.dispatchId!==d.dispatchId)inspectorSubmission=null;
+   if(!inspectorSubmission){
+    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
+    inspectorSubmission={dispatchId:d.dispatchId,eventId:record.id,uploaded:new Map()};
+   }
+   const files=[inspectorSelfie,...inspectorEvidence];
    for(const file of files){
-    await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':record.id,'X-Captured-At':String(file.lastModified||Date.now()),'X-Media-View':file===inspectorSelfie?'selfie':file.type.startsWith('image/')?'front':''}});uploaded++;
+    const mediaId=inspectorSubmission.uploaded.get(file)||crypto.randomUUID();
+    await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':inspectorSubmission.eventId,'X-Ronda-Media-Id':mediaId,'X-Captured-At':String(file.lastModified||Date.now()),'X-Media-View':file===inspectorSelfie?'selfie':file.type.startsWith('image/')?'front':''}});
+    inspectorSubmission.uploaded.set(file,mediaId);
    }
    await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note:String(d.observation).trim(),position:(await eventTelemetry()).position||null}});
-   inspectorSelfie=null;inspectorEvidence=[];flash('Vistoria concluída com '+uploaded+' evidências enviadas.');
+   const uploaded=inspectorSubmission.uploaded.size;
+   inspectorSubmission=null;inspectorSelfie=null;inspectorEvidence=[];
+   flash('Vistoria concluída com '+uploaded+' evidências enviadas.');
    await load();return;
   }
   if(form.id==='new-user'){await api('/users',{method:'POST',data:d});flash('Colaborador cadastrado.');await load();return;}
