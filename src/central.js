@@ -11,6 +11,7 @@ import {createMediaCapture,evidenceButtons} from './media-capture.js';
 import {PatrolMap} from './map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf,metersBetween} from './inspection-queue.js';
 import {inspectionCockpit,inspectionStops} from './inspection-cockpit.js';
+import {emptyInspectionDraft,inspectionWizardHtml,updateInspectionDraft,inspectionProblems,inspectionPayload,stepCount} from './field-inspection-wizard.js';
 import {createFieldTorch} from './field-torch.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -81,6 +82,7 @@ function refreshInspectorStops(){
  if(!editing)render();
  else flash('Nova vistoria recebida: circuito atualizado no mapa.');
 }
+let inspectorDraft=null,inspectorWizardAutoId=null;
 let treatmentTab='incident',treatmentRows=[],treatmentMore=false,treatmentOffset=0,eventHistory=[],detailOrigin='events',claimedEvent=null,remoteSyncing=false,inspectionMap=null,inspectorSelfie=null;
 const claimSession=sessionStorage.getItem('rondaspro-treatment-session')||crypto.randomUUID();
 sessionStorage.setItem('rondaspro-treatment-session',claimSession);
@@ -648,20 +650,12 @@ async function loadClientInspectionMedia(){
 function inspectionView(){
  const queue=inspectionQueueNow(),assignment=queue[0]||null;
  const entries=events.filter(e=>e.kind==='inspection');
- const criteria=[['acessos','Acessos verificados'],['estrutura','Estrutura em conformidade'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização em conformidade']];
- const current=pointOf(inspectorPosition)||pointOf(inspectorBase)||pointOf(assignment);
+ if(assignment&&inspectorDraft?.id!==assignment.id){inspectorDraft=emptyInspectionDraft(assignment.id);inspectorSelfie=null;inspectorEvidence=[];inspectorSubmission=null;}
  const stage=inspectionCockpit({queue,mapId:'inspection-map',mode:'real',position:inspectorPosition,base:inspectorBase,
   gpsActive:inspectorWatch!=null,fullTitle:'Minhas vistorias'});
- const form=assignment?.arrived_at?'<form id="inspection-form" class="surface stack rp2-inspection-form rp-inspection-visit-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'">'+
- '<div class="rp2-inspection-header"><span class="rp2-step">02</span><div><h2>Vistoria no local · '+escape(assignment.address)+'</h2><p class="muted">Registre o que foi encontrado. Envie selfie e fotos do local antes de concluir esta visita.</p></div></div>'+
- '<div class="rp2-inspection-checklist">'+criteria.map(([key,label],i)=>'<label class="inspection-check rp2-inspection-item"><span class="rp2-inspection-number">'+(i+1)+'</span><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Avaliar</option><option value="ok">Sem anormalidades</option><option value="no">Não conformidade identificada</option></select></label>').join('')+'</div>'+
- '<label>Observações da vistoria<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Descreva as verificações realizadas"></textarea></label>'+
- '<div class="rp2-inspection-header"><span class="rp2-step">03</span><div><h3>Evidências</h3><p class="muted">Selfie e fotografias do local obrigatórias. Pode selecionar várias imagens.</p></div></div>'+
- '<button type="button" class="rp-inspection-selfie" data-evidence-kind="selfie">Tirar selfie <span>Câmera frontal</span></button>'+evidenceButtons()+
- '<label class="rp-inspection-multi-photo">Selecionar várias fotos do local<input type="file" accept="image/*" multiple data-inspection-photo-upload><span>Galeria do aparelho</span></label>'+
- '<p class="muted" data-evidence-attachments>Fotos anexadas aparecerão aqui.</p>'+
- '<label class="rp-inspection-declaration"><input type="checkbox" name="confirmation" required><span>Confirmo que estive no local e registrei pessoalmente as condições verificadas.</span></label>'+
- '<button type="submit" class="primary rp2-inspection-submit">Concluir vistoria e seguir para a próxima</button></form>':'';
+ const form=assignment?.arrived_at?'<dialog id="rp-inspection-wizard-dialog" class="rp-field-wizard-dialog"><form id="inspection-form" novalidate>'+
+  '<div class="rp-field-wizard-head"><div><strong>Vistoria · '+escape(assignment.address)+'</strong><small>Checklist operacional e evidências</small></div><button type="button" data-wizard-close aria-label="Fechar checklist">✕</button></div>'+
+  '<input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'">'+inspectionWizardHtml(inspectorDraft)+'</form></dialog>':'';
  return '<section class="stack rp-inspector-workspace">'+stage+form+
  '<section class="surface rp-inspector-history"><header class="toolbar"><h2>Vistorias concluídas</h2><span>'+entries.length+' registro(s)</span></header>'+
  (entries.length?entries.slice(0,12).map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<p class="empty">Ainda não há vistorias concluídas.</p>')+'</section>'+
@@ -701,7 +695,11 @@ function render(){
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(()=>coi.mount());
- if(account.role==='vistoriador'&&page==='inspections')requestAnimationFrame(()=>{
+ if(account.role==='vistoriador'&&page==='inspections'&&inspectorDraft?.id&&!inspectorWizardAutoId){
+   inspectorWizardAutoId=inspectorDraft.id;
+   requestAnimationFrame(()=>document.querySelector('#rp-inspection-wizard-dialog')?.showModal());
+  }
+  if(account.role==='vistoriador'&&page==='inspections')requestAnimationFrame(()=>{
   const host=document.querySelector('#inspection-map'),item=ops.activeInspection();
   if(host){
     const ordered=inspectionQueueNow();
@@ -803,7 +801,20 @@ document.addEventListener('click',async e=>{
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
-  if(target.hasAttribute('data-inspection-fit')){inspectionMap?.fit();return;}
+  if(target.hasAttribute('data-wizard-open')){const d=document.querySelector('#rp-inspection-wizard-dialog');if(d&&!d.open)d.showModal();return;}
+   if(target.hasAttribute('data-wizard-close')){document.querySelector('#rp-inspection-wizard-dialog')?.close();return;}
+   if(target.hasAttribute('data-wizard-next')||target.hasAttribute('data-wizard-back')){
+    const form=document.querySelector('#inspection-form');if(!form||!inspectorDraft)return;
+    const updated=updateInspectionDraft(inspectorDraft,form),errors=inspectionProblems(updated);
+    if(target.hasAttribute('data-wizard-next')&&errors.length){const node=form.querySelector('[data-wizard-error]');node.hidden=false;node.textContent=errors[0];return;}
+    updated.step=Math.max(0,Math.min(stepCount()-1,updated.step+(target.hasAttribute('data-wizard-back')?-1:1)));
+    inspectorDraft=updated;form.querySelector('.rp-field-wizard').outerHTML=inspectionWizardHtml(inspectorDraft);return;
+   }
+   if(target.hasAttribute('data-field-tool-torch')){await torch.toggle();return;}
+   if(target.hasAttribute('data-field-tool-panic')){document.querySelector('#central-panic-dialog')?.showModal();return;}
+   if(target.hasAttribute('data-field-tool-chat')){const button=document.querySelector('[data-chat-page]');if(button)await chat.click(button);else {page='chat';render();}return;}
+   if(target.hasAttribute('data-field-tool-alert')||target.hasAttribute('data-field-tool-incident')){composeKind=target.hasAttribute('data-field-tool-alert')?'alert':'incident';page='send';render();return;}
+   if(target.hasAttribute('data-inspection-fit')){inspectionMap?.fit();return;}
   if(target.hasAttribute('data-inspection-depart')){
    const task=inspectionQueueNow()[0];if(!task)return;
    target.disabled=true;
@@ -915,15 +926,16 @@ document.addEventListener('submit',async e=>{
  try{
   if(form.id==='central-login'){const result=await api('/login',{method:'POST',data:d});token=result.token;sessionStorage.setItem('rondaspro_api_token',token);await load();return;}
   if(form.id==='inspection-form'){
-   const keys=['acessos','estrutura','equipamentos','sinalizacao'];
-   if(!inspectionQueueNow()[0]||d.dispatchId!==inspectionQueueNow()[0].id||!inspectionQueueNow()[0].arrived_at)throw Error('Registre a chegada ao destino antes de enviar a vistoria.');
-   if(keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Avalie todos os quatro critérios da vistoria.');
-   if(!d.confirmation)throw Error('Confirme a verificação presencial.');
-   if(!inspectorSelfie||!inspectorEvidence.some(file=>file.type.startsWith('image/')))throw Error('Capture uma selfie e uma foto do local para concluir.');
-   const criteria=Object.fromEntries(keys.map(k=>[k,d[k]==='ok']));
+   inspectorDraft=updateInspectionDraft(inspectorDraft,form);
+    if(inspectorDraft?.step!==stepCount()-1)throw Error('Avance até a última etapa.');
+    const problems=inspectionProblems(inspectorDraft,{final:true});if(problems.length)throw Error(problems[0]);
+    if(!inspectionQueueNow()[0]||d.dispatchId!==inspectionQueueNow()[0].id||!inspectionQueueNow()[0].arrived_at)throw Error('Registre a chegada antes do laudo.');
+    if(!d.confirmation)throw Error('Confirme a verificação presencial.');
+    if(!inspectorSelfie||!inspectorEvidence.some(file=>file.type.startsWith('image/')))throw Error('Capture selfie e foto do local para concluir.');
+    const {criteria,verified,observation}=inspectionPayload(inspectorDraft);
    if(inspectorSubmission?.dispatchId!==d.dispatchId)inspectorSubmission=null;
    if(!inspectorSubmission){
-    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
+    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:observation.slice(0,1000),details:{criteria,verified,dispatchId:d.dispatchId},...await eventTelemetry()}});
     inspectorSubmission={dispatchId:d.dispatchId,eventId:record.id,uploaded:new Map()};
    }
    const files=[inspectorSelfie,...inspectorEvidence];
@@ -932,9 +944,9 @@ document.addEventListener('submit',async e=>{
     await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':inspectorSubmission.eventId,'X-Ronda-Media-Id':mediaId,'X-Captured-At':String(file.lastModified||Date.now()),'X-Media-View':file===inspectorSelfie?'selfie':file.type.startsWith('image/')?'front':''}});
     inspectorSubmission.uploaded.set(file,mediaId);
    }
-   await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note:String(d.observation).trim(),position:(await eventTelemetry()).position||null}});
+   await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note:observation,position:(await eventTelemetry()).position||null}});
    const uploaded=inspectorSubmission.uploaded.size;
-   inspectorSubmission=null;inspectorSelfie=null;inspectorEvidence=[];
+   inspectorSubmission=null;inspectorSelfie=null;inspectorEvidence=[];inspectorDraft=null;inspectorWizardAutoId=null;
    flash('Vistoria concluída com '+uploaded+' evidências enviadas.');
    await load();return;
   }
