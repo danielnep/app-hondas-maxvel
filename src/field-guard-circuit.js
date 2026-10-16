@@ -9,7 +9,8 @@ export function buildGuardRoute(route,base){
 export function nextGuardState(st,fix,{at=Date.now(),action='tick'}={}){
  if(!st||!st.startedAt||st.completedAt)return {state:st,ready:false,inside:false,elapsed:0};
  const current=st.points[st.index],focus=pointOf(current)||pointOf(st.base),distance=metersBetween(fix,focus);
- const inside=Number.isFinite(distance)&&Number.isFinite(fix?.accuracy)&&fix.accuracy<=GUARD_RADIUS_METERS&&distance<=GUARD_RADIUS_METERS;
+ const fresh=Number.isFinite(fix?.at)&&at-fix.at>=-5000&&at-fix.at<=12000;
+ const inside=fresh&&Number.isFinite(distance)&&Number.isFinite(fix?.accuracy)&&fix.accuracy<=GUARD_RADIUS_METERS&&distance<=GUARD_RADIUS_METERS;
  let insideSince=st.insideSince??null;if(!inside)insideSince=null;
  if(action==='arrive'&&inside&&current)insideSince=at;
  const elapsed=insideSince==null?0:Math.max(0,at-insideSince);
