@@ -30,6 +30,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  if(!fields.includes('started_at'))db.exec('ALTER TABLE dispatches ADD COLUMN started_at INTEGER');
  if(!fields.includes('completed_at'))db.exec('ALTER TABLE dispatches ADD COLUMN completed_at INTEGER');
  if(!fields.includes('completion_note'))db.exec("ALTER TABLE dispatches ADD COLUMN completion_note TEXT NOT NULL DEFAULT ''");
+ if(!fields.includes('inspection_type'))db.exec("ALTER TABLE dispatches ADD COLUMN inspection_type TEXT NOT NULL DEFAULT 'requested'");
  const clients=new Map();
  const announce=userId=>{
   for(const res of clients.get(userId)||[])try{res.write('event: change\ndata: {}\n\n')}catch{}
@@ -176,6 +177,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const worker=db.prepare('SELECT id,name,site,role,active FROM users WHERE id=? AND role=?').get(clean(data.workerId),role);
    const dest=kind==='vistoria'?db.prepare('SELECT * FROM inspection_destinations WHERE id=? AND active=1').get(clean(data.destinationId)):null;
    const address=dest?.address||clean(data.address),site=dest?.client_name||worker?.site||'';
+   const inspectionType=kind==='vistoria'&&data.inspectionType==='routine'?'routine':'requested';
    // Destinos já cadastrados prevalecem; o COI também pode informar um endereço
    // específico para uma vistoria avulsa, sem criar um cliente fictício.
    if(!worker||!worker.active||(kind==='vistoria'&&clean(data.destinationId)&&!dest)||address.length<5||address.length>350||reason.length<10||reason.length>1000){
@@ -191,8 +193,8 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
     resp(res,422,{error:'Coordenadas inválidas'});return true;
    }
    const dispatchId=id(),at=now();
-   db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at,kind,destination_id,site) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
-    .run(dispatchId,worker.id,user.id,address,reason,latitude,longitude,at,kind,dest?.id||null,site);
+   db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at,kind,destination_id,site,inspection_type) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
+    .run(dispatchId,worker.id,user.id,address,reason,latitude,longitude,at,kind,dest?.id||null,site,inspectionType);
    insert.run(id(),worker.id,'dispatch',kind==='vistoria'?'Nova vistoria atribuída':'Nova ronda adicionada',
     address+' · '+reason,null,dispatchId,at);
    announce(worker.id);
