@@ -361,7 +361,9 @@ function treatmentsView(){
 }
 function eventsView(){
  const queue=events.filter(isPending).sort((a,b)=>b.occurred_at-a.occurred_at);
- const categories=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['route_deviation','Desvios de rota'],['gps_issue','GPS']];
+ const priority=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['route_deviation','Desvios de rota'],['gps_issue','GPS']];
+ const defined=new Set(priority.map(([kind])=>kind));
+ const categories=[...priority,...[...new Set(queue.map(e=>e.kind))].filter(kind=>!defined.has(kind)).map(kind=>[kind,typeInfo(kind).label])];
  const columns=categories.map(([kind,label])=>{
   const items=queue.filter(e=>e.kind===kind);
   return '<section class="rp-coi-event-column" data-column-kind="'+kind+'"><header><h2>'+label+'</h2><span>'+items.length+'</span></header><div class="rp-coi-event-list">'+(items.map(e=>'<button type="button" class="rp-coi-event-item" data-event="'+escape(e.id)+'"><span class="rp-coi-kind">'+escape(typeInfo(e.kind).icon)+'</span><strong>'+escape(e.description||label)+'</strong><small>'+escape(e.reporter_name||'Campo')+' · '+fmt(e.occurred_at)+'</small><em>'+escape(stateLabel(e))+'</em></button>').join('')||'<p class="rp-column-empty">Sem pendências</p>')+'</div></section>';
