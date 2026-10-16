@@ -219,7 +219,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
     if(dialog._inspectionMap)dialog._inspectionMap.remove();
     const map=window.L.map(mapHost,{scrollWheelZoom:false}).setView([-20.1437,-44.8906],12);
     dialog._inspectionMap=map;dialog._inspectorPins=[];
-    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19}).addTo(map);
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(map);
     map.on('click',e=>{
      const lat=Number(e.latlng.lat.toFixed(6)),lng=Number(e.latlng.lng.toFixed(6));
      const status=dialog.querySelector('[data-ops-route-status]');
