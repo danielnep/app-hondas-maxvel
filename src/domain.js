@@ -34,7 +34,8 @@ export function routeLeg(route,legIndex){
 }
 export function routeWaypoints(route){
  const all=[route.base];
- for(let i=0;i<=route.points.length;i++)all.push(...routeLeg(route,i).slice(1));
+ // Ronda retorna à base. Vistoria termina no último destino e NÃO fecha o circuito.
+ for(let i=0;i<(route.inspectionMode?route.points.length:route.points.length+1);i++)all.push(...routeLeg(route,i).slice(1));
  return all;
 }
 export const distanceMeters=(a,b)=>{
