@@ -755,9 +755,9 @@ function render(){
  if(page==='monitor')requestAnimationFrame(()=>coi.mount());
  if(account.role==='ronda'&&page==='dashboard')requestAnimationFrame(()=>{
    const host=document.querySelector('#guard-real-map'),planned=guardPlannedRoute();if(!host||!planned)return;
-   const route=buildGuardRoute(planned,guardRound?.base||guardFix||planned.points?.[0]);
+   const route=buildGuardRoute(planned,guardRound?.base||guardFix);
    if(route){guardMap=new PatrolMap(host,{route,session:guardRound?{mode:'real',index:guardRound.index,checkpoints:route.points.map((_,i)=>({completedAt:guardRound.checkpoints.some(c=>c.index===i)?Date.now():null}))}:null,
-     position:guardFix||guardRound?.base||route.base,positionVerified:!!guardFix,standbyClean:false,interactive:true});guardStartGps();}
+     position:guardFix||guardRound?.base||route.base,positionVerified:!!guardFix,standbyClean:false,interactive:true,onStreetRoute:status=>{const label=document.querySelector('[data-guard-road]');if(label)label.textContent=status;}});guardStartGps();}
   });
   if(account.role==='vistoriador'&&page==='inspections'&&inspectorDraft?.id&&!inspectorWizardAutoId&&ops.activeInspection()?.arrived_at){
    inspectorWizardAutoId=inspectorDraft.id;
