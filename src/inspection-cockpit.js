@@ -27,7 +27,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
   '<button type="button" class="rp-inspection-map-fit" '+(mode==='demo'?'data-action="demo-inspection-fit"':'data-inspection-fit')+' aria-label="Enquadrar todos os destinos">⌖</button></header>'+
   '<div class="patrol-map-canvas rp-inspection-map-canvas"><div id="'+html(mapId)+'" class="map-container mini rp-inspector-map" role="application" aria-label="Mesmo mapa de rondas adaptado às vistorias"></div>'+
   '<div class="rp-inspection-map-hud"><span class="rp-inspection-hud-label">'+(current?started(current)?arrived(current)?'● NO DESTINO':'● EM DESLOCAMENTO':'● NOVA VISTORIA':'● SEM VISTORIAS')+'</span><strong data-inspection-current-title>'+first+'</strong><small data-inspection-distance>'+(distance!==null?'Distância em linha reta: '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m'):'Localização ou destino sem coordenadas')+'</small></div></div>'+
-  '<div class="patrol-map-footer"><span data-inspection-gps-state>'+ (gpsActive?'GPS acompanhando':'GPS não iniciado')+'</span><span>Mapa de referência · não é rota viária calculada</span></div>'+
+  '<div class="patrol-map-footer"><span data-inspection-gps-state>'+ (gpsActive?'GPS acompanhando':'GPS não iniciado')+'</span><span data-inspection-road-state>Preparando percurso…</span></div>'+
  '</section>'+
  '<section class="patrol-actions rp-inspection-commands" aria-label="Próximo atendimento">'+
   '<div class="patrol-action-heading"><strong>PRÓXIMO DESTINO · <span data-inspection-current-count>'+(queue.length?'1 de '+queue.length:'Sem tarefas')+'</span></strong></div>'+
