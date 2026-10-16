@@ -56,7 +56,7 @@ export class PatrolMap{
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;this.standbyClean=standbyClean;
   this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.positionVerified=positionVerified;this.tracePositions=positionVerified?[this.position]:[];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
   this.streetPath=null;this.streetRequest=null;this.streetEpoch=0;this.onStreetRoute=onStreetRoute;
-  this.showFallback();this.setup();if(this.route.inspectionMode)this.loadStreetPath();
+  this.showFallback();this.setup();if(this.route.inspectionMode||this.route.roadRouting)this.loadStreetPath();
  }
  fallbackViewport(){return this.route.inspectionMode?{width:Math.max(300,this.container?.clientWidth||680),height:Math.max(320,this.container?.clientHeight||360)}:null}
  showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session,this.positionVerified,this.fallbackViewport())}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
@@ -128,10 +128,10 @@ export class PatrolMap{
   }
   // Geometria por ruas quando a consulta externa funciona; senão o corredor
   // indicativo base → 1 → 2... permanece visível (sem voltar à base).
-  const pts=(this.route.inspectionMode&&this.streetPath?.length>1?this.streetPath:routeWaypoints(this.route)).map(latlng);
+  const pts=((this.route.inspectionMode||this.route.roadRouting)&&this.streetPath?.length>1?this.streetPath:routeWaypoints(this.route)).map(latlng);
   if(pts.length>1){
    add(L.polyline(pts,{color:'#08090d',weight:12,opacity:.92,lineJoin:'round',interactive:false}));
-   add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:this.route.inspectionMode&&this.streetPath?.length>1?null:'11 8',lineJoin:'round',interactive:false}));
+   add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:(this.route.inspectionMode||this.route.roadRouting)&&this.streetPath?.length>1?null:'11 8',lineJoin:'round',interactive:false}));
   }
   const bases=[this.route.base,...this.route.points];
   bases.forEach((p,i)=>{
@@ -157,7 +157,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
   const epoch=++this.streetEpoch;
   this.streetRequest?.abort();
   this.streetRequest=null;this.streetPath=null;
-  if(!this.route.inspectionMode)return;
+  if(!(this.route.inspectionMode||this.route.roadRouting))return;
   if(!this.route.baseKnown){
    this.onStreetRoute('Sem posição de partida: ative o GPS para traçar o trajeto.');
    return;
@@ -193,7 +193,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
     next=routeWaypoints(route).map(p=>p.lat+','+p.lng).join(';');
   const changed=previous!==next||this.route.baseKnown!==route.baseKnown;
   this.route=route;this.session=session;
-  if(changed&&route.inspectionMode)this.loadStreetPath();
+  if(changed&&(route.inspectionMode||route.roadRouting))this.loadStreetPath();
   if(this.instance){this.refreshGeometry();this.fit();}
   else this.showFallback();
  }
@@ -233,7 +233,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
   return {paddingTopLeft:[24,Math.min(135,Math.round(h*.25))],paddingBottomRight:[24,Math.min(245,Math.round(h*.39))],maxZoom:17};
  }
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
- fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds(this.route.inspectionMode&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],this.mapViewPadding());}
+ fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds((this.route.inspectionMode||this.route.roadRouting)&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],this.mapViewPadding());}
  invalidate(){this.instance?.invalidateSize(false)}
  destroy(){
   this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();
