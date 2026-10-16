@@ -28,7 +28,7 @@ let latestActivity='';
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 const torch=createFieldTorch({notify:flash});
-const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[];
+const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],inspectorProof={photo:null,selfie:null},fieldMessageEvidence=[];
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
@@ -535,13 +535,14 @@ async function loadClientInspectionMedia(){
  }
 }
 function inspectionView(){
- const assignment=ops.activeInspection();
- const entries=events.filter(e=>e.kind==='inspection'),scored=entries.filter(e=>Number.isFinite(e.details?.qualityPercent));
- const avg=scored.length?Math.round(scored.reduce((n,e)=>n+e.details.qualityPercent,0)/scored.length):null;
- const criteria=[['acessos','Acessos verificados'],['estrutura','Estrutura em conformidade'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização em conformidade']];
- return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">VISTORIADOR · QUALIDADE</div><h1>'+escape(assignment?.site||account.site||'Aguardando destino COI')+'</h1><p class="muted">Registre uma vistoria com critérios observáveis e histórico auditável.</p></div><button data-refresh>Atualizar</button></header>'+composeActionButtons()+'<div class="cards"><div class="metric"><strong>'+(avg===null?'—':avg+'%')+'</strong><span>Conformidade média das vistorias</span></div><div class="metric"><strong>'+entries.length+'</strong><span>Vistorias</span></div></div>'+(assignment?'<div class="surface rp2-assignment"><div class="eyebrow">ETAPA 1 · DESTINO AUTORIZADO PELO COI</div><h2>'+escape(assignment.site||assignment.address)+'</h2><p>'+escape(assignment.address)+'</p></div><form id="inspection-form" class="surface stack rp2-inspection-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><div class="rp2-inspection-header"><span class="rp2-step">02</span><div><h2>Conferir o local</h2><p class="muted">Avalie os quatro critérios. Um campo vazio nunca significa conforme.</p></div></div><div class="rp2-inspection-checklist">'+criteria.map(([key,label],i)=>'<label class="inspection-check rp2-inspection-item"><span class="rp2-inspection-number">'+(i+1)+'</span><span>'+escape(label)+'</span><select name="'+key+'" required><option value="">Avaliar</option><option value="ok">Conforme</option><option value="no">Não conforme</option></select></label>').join('')+'</div><label>Observações da vistoria<textarea name="observation" required minlength="8" maxlength="1000" placeholder="Registre somente o que foi verificado"></textarea></label><div class="rp2-inspection-header"><span class="rp2-step">03</span><div><h3>Evidências</h3><p class="muted">Anexe fotos, vídeo ou áudio quando necessário.</p></div></div>'+evidenceButtons()+'<button class="primary rp2-inspection-submit">Registrar vistoria e evidências</button></form>':'<div class="surface"><h2>Aguardando despacho do COI</h2><p>O COI escolhe o destino autorizado. Consulte <button type="button" data-page="dispatches">Meus despachos</button>.</p></div>')+'<section class="surface"><h2>Histórico</h2>'+(entries.length?entries.map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<div class="empty">Nenhuma vistoria registrada.</div>')+'</section><p class="muted">Este indicador mede quatro condições de vistoria do local, não pessoas. Registros sincronizados com o servidor.</p></section>';
+ const assignment=ops.activeInspection(),entries=events.filter(e=>e.kind==='inspection');
+ const pending=assignment?'<section class="rp-inspector-assignment"><div class="rp-inspector-map rp-inspector-map-active" role="img" aria-label="Destino informado pelo COI; abra o endereço para navegação"><span class="rp-inspector-map-marker">⌖</span></div><div class="rp-inspector-destination"><span class="eyebrow">VISTORIA EM ANDAMENTO</span><h2>'+escape(assignment.site||'Destino de vistoria')+'</h2><p>'+escape(assignment.address)+'</p><small>'+escape(assignment.reason||'Verifique as condições do local.')+'</small><a href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(assignment.address)+'" target="_blank" rel="noopener noreferrer">Abrir navegação até o local ↗</a></div></section>':
+ '<section class="rp-inspector-empty"><div class="rp-inspector-map rp-inspector-map-blurred" aria-hidden="true"><span>⌖</span></div><div class="rp-inspector-empty-copy"><span class="eyebrow">AGUARDANDO COI</span><h2>Sem vistoria pendente</h2><p>Quando o COI solicitar uma vistoria, o destino e as instruções aparecerão aqui.</p><button type="button" data-refresh>Verificar novas solicitações</button><button type="button" data-page="dispatches">Ver vistorias de rotina e atribuições</button></div></section>';
+ const checks=[['acessos','Acessos'],['estrutura','Estrutura'],['equipamentos','Equipamentos'],['sinalizacao','Sinalização']];
+ const form=assignment?'<form id="inspection-form" class="rp-inspector-form"><input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'"><header><span class="eyebrow">CONFERÊNCIA DO LOCAL</span><h2>Registrar vistoria</h2><p>Registre uma foto do local, uma selfie e informe o resultado.</p></header><div class="rp-inspector-photo-grid"><button type="button" data-inspection-role="photo" aria-label="Fotografar local"><span>▣</span><strong>Foto do local</strong><small data-proof-label="photo">'+(inspectorProof.photo?'Foto registrada':'Adicionar foto')+'</small></button><button type="button" data-inspection-role="selfie" aria-label="Registrar selfie"><span>◎</span><strong>Selfie</strong><small data-proof-label="selfie">'+(inspectorProof.selfie?'Selfie registrada':'Adicionar selfie')+'</small></button></div><label class="rp-inspector-ok"><input type="checkbox" name="allOk"> Tudo dentro do esperado</label><details class="rp-inspector-criteria"><summary>Verificação detalhada / irregularidades</summary><p>Use os critérios abaixo quando houver algo que exija atenção.</p>'+checks.map(([key,label])=>'<label>'+label+'<select name="'+key+'"><option value="">Avaliar</option><option value="ok">Conforme</option><option value="no">Exige atenção</option></select></label>').join('')+'</details><label>Observações<textarea name="observation" rows="2" maxlength="1000" placeholder="Descreva o que encontrou, se necessário"></textarea></label><button class="primary rp-inspector-submit" type="submit">Finalizar vistoria</button></form>':'';
+ return '<section class="rp-inspector-screen"><header class="rp-inspector-top"><div class="eyebrow">VISTORIADOR · OPERAÇÃO DE CAMPO</div><h1>Minhas vistorias</h1><p>Atenda a solicitação do COI. As vistorias de rotina também aparecem nas atribuições.</p></header>'+pending+form+
+ '<section class="rp-inspector-history"><h2>Últimas vistorias</h2>'+(entries.length?entries.slice(0,8).map(e=>'<div class="rp-inspector-history-row"><strong>'+escape(e.description||'Vistoria concluída')+'</strong><span>'+fmt(e.occurred_at)+'</span></div>').join(''):'<p class="empty">Nenhuma vistoria concluída.</p>')+'</section></section>';
 }
-
 function render(){
  for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
  routeBoard.resetMaps();resetOperationalMap();coi.reset();
@@ -648,6 +649,13 @@ document.addEventListener('click',async e=>{
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
+  if(target.dataset.inspectionRole&&page==='inspections'){
+   const kind=target.dataset.inspectionRole;
+   if(!['photo','selfie'].includes(kind))return;
+   try{const file=await inspectorCapture.request(kind==='selfie'?'selfie':'photo');inspectorProof[kind]=file;const label=document.querySelector('[data-proof-label="'+kind+'"]');if(label)label.textContent='✓ '+(kind==='selfie'?'Selfie registrada':'Foto registrada');target.classList.add('is-taken');}
+   catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
+   return;
+  }
   if(target.hasAttribute('data-close-event')){await releaseTreatment();selected=null;page=detailOrigin;render();return;}
   if(await calls.click(target))return;
   if(await chat.click(target))return;
@@ -726,10 +734,13 @@ document.addEventListener('submit',async e=>{
   if(form.id==='inspection-form'){
    const keys=['acessos','estrutura','equipamentos','sinalizacao'];
    if(!ops.activeInspection()||d.dispatchId!==ops.activeInspection().id)throw Error('Inicie o despacho autorizado pelo COI antes de registrar vistoria.');
-   if(keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Avalie todos os quatro critérios da vistoria.');
-   const criteria=Object.fromEntries(keys.map(k=>[k,d[k]==='ok']));
+   if(!inspectorProof.photo||!inspectorProof.selfie)throw Error('Registre uma foto do local e uma selfie para finalizar.');
+   const allOk=d.allOk==='on';
+   if(!allOk&&keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Marque Tudo dentro do esperado ou avalie os quatro critérios.');
+   if(!allOk&&String(d.observation||'').trim().length<8)throw Error('Descreva a condição que exige atenção.');
+   const criteria=Object.fromEntries(keys.map(k=>[k,allOk||d[k]==='ok']));
    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
-   const files=[...inspectorEvidence];inspectorEvidence=[];let uploaded=0;
+   const files=[inspectorProof.photo,inspectorProof.selfie,...inspectorEvidence];inspectorEvidence=[];inspectorProof={photo:null,selfie:null};let uploaded=0;
    for(const file of files){
     try{await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':record.id,'X-Captured-At':String(file.lastModified||Date.now())}});uploaded++}
     catch(err){console.warn('Evidência não enviada',err)}
