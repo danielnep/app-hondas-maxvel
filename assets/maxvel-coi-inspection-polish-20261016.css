@@ -200,6 +200,23 @@
 }
 .rp-inspector-map-blurred:after{content:"";position:absolute;inset:0;background:#10101499;backdrop-filter:blur(7px)}
 .rp-inspector-map>span{font-size:40px;z-index:1;opacity:.65}
+.rp-inspector-map>span{display:grid;place-items:center}
+.rp-inspector-map>span svg{width:42px;height:42px;stroke:currentColor;fill:none;stroke-width:1.7}
+.rp-inspector-map .field-torch-fab,.dashboard .rp-inspector-map .field-torch-fab,#central-root .rp-inspector-map .field-torch-fab{
+ position:absolute!important;inset:12px 12px auto auto!important;right:12px!important;top:12px!important;bottom:auto!important;left:auto!important;
+ z-index:6!important;width:58px!important;height:58px!important;min-width:58px!important;min-height:58px!important;padding:5px!important;gap:2px!important;
+ border-radius:50%!important;background:#27272e!important;color:#f4f4f7!important;border:1px solid #73737e!important;
+ box-shadow:0 6px 20px #0009!important;transform:none!important;
+}
+.rp-inspector-map .field-torch-fab svg{width:22px!important;height:22px!important}
+.rp-inspector-map .field-torch-fab span{font-size:9px!important;line-height:1.05!important}
+.rp-inspector-map .field-torch-fab.is-lit{background:#4b391f!important;color:#ffe8b6!important;border-color:#ffbd60!important}
+.rp-inspector-destination button[data-action="demo-inspection-arrive"]{
+ display:inline-flex!important;justify-content:center;align-items:center;min-height:46px!important;padding:10px 16px!important;margin-top:6px!important;
+ border:1px solid #fb5269!important;border-radius:11px!important;background:#91223a!important;color:#fff!important;font-size:13px!important;font-weight:800!important;box-shadow:0 6px 18px #0005!important;cursor:pointer;
+}
+.rp-inspector-destination button[data-action="demo-inspection-arrive"]:focus-visible{outline:3px solid #ffbac4!important;outline-offset:3px!important}
+
 .rp-inspector-map-blurred>span{opacity:.25}
 .rp-inspector-map-active>span{color:#fb7285;opacity:1}
 .rp-inspector-destination,.rp-inspector-empty-copy{padding:22px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:9px}
