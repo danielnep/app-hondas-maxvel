@@ -96,7 +96,10 @@ try{
   await page.locator('#toast.toast-visible').waitFor({state:'hidden'});
   await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
   await page.locator('#demo-inspection-map').waitFor();
-  if(await page.locator('#ops-map.rp-inspection-map').count())throw Error('Mapa da ronda reaproveitado pelo vistoriador');
+  if(!await page.locator('.rp-inspection-cockpit #demo-inspection-map').count())throw Error('Vistoriador deve usar cockpit cartográfico da ronda');
+  if(await page.locator('#demo-inspection-form').count())throw Error('Laudo não pode aparecer antes da chegada');
+  await page.locator('[data-action="demo-inspection-depart"]').click();
+  await page.locator('[data-action="demo-inspection-arrive"]').click();
   if(!await page.locator('#demo-inspection-form [name="localPhoto"][multiple]').count())throw Error('Seleção de múltiplas fotos do local ausente');
   await page.screenshot({path:out+'/vistoriador-'+width+'.png',fullPage:true});
   const file={name:'evidencia.jpg',mimeType:'image/jpeg',buffer:Buffer.from([255,216,255,224,0,16])};
@@ -107,7 +110,7 @@ try{
   await page.locator('#demo-inspection-form [name="confirmation"]').check();
   await page.locator('#demo-inspection-form [type="submit"]').click();
   if(await page.locator('#demo-inspection-form').count())throw Error('Vistoria concluída não voltou para o mapa sem pendências');
-  await page.locator('.rp-inspection-empty').waitFor();
+  await page.locator('.rp-inspection-ready').waitFor();
   await page.locator('.rp-direct-chat[data-view="chat-interno"]').click();
   await page.locator('#demo-chat-form').waitFor();
   if(await page.locator('.field-chat-contact-row:visible').count())throw Error('Chat de campo abriu lista em vez de conversa direta');
