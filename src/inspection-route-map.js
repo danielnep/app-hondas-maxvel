@@ -12,8 +12,8 @@ const waypoints=assignment=>{
  return Array.isArray(points)?points.slice(0,12).map(parsePoint).filter(Boolean):[];
 };
 export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
- let map=null,watch=null,liveLine=null,locationMarker=null,history=[],lastSend=0,assignmentId=null,planned=[],pathKey='';
- function destroy(){if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}map?.remove();map=null;liveLine=null;locationMarker=null;}
+ let map=null,watch=null,liveLine=null,plannedLink=null,locationMarker=null,history=[],lastSend=0,assignmentId=null,planned=[],pathKey='';
+ function destroy(){if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}map?.remove();map=null;liveLine=null;plannedLink=null;locationMarker=null;}
  function routeData(item){
   const destination=item?.latitude!=null&&item?.longitude!=null?parsePoint({lat:item.latitude,lng:item.longitude}):null;
   return [...waypoints(item),...(destination?[destination]:[])];
@@ -35,7 +35,7 @@ export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
    planned.forEach((p,i)=>window.L.circleMarker(p,{radius:i===planned.length-1?10:7,color:'#fff',weight:2,fillColor:i===planned.length-1?'#ed3654':'#a9a4b0',fillOpacity:1}).addTo(map).bindTooltip(i===planned.length-1?'Destino do COI':'Passagem '+(i+1)));
    if(planned.length>1)window.L.polyline(planned,{color:'#f69cae',weight:3,dashArray:'7,9',opacity:.9}).addTo(map);
   }
-  if(history.length&&planned.length)window.L.polyline([history.at(-1),planned[0]],{color:'#d99aa9',weight:2,dashArray:'3,9',opacity:.65}).addTo(map);
+  if(history.length&&planned.length)plannedLink=window.L.polyline([history.at(-1),planned[0]],{color:'#d99aa9',weight:2,dashArray:'3,9',opacity:.65}).addTo(map);
   if(history.length){liveLine=window.L.polyline(history,{color:'#f2f1f3',weight:4}).addTo(map);locationMarker=window.L.circleMarker(history.at(-1),{radius:8,color:'#fff',fillColor:'#ed3654',fillOpacity:1}).addTo(map)}
   const all=[...planned,...history];
   if(all.length>1)map.fitBounds(window.L.latLngBounds(all),{padding:[34,34],maxZoom:16});
@@ -56,6 +56,7 @@ export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
     if(map){
      if(!liveLine)liveLine=window.L.polyline(history,{color:'#f2f1f3',weight:4}).addTo(map);else liveLine.setLatLngs(history);
      if(!locationMarker)locationMarker=window.L.circleMarker(p,{radius:8,color:'#fff',fillColor:'#ed3654',fillOpacity:1}).addTo(map);else locationMarker.setLatLng(p);
+     if(planned.length){if(!plannedLink)plannedLink=window.L.polyline([p,planned[0]],{color:'#d99aa9',weight:2,dashArray:'3,9',opacity:.65}).addTo(map);else plannedLink.setLatLngs([p,planned[0]]);}
      map.panTo(p,{animate:false});
     }
    }
