@@ -421,7 +421,7 @@ function render(){demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!
  installViewportViews();installUX06();
  const workspace=document.querySelector('.patrol-workspace');
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
- if(routeMap&&routeAction&&window.innerWidth<=900&&!workspace.matches('[data-inspection-cockpit]'))workspace.insertBefore(routeAction,routeMap);
+ if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
  attachMaps();ops.decorate();
  if(user?.role==='vistoriador'&&view==='vistoriador'&&demoInspectionDraft?.id&&!demoWizardAutoId&&demoPendingInspection()?.arrivedAt){demoWizardAutoId=demoInspectionDraft.id;requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());}
  const dash=document.querySelector('.dashboard');
@@ -799,9 +799,9 @@ function demoInspectorView(){
  '<div class="rp-field-wizard-head"><div><strong>Vistoria · '+esc(pending.address)+'</strong><small>Verificações por etapa · demonstração</small></div><button type="button" data-action="demo-wizard-close">✕</button></div>'+
  '<input type="hidden" name="requestId" value="'+esc(pending.id)+'">'+inspectionWizardHtml(demoInspectionDraft,{demo:true})+'</form></dialog>':'';
  return '<section class="demo-role-view rp-demo-inspector">'+map+form+
- '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de vistorias"><header><div><small>REGISTROS DO VISTORIADOR</small><h2>Histórico de vistorias</h2></div><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+
- (records.length?records.map(r=>'<div class="rp-inspection-history-row"><span><strong>'+fmt(r.at)+'</strong><small>'+esc(r.address||DEMO_WATCHERS[0].unit)+' · '+esc(r.notes)+'</small></span><b>'+r.score+'%</b></div>').join(''):'<p class="empty">Nenhuma vistoria finalizada.</p>')+
- '<p class="rp-inspection-dialog-note">Registros locais demonstrativos. Fotos não são enviadas ao servidor.</p></div></dialog></section>';
+ '<section class="rp-demo-inspection-history"><h2>Histórico de vistorias</h2>'+
+ (records.length?records.map(r=>'<div class="demo-ops-row"><span><strong>'+fmt(r.at)+'</strong><small>'+esc(r.address||DEMO_WATCHERS[0].unit)+' · '+esc(r.notes)+'</small></span><b>'+r.score+'%</b></div>').join(''):'<p class="empty">Nenhuma vistoria finalizada.</p>')+
+ '<p class="map-caption">Rota e clientes fictícios nesta demonstração. Fotografias não são enviadas ao servidor; operações reais usam a central autenticada.</p></section></section>';
 }
 
 function demoAdminRouteQueue(){
@@ -835,7 +835,7 @@ function demoHeaderButtons(){
  const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length;
  const messages=demoChatRows(),last=messages.at(-1),unread=0;
  return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos destinados ao perfil: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos recebidos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Sem eventos para este perfil.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais</button>':'')+'</div></details>'+
- '<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens do COE">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Conversas recentes</strong><button type="button" data-action="demo-chat-overlay"><b>COE · Central de Operações</b><small>'+(last?esc(last.body.slice(0,90)):'Sem mensagens recentes')+'</small></button><button type="button" data-action="demo-chat-overlay-more">Ver mais conversas</button></div></details></div>';
+ '<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens do COI">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Conversas recentes</strong><button type="button" data-action="demo-chat-overlay"><b>COI · Central de Operações</b><small>'+(last?esc(last.body.slice(0,90)):'Sem mensagens recentes')+'</small></button><button type="button" data-action="demo-chat-overlay-more">Ver mais conversas</button></div></details></div>';
 }
 function openDemoChatOverlay(list=false){
  demoChatScreen=list?'list':'thread';

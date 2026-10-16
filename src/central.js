@@ -161,7 +161,7 @@ const review=()=>account&&['operador','coi','admin','master'].includes(account.r
 const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId,notification}={})=>{
  if(notification&&['field_alert','notice'].includes(notification.kind)&&['ronda','vistoriador'].includes(account?.role)){
   const d=document.createElement('dialog');d.id='rp-field-notification-dialog';d.className='rp-record-dialog rp-notification-dialog';
-  d.innerHTML='<div class="eyebrow">'+(notification.kind==='field_alert'?'ALERTA OPERACIONAL':'COMUNICADO DO COE')+'</div><h2>'+escape(notification.title)+'</h2><p>'+escape(notification.body)+'</p><small>'+fmt(notification.created_at)+'</small><button type="button" data-field-notification-close class="primary">Fechar</button>';
+  d.innerHTML='<div class="eyebrow">'+(notification.kind==='field_alert'?'ALERTA OPERACIONAL':'COMUNICADO DO COI')+'</div><h2>'+escape(notification.title)+'</h2><p>'+escape(notification.body)+'</p><small>'+fmt(notification.created_at)+'</small><button type="button" data-field-notification-close class="primary">Fechar</button>';
   document.querySelector('#rp-field-notification-dialog')?.remove();document.body.append(d);d.addEventListener('close',()=>d.remove(),{once:true});d.showModal();return;
  }
  if(eventId){
@@ -273,8 +273,8 @@ function loginView(error=''){
  roleTag.textContent='';exit.hidden=true;
  root.innerHTML='<form id="central-login" class="login"><h1>Central operacional</h1><p>Área com autenticação própria para a operação real. O perfil de demonstração do site não libera acesso a estes registros.</p>'+
   (error?'<p class="flag">'+escape(error)+'</p>':'')+
-  '<label>E-mail<input type="email" name="email" autocomplete="username" required></label>'+
-  '<label>Senha<input type="password" name="password" autocomplete="current-password" required minlength="12"></label>'+
+  '<label>Usuário ou e-mail<input type="text" name="email" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>'+
+  '<label>Senha<input type="password" name="password" autocomplete="current-password" required minlength="4"></label>'+
   '<button class="primary">Entrar com segurança</button></form>';
 }
 async function load(){
@@ -719,9 +719,9 @@ function inspectionView(){
   '<div class="rp-field-wizard-head"><div><strong>Vistoria · '+escape(assignment.address)+'</strong><small>Checklist operacional e evidências</small></div><button type="button" data-wizard-close aria-label="Fechar checklist">✕</button></div>'+
   '<input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'">'+inspectionWizardHtml(inspectorDraft)+'</form></dialog>':'';
  return '<section class="stack rp-inspector-workspace">'+stage+form+
- '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de vistorias"><header><div><small>'+entries.length+' REGISTROS</small><h2>Histórico de vistorias</h2></div><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+
- (entries.length?entries.slice(0,40).map(e=>'<div class="rp-inspection-history-row"><span><strong>'+fmt(e.occurred_at)+'</strong><small>'+escape(e.description)+'</small></span><b>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</b></div>').join(''):'<p class="empty">Ainda não há vistorias concluídas.</p>')+
- '<p class="rp-inspection-dialog-note">Registros de vistorias concluídas na operação autenticada.</p></div></dialog></section>';
+ '<section class="surface rp-inspector-history"><header class="toolbar"><h2>Vistorias concluídas</h2><span>'+entries.length+' registro(s)</span></header>'+
+ (entries.length?entries.slice(0,12).map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<p class="empty">Ainda não há vistorias concluídas.</p>')+'</section>'+
+ '<p class="muted">O circuito indica proximidade geográfica e não substitui a navegação viária. O GPS registra posições reais somente quando autorizado e disponível.</p></section>';
 }
 
 function render(){
@@ -872,12 +872,12 @@ document.addEventListener('click',async e=>{
   if(target.hasAttribute('data-guard-fit')){guardMap?.fit();return;}
   if(target.hasAttribute('data-guard-start')){
    if(account?.role!=='ronda'||guardRound)return;
-   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COE.');
+   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COI.');
    const fix=await guardRequireGps(),route=buildGuardRoute(planned,fix);if(!route?.points?.length)throw Error('Rota sem coordenadas.');
    const state=initialGuardState(route,fix);target.disabled=true;
    try{
     const e=await api('/events',{method:'POST',data:{kind:'patrol_start',roundId:state.id,occurredAt:Date.now(),description:'Ronda iniciada · '+planned.name,details:{routeId:planned.id},position:fix}});
-    if(!e?.id)throw Error('COE não confirmou o início.');guardRound=state;guardSave();guardStartGps();render();flash('Ronda iniciada e sincronizada.');
+    if(!e?.id)throw Error('COI não confirmou o início.');guardRound=state;guardSave();guardStartGps();render();flash('Ronda iniciada e sincronizada.');
    }finally{if(target.isConnected)target.disabled=false;}return;
   }
   if(target.hasAttribute('data-guard-arrive')){
@@ -893,8 +893,8 @@ document.addEventListener('click',async e=>{
    const current=guardRound.points[guardRound.index];target.disabled=true;
    try{
     const result=await guardEvent('checkpoint','Ponto verificado: '+current.name,{routeId:guardRound.routeId,index:guardRound.index,name:current.name},fix);
-    if(!result?.id)throw Error('COE não confirmou o ponto.');
-    guardRound=markGuardPoint(guardRound);guardSave();render();flash('Ponto registrado no COE.');
+    if(!result?.id)throw Error('COI não confirmou o ponto.');
+    guardRound=markGuardPoint(guardRound);guardSave();render();flash('Ponto registrado no COI.');
    }finally{if(target.isConnected)target.disabled=false;}return;
   }
   if(target.hasAttribute('data-guard-finish')){
@@ -903,7 +903,7 @@ document.addEventListener('click',async e=>{
    target.disabled=true;
    try{
     const result=await guardEvent('patrol_end','Ronda concluída e retorno à base registrado.',{routeId:guardRound.routeId,completedPoints:guardRound.index},fix);
-    if(!result?.id)throw Error('COE não confirmou o encerramento.');
+    if(!result?.id)throw Error('COI não confirmou o encerramento.');
     guardRound=null;guardSave();render();flash('Ronda concluída e sincronizada.');
    }finally{if(target.isConnected)target.disabled=false;}return;
   }
