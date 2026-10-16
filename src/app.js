@@ -783,9 +783,9 @@ function notificationsView(){
  const all=demoEventNotifications().filter(n=>!n.seenAt),labels={panic:'Pânicos',incident:'Ocorrências',alert:'Alertas',inspection:'Vistorias',deviation:'Desvios',gps_issue:'Sinal GPS',other:'Outros'};
  const groups=new Map(['panic','incident','alert','inspection','deviation','gps_issue'].map(k=>[k,[]]));
  for(const n of all){const kind=groups.has(n.kind)?n.kind:'other';if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
- const ordered=[...groups].sort((a,b)=>b[1].length-a[1].length);
+ const ordered=[...groups].filter(([,rows])=>rows.length).sort((a,b)=>b[1].length-a[1].length);
  return pageTitle('Eventos','Pendências operacionais em colunas independentes. Ler não equivale a concluir.',btn('Ver histórico '+ic('arrow'),'open-incidents','small'))+
- '<div class="rp-event-columns">'+ordered.map(([kind,rows])=>'<section class="rp-event-column"><header><h2>'+labels[kind]+'</h2><b class="rp-event-count">'+rows.length+'</b></header>'+(rows.length?rows.map(notificationRow).join(''):'<p class="rp-event-empty">Sem pendências</p>')+'</section>').join('')+'</div>';
+ '<div class="rp-event-columns">'+(ordered.length?ordered.map(([kind,rows])=>'<section class="rp-event-column"><header><h2>'+labels[kind]+'</h2><b class="rp-event-count">'+rows.length+'</b></header>'+(rows.length?rows.map(notificationRow).join(''):'<p class="rp-event-empty">Sem pendências</p>')+'</section>').join(''):'<p class="rp-event-empty">Nenhum evento pendente. Acompanhe o histórico de tratativas finalizadas.</p>')+'</div>';
 }
 
 function archivedResolution(n){
