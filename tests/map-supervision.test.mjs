@@ -37,15 +37,16 @@ test('estado de ponto, 25 m e tempo de permanência constam no popup',()=>{
  assert.match(map,/Number\(p\.radius\)\|\|25/);
 });
 
-test('eventos mostram colunas por tipo e tratativas mantêm categorias distintas',()=>{
+test('eventos pendentes em colunas e tratativas finalizadas somente para consulta',()=>{
  const feed=app.slice(app.indexOf('function notificationsView(){'),app.indexOf('function occurrences(){'));
  assert.match(feed,/rp-event-columns/);
  assert.match(feed,/groups/);
  assert.match(feed,/demoEventNotifications/);
  assert.doesNotMatch(feed,/data-action="filter-alerts"|data-filter=|tablist/);
  const treatment=app.slice(app.indexOf('function occurrences(){'),app.indexOf('\nfunction ',app.indexOf('function occurrences(){')+10));
- assert.match(treatment,/demo-treatment-tab/);
- assert.match(treatment,/rp-demo-pending/);
+ assert.match(treatment,/filter\(n=>!!n\.seenAt\)/);
+ assert.match(treatment,/rp-treatment-archive/);
+ assert.doesNotMatch(treatment,/data-alert-response|Responder e concluir/);
 });
 
 test('mapa, alertas e elementos touch possuem regras responsivas',()=>{

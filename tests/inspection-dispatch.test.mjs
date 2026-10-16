@@ -41,6 +41,20 @@ test('COI cadastra destino, solicita vistoriador e portal isola laudo por client
   assert.equal((await req('/dispatches/'+sent.body.id+'/start','POST',{position:{lat:-20.14,lng:-44.89,accuracy:10}},inspector)).status,200);
   const event=await req('/events','POST',{kind:'inspection',occurredAt:Date.now(),description:'Inspeção completa com registro dos quatro critérios',details:{dispatchId:sent.body.id,criteria:{acessos:true,estrutura:true,equipamentos:true,sinalizacao:true}}},inspector);
   assert.equal(event.status,201);
+  const finishWithoutEvidence=await req('/dispatches/'+sent.body.id+'/complete','POST',{note:'Local conferido e documentado com evidências.'},inspector);
+  assert.equal(finishWithoutEvidence.status,422,'Não concluir vistoria antes de selfie e foto do local');
+  const upload=async view=>{
+   const response=await fetch(host+'/media',{method:'POST',headers:{Authorization:'Bearer '+inspector,'Content-Type':'image/jpeg','X-Ronda-Event-Id':event.body.id,'X-Media-View':view},body:new Uint8Array([255,216,255,224,0,16])});
+   return response.status;
+  };
+  assert.equal(await upload('selfie'),201);
+  assert.equal((await req('/dispatches/'+sent.body.id+'/complete','POST',{note:'Local verificado e documentado com selfie.'},inspector)).status,422);
+  assert.equal(await upload('front'),201);
+  assert.equal((await req('/dispatches/'+sent.body.id+'/complete','POST',{note:'Local verificado, fotos e laudo entregues ao COI.'},inspector)).status,200);
+  const typed=await req('/dispatches','POST',{kind:'inspection',workerId:worker.id,address:'Rua de Teste, 345, Centro, Divinópolis',reason:'Vistoria extra de rotina solicitada pelo COI.'},admin);
+  assert.equal(typed.status,201,'COI pode informar novo endereço sem cadastro de destino');
+  const typedAssignment=(await req('/dispatches','GET',null,inspector)).body.dispatches.find(d=>d.id===typed.body.id);
+  assert.equal(typedAssignment.address,'Rua de Teste, 345, Centro, Divinópolis');
   const allowed=await req('/events','GET',null,client);
   const blocked=await req('/events','GET',null,other);
   assert.ok(allowed.body.events.some(e=>e.id===event.body.id));

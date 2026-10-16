@@ -63,7 +63,7 @@ try{
   await coi.page.screenshot({path:out+'/coi-'+width+'.png',fullPage:true});
   await navigate(coi.page,'treatments');
   await coi.page.locator('[data-treatment-tab="incident"]').waitFor();
-  assert(await coi.page.locator('[data-treatment-tab="incident"] .rp-pending-dot:visible').count()===1,'Indicador da categoria ausente');
+  assert(await coi.page.locator('[data-event="'+event.id+'"]:visible').count()===0,'Pendente não pode estar no histórico');
   await coi.page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
   await navigate(coi.page,'notifications');
   assert(await coi.page.locator('[data-ops-filter],.coi3-notification-tabs').count()===0,'Feed não pode possuir filtros ou abas');
@@ -73,8 +73,10 @@ try{
   assert((await request('/treatment-summary',token)).total===1,'Ler não pode resolver a pendência');
   await coi.page.locator('[data-claim-treatment]').click();
   await coi.page.locator('#send-message textarea').fill('Rascunho que deve permanecer após sincronização.');
-  await navigate(admin.page,'treatments');
-  await admin.page.locator('[data-event="'+event.id+'"]').click();
+  await navigate(admin.page,'notifications');
+  const pendingAdmin=(await request('/notifications',adminToken)).notifications.find(n=>n.event_id===event.id);
+  assert(!!pendingAdmin,'Administração deve visualizar evento em aberto');
+  await admin.page.locator('.rp-event-columns [data-ops-notification="'+pendingAdmin.id+'"]').click();
   assert(await admin.page.locator('[data-claim-treatment]').count()===0,'Administração não pode assumir registro reservado pelo COI');
   await request('/events/'+event.id+'/messages',guard,{body:'Confirmação adicional enviada pelo vigia.'});
   await coi.page.waitForFunction(()=>document.querySelector('#thread')?.textContent.includes('Confirmação adicional'),null,{timeout:18000});
@@ -88,7 +90,10 @@ try{
   assert(await admin.page.locator('[data-claim-treatment],[data-review-status]').count()===0,'Registro concluído permite tratamento duplicado');
   assert((await request('/events/'+event.id,adminToken)).treatments.length===1,'Caminhos criaram tratativas duplicadas');
   await navigate(coi.page,'notifications');
-  assert(await coi.page.locator('.rp-event-columns [data-ops-notification="'+notice.id+'"].is-completed').count()===1,'Notificação concluída não foi atenuada');
+  assert(await coi.page.locator('.rp-event-columns [data-ops-notification="'+notice.id+'"]').count()===0,'Evento concluído permanece nas pendências');
+  await navigate(coi.page,'treatments');
+  await coi.page.locator('[data-event="'+event.id+'"]').waitFor({state:'visible'});
+  await navigate(coi.page,'notifications');
   await coi.page.waitForTimeout(600);
   await coi.page.screenshot({path:out+'/notificacoes-'+width+'.png',fullPage:true});
   const fallback=await request('/events',guard,{kind:'alert',occurredAt:Date.now(),description:'Solicitação sem tratamento do COI '+width});

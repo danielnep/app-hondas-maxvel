@@ -21,7 +21,8 @@ test('COI prioriza pessoas, tratativas, rondas e vistorias em vez de mapa genér
  const monitor=read('src/coi-monitor.js');
  assert.match(central,/function monitorView\(\)\{/);
  assert.match(central,/coi\.render/);
- assert.match(central,/\['treatments','Tratativas'/);
+ assert.match(central,/\['treatments','Histórico de tratativas'/);
+ assert.match(central,/state=completed/);
  assert.match(central,/function treatmentsView\(\)/);
  assert.match(monitor,/data-coi-tab="rondas"/);
  assert.match(monitor,/data-coi-tab="vistorias"/);
