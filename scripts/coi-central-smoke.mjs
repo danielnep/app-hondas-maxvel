@@ -63,7 +63,7 @@ try{
   await coi.page.screenshot({path:out+'/coi-'+width+'.png',fullPage:true});
   await navigate(coi.page,'treatments');
   await coi.page.locator('[data-treatment-tab="incident"]').waitFor();
-  assert(await coi.page.locator('[data-treatment-tab="incident"] .rp-pending-dot:visible').count()===1,'Indicador da categoria ausente');
+  assert(await coi.page.locator('[data-event="'+event.id+'"]:visible').count()===0,'Pendente não pode estar no histórico');
   await coi.page.screenshot({path:out+'/tratativas-'+width+'.png',fullPage:true});
   await navigate(coi.page,'notifications');
   assert(await coi.page.locator('[data-ops-filter],.coi3-notification-tabs').count()===0,'Feed não pode possuir filtros ou abas');
