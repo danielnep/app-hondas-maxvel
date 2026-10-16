@@ -54,7 +54,7 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
   let overlay=document.querySelector('#rp-field-chat-overlay');
   if(!overlay){
    overlay=document.createElement('dialog');overlay.id='rp-field-chat-overlay';overlay.className='rp-field-chat-overlay';
-   overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens · Campo e COE</strong><button type="button" data-chat-overlay-close aria-label="Fechar conversas">✕</button></div>'+view();
+   overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens · Campo e COI</strong><button type="button" data-chat-overlay-close aria-label="Fechar conversas">✕</button></div>'+view();
    document.body.append(overlay);
    overlay.addEventListener('close',()=>{observer?.disconnect();overlay.remove()},{once:true});
    overlay.addEventListener('cancel',()=>observer?.disconnect());
