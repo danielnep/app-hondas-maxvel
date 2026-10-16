@@ -30,7 +30,7 @@ export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
   if(!window.L){const generation=epoch;void loadLeaflet().then(()=>{if(generation===epoch&&host.isConnected&&!map)init(host,item)}).catch(()=>{});return;}
   const startPoint=planned[0]||history.at(-1)||[0,0];
   map=window.L.map(host,{scrollWheelZoom:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false}).setView(startPoint,planned.length||history.length?15:2,{animate:false});
-  window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19}).addTo(map);
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(map);
   if(planned.length){
    planned.forEach((p,i)=>window.L.circleMarker(p,{radius:i===planned.length-1?10:7,color:'#fff',weight:2,fillColor:i===planned.length-1?'#ed3654':'#a9a4b0',fillOpacity:1}).addTo(map).bindTooltip(i===planned.length-1?'Destino do COI':'Passagem '+(i+1)));
    if(planned.length>1)window.L.polyline(planned,{color:'#f69cae',weight:3,dashArray:'7,9',opacity:.9}).addTo(map);
