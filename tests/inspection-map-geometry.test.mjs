@@ -68,5 +68,5 @@ test('geom. GeoJSON são convertidas para Leaflet e falhas usam fallback, sem in
  const path=await fetchInspectionStreetPath(route,{fetcher:async()=>{calls++;return {ok:true,json:async()=>sample}}});
  assert.equal(calls,1);
  assert.equal(path.length,3);
- assert.rejects(fetchInspectionStreetPath(route,{fetcher:async()=>{throw Error('offline')}}));
+ await assert.rejects(fetchInspectionStreetPath(route,{fetcher:async()=>{throw Error('offline')}}));
 });
