@@ -3,8 +3,8 @@ export const GUARD_RADIUS_METERS=35,GUARD_DWELL_MS=30000;
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function buildGuardRoute(route,base){
  const points=(route?.points||[]).map((p,i)=>{const q=pointOf(p);return q?{...q,id:'point-'+i,name:p.name||'Ponto '+(i+1),instruction:'Verificar o ponto.',radius:GUARD_RADIUS_METERS}:null}).filter(Boolean);
- const origin=pointOf(base)||pointOf(points[0]);if(!origin||!points.length)return null;
- return {id:route.id,name:route.name||'Ronda de campo',unit:route.site||'Posto',base:{...origin,id:'base',name:'Base de partida'},points};
+ const knownBase=pointOf(base),origin=knownBase||pointOf(points[0]);if(!origin||!points.length)return null;
+ return {id:route.id,name:route.name||'Ronda de campo',unit:route.site||'Posto',roadRouting:true,baseKnown:!!knownBase,base:{...origin,id:'base',name:knownBase?'Base de partida':'Aguardando GPS da base'},points};
 }
 export function nextGuardState(st,fix,{at=Date.now(),action='tick'}={}){
  if(!st||!st.startedAt||st.completedAt)return {state:st,ready:false,inside:false,elapsed:0};
