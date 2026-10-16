@@ -1442,8 +1442,8 @@ const ops=createOperationsUpgrade({
  closeDialog:()=>modal.close(),
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });
-const curtain=createCheckpointCurtain({get:()=>({user,view,session,locationFix}),recordCheckpoint:(checkpoint,files,point)=>ops.recordCheckpoint(checkpoint,files,point),save,render,notify});
 const torch=createFieldTorch({notify});
+const curtain=createCheckpointCurtain({get:()=>({user,view,session,locationFix}),recordCheckpoint:(checkpoint,files,point)=>ops.recordCheckpoint(checkpoint,files,point),save,render,notify,torch});
 const locationGate=createLocationEntryGate({onGranted:fix=>{
  if(!presentation)locationFix=fix;
  const map=liveMaps.find(x=>x?.container?.id==='mobile-map');
