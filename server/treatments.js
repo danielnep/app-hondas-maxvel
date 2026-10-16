@@ -47,7 +47,9 @@ export function createTreatments(db,{now,id,resp,body,serialize,audit,operations
   if(path==='/api/treatment-records'&&method==='GET'){
    if(!operations.allows(user,'ocorrencias')){resp(res,403,{error:'Tratativas desabilitadas'});return true;}
    const url=new URL(req.url,'http://local'),kind=url.searchParams.get('kind')||'incident',offset=Math.max(0,Number(url.searchParams.get('offset'))||0);
-   const rows=db.prepare("SELECT * FROM events WHERE kind=? ORDER BY (status='resolvida'),occurred_at DESC,id DESC LIMIT 51 OFFSET ?").all(kind,offset);
+   const state=url.searchParams.get('state');
+    const condition=state==='completed'?" AND status='resolvida'":state==='pending'?" AND (status IS NULL OR status!='resolvida')":'';
+    const rows=db.prepare("SELECT * FROM events WHERE kind=?"+condition+" ORDER BY occurred_at DESC,id DESC LIMIT 51 OFFSET ?").all(kind,offset);
    resp(res,200,{events:rows.slice(0,50).map(e=>decorate(e,user)),hasMore:rows.length>50,nextOffset:offset+50});return true;
   }
   const detail=path.match(/^\/api\/events\/([a-z0-9-]+)$/i);
