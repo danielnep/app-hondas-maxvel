@@ -38,6 +38,15 @@ test('três vistorias desenham B → 1 → passagem → 2 → 3; sem ponto 4 e s
  assert.deepEqual(positions(route).at(-1),[-20.16,-44.9]);
 });
 
+test('fallback da vistoria acompanha viewport vertical e não comprime o mapa',()=>{
+ const route=inspectionRoute([one,two,three],base);
+ const portrait=fallbackSVG(route,{mode:'simulation',currentId:'X'},base,true,true,{width:390,height:620});
+ assert.match(portrait,/viewBox="0 0 390 620"/);
+ assert.match(portrait,/rect width="390" height="620"/);
+ const px=[...portrait.matchAll(/<polyline points="([^"]*)"/g)][0]?.[1];
+ assert.ok(px&&px.trim().split(/\s+/).length>=4,'linha contínua entre todos os destinos em retrato');
+});
+
 test('ronda convencional mantém retorno à base e ordem anterior',()=>{
  const ronda={base,points:[{lat:-20.142,lng:-44.885},{lat:-20.144,lng:-44.886}],legs:[]};
  assert.deepEqual(positions(ronda),[[base.lat,base.lng],[-20.142,-44.885],[-20.144,-44.886],[base.lat,base.lng]]);
