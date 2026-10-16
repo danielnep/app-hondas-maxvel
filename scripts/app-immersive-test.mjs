@@ -103,6 +103,12 @@ try{
    await tap(page,'#dialog [data-action="demo-evidence-confirm"]');
    if(width<=900){await tap(page,'.patrol-actions [data-action="toggle-patrol-sheet"]');await tap(page,'#dialog [data-action="incident-form"]');}
    else await tap(page,'.patrol-actions [data-action="incident-form"]');
+   // Formulário comum deve crescer com o conteúdo, sem ocupar o visor à toa.
+   const formBounds=await page.locator('#dialog').evaluate(el=>({
+    height:el.getBoundingClientRect().height,available:window.visualViewport?.height||innerHeight
+   }));
+   if(formBounds.available>=600&&formBounds.height>formBounds.available*.83)
+    throw Error('Janela de ocorrência desnecessariamente alta: '+JSON.stringify(formBounds));
    await (await revealDialogControl(page,'#incident-form [name="title"]')).fill('Luz de acesso apagada');
    await (await revealDialogControl(page,'#incident-form [name="description"]')).fill('Iluminação do portão em desacordo no cenário de demonstração.');
    await (await revealDialogControl(page,'#incident-form [name="truth"]')).check();
@@ -143,7 +149,12 @@ try{
    await tap(page,'[data-action="open-incidents"]');
    await tap(page,'.list-row[data-action="incident-detail"]');
    await (await revealDialogControl(page,'#incident-review-form [name="status"]')).selectOption('Em análise');
-   await (await revealDialogControl(page,'#incident-review-form [name="assignee"]')).fill('Equipe de manutenção');
+   // O responsável é derivado do usuário autenticado. Não pode ser editado na UI.
+   const assignee=await revealDialogControl(page,'#incident-review-form [name="assignee"]');
+   if(!await assignee.isVisible()||!await assignee.evaluate(el=>el.readOnly))
+    throw Error('Responsável pela providência precisa ser preenchido automaticamente e somente leitura');
+   if(!await assignee.inputValue()||!/Administra/i.test(await assignee.inputValue()))
+    throw Error('Responsável não corresponde ao perfil administrativo autenticado');
    await (await revealDialogControl(page,'#incident-review-form [name="note"]')).fill('Encaminhado para conferência da iluminação.');
    await tap(page,'[data-action="incident-review"]');
    await tap(page,'[data-action="nav-alerts"]');
