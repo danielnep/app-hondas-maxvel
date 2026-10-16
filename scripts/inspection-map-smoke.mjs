@@ -24,7 +24,7 @@ try{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  for(const total of [1,3]){
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.1403,longitude:-44.8840,accuracy:10}});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('https://tile.openstreetmap.org/**',route=>route.abort());
