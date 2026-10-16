@@ -626,6 +626,7 @@ function demoCoiView(){
  const inspRows=insp.length?insp.slice(0,10).map((entry,i)=>'<article class="coi-demo-record"><header><div><span>Laudo de vistoria</span><h3>'+esc(DEMO_WATCHERS[0].unit)+'</h3></div><b>Enviada</b></header><div class="coi-demo-facts"><span>Data <strong>'+fmt(entry.at)+'</strong></span><span>Conformidade <strong>'+entry.score+'%</strong></span></div><p>'+esc(entry.notes)+'</p>'+(i===0?'<div id="ops-map" class="map-container large coi-demo-map" aria-label="Mapa ilustrativo do posto"></div><small>Referência ilustrativa do posto; nenhuma posição real do vistoriador foi transmitida.</small>':'')+'</article>').join(''):'<div class="empty">Sem vistorias neste navegador. Use o perfil Vistoriador para registrar um laudo demonstrativo.</div>';
  return '<section class="coi-demo-page">'+pageTitle('COI · Central de acompanhamento','Acompanhe a equipe e responda às ocorrências. Os dados abaixo são somente uma demonstração.')+
  '<div class="coi-demo-topline"><span class="ops-live-dot"></span><strong>Atendimento e acompanhamento</strong><small>Posto demonstrativo · '+esc(DEMO_WATCHERS[0].unit)+'</small><span>Dados locais</span></div>'+
+ inspectionRequest+
  '<div class="coi-demo-metrics">'+summary.map(([k,v])=>'<div><b>'+v+'</b><span>'+k+'</span></div>').join('')+'</div>'+
  (current?'<section class="coi-demo-record"><h2>Última ronda</h2><h3>'+esc(current.name)+' · '+esc(current.route.name)+'</h3><p>'+fmt(current.startedAt)+'</p><div id="ops-map" class="map-container large coi-demo-map"></div><button type="button" data-action="session-detail" data-id="'+esc(current.id)+'">Abrir percurso e detalhes</button><small>Mapa ilustrativo da demonstração.</small></section>':'<p class="empty">Nenhuma ronda registrada.</p>')+
  '<section class="coi-demo-content"><header class="toolbar"><h2>Rondas e vistorias recentes</h2><button type="button" data-view="historico-operacional">Ver histórico de rondas</button></header>'+demoActivityRows().slice(0,5).map(demoActivityRow).join('')+'</section>'+
@@ -728,16 +729,11 @@ function demoClientView(){
  '<section><h3>Em andamento</h3>'+rows(active)+'<h3>Histórico recente</h3>'+rows(past.slice(0,12))+'</section></div></section>';
 }
 function demoInspectorView(){
- const records=demoInspectionRecords(),mean=records.length?Math.round(records.reduce((n,x)=>n+x.score,0)/records.length):null;
- const checks=[['acessos','Acessos em condições adequadas'],['estrutura','Estrutura verificada'],['equipamentos','Equipamentos verificados'],['sinalizacao','Sinalização adequada']];
- return '<section class="demo-role-view">'+pageTitle('Visão do vistoriador','Avaliações do local com indicador de qualidade e histórico cronológico.')+
- '<header class="demo-role-site"><span>POSTO DE VISTORIA</span><h2>'+esc(DEMO_WATCHERS[0].unit)+'</h2><p>Registro de demonstração salvo neste navegador.</p></header>'+
- '<div class="demo-role-metrics"><div><strong>'+(mean==null?'—':mean+'%')+'</strong><small>Média dos critérios atendidos</small></div><div><strong>'+records.length+'</strong><small>Vistorias realizadas</small></div></div>'+
- '<div class="demo-role-columns"><form id="demo-inspection-form" class="demo-inspection-form"><h3>Nova vistoria</h3>'+
- checks.map(([k,label])=>'<label><input type="checkbox" name="'+k+'"><span>'+esc(label)+'</span></label>').join('')+
- '<label>Observações<textarea name="notes" required minlength="8" placeholder="Descreva o que verificou"></textarea></label><button class="button primary">Registrar vistoria</button></form>'+
- '<section><h3>Histórico</h3>'+(records.length?records.map(r=>'<div class="demo-ops-row"><span><strong>'+fmt(r.at)+'</strong><small>'+esc(r.notes)+'</small></span><b>'+r.score+'%</b></div>').join(''):'<p class="empty">Nenhuma vistoria registrada.</p>')+
- '<p class="map-caption">O indicador mede quatro critérios de conformidade do local e não avalia pessoas.</p></section></div></section>';
+ const task=currentDemoInspection(),history=demoInspectionRecords();
+ const waiting='<div class="rp-inspector-empty"><div class="rp-inspector-map rp-inspector-map-blurred" aria-hidden="true"><span>⌖</span></div><div class="rp-inspector-empty-copy"><span class="eyebrow">VISTORIADOR · DISPONÍVEL</span><h2>Sem vistoria pendente</h2><p>O próximo destino aparecerá aqui quando o COI enviar a solicitação.</p><button type="button" data-action="demo-inspection-routine">Iniciar vistoria de rotina</button></div></div>';
+ const start=task?'<div class="rp-inspector-assignment"><div class="rp-inspector-map rp-inspector-map-active"><span class="rp-inspector-map-marker">⌖</span></div><div class="rp-inspector-destination"><span class="eyebrow">'+(task.type==='routine'?'VISTORIA DE ROTINA':'SOLICITAÇÃO DO COI')+'</span><h2>'+esc(task.place)+'</h2><p>'+esc(task.reason)+'</p><small>'+esc(task.status==='arrived'?'Chegada declarada · registre as evidências':'Confirme quando chegar ao local')+'</small>'+(task.status==='pending'?'<button type="button" data-action="demo-inspection-arrive">Cheguei ao local</button>':'')+'</div></div>':waiting;
+ const evidence=task?.status==='arrived'?'<form id="demo-inspection-form" class="rp-inspector-form"><h2>Conferência do local</h2><p>Fotografe o local e registre uma selfie antes de finalizar.</p><div class="rp-inspector-photo-grid"><button type="button" data-action="demo-inspection-photo" data-proof="photo"><span>▣</span><strong>Foto do local</strong><small>'+(demoProof.photo?'✓ Registrada':'Adicionar foto')+'</small></button><button type="button" data-action="demo-inspection-photo" data-proof="selfie"><span>◎</span><strong>Selfie</strong><small>'+(demoProof.selfie?'✓ Registrada':'Adicionar selfie')+'</small></button></div><label class="rp-inspector-ok"><input type="checkbox" name="allOk" required> Tudo dentro do esperado</label><label>Observações complementares (opcionais)<textarea name="notes" maxlength="1000" placeholder="Descreva as condições observadas"></textarea></label><button type="submit" class="button primary">Finalizar vistoria</button><small>Fotos usadas nesta demonstração não são enviadas à central real.</small></form>':'';
+ return '<section class="rp-inspector-screen"><header class="rp-inspector-top"><span class="eyebrow">VISTORIADOR · RONDAS PRO</span><h1>Minhas vistorias</h1><p>Atendimento solicitado pelo COI e verificações de rotina.</p></header>'+start+evidence+'<section class="rp-inspector-history"><h2>Vistorias concluídas</h2>'+(history.length?history.slice(0,8).map(r=>'<div class="rp-inspector-history-row"><strong>'+esc(r.place||'Local vistoriado')+'</strong><small>'+fmt(r.at)+' · '+esc(r.notes||'Tudo dentro do esperado')+'</small></div>').join(''):'<p class="empty">Nenhuma vistoria concluída.</p>')+'</section></section>';
 }
 function demoAdminRouteQueue(){
  const w=watcherById(selectedSupervisedWatcherId)||DEMO_WATCHERS[0],history=sessionList().filter(s=>s.name===w.name).slice(0,5),planned=programsForWatcher(programs,w.id);
@@ -1130,6 +1126,30 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='demo-chat-open'){demoChatScreen='thread';render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
  if(act==='demo-chat-list'){demoChatScreen='list';render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
+ if(act==='demo-inspection-request'){
+  if(!canReviewDemo())return;
+  const options=DEMO_CLIENTS.map((x,i)=>'<option value="'+i+'">'+esc(x.name)+' · '+esc(x.unit)+'</option>').join('');
+  showDialog('<div class="rp-inspection-request-dialog"><span class="eyebrow">COI · NOVA SOLICITAÇÃO</span><h2>Solicitar vistoria</h2><form id="demo-request-inspection"><label>Tipo<select name="type"><option value="requested">Sob demanda</option><option value="routine">Vistoria de rotina</option></select></label><label>Local cadastrado<select name="placeIndex"><option value="">Informar outro endereço</option>'+options+'</select></label><label>Endereço (quando não cadastrado)<input name="address" maxlength="250" placeholder="Rua, número, bairro e cidade"></label><label>Informações para o vistoriador<textarea name="reason" required minlength="10" maxlength="600" placeholder="O que deve ser verificado?"></textarea></label><button type="submit" class="button primary">Enviar solicitação</button><small>Demonstração local neste navegador, sem notificação remota.</small></form></div>');
+  return;
+ }
+ if(act==='demo-inspection-routine'){
+  if(user?.role!=='vistoriador'||currentDemoInspection())return;
+  const place=DEMO_CLIENTS[0].unit;
+  saveDemoInspectionTasks([{id:crypto.randomUUID(),type:'routine',place,reason:'Conferência preventiva dos acessos e condições do local.',status:'pending',at:Date.now()},...demoInspectionTasks()]);
+  demoProof={photo:null,selfie:null};render();return;
+ }
+ if(act==='demo-inspection-arrive'){
+  if(user?.role!=='vistoriador')return;
+  const items=demoInspectionTasks(),task=items.find(x=>x.status==='pending');if(!task)return;
+  task.status='arrived';task.arrivedAt=Date.now();saveDemoInspectionTasks(items);render();return;
+ }
+ if(act==='demo-inspection-photo'){
+  if(user?.role!=='vistoriador'||currentDemoInspection()?.status!=='arrived')return;
+  const type=el.dataset.proof;if(!['photo','selfie'].includes(type))return;
+  try{const file=await demoInspectionCapture.request(type==='selfie'?'selfie':'photo');demoProof[type]=file;const label=el.querySelector('small');if(label)label.textContent='✓ Registrada';el.classList.add('is-taken')}
+  catch(error){if(!/cancelad|Nenhuma evidência/i.test(error.message))notify(error.message)}
+  return;
+ }
  if(act==='demo-coi-tab'){if(['rondas','vistorias'].includes(el.dataset.tab)){demoCoiTab=el.dataset.tab;render();}return;}
  if(act==='close-dialog'){if(modal.dataset.mandatoryNotice==='true')return;modal.close();return;}
  if(act==='accept-location-notice'){if(!modal.querySelector('#location-intro-check')?.checked)return;try{saveConsent()}catch{notify('Não foi possível registrar a ciência neste navegador.');return;}modal.dataset.mandatoryNotice='false';modal.close();notify('Orientações registradas. O GPS será solicitado apenas ao iniciar uma ronda real.');return;}
@@ -1394,14 +1414,22 @@ modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const 
 
 document.addEventListener('submit',e=>{
  if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,at:Date.now()});localStorage.setItem('rondas-pro-demo-chat',JSON.stringify(rows));render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
+ if(e.target.id==='demo-request-inspection'){
+  e.preventDefault();if(!canReviewDemo())return;
+  const f=new FormData(e.target),i=String(f.get('placeIndex')),registered=i!==''?DEMO_CLIENTS[Number(i)]:null;
+  const place=registered?.unit||String(f.get('address')||'').trim(),reason=String(f.get('reason')||'').trim();
+  if(place.length<5||reason.length<10){notify('Informe local e instruções completas.');return}
+  try{saveDemoInspectionTasks([{id:crypto.randomUUID(),type:f.get('type')==='routine'?'routine':'requested',place,reason,status:'pending',at:Date.now()},...demoInspectionTasks()]);modal.close();render();notify('Vistoria incluída na fila demonstrativa do vistoriador.')}
+  catch{notify('Não foi possível registrar a solicitação.')}return;
+ }
  if(e.target.id==='demo-inspection-form'){
-  e.preventDefault();
-  if(user?.role!=='vistoriador')return;
-  const f=new FormData(e.target),notes=String(f.get('notes')||'').trim();
-  if(notes.length<8){notify('Descreva o que foi verificado.');return;}
-  const score=['acessos','estrutura','equipamentos','sinalizacao'].filter(k=>f.has(k)).length*25;
-  try{localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify([{at:Date.now(),notes,score},...demoInspectionRecords()].slice(0,100)))}catch{notify('Não foi possível salvar a vistoria.');return;}
-  render();notify('Vistoria registrada neste navegador.');return;
+  e.preventDefault();if(user?.role!=='vistoriador')return;
+  const task=currentDemoInspection();if(!task||task.status!=='arrived')return;
+  if(!demoProof.photo||!demoProof.selfie){notify('Registre uma foto do local e uma selfie.');return;}
+  const f=new FormData(e.target);if(!f.has('allOk')){notify('Confirme as condições do local.');return;}
+  const notes=String(f.get('notes')||'').trim(),at=Date.now();
+  try{localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify([{at,notes:notes||'Tudo dentro do esperado',score:100,place:task.place,type:task.type,evidence:['Foto','Selfie']},...demoInspectionRecords()].slice(0,100)));const tasks=demoInspectionTasks(),found=tasks.find(x=>x.id===task.id);if(found){found.status='done';found.completedAt=at;saveDemoInspectionTasks(tasks);}demoProof={photo:null,selfie:null};render();notify('Vistoria concluída nesta demonstração.');}
+  catch{notify('Não foi possível salvar a vistoria.');}return;
  }
  if(e.target.id!=='operational-settings')return;
  e.preventDefault();
