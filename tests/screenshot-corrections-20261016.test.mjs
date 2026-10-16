@@ -42,6 +42,7 @@ test('histórico da demo só aceita exclusão por administrador e confirmação'
  assert.match(source,/user\?\.role==='admin'/);
  assert.match(source,/demo-history-delete-selected/);
  assert.match(source,/demo-history-delete-all/);
+ assert.match(source,/return selectable===true\?/,'callback Array.map não deve ativar seleção nos demais perfis');
  assert.match(source,/window\.confirm\('Apagar '/);
  assert.match(source,/rondas-pro-demo-history-edited/);
  assert.match(source,/localStorage\.setItem\(DEMO_INSPECTIONS/);
