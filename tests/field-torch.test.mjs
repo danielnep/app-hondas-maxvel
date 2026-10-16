@@ -94,7 +94,7 @@ test('Lanterna do ponto utiliza o controlador compartilhado, sem segunda sessão
  assert.doesNotMatch(curtain,/torchStream|torchTrack|getUserMedia/);
  assert.match(app,/createCheckpointCurtain\([^;]+notify,torch\}/);
  assert.match(app,/view==='minha-ronda'/);
- assert.match(central,/\['dashboard','send','dispatches'\]\.includes\(page\)/);
+ assert.match(central,/\['dashboard','inspections','send','dispatches'\]\.includes\(page\)/);
 });
 test('Assinantes da lanterna mantêm o botão do ponto sincronizado com o flutuante',async()=>{
  const ui=screen();let lit=false;
