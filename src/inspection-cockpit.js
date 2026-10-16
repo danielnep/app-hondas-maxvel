@@ -15,6 +15,7 @@ const icons={
  incident:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h6"/>',
  chat:'<path d="M4 5h16v12H9l-5 4V5Z"/><path d="M8 9h8M8 13h5"/>',
  panic:'<circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 4h.01"/>',
+ torch:'<path d="M7 2h10l-2 7H9L7 2Z M9 9l3 13 3-13"/>',
  help:'<circle cx="12" cy="12" r="10"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 4h.01"/>',
  locate:'<circle cx="12" cy="12" r="7"/><path d="M12 1v5m0 12v5M1 12h5m12 0h5"/>',
  arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>'
@@ -41,7 +42,8 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
    '<header class="patrol-map-heading rp-inspection-route-bar"><div class="patrol-map-heading-copy"><strong>'+html(current?current.routeName||current.route_name||'Circuito de vistorias · COI':fullTitle)+'</strong><small><span data-inspection-queue-count>'+count+'</span> destino(s) · '+html(current?'Próximo: '+(current.address||current.site||'Local designado'):'Aguardando COI')+'</small></div>'+
     '<button type="button" class="rp-inspection-map-fit" '+(mode==='demo'?'data-action="demo-inspection-fit"':'data-inspection-fit')+' aria-label="Enquadrar destinos">'+svg('locate')+'</button></header>'+
    '<div class="rp-inspection-map-controls"><button type="button" class="rp-inspection-panic" data-field-tool-panic aria-label="Acionar pânico">'+svg('panic')+'<span>PÂNICO</span></button>'+
-    '<button type="button" class="rp-inspection-help" data-inspection-help-open aria-label="Ajuda do mapa">'+svg('help')+'</button></div>'+
+    '<button type="button" class="rp-inspection-help" data-field-tool-torch aria-label="Lanterna" title="Lanterna">'+svg('torch')+'</button>'+ 
+    '<button type="button" class="rp-inspection-help" data-inspection-help-open aria-label="Ajuda do mapa">'+svg('help')+'</button></div>'+ 
    '<nav class="rp-inspection-map-actions" aria-label="Comunicação de campo">'+
     '<button type="button" data-field-tool-alert>'+svg('alert')+'<span>Enviar alerta</span></button>'+
     '<button type="button" data-field-tool-incident>'+svg('incident')+'<span>Registrar<br>ocorrência</span></button>'+
@@ -74,7 +76,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
  '</div>';
 }
 // Controles compartilhados entre o modo demonstrativo e a operação autenticada.
-document.addEventListener('click',event=>{
+if(typeof document!=='undefined')document.addEventListener('click',event=>{
  const control=event.target.closest('[data-inspection-circuit-open],[data-inspection-history-open],[data-inspection-help-open],[data-inspection-modal-close]');
  if(!control)return;
  const cockpit=control.closest('[data-inspection-cockpit]'),scope=cockpit||document;
