@@ -152,8 +152,23 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 }
 @media(max-width:900px){
  .dashboard .app-header{min-height:62px!important;height:62px!important;padding:7px 12px!important}
- .dashboard .app-header .brand{min-width:0;max-width:170px}
- .dashboard .app-header .brand .brand-partner{display:none!important}
+ /* Logo institucional completo: preservar Rondas Pro e Grupo Maxvel em todas as larguras. */
+ .dashboard .app-header .brand.maxvel-only-brand{
+  display:grid!important;grid-template-columns:max-content 2px max-content!important;
+  align-items:center!important;justify-content:center!important;justify-items:center!important;
+  gap:clamp(3px,1vw,7px)!important;max-width:none!important;width:auto!important;
+  flex:1 1 auto!important;min-width:0!important;margin-inline:0!important;
+ }
+ .dashboard .app-header .brand .brand-product,
+ .dashboard .app-header .brand .brand-partner{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 auto!important;width:auto!important;min-width:0!important;
+ }
+ .dashboard .app-header .brand .brand-partner{flex-direction:column!important;gap:2px!important}
+ .dashboard .app-header .brand .ronda-pro-wordmark{font-size:clamp(12px,2.15vw,18px)!important}
+ .dashboard .app-header .brand .maxvel-real-logo{
+  display:block!important;width:clamp(27px,6vw,54px)!important;max-width:100%!important;height:auto!important;
+ }
  .dashboard .app-header .header-actions{margin-left:auto;gap:5px!important}
  .dashboard .app-header .header-actions .user-pill{max-width:46px;min-width:44px;justify-content:center;padding:0!important}
  .dashboard .app-header .user-pill>span:not(.avatar){display:none!important}
@@ -176,7 +191,9 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
  .top .rp-header-popover .rp-blue-button span:not(.rp-unread-count){display:none}
 }
 @media(max-width:560px){
- .dashboard .app-header .brand{max-width:116px}
+ .dashboard .app-header .brand.maxvel-only-brand{max-width:none!important;gap:3px!important}
+ .dashboard .app-header .brand .ronda-pro-wordmark{font-size:clamp(12px,3.4vw,16px)!important}
+ .dashboard .app-header .brand .maxvel-real-logo{width:clamp(27px,8vw,39px)!important}
  .dashboard .app-header .header-actions{gap:4px!important}
  .dashboard .app-header .help-toggle{display:none!important}
  .dashboard .app-header .rp-header-tools{gap:5px!important}
