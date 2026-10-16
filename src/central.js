@@ -28,7 +28,7 @@ let latestActivity='';
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 const torch=createFieldTorch({notify:flash});
-const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],inspectorProof={photo:null,selfie:null},fieldMessageEvidence=[];
+const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],inspectorProof={photo:null,selfie:null},pendingInspectionCommit=null,fieldMessageEvidence=[];
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
@@ -739,13 +739,24 @@ document.addEventListener('submit',async e=>{
    if(!allOk&&keys.some(k=>!['ok','no'].includes(String(d[k]))))throw Error('Marque Tudo dentro do esperado ou avalie os quatro critérios.');
    if(!allOk&&String(d.observation||'').trim().length<8)throw Error('Descreva a condição que exige atenção.');
    const criteria=Object.fromEntries(keys.map(k=>[k,allOk||d[k]==='ok']));
-   const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
-   const files=[inspectorProof.photo,inspectorProof.selfie,...inspectorEvidence];inspectorEvidence=[];inspectorProof={photo:null,selfie:null};let uploaded=0;
-   for(const file of files){
-    try{await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':record.id,'X-Captured-At':String(file.lastModified||Date.now())}});uploaded++}
-    catch(err){console.warn('Evidência não enviada',err)}
+   // Cria o laudo uma única vez por tentativa; não encerra o despacho antes
+   // de confirmar os dois uploads e registrar o encerramento no backend.
+   let report=pendingInspectionCommit?.dispatchId===d.dispatchId?pendingInspectionCommit:null;
+   if(!report){
+    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria realizada. Tudo dentro do esperado.').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
+    report={dispatchId:d.dispatchId,eventId:record.id,uploaded:new Set()};pendingInspectionCommit=report;
    }
-   flash(files.length&&uploaded!==files.length?'Laudo salvo; '+uploaded+' de '+files.length+' evidências enviadas.':'Vistoria e '+uploaded+' evidência(s) salvas.');
+   const files=[['photo',inspectorProof.photo],['selfie',inspectorProof.selfie],...inspectorEvidence.map((file,i)=>['extra-'+i,file])];
+   for(const [kind,file] of files){
+    if(report.uploaded.has(kind))continue;
+    await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':report.eventId,'X-Captured-At':String(file.lastModified||Date.now())}});
+    report.uploaded.add(kind);
+   }
+   const note=String(d.observation||'Vistoria realizada. Tudo dentro do esperado.').trim();
+   const context=await eventTelemetry();
+   await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note,position:context.position||null}});
+   inspectorProof={photo:null,selfie:null};inspectorEvidence=[];pendingInspectionCommit=null;
+   flash('Vistoria e evidências registradas. Despacho concluído.');
    await load();return;
   }
   if(form.id==='new-user'){await api('/users',{method:'POST',data:d});flash('Colaborador cadastrado.');await load();return;}
