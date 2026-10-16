@@ -31,22 +31,22 @@ export function project(point,route,width=680,height=360){
  const b=routeBounds(route),latSpan=Math.max(.001,b.maxLat-b.minLat),lngSpan=Math.max(.0012,b.maxLng-b.minLng);
  return {x:55+(point.lng-b.minLng)/lngSpan*(width-110),y:height-45-(point.lat-b.minLat)/latSpan*(height-90)};
 }
-export function fallbackSVG(route,session,position,showRoute=true){
+export function fallbackSVG(route,session,position,showRoute=true,showPosition=true){
  const path=routeWaypoints(route).map(x=>{const p=project(x,route);return `${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ');
  const visual=pointsOf(route).slice(0,-1),pos=project(position??route.base,route);
- const routeOverlay=showRoute?`<polyline points="${path}" fill="none" stroke="#0C0D0F" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#55C9F5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=project(p,route),done=i>0&&session?.checkpoints[i-1]?.completedAt,active=i>0&&session?.index===i-1;return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#55C9F5" fill-opacity=".10"/><circle r="17" fill="${done?'#357B68':active?'#55C9F5':'#43484C'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}`:'';
- return `<svg class="fallback-svg" viewBox="0 0 680 360" role="img" aria-label="Esquema alternativo da rota, sem cartografia de ruas" preserveAspectRatio="xMidYMid meet"><defs><pattern id="roadgrid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M 56 0 L 0 0 0 56" fill="none" stroke="#323639" stroke-width="1"/></pattern></defs><rect width="680" height="360" fill="#17191B"/><rect width="680" height="360" fill="url(#roadgrid)"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#313538" stroke-width="22"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#656B70" stroke-width="1" stroke-dasharray="7 6"/>${routeOverlay}<g transform="translate(${pos.x} ${pos.y})"><circle r="25" fill="#55C9F5" fill-opacity=".15"/><circle r="11" fill="#55C9F5" stroke="white" stroke-width="5"/></g><rect x="15" y="13" rx="0" width="241" height="31" fill="#1D2023"/><text x="26" y="33" font-family="system-ui" font-size="12" fill="#F3F4F6">Modo alternativo · mapa esquemático</text></svg>`;
+ const routeOverlay=showRoute?`<polyline points="${path}" fill="none" stroke="#0C0D0F" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#55C9F5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=project(p,route),done=i>0&&(route.inspectionMode?!!p.completedAt:!!session?.checkpoints[i-1]?.completedAt),active=i>0&&(route.inspectionMode?session?.currentId===p.id:session?.index===i-1);return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#55C9F5" fill-opacity=".10"/><circle r="17" fill="${done?'#357B68':active?'#55C9F5':'#43484C'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}`:'';
+ return `<svg class="fallback-svg" viewBox="0 0 680 360" role="img" aria-label="Esquema alternativo da rota, sem cartografia de ruas" preserveAspectRatio="xMidYMid meet"><defs><pattern id="roadgrid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M 56 0 L 0 0 0 56" fill="none" stroke="#323639" stroke-width="1"/></pattern></defs><rect width="680" height="360" fill="#17191B"/><rect width="680" height="360" fill="url(#roadgrid)"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#313538" stroke-width="22"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#656B70" stroke-width="1" stroke-dasharray="7 6"/>${routeOverlay}${showPosition?`<g transform="translate(${pos.x} ${pos.y})"><circle r="25" fill="#55C9F5" fill-opacity=".15"/><circle r="11" fill="#55C9F5" stroke="white" stroke-width="5"/></g>`:''}<rect x="15" y="13" rx="0" width="241" height="31" fill="#1D2023"/><text x="26" y="33" font-family="system-ui" font-size="12" fill="#F3F4F6">Modo alternativo · mapa esquemático</text></svg>`;
 }
 const latlng=p=>[p.lat,p.lng];
 const closePositions=(a,b)=>Math.hypot((a.lat-b.lat)*111320,(a.lng-b.lng)*111320*Math.cos(a.lat*Math.PI/180))<2;
 const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${kind}">${content}</span>`;
 export class PatrolMap{
- constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false}={}){
+ constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false,positionVerified=true}={}){
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;this.standbyClean=standbyClean;
-  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.tracePositions=[this.position];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
+  this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.positionVerified=positionVerified;this.tracePositions=positionVerified?[this.position]:[];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
   this.showFallback();this.setup();
  }
- showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
+ showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session,this.positionVerified)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
  async setup(){try{
   const L=await loadLeaflet();if(this.destroyed)return;
   this.leaflet=L;
@@ -107,6 +107,7 @@ export class PatrolMap{
   this.layers.forEach(layer=>m.removeLayer(layer));this.layers=[];this.pointMarkers=[];
   const add=(layer)=>{layer.addTo(m);this.layers.push(layer);return layer};
   if(this.standbyClean&&!this.session){
+   if(!this.positionVerified)return;
    const icon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
    this.positionMarker=add(L.marker(latlng(this.position),{icon,interactive:false,keyboard:false}));
    this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillOpacity:.10,interactive:false}));
@@ -117,27 +118,41 @@ export class PatrolMap{
   add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:'11 8',lineJoin:'round',interactive:false}));
   const bases=[this.route.base,...this.route.points];
   bases.forEach((p,i)=>{
-   const done=i>0&&this.session?.checkpoints[i-1]?.completedAt;const active=i>0&&this.session?.index===i-1;
-   if(i>0)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#55C9F5':'#73797E',weight:2,fillColor:active?'#55C9F5':'#70767A',fillOpacity:active?.14:.08,interactive:false}));
+   const inspection=this.route.inspectionMode===true;
+   const done=i>0&&(inspection?!!p.completedAt:!!this.session?.checkpoints[i-1]?.completedAt);
+   const active=i>0&&(inspection?this.session?.currentId===p.id:this.session?.index===i-1);
+   if(i>0&&!inspection)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#55C9F5':'#73797E',weight:2,fillColor:active?'#55C9F5':'#70767A',fillOpacity:active?.14:.08,interactive:false}));
    const ic=L.divIcon({className:'map-pin-host',html:markerHtml(i===0?'B':done?'✓':i,done?'done':active?'active':i===0?'base':'point'),iconSize:[36,36],iconAnchor:[18,18]});
-const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado';
-   const popup=`<div class="maxvel-map-popup"><small>PONTO ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Localização do cenário ilustrativo'}</em></div>`;
-   this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,interactive:i>0,keyboard:i>0,title:i===0?undefined:`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
+const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atual':'Ponto atual'):'Planejado';
+   const popup=`<div class="maxvel-map-popup"><small>${inspection?'VISTORIA':'PONTO'} ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${inspection?(i===0?'Base de partida':p.inspectionVia?'Passagem definida pelo COI':'Destino de vistoria'):(i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`)}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Ponto inicial do circuito'}</em></div>`;
+   this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,interactive:i>0,keyboard:i>0,title:i===0?undefined:inspection?p.name:`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
   });
   const userIcon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
-  this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição simulada do ronda'}));
+  this.positionMarker=this.positionVerified?add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição ilustrativa da demonstração'})):null;
   this.traceLayer=add(L.polyline(this.tracePositions.map(latlng),{color:'#55C9F5',weight:4,opacity:.9,lineCap:'round',interactive:false}));
   for(const d of this.session?.deviations??[]){
    if(!d.position)continue;
    add(L.circleMarker(latlng(d.position),{radius:9,color:'#fff',weight:3,fillColor:'#dc4557',fillOpacity:1}).bindPopup('<b>Desvio registrado</b><br>'+escapeHtml(d.pointName)+'<br><small>'+ (d.justification?'Justificativa recebida':'Justificativa pendente')+'</small>'));
   }
-  this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillColor:'#55C9F5',fillOpacity:.14,interactive:false}));
+  this.accuracyCircle=this.positionVerified?add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillColor:'#55C9F5',fillOpacity:.14,interactive:false})):null;
+ }
+ setRoute(route,session=this.session){
+  if(this.destroyed)return;
+  this.route=route;this.session=session;
+  if(this.instance){this.refreshGeometry();this.fit();}
+  else this.showFallback();
  }
  update({session=this.session,position=this.position}={}){
   if(this.destroyed)return;const indexWas=this.session?.index,statusWas=this.session?.status;this.session=session;this.position=position??this.route.base;
+  if(!this.positionVerified&&position&&this.route.inspectionMode){
+   this.positionVerified=true;this.tracePositions=[position];
+   if(this.instance)this.refreshGeometry();
+   else this.showFallback();
+   return;
+  }
   if(this.instance){if(indexWas!==session?.index||statusWas!==session?.status)this.refreshGeometry();
    else{this.positionMarker?.setLatLng(latlng(this.position));this.accuracyCircle?.setLatLng(latlng(this.position));this.accuracyCircle?.setRadius(Math.max(3,Number(this.position.accuracy)||8));this.updateTrace();}}
-  else{const holder=this.container?.querySelector('.map-fallback');if(holder)holder.innerHTML=fallbackSVG(this.route,session,this.position,!this.standbyClean||!!session);}
+  else{const holder=this.container?.querySelector('.map-fallback');if(holder)holder.innerHTML=fallbackSVG(this.route,session,this.position,!this.standbyClean||!!session,this.positionVerified);}
  }
  updateTrace(){
   if(!this.position||!Number.isFinite(this.position.lat)||!Number.isFinite(this.position.lng))return;
