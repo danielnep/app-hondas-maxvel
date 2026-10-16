@@ -192,10 +192,10 @@ for(const entries of Object.values(roleMenus)){entries.push(['chat','Chat intern
 
 const rp2Priority={
  ronda:['dashboard','dispatches','notifications','send'],
- operador:['monitor','treatments','notifications','dispatches'],
- coi:['monitor','treatments','notifications','dispatches'],
- admin:['dashboard','monitor','treatments','notifications'],
- master:['dashboard','monitor','treatments','notifications'],
+ operador:['monitor','events','dispatches','treatments'],
+ coi:['monitor','events','dispatches','treatments'],
+ admin:['dashboard','monitor','events','treatments'],
+ master:['dashboard','monitor','events','treatments'],
  cliente:['client'],
  vistoriador:['inspections','dispatches','notifications','send']
 };
