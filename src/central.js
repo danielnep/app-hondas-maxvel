@@ -103,6 +103,11 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
 const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId,notification}={})=>{
+ if(notification&&['field_alert','notice'].includes(notification.kind)&&['ronda','vistoriador'].includes(account?.role)){
+  const d=document.createElement('dialog');d.id='rp-field-notification-dialog';d.className='rp-record-dialog rp-notification-dialog';
+  d.innerHTML='<div class="eyebrow">'+(notification.kind==='field_alert'?'ALERTA OPERACIONAL':'COMUNICADO DO COE')+'</div><h2>'+escape(notification.title)+'</h2><p>'+escape(notification.body)+'</p><small>'+fmt(notification.created_at)+'</small><button type="button" data-field-notification-close class="primary">Fechar</button>';
+  document.querySelector('#rp-field-notification-dialog')?.remove();document.body.append(d);d.addEventListener('close',()=>d.remove(),{once:true});d.showModal();return;
+ }
  if(eventId){
   try{await openEvent(eventId,'notifications');return;}
   catch(error){
