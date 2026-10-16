@@ -7,10 +7,10 @@ const glyph={
  video:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>',
  audio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4m-5 0h10"/></svg>'
 };
-export const evidenceButtons=()=>'<div class="evidence-direct" role="group" aria-label="Capturar evidências">'+
- [['photo','Foto'],['video','Vídeo'],['audio','Áudio']].map(([key,label])=>
+export const evidenceButtons=({kinds=['photo','video','audio'],includeList=true}={})=>'<div class="evidence-direct" role="group" aria-label="Capturar evidências">'+
+ [['photo','Foto'],['video','Vídeo'],['audio','Áudio']].filter(([key])=>kinds.includes(key)).map(([key,label])=>
  '<button type="button" class="evidence-direct-btn" data-evidence-kind="'+key+'" aria-label="'+label+'">'+glyph[key]+'<span>'+label+'</span></button>').join('')+
- '</div><div class="evidence-attachment-list" data-evidence-attachments aria-live="polite">Nenhuma evidência anexada.</div>';
+ '</div>'+(includeList?'<div class="evidence-attachment-list" data-evidence-attachments aria-live="polite">Nenhuma evidência anexada.</div>':'');
 export function createMediaCapture({notify=()=>{}}={}){
  let pending=null,overlay=null,stream=null,recorder=null,chunks=[],recorded=null,startAt=0,clock=null;
  const cleanup=()=>{
