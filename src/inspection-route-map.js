@@ -4,6 +4,7 @@
  * Linha contínua: deslocamento GPS efetivamente observado no dispositivo.
  */
 import {loadLeaflet} from './map.js';
+import {DEMO_ROUTE} from './domain.js';
 const parsePoint=p=>p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&Math.abs(Number(p.lat))<=90&&Math.abs(Number(p.lng))<=180
  ?[Number(p.lat),Number(p.lng)]:null;
 const waypoints=assignment=>{
@@ -11,15 +12,19 @@ const waypoints=assignment=>{
  if(typeof points==='string')try{points=JSON.parse(points)}catch{points=[]}
  return Array.isArray(points)?points.slice(0,12).map(parsePoint).filter(Boolean):[];
 };
+export function inspectionPlanPoints(item,{demo=false}={}){
+  const destination=item?.latitude!=null&&item?.longitude!=null?parsePoint({lat:item.latitude,lng:item.longitude}):null;
+  // Base ilustrativa apenas no cenário local; operação real exige posição configurada pelo COI.
+  const base=demo?parsePoint(DEMO_ROUTE.base):parsePoint({lat:item?.base_latitude??item?.start_latitude,lng:item?.base_longitude??item?.start_longitude});
+  const points=[...(base?[base]:[]),...waypoints(item),...(destination?[destination]:[])];
+  return points.filter((point,i)=>i===0||point[0]!==points[i-1][0]||point[1]!==points[i-1][1]);
+ }
 export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
  let map=null,watch=null,liveLine=null,plannedLink=null,locationMarker=null,history=[],lastSend=0,assignmentId=null,planned=[],pathKey='',epoch=0;
  function destroy(){epoch++;if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}if(map){try{map.stop();map.off();map.remove();}catch{}}map=null;liveLine=null;plannedLink=null;locationMarker=null;}
- function routeData(item){
-  const destination=item?.latitude!=null&&item?.longitude!=null?parsePoint({lat:item.latitude,lng:item.longitude}):null;
-  return [...waypoints(item),...(destination?[destination]:[])];
- }
+ function routeData(item,options){return inspectionPlanPoints(item,options)}
  function mount(host,item,{demo=false}={}){
-  destroy();assignmentId=item?.id??null;planned=routeData(item);pathKey='rondaspro-inspection-track-'+assignmentId;
+  destroy();assignmentId=item?.id??null;planned=routeData(item,{demo});pathKey='rondaspro-inspection-track-'+assignmentId;
   history=[];if(!assignmentId)return init(host,item);
   try{const old=JSON.parse(sessionStorage.getItem(pathKey)||'[]');history=Array.isArray(old)?old.slice(-600).filter(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite)):[]}catch{}
   init(host,item);
@@ -28,11 +33,11 @@ export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
  function init(host,item){
   if(!host)return;
   if(!window.L){const generation=epoch;void loadLeaflet().then(()=>{if(generation===epoch&&host.isConnected&&!map)init(host,item)}).catch(()=>{});return;}
-  const startPoint=planned[0]||history.at(-1)||[0,0];
-  map=window.L.map(host,{scrollWheelZoom:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false}).setView(startPoint,planned.length||history.length?15:2,{animate:false});
+  const startPoint=planned[0]||history.at(-1)||[DEMO_ROUTE.base.lat,DEMO_ROUTE.base.lng];
+  map=window.L.map(host,{scrollWheelZoom:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false}).setView(startPoint,planned.length||history.length?15:13,{animate:false});
   window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(map);
   if(planned.length){
-   planned.forEach((p,i)=>window.L.circleMarker(p,{radius:i===planned.length-1?10:7,color:'#fff',weight:2,fillColor:i===planned.length-1?'#ed3654':'#a9a4b0',fillOpacity:1}).addTo(map).bindTooltip(i===planned.length-1?'Destino do COI':'Passagem '+(i+1)));
+   planned.forEach((p,i)=>window.L.circleMarker(p,{radius:i===planned.length-1&&planned.length>1?10:7,color:'#fff',weight:2,fillColor:i===planned.length-1&&planned.length>1?'#ed3654':'#a9a4b0',fillOpacity:1}).addTo(map).bindTooltip(i===0&&planned.length>1?'Base de partida':i===planned.length-1&&planned.length>1?'Destino do COI':'Ponto de referência '+(i+1)));
    if(planned.length>1)window.L.polyline(planned,{color:'#f69cae',weight:3,dashArray:'7,9',opacity:.9}).addTo(map);
   }
   if(history.length&&planned.length)plannedLink=window.L.polyline([history.at(-1),planned[0]],{color:'#d99aa9',weight:2,dashArray:'3,9',opacity:.65}).addTo(map);
