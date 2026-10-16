@@ -15,7 +15,8 @@ test('eventos pendentes em colunas e histórico somente finalizado',()=>{
  assert.match(app,/const done=demoEventNotifications\(\)\.filter\(n=>!!n\.seenAt\)/);
  assert.match(central,/const queue=events\.filter\(isPending\)/);
  assert.match(central,/const finished=events\.filter\(e=>!isPending\(e\)\)/);
- assert.match(css,/grid-template-columns:repeat\(5,minmax\(170px,1fr\)\)/);
+ assert.match(css,/grid-auto-flow:column!important/);
+ assert.match(css,/grid-auto-columns:minmax\(165px,1fr\)!important/);
  assert.match(css,/border-right:1px solid #484851/);
 });
 test('COI autentica, solicita endereço e preserva permissões no servidor',()=>{
