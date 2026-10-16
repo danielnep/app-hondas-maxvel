@@ -65,6 +65,17 @@ function initialize(){
   db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)')
    .run(id(),email,'Master','master',salt,authHash(pass,salt),'Conta principal',now());
  }
+ // Provisionamento de conta inicial por variáveis temporárias no Railway.
+ // Nunca publicar a senha no repositório. Não modifica a conta Master existente.
+ const bootstrapLogin=clean(process.env.RONDA_PRO_INITIAL_USERNAME).toLowerCase();
+ const bootstrapPassword=process.env.RONDA_PRO_INITIAL_PASSWORD;
+ if(bootstrapLogin&&bootstrapPassword&&/^[a-z][a-z0-9_-]{2,31}$/.test(bootstrapLogin)&&bootstrapPassword.length>=4){
+  const address=bootstrapLogin+'@rondas.local',salt=randomBytes(16).toString('hex'),passwordHash=authHash(bootstrapPassword,salt);
+  const existing=db.prepare('SELECT id FROM users WHERE email=?').get(address);
+  if(existing)db.prepare('UPDATE users SET salt=?,password_hash=?,active=1 WHERE id=?').run(salt,passwordHash,existing.id);
+  else db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)')
+   .run(id(),address,'Daniel','admin',salt,passwordHash,'Acesso inicial do administrador',now());
+ }
  const insert=db.prepare('INSERT OR IGNORE INTO templates(id,title,trigger,priority,enabled,cooldown_min) VALUES(?,?,?,?,?,?)');
  for(const row of presets)insert.run(...row);
  const defaultGroups={incident:['supervisor'],irregularity:['supervisor'],support:['operations','supervisor'],gps_unreliable:['operations'],gps_disabled:['operations'],patrol_interrupted:['supervisor'],patrol_late:['supervisor'],checkpoint_pending:['supervisor'],patrol_completed:['supervisor']};
@@ -147,7 +158,9 @@ export function createOperationalApi(){
   if(origin&&!['https://'+req.headers.host,'http://'+req.headers.host].includes(origin)){resp(res,403,{error:'Origem inválida'});return true;}
   try{
    if(p==='/api/login'&&m==='POST'){
-    const d=serialize((await body(req)).toString())||{},email=clean(d.email).toLowerCase();
+    const d=serialize((await body(req)).toString())||{},login=clean(d.email??d.username).toLowerCase();
+    // Contas já cadastradas continuam entrando pelo e-mail; a conta inicial aceita usuário curto.
+    const email=/^[a-z][a-z0-9_-]{2,31}$/.test(login)?login+'@rondas.local':login;
     const row=db.prepare('SELECT * FROM users WHERE email=? AND active=1').get(email);
     const candidate=typeof d.password==='string'&&row?authHash(d.password,row.salt):null;
     if(!candidate||!timingSafeEqual(Buffer.from(candidate,'hex'),Buffer.from(row.password_hash,'hex'))){resp(res,401,{error:'Credenciais inválidas'});return true;}
