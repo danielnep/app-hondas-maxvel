@@ -223,8 +223,9 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onPause(){
+        // A tela de permissão pode pausar a Activity temporariamente.
+        // Não descartar a solicitação pendente; ela será resolvida no callback.
         if(torchEnabled)setNativeTorch(false,"");
-        else pendingTorchRequestId=null;
         super.onPause();
     }
     @Override public void onBackPressed(){if(webView.canGoBack())webView.goBack();else super.onBackPressed();}
