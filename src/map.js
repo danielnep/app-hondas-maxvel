@@ -117,21 +117,29 @@ export class PatrolMap{
   add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:'11 8',lineJoin:'round',interactive:false}));
   const bases=[this.route.base,...this.route.points];
   bases.forEach((p,i)=>{
-   const done=i>0&&this.session?.checkpoints[i-1]?.completedAt;const active=i>0&&this.session?.index===i-1;
-   if(i>0)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#55C9F5':'#73797E',weight:2,fillColor:active?'#55C9F5':'#70767A',fillOpacity:active?.14:.08,interactive:false}));
+   const inspection=this.route.inspectionMode===true;
+   const done=i>0&&(inspection?!!p.completedAt:!!this.session?.checkpoints[i-1]?.completedAt);
+   const active=i>0&&(inspection?this.session?.currentId===p.id:this.session?.index===i-1);
+   if(i>0&&!inspection)add(L.circle(latlng(p),{radius:p.radius??25,color:active?'#55C9F5':'#73797E',weight:2,fillColor:active?'#55C9F5':'#70767A',fillOpacity:active?.14:.08,interactive:false}));
    const ic=L.divIcon({className:'map-pin-host',html:markerHtml(i===0?'B':done?'✓':i,done?'done':active?'active':i===0?'base':'point'),iconSize:[36,36],iconAnchor:[18,18]});
-const pointState=i===0?'Base':done?'Concluído':active?'Ponto atual':'Planejado';
-   const popup=`<div class="maxvel-map-popup"><small>PONTO ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Localização do cenário ilustrativo'}</em></div>`;
-   this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,interactive:i>0,keyboard:i>0,title:i===0?undefined:`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
+const pointState=i===0?'Base':done?'Concluído':active?'Destino atual':'Planejado';
+   const popup=`<div class="maxvel-map-popup"><small>${inspection?'VISTORIA':'PONTO'} ${i===0?'BASE':i} · ${pointState}</small><strong>${escapeHtml(p.name)}</strong><span>${inspection?(i===0?'Base de partida':p.inspectionVia?'Passagem definida pelo COI':'Destino de vistoria'):(i===0?'Retorno previsto à base':`Geocerca de ${Number(p.radius)||25} m · permanência de 30 s`)}</span><em>${i>0?escapeHtml(p.instruction||'Seguir a sequência prevista'):'Ponto inicial do circuito'}</em></div>`;
+   this.pointMarkers[i]=add(L.marker(latlng(p),{icon:ic,interactive:i>0,keyboard:i>0,title:i===0?undefined:inspection?p.name:`${p.name} · raio ${p.radius??25} m`}).bindPopup(popup));
   });
   const userIcon=L.divIcon({className:'map-person-host',html:'<span class="map-person-ring"><i class="map-person-dot"></i></span>',iconSize:[34,34],iconAnchor:[17,17]});
-  this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição simulada do ronda'}));
+  this.positionMarker=add(L.marker(latlng(this.position),{icon:userIcon,keyboard:false,interactive:false,title:this.session?.mode==='real'?'Localização informada pelo aparelho':'Posição ilustrativa da demonstração'}));
   this.traceLayer=add(L.polyline(this.tracePositions.map(latlng),{color:'#55C9F5',weight:4,opacity:.9,lineCap:'round',interactive:false}));
   for(const d of this.session?.deviations??[]){
    if(!d.position)continue;
    add(L.circleMarker(latlng(d.position),{radius:9,color:'#fff',weight:3,fillColor:'#dc4557',fillOpacity:1}).bindPopup('<b>Desvio registrado</b><br>'+escapeHtml(d.pointName)+'<br><small>'+ (d.justification?'Justificativa recebida':'Justificativa pendente')+'</small>'));
   }
   this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillColor:'#55C9F5',fillOpacity:.14,interactive:false}));
+ }
+ setRoute(route,session=this.session){
+  if(this.destroyed)return;
+  this.route=route;this.session=session;
+  if(this.instance){this.refreshGeometry();this.fit();}
+  else this.showFallback();
  }
  update({session=this.session,position=this.position}={}){
   if(this.destroyed)return;const indexWas=this.session?.index,statusWas=this.session?.status;this.session=session;this.position=position??this.route.base;
