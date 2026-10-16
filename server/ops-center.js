@@ -218,6 +218,13 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    if(task[2]==='complete'&&(comment.length<10||comment.length>1500)){
     resp(res,422,{error:'Descreva o resultado do atendimento (mínimo 10 caracteres)'});return true;
    }
+   if(task[2]==='complete'&&item.kind==='vistoria'){
+    const laudo=db.prepare("SELECT id FROM events WHERE user_id=? AND kind='inspection' AND json_extract(details,'$.dispatchId')=? ORDER BY received_at DESC LIMIT 1").get(user.id,item.id);
+    const evidence=laudo?db.prepare("SELECT evidence_view,mimetype FROM media WHERE event_id=?").all(laudo.id):[];
+    const selfie=evidence.some(m=>m.evidence_view==='selfie'&&m.mimetype.startsWith('image/'));
+    const localPhoto=evidence.some(m=>['front','back','left','right'].includes(m.evidence_view)&&m.mimetype.startsWith('image/'));
+    if(!selfie||!localPhoto){resp(res,422,{error:'Para concluir vistoria, envie primeiro o laudo, uma selfie e uma foto do local.'});return true;}
+   }
    const position=data.position;
    const validPosition=position&&Number.isFinite(position.lat)&&Number.isFinite(position.lng)&&Math.abs(position.lat)<=90&&Math.abs(position.lng)<=180;
    const eventId=id(),kind=task[2]==='start'?'patrol_start':'patrol_end',description=task[2]==='start'?'Despacho iniciado: '+item.address:'Despacho concluído: '+comment;
