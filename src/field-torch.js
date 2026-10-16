@@ -11,17 +11,27 @@ export function createFieldTorch({
  win=globalThis.window
 }={}){
  let stream=null,track=null,video=null,mode=null,busy=false,revision=0,requestNumber=0;
+ const subscribers=new Set();
  const glyph='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 2 10 10-4 4-3-3-3 3-3-3 3-5Z"/><path d="m14 18 2 2M18 15l3 1M18 20l2 2"/></svg>';
  const active=()=>mode!==null;
  const button=()=>doc?.querySelector?.('[data-field-torch]');
  const isNative=()=>typeof nativeBridge?.setTorchEnabled==='function';
  function paint(){
-  const el=button();if(!el)return;
-  el.setAttribute('aria-pressed',String(active()));
-  el.classList.toggle('is-lit',active());
-  el.setAttribute('aria-label',active()?'Apagar lanterna':'Acender lanterna');
-  const title=el.querySelector('span');if(title)title.textContent=busy?'Ativando…':active()?'Lanterna ligada':'Lanterna';
-  el.disabled=busy;
+  const state={on:active(),busy};
+  const el=button();
+  if(el){
+   el.setAttribute('aria-pressed',String(state.on));
+   el.classList.toggle('is-lit',state.on);
+   el.setAttribute('aria-label',state.on?'Apagar lanterna':'Acender lanterna');
+   const title=el.querySelector('span');if(title)title.textContent=state.busy?'Ativando…':state.on?'Lanterna ligada':'Lanterna';
+   el.disabled=state.busy;
+  }
+  for(const notifyState of subscribers)notifyState(state);
+ }
+ function subscribe(notifyState){
+  subscribers.add(notifyState);
+  notifyState({on:active(),busy});
+  return ()=>subscribers.delete(notifyState);
  }
  function cleanupMedia(){
   const oldTrack=track,oldStream=stream;
@@ -134,5 +144,5 @@ export function createFieldTorch({
    mode=null;busy=false;paint();
   }
  });
- return {decorate,toggle,stop,isOn:active};
+ return {decorate,toggle,stop,isOn:active,subscribe};
 }
