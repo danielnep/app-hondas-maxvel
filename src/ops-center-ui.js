@@ -276,7 +276,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }
   if(target.dataset.opsNotification){
    const n=notifications.find(x=>x.id===target.dataset.opsNotification);if(!n)return true;
-   await openNotice(n.event_id?{eventId:n.event_id}:{page:n.dispatch_id?'dispatches':'notifications'});
+   await openNotice(n.event_id?{eventId:n.event_id,notification:n}:{page:n.dispatch_id?'dispatches':'notifications',notification:n});
    await api('/notifications/'+n.id+'/read',{method:'POST'});
    document.querySelector('#ops-priority-toast')?.remove();await refresh(current,false);
    return true;
