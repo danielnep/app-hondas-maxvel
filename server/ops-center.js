@@ -139,7 +139,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    resp(res,200,{notifications:items,total,unread:count,attention,hasMore:rows.length>limit,nextCursor:rows.length>limit&&last?last.created_at+':'+last.id:null});return true;
   }
   if(p==='/api/field-communications'&&method==='POST'){
-   if(!review(user)||!allows(user,'despachos')){resp(res,403,{error:'Envio reservado ao COE autorizado e administração'});return true;}
+   if(!review(user)||!allows(user,'despachos')){resp(res,403,{error:'Envio reservado ao COI autorizado e administração'});return true;}
    const data=serialize((await body(req,6000)).toString())||{};
    const kind=data.kind==='alert'?'field_alert':data.kind==='notice'?'notice':null;
    const title=clean(data.title).slice(0,100),message=clean(data.message).slice(0,650);
