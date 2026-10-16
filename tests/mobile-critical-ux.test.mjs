@@ -55,3 +55,11 @@ test('estilos críticos carregam por último e entram no PWA',()=>{
  const after=index.indexOf('mobile-critical-20261016.css');
  assert.ok(before>=0&&after>before,'CSS novo deve sobrescrever o estilo legado');
 });
+
+test('marca Grupo Maxvel permanece visível no cabeçalho mobile',()=>{
+ const style=read('assets/maxvel-atelier-20261016.css');
+ assert.match(style,/\.dashboard \.app-header \.brand \.brand-partner\{[^}]*display:flex!important/);
+ assert.match(style,/\.dashboard \.app-header \.brand \.maxvel-real-logo\{[^}]*display:block!important/);
+ assert.doesNotMatch(style,/\.dashboard \.app-header \.brand \.brand-partner\{display:none!important/);
+ assert.ok(index.includes('maxvel-atelier-20261016.css?v=2'));
+});
