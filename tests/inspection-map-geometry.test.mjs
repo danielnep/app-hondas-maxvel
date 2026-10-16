@@ -45,6 +45,8 @@ test('fallback da vistoria acompanha viewport vertical e não comprime o mapa',(
  assert.match(portrait,/rect width="390" height="620"/);
  const px=[...portrait.matchAll(/<polyline points="([^"]*)"/g)][0]?.[1];
  assert.ok(px&&px.trim().split(/\s+/).length>=4,'linha contínua entre todos os destinos em retrato');
+ const ys=px.trim().split(/\s+/).map(p=>Number(p.split(',')[1]));
+ assert.ok(ys.every(y=>y>=130&&y<=380),'números e rota ficam entre painel superior e comandos inferiores');
 });
 
 test('ronda convencional mantém retorno à base e ordem anterior',()=>{
