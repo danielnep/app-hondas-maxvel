@@ -792,9 +792,21 @@ function demoChatView(){
  return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(thread?conversation:list)+'</div></section>';
 }
 let demoHistoryPage=0;
-function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,type:'round',at:r.startedAt,name:r.name,site:r.route?.name,status:r.status})),...demoInspectionRecords().map((r,i)=>({id:String(i),type:'inspection',at:r.at,name:'Vistoria',site:DEMO_WATCHERS[0].unit,status:'Enviada'}))].sort((a,b)=>b.at-a.at);}
-function demoActivityRow(r){return '<button type="button" class="rp-activity-row" data-action="'+(r.type==='round'?'session-detail':'demo-inspection-detail')+'" data-id="'+esc(r.id)+'"><span><strong>'+esc(r.name)+'</strong><small>'+esc(r.site)+' · '+fmt(r.at)+'</small></span><span>'+esc(r.status==='completed'?'Concluída':r.status==='active'?'Em andamento':r.status)+' ↗</span></button>';}
-function demoHistoryView(){const all=demoActivityRows(),offset=demoHistoryPage*20;return pageTitle('Histórico de rondas e vistorias','Registros locais da demonstração. O histórico permanente está na central autenticada.')+'<section>'+all.slice(offset,offset+20).map(demoActivityRow).join('')+'</section><div class="row">'+(offset?btn('Anterior','demo-history-prev','small'):'')+'<span>'+Math.min(offset+1,all.length)+'–'+Math.min(offset+20,all.length)+' de '+all.length+'</span>'+(offset+20<all.length?btn('Próxima','demo-history-next','small'):'')+'</div>';}
+function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,selectionKey:'round:'+r.id,type:'round',at:r.startedAt,name:r.name,site:r.route?.name,status:r.status})),...demoInspectionRecords().map((r,i)=>({id:String(i),selectionKey:'inspection:'+i,type:'inspection',at:r.at,name:'Vistoria',site:r.address||DEMO_WATCHERS[0].unit,status:'Enviada'}))].sort((a,b)=>b.at-a.at);}
+let demoHistorySelection=new Set();
+function demoActivityRow(r,selectable=false){
+ const item='<button type="button" class="rp-activity-row" data-action="'+(r.type==='round'?'session-detail':'demo-inspection-detail')+'" data-id="'+esc(r.id)+'"><span><strong>'+esc(r.type==='round'?'Ronda · '+r.name:'Vistoria · '+r.name)+'</strong><small>'+esc(r.site||'Local não informado')+' · '+fmt(r.at)+'</small></span><span>'+esc(r.status==='completed'?'Concluída':r.status==='active'?'Em andamento':r.status)+' ↗</span></button>';
+ return selectable?'<div class="rp-history-entry" role="listitem"><label title="Selecionar registro"><input type="checkbox" data-action="demo-history-toggle" data-key="'+esc(r.selectionKey)+'" aria-label="Selecionar registro" '+(demoHistorySelection.has(r.selectionKey)?'checked':'')+'></label>'+item+'</div>':item;
+}
+function demoHistoryView(){
+ const all=demoActivityRows(),maxPage=Math.max(0,Math.ceil(all.length/20)-1);
+ demoHistoryPage=Math.min(demoHistoryPage,maxPage);
+ const offset=demoHistoryPage*20,rows=all.slice(offset,offset+20),canManage=user?.role==='admin';
+ const actions=canManage?'<div class="rp-history-toolbar"><span data-demo-selection-count>'+demoHistorySelection.size+' selecionado(s)</span><div class="rp-history-actions"><button type="button" data-action="demo-history-select-page">Selecionar página</button><button type="button" data-action="demo-history-delete-selected" '+(!demoHistorySelection.size?'disabled':'')+'>Apagar selecionados</button><button type="button" data-action="demo-history-delete-all" '+(!all.length?'disabled':'')+'>Apagar tudo</button></div></div>':'';
+ return pageTitle('Histórico de rondas e vistorias','Registros locais da demonstração. O histórico permanente está na central autenticada.')+
+ actions+'<section class="rp-history-list" role="list">'+(rows.map(r=>demoActivityRow(r,canManage)).join('')||'<p class="empty">Nenhum registro neste navegador.</p>')+'</section>'+
+ '<div class="rp-history-pagination">'+(offset?btn('Anterior','demo-history-prev','small'):'')+'<span>'+(all.length?offset+1:0)+'–'+Math.min(offset+20,all.length)+' de '+all.length+'</span>'+(offset+20<all.length?btn('Próxima','demo-history-next','small'):'')+'</div>';
+}
 function notificationsView(){
  const all=demoEventNotifications().filter(n=>!n.seenAt),labels={panic:'Pânicos',incident:'Ocorrências',alert:'Alertas',inspection:'Vistorias',deviation:'Desvios',gps_issue:'Sinal GPS',other:'Outros'};
  const groups=new Map(['panic','incident','alert','inspection','deviation','gps_issue'].map(k=>[k,[]]));
@@ -1338,6 +1350,42 @@ if(act==='profile-menu'){profileDialog();return;}
    (upcoming.length?'<div class="coi-inspection-list">'+upcoming.map(r=>'<article><strong>'+esc(r.address)+'</strong><p>'+esc(r.instructions)+'</p><small>'+fmt(r.createdAt)+'</small></article>').join('')+'</div>':'<p class="empty">Sem próximas vistorias.</p>')+
    '<div class="modal-actions"><button type="button" class="button" data-action="close-dialog">Fechar</button></div>',true);
   return;
+ }
+ if(act==='demo-history-toggle'){
+  if(user?.role!=='admin')return;
+  const key=el.dataset.key;if(!key)return;
+  if(el.checked)demoHistorySelection.add(key);else demoHistorySelection.delete(key);
+  const count=document.querySelector('[data-demo-selection-count]');
+  if(count)count.textContent=demoHistorySelection.size+' selecionado(s)';
+  const remove=document.querySelector('[data-action="demo-history-delete-selected"]');
+  if(remove)remove.disabled=demoHistorySelection.size===0;
+  return;
+ }
+ if(act==='demo-history-select-page'){
+  if(user?.role!=='admin')return;
+  const pageRows=demoActivityRows().slice(demoHistoryPage*20,demoHistoryPage*20+20);
+  const allSelected=pageRows.length>0&&pageRows.every(r=>demoHistorySelection.has(r.selectionKey));
+  pageRows.forEach(r=>allSelected?demoHistorySelection.delete(r.selectionKey):demoHistorySelection.add(r.selectionKey));
+  render();return;
+ }
+ if(act==='demo-history-delete-selected'||act==='demo-history-delete-all'){
+  if(user?.role!=='admin')return;
+  const keys=act==='demo-history-delete-all'?demoActivityRows().map(r=>r.selectionKey):[...demoHistorySelection];
+  if(!keys.length)return;
+  if(!window.confirm('Apagar '+keys.length+' registro(s) da demonstração deste aparelho? A ação não pode ser desfeita. O histórico autenticado não será alterado.'))return;
+  const roundsToDelete=new Set(keys.filter(k=>k.startsWith('round:')).map(k=>k.slice(6)));
+  const inspectionsToDelete=new Set(keys.filter(k=>k.startsWith('inspection:')).map(k=>Number(k.slice(11))));
+  if(session&&roundsToDelete.has(session.id)){stopLocation();session=null;movement=null;locationFix=null;}
+  sessions=sessions.filter(r=>!roundsToDelete.has(r.id));
+  const savedInspections=demoInspectionRecords();
+  const removedRequests=new Set(savedInspections.filter((_,i)=>inspectionsToDelete.has(i)).map(r=>r.requestId).filter(Boolean));
+  try{
+   localStorage.setItem(DEMO_INSPECTIONS,JSON.stringify(savedInspections.filter((_,i)=>!inspectionsToDelete.has(i))));
+   if(removedRequests.size)saveDemoInspectionRequests(demoInspectionRequests().filter(r=>!removedRequests.has(r.id)));
+   localStorage.setItem('rondas-pro-demo-history-edited','1');
+  }catch{notify('Não foi possível gravar todas as exclusões locais. Verifique o armazenamento.');return;}
+  demoHistorySelection.clear();persist();demoHistoryPage=0;render();
+  notify(keys.length+' registro(s) locais excluído(s).');return;
  }
  if(act==='demo-history-prev'){demoHistoryPage=Math.max(0,demoHistoryPage-1);render();return;}
  if(act==='demo-history-next'){demoHistoryPage++;render();return;}
