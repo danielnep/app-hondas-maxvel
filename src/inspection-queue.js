@@ -34,20 +34,31 @@ export function queueInspections(items=[],currentPosition=null,basePosition=null
  }
  return result;
 }
+/**
+ * Cada VISITA gera exatamente um marcador numerado. Passagens definidas pelo COI
+ * pertencem a legs[] (geometria do percurso), nunca à lista de destinos.
+ * Sem base/GPS conhecido, mantém apenas o marcador do destino, sem inventar
+ * um caminho partindo dele mesmo.
+ */
 export function inspectionRoute(ordered=[],base=null){
- const origin=pointOf(base)||pointOf(ordered[0])||{lat:-20.14030,lng:-44.88400};
- const points=ordered.flatMap(item=>{
-  const p=pointOf(item);if(!p)return [];
+ const reference=pointOf(base),located=ordered.map(item=>({item,p:pointOf(item)})).filter(x=>x.p);
+ const origin=reference||located[0]?.p||{lat:-20.14030,lng:-44.88400};
+ const points=[],legs=[];
+ for(const {item,p} of located){
   let waypoints=item.routePoints??item.route_points??[];
   if(typeof waypoints==='string')try{waypoints=JSON.parse(waypoints)}catch{waypoints=[]}
   const intermediate=(Array.isArray(waypoints)?waypoints:[]).map(pointOf).filter(Boolean).slice(0,12);
-  return [...intermediate.map((x,i)=>({...x,id:'via:'+item.id+':'+i,name:'Passagem · '+(item.address||item.site||'Vistoria'),instruction:'Passagem indicada pelo COI',radius:0,inspectionVia:true})),
-   {...p,id:item.id,name:item.address||item.site||'Vistoria',instruction:item.reason||item.instructions||'Verificar o local',radius:0,inspection:true,
-    completedAt:item.completed_at||item.completedAt||null,startedAt:item.started_at||item.startedAt||null}];
- });
- return {id:'inspection-circuit',name:'Circuito de vistorias · COI',unit:'Atendimento de campo',inspectionMode:true,
-  base:{...origin,id:'base',name:'Base de partida'},points};
+  legs.push(intermediate);
+  points.push({...p,id:item.id,name:item.address||item.site||'Vistoria',
+   instruction:item.reason||item.instructions||'Verificar o local',radius:0,inspection:true,
+   completedAt:item.completed_at||item.completedAt||null,startedAt:item.started_at||item.startedAt||null});
+ }
+ return {id:'inspection-circuit',name:'Circuito de vistorias · COI',
+  unit:'Atendimento de campo',inspectionMode:true,baseKnown:!!reference,
+  base:{...origin,id:'base',name:reference?'Base de partida':'Posição inicial não confirmada'},
+  points,legs};
 }
+
 export function inspectionSignature(items=[]){
  return items.map(i=>[i.id,i.started_at||i.startedAt||0,i.arrived_at||i.arrivedAt||0,i.completed_at||i.completedAt||0,i.latitude??'',i.longitude??''].join(':')).join('|');
 }

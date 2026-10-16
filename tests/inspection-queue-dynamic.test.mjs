@@ -30,10 +30,10 @@ test('não inventa GPS ou a posição de destinos sem coordenadas',()=>{
 });
 test('rota cartográfica mantém base, pontos intermediários e todos os destinos',()=>{
  const route=inspectionRoute([task('1',-20.145,-44.89,{route_points:JSON.stringify([{lat:-20.144,lng:-44.888}])}),task('2',-20.15,-44.9)],{lat:-20.14,lng:-44.88});
- assert.equal(route.points.length,3);
- assert.equal(route.points[0].inspectionVia,true);
- assert.equal(route.points[1].name,'Unidade 1');
- assert.equal(route.points[2].name,'Unidade 2');
+ assert.equal(route.points.length,2,'passagens do COI não viram destinos numerados');
+ assert.equal(route.legs[0].length,1,'passagem integra geometria até o destino 1');
+ assert.equal(route.points[0].name,'Unidade 1');
+ assert.equal(route.points[1].name,'Unidade 2');
  assert.equal(route.base.lat,-20.14);
 });
 test('cockpit preserva mapa da ronda e sequência visual, mas restringe laudo à chegada',()=>{

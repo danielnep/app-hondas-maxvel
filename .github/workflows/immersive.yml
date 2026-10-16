@@ -35,6 +35,10 @@ jobs:
           node-version: '24'
       - name: Instalar controlador de navegador
         run: npm install --no-save --no-package-lock playwright-core@1.56.1
+      - name: Conferir desenho real do mapa de vistoria com 1 e 3 destinos
+        run: node scripts/inspection-map-smoke.mjs
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
       - name: Validar abertura de tratativas no COI demonstrativo
         run: node scripts/coi-demo-smoke.mjs
         env:
