@@ -36,4 +36,5 @@ test('avanço preserva cronologia e libera o próximo ponto sem pular a sequênc
  assert.equal(progressed.index,1);assert.equal(progressed.checkpoints.length,1);
  assert.throws(()=>markGuardPoint(markGuardPoint(progressed)),/sem próximo ponto/);
  assert.match(guardCockpit({round:progressed,planned:route}),/Estou aqui/);
+ const back=markGuardPoint(progressed);assert.match(guardCockpit({round:back,planned:route,position:base}),/Distância à base/);
 });
