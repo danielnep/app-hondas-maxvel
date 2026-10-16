@@ -269,3 +269,6 @@ body .checkpoint-curtain .checkpoint-footnote{display:none!important}
 }
 @media(max-width:360px){.field-chat-contact-row{grid-template-columns:40px minmax(0,1fr) 32px;gap:6px}.field-chat-avatar{height:40px;width:40px}}
 @media(prefers-reduced-motion:reduce){.field-chat-screen *{animation:none!important;transition:none!important}}
+
+/* [hidden] sempre prevalece no estado do cronômetro, mesmo sobre o layout em grid. */
+body .checkpoint-curtain .checkpoint-condition[hidden],body .checkpoint-curtain .checkpoint-after-timer[hidden],body .checkpoint-curtain .checkpoint-submit[hidden],body .checkpoint-curtain .checkpoint-footnote[hidden]{display:none!important}
