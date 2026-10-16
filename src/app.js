@@ -777,10 +777,13 @@ function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,type:'roun
 function demoActivityRow(r){return '<button type="button" class="rp-activity-row" data-action="'+(r.type==='round'?'session-detail':'demo-inspection-detail')+'" data-id="'+esc(r.id)+'"><span><strong>'+esc(r.name)+'</strong><small>'+esc(r.site)+' · '+fmt(r.at)+'</small></span><span>'+esc(r.status==='completed'?'Concluída':r.status==='active'?'Em andamento':r.status)+' ↗</span></button>';}
 function demoHistoryView(){const all=demoActivityRows(),offset=demoHistoryPage*20;return pageTitle('Histórico de rondas e vistorias','Registros locais da demonstração. O histórico permanente está na central autenticada.')+'<section>'+all.slice(offset,offset+20).map(demoActivityRow).join('')+'</section><div class="row">'+(offset?btn('Anterior','demo-history-prev','small'):'')+'<span>'+Math.min(offset+1,all.length)+'–'+Math.min(offset+20,all.length)+' de '+all.length+'</span>'+(offset+20<all.length?btn('Próxima','demo-history-next','small'):'')+'</div>';}
 function notificationsView(){
- const pending=demoEventNotifications().filter(n=>!n.seenAt),groups=[
- ['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['deviation','Desvios e GPS']
+ const pending=demoEventNotifications().filter(n=>!n.seenAt),priority=[
+ ['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['deviation','Desvios'],['gps_issue','Falhas de GPS']
  ];
- const kind=n=>n.kind==='deviation'||n.kind==='gps_issue'?'deviation':n.kind||'alert';
+ const kind=n=>n.kind||'alert';
+ const known=new Set(priority.map(([key])=>key)),groups=[
+  ...priority,...[...new Set(pending.map(kind))].filter(key=>!known.has(key)).map(key=>[key,key])
+ ];
  const columns=groups.map(([key,label])=>{
   const rows=pending.filter(n=>kind(n)===key).sort((a,b)=>b.at-a.at);
   return '<section class="rp-event-column" data-column-kind="'+key+'"><header><h2>'+label+'</h2><b class="rp-column-count">'+rows.length+'</b></header><div class="rp-event-column-body">'+(rows.map(n=>notificationRow(n)).join('')||'<p class="rp-column-empty">Nenhuma pendência</p>')+'</div></section>';
