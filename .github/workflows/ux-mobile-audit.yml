@@ -9,6 +9,7 @@ on:
       - 'src/media-capture.js'
       - 'assets/field-compact.css'
       - 'assets/mobile-critical-20261016.css'
+      - 'assets/maxvel-atelier-20261016.css'
       - 'src/app.js'
       - 'src/map.js'
       - 'assets/horizon-operacional.css'
