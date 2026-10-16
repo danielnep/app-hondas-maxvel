@@ -5,7 +5,7 @@
  * Coordenadas ausentes nunca são inventadas nem usadas para calcular distâncias.
  */
 export function pointOf(item) {
- if (!item) return null;
+ if (!item||item.lat==null&&item.latitude==null||item.lng==null&&item.longitude==null) return null;
  const lat=Number(item.lat??item.latitude),lng=Number(item.lng??item.longitude);
  return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180?{lat,lng}:null;
 }
