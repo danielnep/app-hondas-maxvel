@@ -35,9 +35,17 @@ export function project(point,route,width=680,height=360){
 export function fallbackSVG(route,session,position,showRoute=true,showPosition=true,viewport=null){
  const width=Math.max(300,Math.round(Number(viewport?.width)||680)),height=Math.max(280,Math.round(Number(viewport?.height)||360));
  const street=`M -15 ${Math.round(height*.258)}H${width+15} M -15 ${Math.round(height*.789)}H${width+15} M ${Math.round(width*.238)} -10V${height+10} M ${Math.round(width*.669)} -10V${height+10}`;
- const path=routeWaypoints(route).map(x=>{const p=project(x,route,width,height);return `${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ');
- const visual=pointsOf(route).slice(0,-1),pos=project(position??route.base,route,width,height);
- const routeOverlay=showRoute?`<polyline points="${path}" fill="none" stroke="#0C0D0F" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#55C9F5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=project(p,route,width,height),done=i>0&&(route.inspectionMode?!!p.completedAt:!!session?.checkpoints[i-1]?.completedAt),active=i>0&&(route.inspectionMode?session?.currentId===p.id:session?.index===i-1);return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#55C9F5" fill-opacity=".10"/><circle r="17" fill="${done?'#357B68':active?'#55C9F5':'#43484C'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}`:'';
+ const projectHere=p=>{
+  const q=project(p,route,width,height);
+  if(!viewport||!route.inspectionMode)return q;
+  const b=routeBounds(route),span=Math.max(.001,b.maxLat-b.minLat);
+  const top=Math.min(135,Math.round(height*.25)),bottom=Math.min(245,Math.round(height*.39));
+  return {...q,y:height-bottom-(p.lat-b.minLat)/span*Math.max(30,height-top-bottom)};
+ };
+
+ const path=routeWaypoints(route).map(x=>{const p=projectHere(x);return `${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ');
+ const visual=pointsOf(route).slice(0,-1),pos=projectHere(position??route.base);
+ const routeOverlay=showRoute?`<polyline points="${path}" fill="none" stroke="#0C0D0F" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${path}" fill="none" stroke="#55C9F5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="12 7"/>${visual.map((p,i)=>{const q=projectHere(p),done=i>0&&(route.inspectionMode?!!p.completedAt:!!session?.checkpoints[i-1]?.completedAt),active=i>0&&(route.inspectionMode?session?.currentId===p.id:session?.index===i-1);return `<g transform="translate(${q.x} ${q.y})"><circle r="25" fill="#55C9F5" fill-opacity=".10"/><circle r="17" fill="${done?'#357B68':active?'#55C9F5':'#43484C'}" stroke="white" stroke-width="3"/><text y="5" text-anchor="middle" font-size="14" font-weight="750" fill="white">${i?done?'✓':i:'B'}</text></g>`}).join('')}`:'';
  return `<svg class="fallback-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Esquema alternativo da rota, sem cartografia de ruas" preserveAspectRatio="xMidYMid meet"><defs><pattern id="roadgrid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M 56 0 L 0 0 0 56" fill="none" stroke="#323639" stroke-width="1"/></pattern></defs><rect width="${width}" height="${height}" fill="#17191B"/><rect width="${width}" height="${height}" fill="url(#roadgrid)"/><path d="${street}" stroke="#313538" stroke-width="22"/><path d="M -15 93H695 M -15 284H695 M 162 -10V370 M 455 -10V370" stroke="#656B70" stroke-width="1" stroke-dasharray="7 6"/>${routeOverlay}${showPosition?`<g transform="translate(${pos.x} ${pos.y})"><circle r="25" fill="#55C9F5" fill-opacity=".15"/><circle r="11" fill="#55C9F5" stroke="white" stroke-width="5"/></g>`:''}<rect x="15" y="13" rx="0" width="241" height="31" fill="#1D2023"/><text x="26" y="33" font-family="system-ui" font-size="12" fill="#F3F4F6">Modo alternativo · mapa esquemático</text></svg>`;
 }
 const latlng=p=>[p.lat,p.lng];
@@ -98,7 +106,7 @@ export class PatrolMap{
   this.refreshGeometry();
   if(this.standbyClean&&!this.session){m.setView(latlng(this.position),16,{animate:false});return;}
   const b=routeBounds(this.route),span=Math.max(b.maxLat-b.minLat,b.maxLng-b.minLng);
-  if(span<.0006)m.setView(latlng(this.route.base),18);else m.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[44,44],maxZoom:18,animate:false});
+  if(span<.0006)m.setView(latlng(this.route.base),18);else m.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{...this.mapViewPadding(),animate:false});
   setTimeout(()=>{
    if(this.destroyed||this.instance!==m)return;
    m.invalidateSize(false);
@@ -219,8 +227,13 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
   this.pointMarkers[index+1]?.openPopup();
   return true;
  }
+ mapViewPadding(){
+  if(!this.route.inspectionMode)return {padding:[45,45],maxZoom:18};
+  const h=this.container?.clientHeight||500;
+  return {paddingTopLeft:[24,Math.min(135,Math.round(h*.25))],paddingBottomRight:[24,Math.min(245,Math.round(h*.39))],maxZoom:17};
+ }
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
- fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds(this.route.inspectionMode&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
+ fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds(this.route.inspectionMode&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],this.mapViewPadding());}
  invalidate(){this.instance?.invalidateSize(false)}
  destroy(){
   this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();
