@@ -1,7 +1,7 @@
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
 import {createInspectionRouteMap} from './inspection-route-map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf} from './inspection-queue.js';
-import {inspectionCockpit} from './inspection-cockpit.js';
+import {inspectionCockpit,inspectionStops} from './inspection-cockpit.js';
 import {PatrolMap} from './map.js';
 import {createRoundWizard} from './wizard.js';
 import {withExampleRondas} from './demo-scenarios.js';
@@ -374,6 +374,24 @@ function demoInspectionQueue(){
  const items=demoInspectionRequests().map(item=>({...item,kind:'vistoria'}));
  return queueInspections(items,demoInspectorLocation||DEMO_ROUTE.base,DEMO_ROUTE.base);
 }
+function refreshDemoInspectionQueue(){
+ if(user?.role!=='vistoriador'||view!=='vistoriador'||!document.querySelector('#demo-inspection-map'))return;
+ const queue=demoInspectionQueue(),sig=inspectionSignature(queue);
+ if(sig===demoInspectorQueueSignature)return;
+ demoInspectorQueueSignature=sig;
+ if(document.querySelector('#demo-inspection-form')){
+  const list=document.querySelector('[data-inspection-stops]');
+  if(list)list.innerHTML=inspectionStops(queue);
+  const label=document.querySelector('[data-inspection-queue-count]');
+  if(label)label.textContent=String(queue.length);
+  demoInspectorMap?.setRoute(inspectionRoute(queue,DEMO_ROUTE.base),{mode:'simulation',currentId:queue[0]?.id,checkpoints:[],deviations:[]});
+  notify('Circuito atualizado com novas solicitações do COI.');
+ }else render();
+}
+window.addEventListener('storage',e=>{
+ if(e.key==='maxvel-demo-inspection-requests-v1')refreshDemoInspectionQueue();
+});
+setInterval(()=>{if(!document.hidden)refreshDemoInspectionQueue()},5000);
 function startDemoInspectorGps(){
  if(demoInspectorWatch!=null||!navigator.geolocation)return;
  demoInspectorWatch=navigator.geolocation.watchPosition(pos=>{
