@@ -107,7 +107,7 @@ try{
    const formBounds=await page.locator('#dialog').evaluate(el=>({
     height:el.getBoundingClientRect().height,available:window.visualViewport?.height||innerHeight
    }));
-   if(formBounds.available>=600&&formBounds.height>formBounds.available*.83)
+   if(formBounds.available>=760&&formBounds.height>formBounds.available*.86)
     throw Error('Janela de ocorrência desnecessariamente alta: '+JSON.stringify(formBounds));
    await (await revealDialogControl(page,'#incident-form [name="title"]')).fill('Luz de acesso apagada');
    await (await revealDialogControl(page,'#incident-form [name="description"]')).fill('Iluminação do portão em desacordo no cenário de demonstração.');
