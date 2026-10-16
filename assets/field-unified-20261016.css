@@ -60,3 +60,35 @@
  .rp-field-wizard-stage{padding:8px 13px 14px}
  .rp-field-wizard-controls{padding:12px}
 }
+
+/* Mesmo cockpit cartográfico para a ronda autenticada, sem trocar a marca Maxvel. */
+#central-root .rp-guard-workspace .rp-inspection-cockpit{position:relative;width:100%;max-width:none;
+ min-height:540px;border:1px solid #554650;border-radius:17px;overflow:hidden;background:#151217}
+#central-root .rp-guard-workspace .rp-inspection-map-panel{width:100%;height:calc(100dvh - 112px);min-height:540px;max-height:990px;
+ display:flex;flex-direction:column;position:relative;background:#151217;overflow:hidden}
+#central-root .rp-guard-workspace .rp-inspection-map-panel .patrol-map-heading{min-height:65px;flex:none;
+ display:flex;align-items:center;justify-content:space-between;padding:12px 15px;background:#1c191e;border-bottom:1px solid #55434d;position:relative;z-index:3}
+#central-root .rp-guard-workspace .rp-inspection-map-panel .patrol-map-canvas{flex:1;position:relative;min-height:370px;width:100%;overflow:hidden}
+#central-root .rp-guard-workspace #guard-real-map{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0;background:#121215}
+#central-root .rp-guard-workspace .rp-inspection-map-panel .patrol-map-footer{padding:10px 15px;min-height:39px;z-index:3;background:#1d1a1e;border-top:1px solid #55434d;display:flex;justify-content:space-between;font-size:11px;gap:8px}
+#central-root .rp-guard-workspace .rp-inspection-map-hud{position:absolute;z-index:4;top:12px;left:12px;right:12px;
+ background:#19151ce8;border:1px solid #564853;border-radius:12px;padding:12px;display:grid;gap:4px;pointer-events:none}
+#central-root .rp-guard-workspace .rp-inspection-map-hud .rp-inspection-hud-label{font-size:11px;font-weight:800;color:#ed8da5}
+#central-root .rp-guard-workspace .rp-inspection-commands{position:absolute;z-index:6;left:12px;right:12px;bottom:52px;
+ max-width:690px;margin:auto;background:#251d26ef;border:1px solid #66525e;border-radius:15px;box-shadow:0 15px 40px #0009;
+ max-height:45%;overflow-y:auto;backdrop-filter:blur(12px)}
+#central-root .rp-guard-workspace .rp-inspection-commands .patrol-action-heading{padding:11px 14px;border-bottom:1px solid #57434d}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-commands-body{padding:12px 14px}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-main-action{min-height:48px;border:1px solid #bf4463;
+ background:#ae2b4e;border-radius:10px;color:#fff;padding:10px;font-weight:750;width:100%}
+#central-root .rp-guard-workspace .rp-inspection-map-fit{background:#362a33;color:#fff;border:1px solid #6b5662;border-radius:10px;min-height:40px}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming{border-top:1px solid #55434d}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming summary{padding:12px 14px;cursor:pointer}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming ol{margin:0;padding:0 13px 13px;list-style:none;display:grid;gap:8px}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-stop{display:flex;gap:9px;padding:10px;border:1px solid #554650;border-radius:10px}
+@media(max-width:700px){
+ #central-root .rp-guard-workspace .rp-inspection-cockpit{margin:0 -12px;width:calc(100% + 24px);border:0;border-radius:0}
+ #central-root .rp-guard-workspace .rp-inspection-map-panel{height:calc(100dvh - 85px);min-height:475px}
+ #central-root .rp-guard-workspace .rp-inspection-commands{left:9px;right:9px;bottom:49px;max-height:48%}
+ #central-root .rp-guard-workspace .rp-inspection-map-hud{top:10px;left:10px;right:10px}
+}
