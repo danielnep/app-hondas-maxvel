@@ -8,7 +8,7 @@ test('a vistoria é uma sequência de cinco etapas e mantém retorno, avanço e 
  assert.equal(stepCount(),5);
  assert.equal(INSPECTION_STAGES.length,4);
  assert.ok(inspectionWizardHtml(d).includes('Portões de acesso'));
- assert.match(inspectionWizardHtml({...d,step:4}),/Concluir vistoria e enviar ao COE/);
+ assert.match(inspectionWizardHtml({...d,step:4}),/Concluir vistoria e enviar ao COI/);
  assert.match(inspectionWizardHtml({...d,step:2}),/Voltar/);
  const form={querySelector:s=>s==='[data-stage="acessos"]'?{}:s==='[name="location-acessos"]'?{value:'Portaria 2'}:s==='[name="issue-acessos"]'?{checked:true}:s==='[name="issue-note-acessos"]'?{value:'Fechadura danificada'}:null,
  querySelectorAll:s=>s==='input[name="check-acessos"]:checked'?[{value:'Portões de acesso'}]:[]};
