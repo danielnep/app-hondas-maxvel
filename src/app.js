@@ -15,6 +15,7 @@ import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
 import {createLocationEntryGate} from './location-entry-gate.js';
 import {createFieldTorch} from './field-torch.js';
+import {createMediaCapture} from './media-capture.js';
 import {mobileGuideFor} from './mobile-role-guides.js';
 import {summarizePatrol} from './field-intelligence.js';
 import {DEMO_WATCHERS,DEMO_ROUTES,demoSchedule,watcherById,routeById,routeForProgram,routeForWatcher,scheduleStatus,nextProgram,programsForWatcher,createPrograms,cancelProgram,scheduleTotals,filterPrograms,pagePrograms,rescheduleProgram} from './scheduling.js';
@@ -607,11 +608,14 @@ let demoCoiTab='rondas';
 function demoCoiView(){
  const local=sessionList().slice().sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
  const insp=demoInspectionRecords();
+ const requested=demoInspectionTasks().filter(x=>x.status!=='done');
  const total=local.filter(x=>x.status==='active').length;
  const current=local[0],summary=[
   ['Rondas em curso',total],['Vistorias registradas',insp.length],
   ['Histórico de rondas',local.length],['Avisos do cenário',recentNotification().filter(x=>!x.seenAt).length]
  ];
+ const inspectionRequest='<section class="rp-demo-coi-dispatch"><div><span class="eyebrow">COI · VISTORIAS</span><strong>Solicitações de vistoria</strong><small>'+requested.length+' pendente(s) · rotina ou verificação sob demanda</small></div><button type="button" data-action="demo-inspection-request">+ Solicitar vistoria</button></section>'+
+ (requested.length?'<div class="rp-demo-coi-assignments">'+requested.slice(0,4).map(x=>'<div><strong>'+esc(x.place)+'</strong><span>'+esc(x.type==='routine'?'Rotina':'Solicitação do COI')+' · '+esc(x.status==='arrived'?'No local':'Aguardando atendimento')+'</span></div>').join('')+'</div>':'');
  const tabs='<div class="coi-demo-tabs" role="group" aria-label="Acompanhamento por atividade"><button type="button" data-action="demo-coi-tab" data-tab="rondas" aria-pressed="'+(demoCoiTab==='rondas')+'" class="'+(demoCoiTab==='rondas'?'selected':'')+'">Rondas</button><button type="button" data-action="demo-coi-tab" data-tab="vistorias" aria-pressed="'+(demoCoiTab==='vistorias')+'" class="'+(demoCoiTab==='vistorias'?'selected':'')+'">Vistorias</button></div>';
  const roundRows=local.length?local.slice(0,10).map((record,i)=>{
   const live=record.status==='active';
@@ -696,6 +700,13 @@ function watcherChooser(){
 
 
 const DEMO_INSPECTIONS='maxvel-demo-inspections-v1';
+const DEMO_INSPECTION_TASKS='maxvel-demo-inspection-assignments-v2';
+const demoInspectionCapture=createMediaCapture({notify});
+let demoProof={photo:null,selfie:null};
+function demoInspectionTasks(){try{const rows=JSON.parse(localStorage.getItem(DEMO_INSPECTION_TASKS)||'[]');return Array.isArray(rows)?rows:[]}catch{return []}}
+function saveDemoInspectionTasks(rows){localStorage.setItem(DEMO_INSPECTION_TASKS,JSON.stringify(rows.slice(0,100)))}
+function currentDemoInspection(){return demoInspectionTasks().find(x=>x.status!=='done')||null}
+
 function demoInspectionRecords(){try{const r=JSON.parse(localStorage.getItem(DEMO_INSPECTIONS)||'[]');return Array.isArray(r)?r.slice(0,100):[]}catch{return []}}
 // Contatos totalmente sintéticos: apenas demonstração local, jamais cadastrados no servidor.
 const DEMO_CLIENTS=[
