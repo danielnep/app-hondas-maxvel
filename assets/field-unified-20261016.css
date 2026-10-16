@@ -92,3 +92,13 @@
  #central-root .rp-guard-workspace .rp-inspection-commands{left:9px;right:9px;bottom:49px;max-height:48%}
  #central-root .rp-guard-workspace .rp-inspection-map-hud{top:10px;left:10px;right:10px}
 }
+
+/* Menus de cabeçalho sempre acima do mapa e das camadas do cockpit. */
+.dashboard .shell-main .app-header{position:relative!important;z-index:5000!important;isolation:isolate!important;overflow:visible!important}
+.dashboard .shell-main .app-header .header-actions,
+.dashboard .shell-main .app-header .rp-header-tools,
+.dashboard .shell-main .app-header .rp-header-popover{position:relative!important;z-index:5010!important;overflow:visible!important}
+.dashboard .shell-main .app-header .rp-popover-list{
+ position:absolute!important;z-index:5020!important;top:calc(100% + 7px)!important;
+ box-shadow:0 18px 42px #000b!important;pointer-events:auto!important
+}
