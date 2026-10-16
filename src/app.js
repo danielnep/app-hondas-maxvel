@@ -367,9 +367,10 @@ function installViewportViews(){
 }
 
 const demoRouteMap=createInspectionRouteMap({onPosition:fix=>{const state=document.querySelector('[data-demo-inspection-gps]');if(state)state.textContent='GPS ativo · precisão '+Math.round(fix.accuracy)+' m · '+fix.samples+' posições registradas';},onError:notify});
+const demoCoiRouteMap=createInspectionRouteMap({onError:notify});
 let demoMapControls=null;
-function render(){demoRouteMap.destroy();demoMapControls=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
- if(presentation&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
+function render(){demoRouteMap.destroy();demoCoiRouteMap.destroy();demoMapControls=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+ if(presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
  }
@@ -441,6 +442,10 @@ function attachMaps(){
    }
   if(view==='minha-ronda'){const selectedRoute=session?.route??routeForWatcher(selectedWatcherId);registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
   if(view==='vistoriador'){const host=document.querySelector('#demo-inspection-map');if(host)demoMapControls=demoRouteMap.mount(host,demoPendingInspection(),{demo:true});}
+  if(view==='overview'&&['operador','coi'].includes(user?.role)){
+   const host=document.querySelector('#demo-coi-inspection-map'),focus=demoInspectionRequests().find(r=>!r.completedAt)||demoInspectionRequests()[0];
+   if(host&&focus)demoCoiRouteMap.mount(host,focus,{demo:true});
+  }
  }
 }
 function entryScreen(){
@@ -611,12 +616,19 @@ let demoCoiTab='rondas';
 function demoCoiView(){
  const local=sessionList().slice().sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
  const insp=demoInspectionRecords();
+ const assignments=demoInspectionRequests().slice().sort((a,b)=>b.createdAt-a.createdAt);
+ const activeInspection=assignments.find(a=>!a.completedAt),focusInspection=activeInspection||assignments[0]||null;
+ const futureInspections=assignments.filter(a=>!a.completedAt&&a.id!==activeInspection?.id);
+ const completedInspections=assignments.filter(a=>!!a.completedAt);
  const total=local.filter(x=>x.status==='active').length;
  const current=local[0],summary=[
   ['Rondas em curso',total],['Vistorias registradas',insp.length],
   ['Histórico de rondas',local.length],['Avisos do cenário',recentNotification().filter(x=>!x.seenAt).length]
  ];
  const tabs='<div class="coi-demo-tabs" role="group" aria-label="Acompanhamento por atividade"><button type="button" data-action="demo-coi-tab" data-tab="rondas" aria-pressed="'+(demoCoiTab==='rondas')+'" class="'+(demoCoiTab==='rondas'?'selected':'')+'">Rondas</button><button type="button" data-action="demo-coi-tab" data-tab="vistorias" aria-pressed="'+(demoCoiTab==='vistorias')+'" class="'+(demoCoiTab==='vistorias'?'selected':'')+'">Vistorias</button></div>';
+ const coiFocusHtml='<section class="coi-demo-inspection-current"><div class="coi-demo-inspection-head"><div><span>VISTORIAS · '+(activeInspection?'EM ATENDIMENTO':'ÚLTIMA REGISTRADA')+'</span><h2>'+(focusInspection?esc(focusInspection.address):'Nenhuma vistoria solicitada')+'</h2><p>'+(focusInspection?esc(focusInspection.instructions):'Solicite uma vistoria para abrir o mapa de acompanhamento.')+'</p></div>'+(futureInspections.length?'<button type="button" data-action="demo-inspection-upcoming">Próximas · '+futureInspections.length+'</button>':'')+'</div>'+
+ (focusInspection?'<div id="demo-coi-inspection-map" class="rp-coi-route-map" role="img" aria-label="Mapa da vistoria em foco"></div><small>'+(focusInspection.illustrative?'Coordenadas ilustrativas do cenário. ':'')+'Traçado pontilhado representa pontos previstos, não navegação pelas ruas. GPS depende do aparelho do profissional.</small>':'')+
+ '<div class="coi-inspection-list"><strong>Vistorias concluídas · '+completedInspections.length+'</strong>'+(completedInspections.length?completedInspections.slice(0,4).map(a=>'<article><b>'+esc(a.address)+'</b><small> · '+fmt(a.completedAt)+'</small></article>').join(''):'<p class="empty">Nenhum laudo concluído.</p>')+'</div></section>';
  const roundRows=local.length?local.slice(0,10).map((record,i)=>{
   const live=record.status==='active';
   return '<article class="coi-demo-record"><header><div><span>'+esc(record.route?.name||'Ronda')+'</span><h3>'+esc(record.name||'Vigia')+'</h3></div><b>'+(live?'Em andamento':record.status==='completed'?'Concluída':'Histórico')+'</b></header><div class="coi-demo-facts"><span>Início <strong>'+fmt(record.startedAt)+'</strong></span><span>Pontos <strong>'+Number(record.checkpoints?.filter(x=>x.completedAt).length||0)+'</strong></span></div>'+
@@ -627,7 +639,7 @@ function demoCoiView(){
  return '<section class="coi-demo-page">'+pageTitle('COI · Central de acompanhamento','Acompanhe a equipe e responda às ocorrências. Os dados abaixo são somente uma demonstração.')+
  '<div class="rp-demo-coi-command"><div><span class="eyebrow">CENTRAL DE OPERAÇÕES</span><strong>Vistorias sob demanda e de rotina</strong><small>Designe local, instruções e profissional no mesmo fluxo.</small></div><button type="button" class="button primary" data-action="demo-request-inspection">'+ic('clipboard')+' Solicitar vistoria</button></div>'+
  '<div class="coi-demo-topline"><span class="ops-live-dot"></span><strong>Atendimento e acompanhamento</strong><small>Posto demonstrativo · '+esc(DEMO_WATCHERS[0].unit)+'</small><span>Dados locais</span></div>'+
- '<div class="coi-demo-metrics">'+summary.map(([k,v])=>'<div><b>'+v+'</b><span>'+k+'</span></div>').join('')+'</div>'+
+ '<div class="coi-demo-metrics">'+summary.map(([k,v])=>'<div><b>'+v+'</b><span>'+k+'</span></div>').join('')+'</div>'+coiFocusHtml+
  (current?'<section class="coi-demo-record"><h2>Última ronda</h2><h3>'+esc(current.name)+' · '+esc(current.route.name)+'</h3><p>'+fmt(current.startedAt)+'</p><div id="ops-map" class="map-container large coi-demo-map"></div><button type="button" data-action="session-detail" data-id="'+esc(current.id)+'">Abrir percurso e detalhes</button><small>Mapa ilustrativo da demonstração.</small></section>':'<p class="empty">Nenhuma ronda registrada.</p>')+
  '<section class="coi-demo-content"><header class="toolbar"><h2>Rondas e vistorias recentes</h2><button type="button" data-view="historico-operacional">Ver histórico de rondas</button></header>'+demoActivityRows().slice(0,5).map(demoActivityRow).join('')+'</section>'+
  '<p class="map-caption">Demonstração: os registros não representam uma operação de vigilância ao vivo. Para o COI autenticado, acesse a Central Operacional.</p></section>';
@@ -709,9 +721,9 @@ function saveDemoInspectionRequests(rows){localStorage.setItem(DEMO_INSPECTION_R
 function demoInspectionRecords(){try{const r=JSON.parse(localStorage.getItem(DEMO_INSPECTIONS)||'[]');return Array.isArray(r)?r.slice(0,100):[]}catch{return []}}
 // Contatos totalmente sintéticos: apenas demonstração local, jamais cadastrados no servidor.
 const DEMO_CLIENTS=[
- {name:'Maxvel Logística',unit:DEMO_WATCHERS[0].unit,contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'maxvel@exemplo.invalid'},
- {name:'Condomínio Reserva da Serra',unit:'Posto Condomínio (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'condominio@exemplo.invalid'},
- {name:'Metalúrgica Xavier',unit:'Posto Metalúrgica (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'metalurgica@exemplo.invalid'}
+ {name:'Maxvel Logística',demoPoint:{lat:-20.14135,lng:-44.88605},unit:DEMO_WATCHERS[0].unit,contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'maxvel@exemplo.invalid'},
+ {name:'Condomínio Reserva da Serra',demoPoint:{lat:-20.14245,lng:-44.88285},unit:'Posto Condomínio (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'condominio@exemplo.invalid'},
+ {name:'Metalúrgica Xavier',demoPoint:{lat:-20.13885,lng:-44.88135},unit:'Posto Metalúrgica (fictício)',contact:'Responsável demonstrativo',phone:'(31) 90000-0000',email:'metalurgica@exemplo.invalid'}
 ];
 let selectedDemoClientIndex=0;
 function demoClientView(){
@@ -766,7 +778,7 @@ let demoTreatmentTab='incident';
 function demoEventNotifications(){return [...recentNotification().filter(n=>n.kind!=='message'),...localCommunications().map(n=>({...n,id:'field:'+n.id,session:{id:'field',name:n.name,route:{name:n.route}}}))].sort((a,b)=>b.at-a.at);}
 function demoHeaderButtons(){
  const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length,extra=all.slice(5).filter(n=>!n.readAt).length;
- return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Nenhum evento recebido.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details>' + (['ronda','vistoriador'].includes(user?.role)?'<button type="button" data-view="chat-interno" class="rp-blue-button rp-direct-chat" aria-label="Abrir chat interno">'+ic('message')+'<span>Mensagens</span></button>':'<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Chat interno</strong><p>Conversa com o COI neste cenário.</p><button type="button" class="button" data-view="chat-interno">Abrir chat interno</button></div></details>')+'</div>';
+ return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Nenhum evento recebido.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details>' + (['ronda','vistoriador'].includes(user?.role)?'<button type="button" data-view="chat-interno" class="rp-blue-button rp-direct-chat" aria-label="Abrir chat interno">'+ic('message')+'<span>Mensagens</span></button>':'<button type="button" data-view="chat-interno" class="rp-blue-button rp-direct-chat" aria-label="Abrir chat interno">'+ic('message')+'<span>Mensagens</span></button>')+'</div>';
 }
 let demoChatScreen='thread';
 function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows:[]}catch{return []}}
@@ -1319,6 +1331,14 @@ if(act==='profile-menu'){profileDialog();return;}
   }
   modal.close();render();notify('Tratamento de ocorrência salvo neste navegador.');return;
  }
+ if(act==='demo-inspection-upcoming'){
+  const waiting=demoInspectionRequests().filter(r=>!r.completedAt),focus=waiting[0];
+  const upcoming=waiting.filter(r=>r.id!==focus?.id);
+  showDialog('<h2>Próximas vistorias</h2><p>Solicitações aguardando atendimento.</p>'+
+   (upcoming.length?'<div class="coi-inspection-list">'+upcoming.map(r=>'<article><strong>'+esc(r.address)+'</strong><p>'+esc(r.instructions)+'</p><small>'+fmt(r.createdAt)+'</small></article>').join('')+'</div>':'<p class="empty">Sem próximas vistorias.</p>')+
+   '<div class="modal-actions"><button type="button" class="button" data-action="close-dialog">Fechar</button></div>',true);
+  return;
+ }
  if(act==='demo-history-prev'){demoHistoryPage=Math.max(0,demoHistoryPage-1);render();return;}
  if(act==='demo-history-next'){demoHistoryPage++;render();return;}
  if(act==='demo-request-inspection'){
@@ -1451,9 +1471,10 @@ modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormDat
   try{
    const parsePoint=value=>{const p=String(value||'').trim().split(/[,;\s]+/).map(Number);return p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=90&&Math.abs(p[1])<=180?{lat:p[0],lng:p[1]}:null;};
    const coords=String(f.get('coords')||'').trim(),lines=String(f.get('routePoints')||'').trim();
-   const destination=coords?parsePoint(coords):null,routePoints=lines?lines.split(/\r?\n/).filter(Boolean).map(parsePoint):[];
+   const demoSite=!String(f.get('address')||'').trim()&&known?DEMO_CLIENTS.find(c=>c.name===known):null;
+   const destination=coords?parsePoint(coords):demoSite?.demoPoint??null,routePoints=lines?lines.split(/\r?\n/).filter(Boolean).map(parsePoint):[];
    if((coords&&!destination)||routePoints.length>12||routePoints.some(p=>!p)){notify('Confira as coordenadas. Informe até 12 pontos no formato latitude, longitude.');return;}
-   saveDemoInspectionRequests([{id:crypto.randomUUID(),address,instructions,routine:f.get('kind')==='routine',worker:String(f.get('worker')),latitude:destination?.lat??null,longitude:destination?.lng??null,routePoints,createdAt:Date.now(),completedAt:null},...demoInspectionRequests()]);
+   saveDemoInspectionRequests([{id:crypto.randomUUID(),address,instructions,routine:f.get('kind')==='routine',worker:String(f.get('worker')),latitude:destination?.lat??null,longitude:destination?.lng??null,routePoints,illustrative:!!demoSite&&!coords,createdAt:Date.now(),completedAt:null},...demoInspectionRequests()]);
   }catch{notify('Não foi possível salvar a solicitação.');return;}
   modal.close();render();notify('Solicitação salva. Abra o perfil Vistoriador para recebê-la.');return;
  }
