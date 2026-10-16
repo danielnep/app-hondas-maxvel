@@ -199,6 +199,8 @@
 .rp-inspector-destination p,.rp-inspector-empty-copy p{font-size:13px;line-height:1.5;margin:0;color:#c3c3cb}
 .rp-inspector-destination small{color:#aeb0ba}
 .rp-inspector-destination a{padding:10px 0;color:#f5b4c0;font-weight:700}
+.rp-inspector-start{padding:12px 16px!important;margin-top:8px!important;min-height:46px!important;border-radius:11px!important;border:1px solid #ff5c70!important;background:#922139!important;color:#fff!important;font-weight:800!important;cursor:pointer}
+.rp-inspector-arrived{display:block;color:#acd9c0!important;font-weight:700!important}
 .rp-inspector-form,.rp-inspector-history{
  display:grid;gap:14px;padding:22px;background:#1c1c21;
  border:1px solid #42424a;border-radius:17px;
