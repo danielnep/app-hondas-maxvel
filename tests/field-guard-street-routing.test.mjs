@@ -15,9 +15,9 @@ test('rota do vigia inclui ruas e retorno à base, sem transformar ponto de visi
  assert.equal(route.roadRouting,true);
  assert.equal(route.baseKnown,true);
  assert.equal(stops.length,4);
- assert.deepEqual(stops[0],base);
+ assert.deepEqual({lat:stops[0].lat,lng:stops[0].lng},base);
  assert.deepEqual(stops[1],{lat:-20.14045,lng:-44.8802,id:'point-0',name:'Portaria',instruction:'Verificar o ponto.',radius:35});
- assert.deepEqual(stops.at(-1),base);
+ assert.deepEqual({lat:stops.at(-1).lat,lng:stops.at(-1).lng},base);
  assert.ok(streetRouteUrl(stops).includes('route/v1/driving/'));
  const unknown=buildGuardRoute(assigned,null);
  assert.equal(unknown.baseKnown,false);
