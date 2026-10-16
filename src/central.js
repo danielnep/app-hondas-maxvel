@@ -38,8 +38,18 @@ async function api(path,{method='GET',data,headers={},raw}={}){
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
-const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId}={})=>{
- if(eventId){await openEvent(eventId,'notifications');return;}
+const ops=createOpsCenterUI({api,flash,onUpdate:syncOperational,openNotice:async({page:nextPage,eventId,notification}={})=>{
+ if(eventId){
+  try{await openEvent(eventId,'notifications');return;}
+  catch(error){
+   if(!['ronda','vistoriador'].includes(account?.role)||!notification)throw error;
+   const n=notification,d=document.createElement('dialog');d.id='rp-field-notification-dialog';d.className='rp-record-dialog rp-notification-dialog';
+   const clean=x=>escape(String(x||''));
+   d.innerHTML='<div class="eyebrow">COMUNICAÇÃO DO COI</div><h2>'+clean(n.title)+'</h2><p>'+clean(n.body)+'</p><p class="muted">'+clean(n.origin_name||'Central operacional')+' · '+fmt(n.created_at)+'</p><p class="muted">Consulta ao registro recebido. Sem permissão de alteração da tratativa.</p><button type="button" class="primary" data-field-notification-close>Fechar</button>';
+   document.querySelector('#rp-field-notification-dialog')?.remove();
+   document.body.append(d);d.addEventListener('close',()=>d.remove(),{once:true});d.showModal();return;
+  }
+ }
  if(nextPage){await releaseTreatment();selected=null;page=nextPage;render();}
 }});
 const routeBoard=createRouteBoard({api,getContext:()=>({users,rounds,events,routes,account}),redraw:async(loadRemote=false)=>loadRemote?await load():render(),notify:flash});
@@ -718,6 +728,7 @@ document.addEventListener('click',async e=>{
    else if(inspectionMap.track())target.textContent='Pausar GPS';
    return;
   }
+  if(target.hasAttribute('data-field-notification-close')){document.querySelector('#rp-field-notification-dialog')?.close();return;}
   if(target.hasAttribute('data-close-event')){await releaseTreatment();selected=null;page=detailOrigin;render();return;}
   if(await calls.click(target))return;
   if(await chat.click(target))return;
