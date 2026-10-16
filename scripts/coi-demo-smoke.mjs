@@ -13,7 +13,7 @@ try{
  browser=await chromium.launch({headless:true,...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--no-sandbox']});
  for(const width of [320,390,1366]){
   const context=await browser.newContext({viewport:{width,height:width===320?600:900},permissions:['geolocation'],geolocation:{latitude:-20.14,longitude:-44.88}}),page=await context.newPage(),errors=[];
-  page.on('pageerror',e=>errors.push(e.message));
+  page.on('pageerror',e=>errors.push(e.stack||e.message));
   await page.addInitScript(()=>{
    localStorage.setItem('horizon-maxvel-tour-v2','seen');
    localStorage.setItem('horizon-maxvel-localizacao-ciencia-v1',JSON.stringify({version:'2026-10-11',accepted:true,at:Date.now()}));
@@ -93,6 +93,7 @@ try{
   await page.locator('#demo-inspection-request [name="instructions"]').fill('Vistoria programada na entrada principal e no setor técnico.');
   await page.locator('#demo-inspection-request [type="submit"]').click();
   await page.locator('[data-action="sim-role-picker"]').first().evaluate(el=>el.click());
+  await page.locator('#toast.toast-visible').waitFor({state:'hidden'});
   await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
   await page.locator('#demo-inspection-map').waitFor();
   if(await page.locator('#ops-map.rp-inspection-map').count())throw Error('Mapa da ronda reaproveitado pelo vistoriador');
