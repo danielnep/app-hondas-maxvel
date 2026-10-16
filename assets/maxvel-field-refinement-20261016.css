@@ -236,3 +236,20 @@
  width:100%!important;min-height:40px!important;margin-top:8px!important;
  color:#f4e7ed!important;background:#33272f!important;
  border-radius:10px!important;border:1px solid #674456!important}
+
+/* Cartografia aberta com acabamento dark aplicado localmente aos tiles reais. */
+.rp-inspection-map .leaflet-tile,
+.rp-plan-map .leaflet-tile{
+ filter:grayscale(1) invert(.91) hue-rotate(180deg) brightness(.58) contrast(1.16)!important
+}
+.rp-inspection-map .leaflet-control-zoom a,
+.rp-plan-map .leaflet-control-zoom a{
+ background:#272329!important;color:#fff!important;border-color:#49404b!important
+}
+.rp-inspection-map .leaflet-control-attribution,
+.rp-plan-map .leaflet-control-attribution{
+ background:#17151acc!important;color:#d6ccd2!important;font-size:9px!important
+}
+.rp-inspection-map .leaflet-control-attribution a,
+.rp-plan-map .leaflet-control-attribution a{color:#f2b2c2!important}
+.dashboard .rp-chat-native .field-chat-threadbar [data-action="demo-chat-list"]{display:none!important}
