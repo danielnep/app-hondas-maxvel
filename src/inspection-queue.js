@@ -22,7 +22,7 @@ export function queueInspections(items=[],currentPosition=null,basePosition=null
  const active=pending.filter(x=>x.started_at||x.startedAt).sort(byAge);
  const unstarted=pending.filter(x=>!x.started_at&&!x.startedAt).sort(byAge);
  const result=[...active];
- let origin=pointOf(currentPosition)||pointOf(active.at(-1))||pointOf(basePosition);
+ let origin=active.length?pointOf(active.at(-1))||pointOf(currentPosition)||pointOf(basePosition):pointOf(currentPosition)||pointOf(basePosition);
  while(unstarted.length){
   let best=0,closest=Infinity;
   for(let i=0;i<unstarted.length;i++){
