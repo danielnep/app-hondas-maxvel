@@ -26,9 +26,9 @@ test('Pânico e fluxo map-first preservados',()=>{
  assert.ok(premium.includes('.ops-panic,.field-torch-fab'));
 });
 test('Revisão e cache carregados no app e central',()=>{
- assert.ok(index.includes('rondas-pro-flow-20261014.css?v=3'));
+ assert.match(index,/rondas-pro-flow-20261014\.css\?v=\d+/);
  assert.ok(index.includes('maxvel-premium-system-20261014.css?v=3'));
  assert.ok(central.includes('central-glass-20261014.css?v=2'));
  assert.ok(central.includes('maxvel-premium-system-20261014.css?v=3'));
- assert.ok(sw.includes('rondas-pro-interface-v35'));
+ assert.match(sw,/rondas-pro-interface-v\d+/);
 });

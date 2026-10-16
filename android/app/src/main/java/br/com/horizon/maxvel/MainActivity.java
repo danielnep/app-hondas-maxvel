@@ -3,6 +3,9 @@ package br.com.horizon.maxvel;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
@@ -20,6 +23,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.webkit.WebViewAssetLoader;
+import org.json.JSONObject;
 
 /** Web UI compartilhada com a versão de demonstração, com acesso nativo controlado.
  * Tracking começa a partir de uma ação visível durante a ronda, não ao instalar/abrir o app.
@@ -30,6 +34,7 @@ public class MainActivity extends Activity {
     private static final int LOCATION_REQUEST=88;
     private static final int MEDIA_PICKER_REQUEST=101;
     private static final int CAMERA_PERMISSION_REQUEST=102;
+    private static final int TORCH_PERMISSION_REQUEST=103;
     private PermissionRequest pendingCameraRequest;
     private ValueCallback<Uri[]> pendingMediaChooser;
     private WebView webView;
@@ -37,6 +42,9 @@ public class MainActivity extends Activity {
     private GeolocationPermissions.Callback geoCallback;
     private String geoOrigin;
     private boolean pendingServiceStart=false;
+    private String torchCameraId=null;
+    private String pendingTorchRequestId=null;
+    private boolean torchEnabled=false;
 
     private boolean hasLocation(){return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED ||checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED;}
 
@@ -121,6 +129,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void stopTracking(){runOnUiThread(()->MainActivity.this.stopTracking());}
         @JavascriptInterface public String getLocationsSince(long at){return trace.after(at);}
         @JavascriptInterface public boolean isTrackingActive(){return getSharedPreferences("tracking",MODE_PRIVATE).getBoolean("active",false);}
+        // Nunca solicitar permissão ou ligar o flash ao abrir o app. A interface
+        // chama este método somente após um toque no botão de lanterna.
+        @JavascriptInterface public void setTorchEnabled(boolean enabled,String requestId){
+            if(requestId==null||!requestId.matches("[a-zA-Z0-9:-]{1,64}"))return;
+            runOnUiThread(()->setNativeTorch(enabled,requestId));
+        }
     }
 
     @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){
@@ -130,6 +144,13 @@ public class MainActivity extends Activity {
                 pendingCameraRequest.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
             else pendingCameraRequest.deny();
             pendingCameraRequest=null;
+        }
+        if(code==TORCH_PERMISSION_REQUEST&&pendingTorchRequestId!=null){
+            String id=pendingTorchRequestId;
+            pendingTorchRequestId=null;
+            if(checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)
+                setNativeTorch(true,id);
+            else sendTorchResult(id,false,"camera-permission");
         }
         if(code==LOCATION_REQUEST){
             boolean allowed=hasLocation();
@@ -144,6 +165,69 @@ public class MainActivity extends Activity {
             pendingMediaChooser=null;
         }
     }
+    /** Seleciona somente câmera traseira que realmente possua flash. */
+    private String findTorchCamera() throws CameraAccessException {
+        CameraManager manager=(CameraManager)getSystemService(CAMERA_SERVICE);
+        if(manager==null)return null;
+        for(String id:manager.getCameraIdList()){
+            CameraCharacteristics traits=manager.getCameraCharacteristics(id);
+            Boolean hasFlash=traits.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+            Integer facing=traits.get(CameraCharacteristics.LENS_FACING);
+            if(Boolean.TRUE.equals(hasFlash)&&facing!=null&&facing==CameraCharacteristics.LENS_FACING_BACK)
+                return id;
+        }
+        return null;
+    }
+
+    private void sendTorchResult(String id,boolean enabled,String error){
+        if(webView==null)return;
+        try{
+            JSONObject result=new JSONObject();
+            result.put("requestId",id);
+            result.put("enabled",enabled);
+            if(error!=null)result.put("error",error);
+            webView.evaluateJavascript(
+                "window.dispatchEvent(new CustomEvent('rondas-native-torch-result',{detail:"+result.toString()+"}))",null);
+        }catch(Exception ignored){}
+    }
+
+    private void setNativeTorch(boolean enabled,String requestId){
+        // Apagar cancela uma solicitação de permissão que ainda não foi concluída.
+        if(!enabled)pendingTorchRequestId=null;
+        if(enabled&&!getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)){
+            sendTorchResult(requestId,false,"torch-unavailable");return;
+        }
+        if(enabled&&checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){
+            pendingTorchRequestId=requestId;
+            requestPermissions(new String[]{Manifest.permission.CAMERA},TORCH_PERMISSION_REQUEST);
+            return;
+        }
+        try{
+            CameraManager manager=(CameraManager)getSystemService(CAMERA_SERVICE);
+            if(manager==null)throw new IllegalStateException("CameraManager indisponível");
+            if(enabled&&torchCameraId==null)torchCameraId=findTorchCamera();
+            if(enabled&&torchCameraId==null){sendTorchResult(requestId,false,"torch-unavailable");return;}
+            if(torchCameraId!=null)manager.setTorchMode(torchCameraId,enabled);
+            torchEnabled=enabled;
+            sendTorchResult(requestId,enabled,null);
+        }catch(CameraAccessException e){
+            torchEnabled=false;
+            String kind=(e.getReason()==CameraAccessException.CAMERA_IN_USE||
+                e.getReason()==CameraAccessException.MAX_CAMERAS_IN_USE)?"camera-busy":"torch-unavailable";
+            sendTorchResult(requestId,false,kind);
+        }catch(SecurityException e){
+            torchEnabled=false;sendTorchResult(requestId,false,"camera-permission");
+        }catch(Exception e){
+            torchEnabled=false;sendTorchResult(requestId,false,"torch-unavailable");
+        }
+    }
+
+    @Override protected void onPause(){
+        // A tela de permissão pode pausar a Activity temporariamente.
+        // Não descartar a solicitação pendente; ela será resolvida no callback.
+        if(torchEnabled)setNativeTorch(false,"");
+        super.onPause();
+    }
     @Override public void onBackPressed(){if(webView.canGoBack())webView.goBack();else super.onBackPressed();}
-    @Override protected void onDestroy(){if(webView!=null){webView.destroy();}if(trace!=null)trace.close();super.onDestroy();}
+    @Override protected void onDestroy(){if(torchEnabled)setNativeTorch(false,"");if(webView!=null){webView.destroy();}if(trace!=null)trace.close();super.onDestroy();}
 }

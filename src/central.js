@@ -8,6 +8,7 @@ import {openConclusionDialog} from './conclusion-dialog.js';
 import {createOpsCenterUI} from './ops-center-ui.js';
 import {createCoiMonitor} from './coi-monitor.js';
 import {createMediaCapture,evidenceButtons} from './media-capture.js';
+import {createFieldTorch} from './field-torch.js';
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
@@ -26,6 +27,7 @@ const activity=createActivityHistoryUI({api,flash,openEvent:async id=>{await ope
 let latestActivity='';
 const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
+const torch=createFieldTorch({notify:flash});
 const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[];
 async function api(path,{method='GET',data,headers={},raw}={}){
  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
@@ -577,7 +579,7 @@ function inspectionView(){
 function render(){
  for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
  routeBoard.resetMaps();resetOperationalMap();coi.reset();
- if(!account){loginView();return}
+ if(!account){torch.stop();loginView();return}
  roleTag.textContent=roles[account.role]||account.role;
  const required=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[page];
  if(review()&&required&&!ops.allowed(required)){page='notifications';selected=null;}
@@ -592,6 +594,9 @@ function render(){
  root.innerHTML='<button type="button" class="rp-central-menu-button" data-central-menu aria-expanded="false" aria-controls="central-navigation">☰ Menu '+pendingDot('total',ops.summary().total)+'</button><div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+
   (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
+ // A lanterna acompanha as ações de campo e é desligada nas áreas administrativas.
+ root.dataset.torchRole=(['ronda','vistoriador'].includes(account.role)&&['dashboard','send','dispatches'].includes(page))?account.role:'';
+ torch.decorate();
  const headerActions=document.querySelector('.top-actions');
  if(headerActions){headerActions.querySelector('[data-operational-header]')?.remove();const holder=document.createElement('div');holder.dataset.operationalHeader='';holder.className='rp-header-tools';holder.innerHTML='<div class="ops-bell-bar">'+ops.badge()+'</div><div data-chat-badge>'+chat.badge()+'</div>';headerActions.prepend(holder);}
  const eventDialog=document.querySelector('#central-event-dialog');if(eventDialog){eventDialog.addEventListener('cancel',async e=>{e.preventDefault();try{await releaseTreatment();selected=null;page=detailOrigin;render()}catch(error){flash(error.message)}});eventDialog.showModal();}
