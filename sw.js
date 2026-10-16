@@ -1,8 +1,8 @@
 /* Cache da interface para a demonstração Web/PWA. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v38';
-const CORE=['./assets/field-compact.css','./assets/events-chat-history.css','./src/internal-chat-ui.js','./src/internal-chat-calls.js','./src/activity-history-ui.js','./assets/uiux-refinement.css',
+const CACHE='rondas-pro-interface-v39';
+const CORE=['./assets/mobile-critical-20261016.css','./assets/field-compact.css','./assets/events-chat-history.css','./src/internal-chat-ui.js','./src/internal-chat-calls.js','./src/activity-history-ui.js','./assets/uiux-refinement.css',
  './','./index.html','./manifest.webmanifest',
  './assets/ronda-pro.css','./assets/maxvel-premium-system-20261014.css','./assets/rondas-pro-flow-20261014.css','./assets/maxvel-visual-2026.css','./assets/field-entry-v2.css','./assets/evidence-direct.css','./assets/demo-roles.css','./assets/ronda-pro-upgrade.css','./assets/soft-polish.css',
  './assets/maxvel-logo.webp',
