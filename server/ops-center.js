@@ -31,6 +31,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  if(!fields.includes('completed_at'))db.exec('ALTER TABLE dispatches ADD COLUMN completed_at INTEGER');
  if(!fields.includes('completion_note'))db.exec("ALTER TABLE dispatches ADD COLUMN completion_note TEXT NOT NULL DEFAULT ''");
  if(!fields.includes('route_points'))db.exec("ALTER TABLE dispatches ADD COLUMN route_points TEXT NOT NULL DEFAULT '[]'");
+  if(!fields.includes('arrived_at'))db.exec('ALTER TABLE dispatches ADD COLUMN arrived_at INTEGER');
  const clients=new Map();
  const announce=userId=>{
   for(const res of clients.get(userId)||[])try{res.write('event: change\ndata: {}\n\n')}catch{}
@@ -78,8 +79,9 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  }
  function availability(){
   const busy=new Set(recentRounds().filter(r=>r.status==='em_andamento').map(r=>r.userId));
+  const inspecting=new Set(db.prepare("SELECT worker_id FROM dispatches WHERE kind='vistoria' AND completed_at IS NULL AND started_at IS NOT NULL").all().map(x=>x.worker_id));
   const workers=db.prepare("SELECT u.id,u.name,u.role,u.site,u.active,p.last_seen,p.lat,p.lng,p.accuracy,p.fix_at FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role IN ('ronda','vistoriador') ORDER BY u.name").all();
-  return workers.map(w=>({...w,status:!w.active?'Fora de serviço':busy.has(w.id)?'Em ronda':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço',
+  return workers.map(w=>({...w,status:!w.active?'Fora de serviço':busy.has(w.id)?'Em ronda':w.role==='vistoriador'&&inspecting.has(w.id)?'Em vistoria':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço',
    position:w.fix_at&&now()-w.fix_at<120000&&Number.isFinite(w.lat)&&Number.isFinite(w.lng)?{lat:w.lat,lng:w.lng,accuracy:w.accuracy,at:w.fix_at}:null}));
  }
  async function handle(req,res,user,p,method){
@@ -181,7 +183,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    if(!worker||!worker.active||hasDestination&&!dest||address.length<5||address.length>350||reason.length<10||reason.length>1000){
     resp(res,422,{error:'Escolha um colaborador disponível, destino autorizado e justificativa com 10 ou mais caracteres'});return true;
    }
-   if(!availability().some(w=>w.id===worker.id&&w.status==='Disponível')){
+   if(!availability().some(w=>w.id===worker.id&&(w.status==='Disponível'||kind==='vistoria'&&w.status==='Em vistoria'))){
     resp(res,409,{error:'Profissional indisponível. Atualize a presença.'});return true;
    }
    const latitude=dest?dest.latitude:data.latitude==null?null:Number(data.latitude),
@@ -210,6 +212,27 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const result=db.prepare('UPDATE dispatches SET acknowledged_at=COALESCE(acknowledged_at,?) WHERE id=? AND worker_id=?').run(now(),ack[1],user.id);
    if(result.changes)audit(user,'dispatch.acknowledge',ack[1]);
    resp(res,result.changes?200:404,result.changes?{ok:true}:{error:'Atribuição não encontrada'});return true;
+  }
+  const arrival=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/arrive$/i);
+  if(arrival&&method==='POST'){
+   if(user.role!=='vistoriador'){resp(res,403,{error:'Chegada reservada ao vistoriador'});return true;}
+   const row=db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria'").get(arrival[1],user.id);
+   if(!row){resp(res,404,{error:'Vistoria não encontrada'});return true;}
+   if(!row.started_at||row.completed_at){resp(res,409,{error:'Inicie o deslocamento antes de confirmar chegada'});return true;}
+   if(row.arrived_at){resp(res,200,{ok:true,already:true,at:row.arrived_at});return true;}
+   const payload=serialize((await body(req,2000)).toString())||{},point=payload.position;
+   const valid=point&&Number.isFinite(point.lat)&&Number.isFinite(point.lng)&&Math.abs(point.lat)<=90&&Math.abs(point.lng)<=180;
+   const at=now(),eventId=id();
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    db.prepare('UPDATE dispatches SET arrived_at=? WHERE id=? AND arrived_at IS NULL').run(at,row.id);
+    db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
+     .run(eventId,user.id,'checkpoint',row.id,at,at,valid?point.lat:null,valid?point.lng:null,valid?point.accuracy??null:null,null,'Chegada à vistoria: '+row.address,JSON.stringify({dispatchId:row.id,stage:'inspection_arrival',gpsRecorded:!!valid}),row.site||user.site||'');
+    db.exec('COMMIT');
+   }catch(error){db.exec('ROLLBACK');throw error}
+   audit(user,'inspection.arrive',row.id);
+   notify(REVIEW_ROLES,'dispatch','Vistoriador chegou ao destino',user.name+' · '+row.address,{eventId,dispatchId:row.id,except:[user.id]});
+   resp(res,200,{ok:true,at,gpsRecorded:!!valid});return true;
   }
   const task=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/(start|complete)$/i);
   if(task&&method==='POST'){
