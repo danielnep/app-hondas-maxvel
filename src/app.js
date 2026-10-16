@@ -377,7 +377,8 @@ function render(){if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBl
  if(routeMap&&routeAction&&window.innerWidth<=900)workspace.insertBefore(routeAction,routeMap);
  attachMaps();ops.decorate();
  const dash=document.querySelector('.dashboard');
- if(dash)dash.dataset.torchRole=user?.role||'';
+ // Lanterna aparece somente na área operacional, nunca em histórico ou chat.
+ if(dash)dash.dataset.torchRole=(user?.role==='ronda'&&view==='minha-ronda')||(user?.role==='vistoriador'&&view==='vistoriador')?user.role:'';
  torch.decorate();
  // Ajuda da cartografia pertence ao nível do cockpit: atrás do painel o ícone
  // fica visível mas não recebe clique, mesmo com z-index elevado no filho.
