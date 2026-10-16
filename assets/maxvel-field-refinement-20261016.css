@@ -1,6 +1,11 @@
 /* Rondas Pro · tratamento visual Maxvel · Campo/COI 16.10.2026
    Sem superfícies azul-marinho. Marca Maxvel e estados operacionais preservados. */
 :root{
+ --mx-accent:#e95772;
+ --mx-accent-hover:#f2778d;
+ --mx-accent-wash:#2e222a;
+ --mx-action-fill:linear-gradient(115deg,#a92341,#ce3857);
+ --mx-action-hover:linear-gradient(115deg,#bc2b49,#dd4966);
  --mx-field-base:#0c0b0e;
  --mx-field-surface:#19181c;
  --mx-field-elevated:#242126;
@@ -193,3 +198,41 @@
 @media(prefers-reduced-motion:reduce){
  #central-root .ops-worker-row{transition:none!important;transform:none!important}
 }
+
+/* Popover compacto: lista operacional em vez de cards gigantes e azulados. */
+.dashboard .app-header .rp-popover-list{
+ width:min(400px,calc(100vw - 22px))!important;
+ padding:11px!important;max-height:min(76dvh,580px)!important;
+ overflow-y:auto!important;border-radius:15px!important;
+ background:#1a171c!important;box-shadow:0 18px 45px #000b!important;
+}
+.dashboard .app-header .rp-popover-list>strong{display:block;font-size:14px;line-height:1.4;
+ font-weight:800;color:#f8f5f7;padding:5px 7px 9px}
+.dashboard .app-header .rp-popover-list .rp-notice-row{
+ display:grid!important;grid-template-columns:33px minmax(0,1fr) 17px!important;
+ gap:9px!important;align-items:center!important;
+ width:100%!important;min-width:0!important;height:auto!important;min-height:80px!important;
+ padding:10px 11px!important;margin:3px 0!important;
+ border:1px solid #40383f!important;border-radius:11px!important;
+ background:#252126!important;text-align:left!important
+}
+.dashboard .app-header .rp-popover-list .rp-notice-row .event-icon{
+ width:32px!important;height:32px!important;min-width:32px!important;display:grid!important;place-items:center!important;
+ border-radius:9px!important;background:#382831!important;color:#f5cad5!important}
+.dashboard .app-header .rp-popover-list .rp-notice-copy{min-width:0!important;display:flex!important;flex-direction:column;gap:3px!important}
+.dashboard .app-header .rp-popover-list .rp-notice-copy strong{
+ font-size:13px!important;line-height:1.26!important;color:#f8f4f7!important;
+ display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+ overflow:hidden!important;overflow-wrap:anywhere!important}
+.dashboard .app-header .rp-popover-list .rp-notice-copy small{
+ font-size:11px!important;line-height:1.25!important;
+ white-space:normal!important;color:#c1b8c1!important;overflow:hidden!important}
+.dashboard .app-header .rp-popover-list .rp-notice-state{font-size:10px!important;
+ color:#e3c4ce!important;line-height:1.35!important}
+.dashboard .app-header .rp-popover-list .rp-notice-open{width:17px!important;height:17px!important;
+ justify-self:end;align-self:center;color:#e3d5dc}
+.dashboard .app-header .rp-popover-list [data-view=notificacoes]{
+ display:flex!important;justify-content:center;align-items:center;
+ width:100%!important;min-height:40px!important;margin-top:8px!important;
+ color:#f4e7ed!important;background:#33272f!important;
+ border-radius:10px!important;border:1px solid #674456!important}
