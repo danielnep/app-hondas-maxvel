@@ -217,7 +217,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
   return true;
  }
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
- fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
+ fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds(this.route.inspectionMode&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
  invalidate(){this.instance?.invalidateSize(false)}
  destroy(){this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();clearTimeout(this.tileFallbackTimer);this.instance?.remove();this.instance=null;this.liveLayer=null;if(this.container)this.container.innerHTML=''}
 }
