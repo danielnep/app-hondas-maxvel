@@ -783,14 +783,20 @@ function notificationsView(){
  const all=demoEventNotifications().filter(n=>!n.seenAt),labels={panic:'Pânicos',incident:'Ocorrências',alert:'Alertas',inspection:'Vistorias',deviation:'Desvios',gps_issue:'Sinal GPS',other:'Outros'};
  const groups=new Map(['panic','incident','alert','inspection','deviation','gps_issue'].map(k=>[k,[]]));
  for(const n of all){const kind=groups.has(n.kind)?n.kind:'other';if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
+ const ordered=[...groups].sort((a,b)=>b[1].length-a[1].length);
  return pageTitle('Eventos','Pendências operacionais em colunas independentes. Ler não equivale a concluir.',btn('Ver histórico '+ic('arrow'),'open-incidents','small'))+
- '<div class="rp-event-columns">'+[...groups].map(([kind,rows])=>'<section class="rp-event-column"><header><h2>'+labels[kind]+'</h2><b class="rp-event-count">'+rows.length+'</b></header>'+(rows.length?rows.map(notificationRow).join(''):'<p class="rp-event-empty">Sem pendências</p>')+'</section>').join('')+'</div>';
+ '<div class="rp-event-columns">'+ordered.map(([kind,rows])=>'<section class="rp-event-column"><header><h2>'+labels[kind]+'</h2><b class="rp-event-count">'+rows.length+'</b></header>'+(rows.length?rows.map(notificationRow).join(''):'<p class="rp-event-empty">Sem pendências</p>')+'</section>').join('')+'</div>';
 }
 
+function archivedResolution(n){
+ const incident=n.incidentId?sessions.flatMap(s=>s.incidents||[]).find(i=>i.id===n.incidentId):null;
+ const last=incident?.history?.at(-1);
+ return {resolution:n.response||last?.note||n.history?.at(-1)?.note||'Conclusão registrada sem observação adicional.',owner:n.respondedBy||last?.assignee||incident?.assignee||n.history?.at(-1)?.actor||''};
+}
 function occurrences(){
  const records=demoEventNotifications().filter(n=>!!n.seenAt).sort((a,b)=>b.seenAt-a.seenAt);
  return pageTitle('Histórico de tratativas','Eventos finalizados. Respostas, responsáveis e registros preservados para consulta.',btn('Ver pendentes '+ic('arrow'),'nav-alerts','small'))+
- '<section class="rp-treatment-archive">'+(records.length?records.map(n=>'<article class="rp-archive-record" data-archive-id="'+esc(n.id)+'"><span>'+esc(n.kind==='panic'?'Pânico':n.kind==='incident'?'Ocorrência':n.kind==='alert'?'Alerta':'Registro')+' · '+fmt(n.at)+'</span><strong>'+esc(n.label||'Evento finalizado')+'</strong><small>'+esc(n.session?.name||'Campo')+' · '+esc(n.session?.route?.name||'Local não informado')+'</small><p>'+esc(n.response||'A providência foi registrada na conclusão.')+'</p><span class="rp-archive-status">'+ic('checkcircle')+' Concluído'+(n.respondedBy?' por '+esc(n.respondedBy):'')+'</span></article>').join(''):'<div class="empty">Nenhum evento finalizado. As pendências ficam em Eventos.</div>')+'</section>';
+ '<section class="rp-treatment-archive">'+(records.length?records.map(n=>'<article class="rp-archive-record" data-archive-id="'+esc(n.id)+'"><span>'+esc(n.kind==='panic'?'Pânico':n.kind==='incident'?'Ocorrência':n.kind==='alert'?'Alerta':'Registro')+' · '+fmt(n.at)+'</span><strong>'+esc(n.label||'Evento finalizado')+'</strong><small>'+esc(n.session?.name||'Campo')+' · '+esc(n.session?.route?.name||'Local não informado')+'</small><p>'+esc(archivedResolution(n).resolution)+'</p><span class="rp-archive-status">'+ic('checkcircle')+' Concluído'+(archivedResolution(n).owner?' por '+esc(archivedResolution(n).owner):'')+'</span></article>').join(''):'<div class="empty">Nenhum evento finalizado. As pendências ficam em Eventos.</div>')+'</section>';
 }
 
 function team(){return pageTitle('Equipe','Vigias e escalas fictícios neste navegador.',helpButton('team','equipes e permissões'))+`<section class="schedule-workspace"><header class="schedule-heading"><div><div class="eyebrow">EFETIVO OPERACIONAL</div><h2>${DEMO_WATCHERS.length} vigias cadastrados</h2><p>Colaboradores fictícios para apresentar operações com múltiplas rondas.</p></div></header><div class="team-list">${DEMO_WATCHERS.map(w=>`<div class="team-row"><span class="avatar">${esc(w.name[0])}</span><div><strong>${esc(w.name)}</strong><small>${esc(w.unit)}</small></div><span>${programsForWatcher(programs,w.id).length} rondas</span></div>`).join('')}</div></section>`}
