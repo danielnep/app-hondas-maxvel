@@ -1,11 +1,12 @@
 # Rondas Pro · Lanterna Android e PWA (15-10-2026)
 
 ## Alcance
-Vigia e Vistoriador, tanto demonstração `/` quanto central autenticada `/central.html`. O botão é exibido somente nessas áreas. Perfil administrativo/COI não recebe esse controle.
+Vigia e Vistoriador, tanto demonstração `/` quanto central autenticada `/central.html`. A lanterna aparece somente nas telas de trabalho em campo. Histórico, chat, relatórios e administração não mantêm a luz ligada. Perfil administrativo/COI não recebe esse controle.
 
 ## Funcionalidade
 - **Navegador/PWA HTTPS:** usa `getUserMedia({video:{facingMode:{exact:'environment'}}})` e `MediaStreamTrack.applyConstraints({advanced:[{torch:true}]})` sobre a câmera traseira. Repetição com `ideal:environment` somente se não for encontrada uma câmera exata. Verifica `getCapabilities().torch` ou `getSettings().torch` antes de afirmar que ligou. Mantém a trilha em vídeo oculto para não suspender indevidamente e libera após desligar.
 - **APK Android:** em vez de depender da WebView expor `torch`, a ponte `AndroidTracking.setTorchEnabled(enabled,requestId)` chama `CameraManager.setTorchMode` sobre câmera traseira com `FLASH_INFO_AVAILABLE`. Pede a permissão de câmera sob demanda. A ponte responde com o evento `rondas-native-torch-result` com `enabled` e `error`.
+- **Um único controlador:** o botão flutuante e o botão dentro da conferência do ponto usam `createFieldTorch`, com estados transmitidos por `subscribe()`. O módulo `checkpoint-curtain.js` não abre uma segunda câmera nem implementa `torch` próprio. Ao fechar a conferência, a lanterna é desligada.
 - **Interface:** estado neutro / ativando / ligado. Não indica ligado antes da confirmação da API. Falhas de permissão, câmera ocupada e suporte ausente deixam o botão desligado.
 - **Ciclo de vida:** desliga ao ocultar a página, sair, trocar de perfil, perder o app nativo para outro aplicativo e destruir a Activity. A desmontagem de componentes mantém a propriedade sobre a lanterna isolada das evidências; nenhuma gravação é realizada pelo botão.
 - **Pânico:** continua no canto inferior direito; lanterna da central autenticada fica acima, com área de toque separada.
@@ -17,7 +18,7 @@ Vigia e Vistoriador, tanto demonstração `/` quanto central autenticada `/centr
 - **Sem flash real no hardware de teste**, a UI informa que o dispositivo/navegador não liberou o controle, sem simular acendimento.
 
 ## Teste e homologação
-- `npm run check && npm test`: inclui testes para estado, confirmação de API, falha de capacidades, troca de perfil e liberação.
+- `npm run check && npm test`: inclui testes para estado, confirmação de API, falha de capacidades, troca de perfil, cancelamento durante permissões, inscrição dos botões e ausência de uma segunda sessão de câmera no ponto.
 - GitHub Actions: validar APK Java 17/Android 35, acessibilidade, UI e simulação Chrome.
 - **Pendente em dispositivo físico:** (1) Chrome PWA HTTPS; (2) APK de teste instalado; (3) autorização/negação e segunda tentativa; (4) ligar/desligar cinco vezes; (5) sair da tela, alternar app e bloquear aparelho; (6) tentar ativar durante uso de câmera; (7) testar com lanternas em aparelhos Android de fabricantes diferentes. Só após os testes físicos declarar lanterna homologada.
 
