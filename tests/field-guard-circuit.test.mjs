@@ -9,8 +9,9 @@ const base={lat:-20.1398,lng:-44.8799,accuracy:10,at:100000};
 test('vigia e vistoriador compartilham o mesmo mapa, sem converter ronda em vistoria',()=>{
  const plan=buildGuardRoute(route,base);
  assert.equal(plan.points.length,2);
- assert.equal(plan.base.lat,base.lat);
+ assert.equal(plan.base.lat,base.lat);assert.equal(plan.roadRouting,true);assert.equal(plan.baseKnown,true);
  assert.equal(plan.points[0].name,'Portão principal');
+ const planWithoutGps=buildGuardRoute(route,null);assert.equal(planWithoutGps.baseKnown,false,'Sem GPS não se pode afirmar que a base é conhecida');
  const ui=guardCockpit({planned:route});
  for(const tool of ['data-field-tool-torch','data-field-tool-panic','data-field-tool-alert','data-field-tool-incident','data-field-tool-chat'])assert.match(ui,new RegExp(tool));
  assert.match(ui,/guard-real-map/);assert.match(ui,/data-guard-start/);
