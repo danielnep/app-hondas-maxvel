@@ -702,7 +702,7 @@ function render(){
     inspectorSignature=inspectionSignature(ordered);
     const route=inspectionRoute(ordered,inspectionPosition());
     inspectionMap=new PatrolMap(host,{route,session:ordered.length?{mode:'real',currentId:ordered[0].id,checkpoints:[],deviations:[]}:null,
-      position:inspectorPosition||inspectorBase||route.base,standbyClean:!ordered.length,interactive:true});
+      position:inspectorPosition||inspectorBase||route.base,positionVerified:!!inspectorPosition,standbyClean:!ordered.length,interactive:true});
     if(ordered.some(d=>d.started_at))startInspectorGps();
    }
  });
