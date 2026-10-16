@@ -35,7 +35,7 @@ export function createCheckpointCurtain(api){
    }).join('')+'</div>'
    :'<p class="rp2-evidence-empty">Nenhuma imagem ou arquivo anexado.</p>';
   const count=root.querySelector('[data-evidence-count]');
-  if(count)count.textContent=evidenceFiles.filter(item=>item.view).length+' de 5 posições fotografadas';
+  if(count)count.textContent=evidenceFiles.filter(item=>item.view).length+' foto(s) do ponto';
  }
  const status=()=>{
   if(!root)return;
@@ -81,7 +81,7 @@ export function createCheckpointCurtain(api){
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
    '<div class="checkpoint-stopwatch" role="timer" aria-live="off"><strong><span data-dwell-seconds>00</span><small> min:seg</small></strong><small data-dwell-message role="status" aria-live="polite">Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
-   '<div class="checkpoint-after-timer"><div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">0 de 5 posições fotografadas</small></div>'+
+   '<div class="checkpoint-after-timer"><div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">0 foto(s) do ponto</small></div>'+
    '<div class="checkpoint-view-grid" role="group" aria-label="Fotos do ponto"><button type="button" class="checkpoint-view-action" data-evidence-kind="point-photo" aria-label="Adicionar foto do ponto"><span aria-hidden="true">▧<b>+</b></span><small>Foto</small></button><button type="button" class="checkpoint-view-action" data-evidence-view="selfie" aria-label="Adicionar selfie"><span aria-hidden="true">▧<b>+</b></span><small>Selfie</small></button></div>'+
    '<label class="checkpoint-photo-direction">Direção da foto<select data-photo-direction>'+EVIDENCE_VIEWS.filter(([v])=>v!=='selfie').map(([v,label])=>'<option value="'+v+'">'+label+'</option>').join('')+'</select></label>'+
    '<p class="checkpoint-evidence-hint" data-evidence-required-hint></p>'+
