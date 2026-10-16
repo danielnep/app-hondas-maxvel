@@ -116,7 +116,7 @@ export function createFieldTorch({
   }finally{if(revision===token){busy=false;paint();}}
  }
  function decorate(){
-  const dash=doc?.querySelector?.('.dashboard');
+  const dash=doc?.querySelector?.('.dashboard')||doc?.querySelector?.('#central-root[data-torch-role]');
   const allowed=dash&&['ronda','vistoriador'].includes(dash.dataset.torchRole||'');
   if(!allowed){if(active()||busy)stop();return;}
   if(!dash.querySelector('[data-field-torch]')){
