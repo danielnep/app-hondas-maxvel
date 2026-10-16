@@ -143,3 +143,34 @@
 #dialog.rp-flow-dialog .check-label{margin:0!important}
 #dialog.rp-flow-dialog .ops-media-fields{margin:0!important}
 @media(max-width:380px){.dashboard .coi-demo-topline>span:last-child{grid-column:2;grid-row:3;justify-self:start}}
+
+
+/* Correção dimensional dos diálogos de registro (15/10/2026).
+   O conteúdo define a altura; o visor define apenas o limite para rolagem.
+   Não modificar guias imersivos, menu lateral, mapa nem a rotina da ronda. */
+#dialog.rp-flow-dialog[open]:not(.guide-dialog):not(.ux06-fullscreen):not(.role-picker-dialog) {
+  height: max-content !important;
+  min-height: 0 !important;
+  max-height: min(calc(100dvh - 24px), calc(var(--dialog-available-height, 100dvh) - 24px)) !important;
+  align-content: start !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+#dialog.rp-flow-dialog[open]:has(.field-composer) {
+  width: min(420px, calc(100vw - 24px)) !important;
+  max-width: min(420px, calc(100vw - 24px)) !important;
+  height: max-content !important;
+  padding: 18px !important;
+}
+#dialog.rp-flow-dialog[open]:has(.field-composer) form {
+  height: max-content !important;
+  min-height: 0 !important;
+  align-content: start !important;
+}
+@media (max-width: 760px) {
+  #dialog.rp-flow-dialog[open]:has(.field-composer) {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    padding: 16px !important;
+  }
+}
