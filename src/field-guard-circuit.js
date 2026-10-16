@@ -27,7 +27,7 @@ export function initialGuardState(route,base,at=Date.now()){
 }
 export function guardCockpit({round=null,planned=null,position=null,gpsStatus='Aguardando sinal GPS'}={}){
  const current=round?.points?.[round.index]||null,total=round?.points?.length||planned?.points?.length||0;
- const d=current&&position?metersBetween(position,current):Infinity;
+ const focus=current||round?.base||null,d=focus&&position?metersBetween(position,focus):Infinity;
  const action=!planned?'<span class="rp-inspection-ready">Aguardando rota atribuída pelo COE</span>':
  !round?'<button type="button" class="rp-inspection-main-action" data-guard-start>Iniciar ronda · sair da base</button>':
  current?round.insideSince==null?'<button type="button" class="rp-inspection-main-action" data-guard-arrive>Estou aqui</button>':
@@ -38,7 +38,7 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  '<section class="patrol-map-panel rp-inspection-map-panel"><header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>'+safe(round?.routeName||planned?.name||'Minha ronda')+'</strong><small>Ronda · '+(round?.index||0)+' de '+total+' pontos</small></div><button type="button" class="rp-inspection-map-fit" data-guard-fit aria-label="Enquadrar percurso">⌖</button></header>'+
  '<div class="patrol-map-canvas rp-inspection-map-canvas"><div class="map-container mini rp-inspector-map" id="guard-real-map" aria-label="Mapa da ronda em operação real"></div>'+
  '<div class="rp-inspection-map-hud"><span class="rp-inspection-hud-label">'+status+'</span><strong>'+safe(current?.name||(!round?'Rota pronta para partida':'Volte à base'))+'</strong><small data-guard-distance>'+
- (Number.isFinite(d)?'Distância ao ponto: '+Math.round(d)+' m':'Aguardando GPS real')+'</small></div></div>'+
+ (Number.isFinite(d)?'Distância '+(current?'ao ponto':'à base')+': '+Math.round(d)+' m':'Aguardando GPS real')+'</small></div></div>'+
  '<div class="patrol-map-footer"><span data-guard-gps>'+safe(gpsStatus)+'</span><span data-guard-road>Traçado viário disponível com internet</span></div></section>'+
  '<section class="patrol-actions rp-inspection-commands" aria-label="Comandos da ronda">'+
  '<div class="rp-field-quicktools"><button type="button" data-field-tool-torch>Lanterna</button><button type="button" class="rp-urgent" data-field-tool-panic>Pânico</button><button type="button" data-field-tool-alert>Alerta</button><button type="button" data-field-tool-incident>Ocorrência</button><button type="button" data-field-tool-chat>Mensagens</button></div>'+
