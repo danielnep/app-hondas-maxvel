@@ -271,6 +271,32 @@ try{
    await page.locator('#dialog .dialog-close[data-action="close-dialog"]').click();
    await state(page,width,height,'08-monitorar-vigia');
 
+   // COI solicita vistoria no lugar cadastrado; o vistoriador atende sem sair
+   // da experiência móvel e retorna ao estado de espera após finalizar.
+   await click(page,'[data-action="demo-inspection-request"]');
+   await page.locator('#demo-request-inspection [name="placeIndex"]').selectOption('0');
+   await page.locator('#demo-request-inspection [name="reason"]').fill('Conferir acessos e condições do local a pedido do COI.');
+   await click(page,'#demo-request-inspection button[type="submit"]');
+   await click(page,'[data-action="sim-role-picker"]');
+   await click(page,'#dialog [data-action="sim-role"][data-role="vistoriador"]');
+   await state(page,width,height,'09-vistoriador-solicitado');
+   if(!await page.locator('.rp-inspector-assignment').count())throw Error('Solicitação do COI não chegou ao vistoriador.');
+   await click(page,'[data-action="demo-inspection-arrive"]');
+   if(!await page.locator('#demo-inspection-form').count())throw Error('Chegada não liberou a conferência.');
+   const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAKuz6ioAAAAASUVORK5CYII=','base64');
+   for(const kind of ['photo','selfie']){
+    const chooserPromise=page.waitForEvent('filechooser');
+    await click(page,'[data-action="demo-inspection-photo"][data-proof="'+kind+'"]');
+    const chooser=await chooserPromise;
+    await chooser.setFiles({name:kind+'.png',mimeType:'image/png',buffer:png});
+    await page.locator('[data-proof="'+kind+'"].is-taken').waitFor({state:'visible'});
+   }
+   await page.locator('#demo-inspection-form [name="allOk"]').check();
+   await click(page,'#demo-inspection-form button[type="submit"]');
+   await state(page,width,height,'10-vistoriador-sem-pendencia');
+   if(!await page.locator('.rp-inspector-empty').count())throw Error('Vistoriador permaneceu em missão já concluída.');
+   if(!await page.locator('.rp-inspector-history-row').count())throw Error('Laudo concluído não entrou no histórico.');
+
    // Administrador: seus indicadores próprios e ferramentas analíticas.
    await click(page,'[data-action="sim-role-picker"]');
    await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
