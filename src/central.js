@@ -785,7 +785,7 @@ document.addEventListener('submit',async e=>{
    const record=await api('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),description:String(d.observation||'Vistoria registrada').trim().slice(0,1000),details:{criteria,dispatchId:d.dispatchId},...await eventTelemetry()}});
    const files=[inspectorSelfie,...inspectorEvidence];let uploaded=0;
    for(const file of files){
-    await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':record.id,'X-Captured-At':String(file.lastModified||Date.now())}});uploaded++;
+    await api('/media',{method:'POST',raw:file,headers:{'Content-Type':file.type,'X-Ronda-Event-Id':record.id,'X-Captured-At':String(file.lastModified||Date.now()),'X-Media-View':file===inspectorSelfie?'selfie':file.type.startsWith('image/')?'front':''}});uploaded++;
    }
    await api('/dispatches/'+d.dispatchId+'/complete',{method:'POST',data:{note:String(d.observation).trim(),position:(await eventTelemetry()).position||null}});
    inspectorSelfie=null;inspectorEvidence=[];flash('Vistoria concluída com '+uploaded+' evidências enviadas.');
