@@ -7,11 +7,11 @@ import {evidenceButtons,createMediaCapture} from './media-capture.js';
 const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const EVIDENCE_VIEWS=[['front','Frente'],['back','Trás'],['left','Esquerda'],['right','Direita'],['selfie','Selfie']];
 export function createCheckpointCurtain(api){
- let key=null,root=null,torchStream=null,torchTrack=null,saving=false,evidenceFiles=[],previewUrls=[];
+ let key=null,root=null,unsubscribeTorch=null,saving=false,evidenceFiles=[],previewUrls=[];
  const releasePreviews=()=>{for(const url of previewUrls)URL.revokeObjectURL(url);previewUrls=[]};
  const mediaCapture=createMediaCapture({notify:api.notify});
- const closeTorch=()=>{torchStream?.getTracks().forEach(t=>t.stop());torchStream=null;torchTrack=null};
- function close(){document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;saving=false;evidenceFiles=[];releasePreviews();mediaCapture.stopAll();closeTorch()}
+ const closeTorch=()=>{unsubscribeTorch?.();unsubscribeTorch=null;api.torch?.stop();};
+ function close(){const wasOpen=!!root;document.body.classList.remove('checkpoint-arrived');root?.remove();root=null;key=null;saving=false;evidenceFiles=[];releasePreviews();mediaCapture.stopAll();if(wasOpen)closeTorch()}
  function paintEvidence(){
   if(!root)return;
   releasePreviews();
@@ -96,7 +96,18 @@ export function createCheckpointCurtain(api){
    '<small class="checkpoint-footnote">Finalize para registrar as condições e evidências do ponto.</small>'+
    '</div>';
   document.body.append(root);root.querySelector('textarea').addEventListener('input',status);root.querySelectorAll('[name="point-state"]').forEach(input=>input.addEventListener('change',status));
-  root.querySelector('[data-curtain-torch]').addEventListener('click',toggleTorch);
+  // Compartilha o controlador da lanterna do cockpit, inclusive no APK nativo.
+  const torchButton=root.querySelector('[data-curtain-torch]');
+  torchButton.addEventListener('click',()=>void api.torch?.toggle());
+  unsubscribeTorch=api.torch?.subscribe(({on,busy})=>{
+   if(!torchButton.isConnected)return;
+   torchButton.setAttribute('aria-pressed',String(on));
+   torchButton.classList.toggle('is-lit',on);
+   torchButton.disabled=busy;
+   torchButton.querySelector('span').textContent=busy?'Ativando…':on?'Apagar lanterna':'Lanterna';
+   torchButton.setAttribute('aria-label',on?'Apagar lanterna':'Acender lanterna');
+  })??null;
+  if(!api.torch){torchButton.disabled=true;torchButton.title='Lanterna indisponível';}
   root.querySelector('[data-curtain-submit]').addEventListener('click',submit);
   root.addEventListener('click',async event=>{
    const button=event.target.closest('[data-evidence-view],[data-evidence-kind],[data-evidence-remove]');
@@ -120,19 +131,6 @@ export function createCheckpointCurtain(api){
    status();
   });
   paintEvidence();status();root.querySelector('.checkpoint-curtain-panel').focus({preventScroll:true});
- }
- async function toggleTorch(){
-  const el=root?.querySelector('[data-curtain-torch]');if(!el)return;
-  if(torchTrack){try{await torchTrack.applyConstraints({advanced:[{torch:false}]})}catch{}closeTorch();el.querySelector('span').textContent='Lanterna';return}
-  try{
-   if(!navigator.mediaDevices?.getUserMedia)throw Error('Indisponível');
-   torchStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-   torchTrack=torchStream.getVideoTracks()[0];
-   const support=torchTrack.getCapabilities?.();
-   if(!support?.torch)throw Error('Sem lanterna controlável no navegador');
-   await torchTrack.applyConstraints({advanced:[{torch:true}]});
-   el.querySelector('span').textContent='Desligar lanterna';
-  }catch(e){closeTorch();api.notify(['NotAllowedError','PermissionDeniedError','SecurityError'].includes(e?.name)?'Autorize a câmera para ligar a lanterna.':'Este navegador ou dispositivo não disponibiliza controle da lanterna.')}
  }
  async function submit(){
   const {session:s,locationFix}=api.get(),p=currentCheckpoint(s),checkpoint=s?.checkpoints[s.index];
@@ -162,6 +160,6 @@ export function createCheckpointCurtain(api){
    api.notify('Ponto não concluído: falha na gravação ou mudança de localização. Tente novamente.');
   }
  }
- document.addEventListener('visibilitychange',()=>{if(document.hidden)closeTorch()});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&root)closeTorch()});
  return {open,close,status};
 }
