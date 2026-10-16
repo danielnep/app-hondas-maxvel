@@ -12,8 +12,8 @@ const waypoints=assignment=>{
  return Array.isArray(points)?points.slice(0,12).map(parsePoint).filter(Boolean):[];
 };
 export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
- let map=null,watch=null,liveLine=null,plannedLink=null,locationMarker=null,history=[],lastSend=0,assignmentId=null,planned=[],pathKey='';
- function destroy(){if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}map?.remove();map=null;liveLine=null;plannedLink=null;locationMarker=null;}
+ let map=null,watch=null,liveLine=null,plannedLink=null,locationMarker=null,history=[],lastSend=0,assignmentId=null,planned=[],pathKey='',epoch=0;
+ function destroy(){epoch++;if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}map?.remove();map=null;liveLine=null;plannedLink=null;locationMarker=null;}
  function routeData(item){
   const destination=item?.latitude!=null&&item?.longitude!=null?parsePoint({lat:item.latitude,lng:item.longitude}):null;
   return [...waypoints(item),...(destination?[destination]:[])];
@@ -27,7 +27,7 @@ export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
  }
  function init(host,item){
   if(!host)return;
-  if(!window.L){void loadLeaflet().then(()=>{if(host.isConnected&&!map)init(host,item)}).catch(()=>{});return;}
+  if(!window.L){const generation=epoch;void loadLeaflet().then(()=>{if(generation===epoch&&host.isConnected&&!map)init(host,item)}).catch(()=>{});return;}
   const startPoint=planned[0]||history.at(-1)||[0,0];
   map=window.L.map(host,{scrollWheelZoom:false}).setView(startPoint,planned.length||history.length?15:2);
   window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19}).addTo(map);
@@ -40,7 +40,7 @@ export function createInspectionRouteMap({onPosition=()=>{},onError=()=>{}}={}){
   const all=[...planned,...history];
   if(all.length>1)map.fitBounds(window.L.latLngBounds(all),{padding:[34,34],maxZoom:16});
   else if(all.length)map.setView(all[0],15);
-  setTimeout(()=>map?.invalidateSize(),120);
+  const attachedMap=map;setTimeout(()=>{if(map===attachedMap&&host.isConnected)attachedMap?.invalidateSize({animate:false});},120);
  }
  function stop(){if(watch!=null){navigator.geolocation?.clearWatch(watch);watch=null;}return true;}
  function start(demo){
