@@ -159,7 +159,9 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  '<label>Tipo de vistoria<select name="inspectionType"><option value="demand">Vistoria pontual</option><option value="routine">Vistoria de rotina</option></select></label>'+
  '<label>Destino cadastrado (opcional)<select name="destinationId"><option value="">Informar outro endereço</option>'+
  destinations.filter(d=>d.active).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.client_name+' · '+d.address)+'</option>').join('')+
- '</select></label><label>Ou digite o endereço completo<input name="address" minlength="5" maxlength="350" autocomplete="street-address" placeholder="Rua, número, bairro, cidade e referência"></label><label>Justificativa e instruções da vistoria<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a inspeção solicitada"></textarea></label>'+
+ '</select></label><label>Ou digite o endereço completo<input name="address" minlength="5" maxlength="350" autocomplete="street-address" placeholder="Rua, número, bairro, cidade e referência"></label>'+
+ '<div class="rp-inspection-route-editor"><div><strong>Trajeto determinado pelo COI</strong><small>Marque o destino no mapa e os pontos intermediários. A sequência aparecerá na tela exclusiva do vistoriador. Sem coordenadas, manteremos somente o endereço.</small></div><div class="rp-route-controls"><button type="button" data-ops-map-mode="destination">Definir destino</button><button type="button" data-ops-map-mode="waypoint">Adicionar passagem</button><button type="button" data-ops-map-clear>Limpar rota</button></div><div id="ops-inspection-plan-map" class="rp-plan-map" role="application" aria-label="Selecionar pontos no mapa"></div><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="routePoints" value="[]"><p class="rp-route-status" data-ops-route-status>Toque no mapa para definir destino.</p></div>'+
+ '<label>Justificativa e instruções da vistoria<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a inspeção solicitada"></textarea></label>'+
  '<div class="ops-dispatch-actions"><button type="button" data-ops-close-inspector>Cancelar</button><button class="primary" type="submit">Enviar vistoriador</button></div></form></dialog></section>'+
  (manager()?'<section class="surface"><h2>Clientes autorizados para vistoria</h2>'+
  '<form id="ops-destination-form" class="stack"><div class="grid">'+
@@ -211,7 +213,38 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    const dialog=document.querySelector('#ops-inspector-modal');if(!dialog)return true;
    dialog.querySelector('[name="workerId"]').value=target.dataset.opsSelectInspector;
    dialog.querySelector('#ops-inspector-name').textContent=target.querySelector('b')?.textContent||'Vistoriador';
-   dialog.showModal();dialog.querySelector('[name="destinationId"]').focus();return true;
+   dialog.showModal();dialog.dataset.routeMode='destination';
+   const mapHost=dialog.querySelector('#ops-inspection-plan-map');
+   if(mapHost&&window.L){
+    if(dialog._inspectionMap)dialog._inspectionMap.remove();
+    const map=window.L.map(mapHost,{scrollWheelZoom:false}).setView([-20.1437,-44.8906],12);
+    dialog._inspectionMap=map;dialog._inspectorPins=[];
+    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19}).addTo(map);
+    map.on('click',e=>{
+     const lat=Number(e.latlng.lat.toFixed(6)),lng=Number(e.latlng.lng.toFixed(6));
+     const status=dialog.querySelector('[data-ops-route-status]');
+     if(dialog.dataset.routeMode==='destination'){
+      dialog.querySelector('[name="latitude"]').value=lat;dialog.querySelector('[name="longitude"]').value=lng;
+      const old=dialog._inspectorPins.find(x=>x.kind==='destination');old?.marker.remove();
+      dialog._inspectorPins=dialog._inspectorPins.filter(x=>x.kind!=='destination');
+      dialog._inspectorPins.push({kind:'destination',marker:window.L.circleMarker([lat,lng],{radius:10,color:'#fff',fillColor:'#e72d4d',fillOpacity:1}).addTo(map).bindTooltip('Destino COI')});
+      if(status)status.textContent='Destino marcado. Adicione passagens se necessário.';
+     }else{
+      const points=JSON.parse(dialog.querySelector('[name="routePoints"]').value);
+      if(points.length>=12){if(status)status.textContent='Limite de 12 passagens atingido.';return;}
+      points.push({lat,lng,label:'Passagem '+(points.length+1)});
+      dialog.querySelector('[name="routePoints"]').value=JSON.stringify(points);
+      dialog._inspectorPins.push({kind:'waypoint',marker:window.L.circleMarker([lat,lng],{radius:7,color:'#fff',fillColor:'#ce475d',fillOpacity:.8}).addTo(map).bindTooltip('Passagem '+points.length)});
+      if(status)status.textContent=points.length+' passagens definidas · destino '+(dialog.querySelector('[name="latitude"]').value?'marcado':'a definir');
+     }
+    });setTimeout(()=>map.invalidateSize(),100);
+   }
+   dialog.querySelector('[name="destinationId"]').focus();return true;
+  }
+  if(target.dataset.opsMapMode){const dialog=document.querySelector('#ops-inspector-modal');if(dialog)dialog.dataset.routeMode=target.dataset.opsMapMode;return true;}
+  if(target.hasAttribute('data-ops-map-clear')){const dialog=document.querySelector('#ops-inspector-modal');if(!dialog)return true;
+   dialog.querySelector('[name="latitude"]').value='';dialog.querySelector('[name="longitude"]').value='';dialog.querySelector('[name="routePoints"]').value='[]';
+   dialog._inspectorPins?.forEach(x=>x.marker.remove());dialog._inspectorPins=[];dialog.querySelector('[data-ops-route-status]').textContent='Rota limpa. Defina o destino no mapa.';return true;
   }
   if(target.hasAttribute('data-ops-close-inspector')){document.querySelector('#ops-inspector-modal')?.close();return true;}
   if(target.dataset.opsSelectWorker){
@@ -270,6 +303,11 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    const data=Object.fromEntries(new FormData(form));
    if(!data.workerId||(!data.destinationId&&!String(data.address||'').trim()))throw Error('Selecione o vistoriador e informe um local cadastrado ou endereço.');
    data.reason=(data.inspectionType==='routine'?'[ROTINA] ':'[PONTUAL] ')+String(data.reason||'').trim();
+   data.routePoints=JSON.parse(data.routePoints||'[]');
+   const selectedDestination=destinations.find(x=>x.id===data.destinationId);
+   if(selectedDestination){if(selectedDestination.latitude!=null&&selectedDestination.longitude!=null){data.latitude=selectedDestination.latitude;data.longitude=selectedDestination.longitude;}else if(data.latitude!==''&&data.longitude!==''){data.destinationId='';data.address=selectedDestination.address;}}
+   else if(data.latitude!==''&&data.longitude!==''){data.latitude=Number(data.latitude);data.longitude=Number(data.longitude);}
+   else{delete data.latitude;delete data.longitude;}
    await api('/dispatches',{method:'POST',data});
    document.querySelector('#ops-inspector-modal')?.close();
    flash('Vistoriador despachado para o local selecionado.');await refresh(current,false);openNotice({page:'dispatches'});return true;
