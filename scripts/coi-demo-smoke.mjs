@@ -100,7 +100,10 @@ try{
   if(await page.locator('#demo-inspection-form').count())throw Error('Laudo não pode aparecer antes da chegada');
   await page.locator('[data-action="demo-inspection-depart"]').click();
   await page.locator('[data-action="demo-inspection-arrive"]').click();
-  if(!await page.locator('#demo-inspection-form [name="localPhoto"][multiple]').count())throw Error('Seleção de múltiplas fotos do local ausente');
+  const dialog=page.locator('#rp-demo-wizard-dialog');
+  if(!await dialog.count())throw Error('Vistoria não abriu o checklist por etapas');
+  for(let stage=0;stage<4;stage++)await dialog.locator('[data-wizard-next]').click();
+  if(!await page.locator('#demo-inspection-form [name="localPhoto"][multiple]').count())throw Error('Etapa final não oferece seleção de múltiplas fotos do local');
   await page.screenshot({path:out+'/vistoriador-'+width+'.png',fullPage:true});
   const file={name:'evidencia.jpg',mimeType:'image/jpeg',buffer:Buffer.from([255,216,255,224,0,16])};
   await page.locator('#demo-inspection-form [name="selfie"]').setInputFiles(file);
