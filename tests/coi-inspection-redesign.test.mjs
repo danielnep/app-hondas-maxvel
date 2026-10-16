@@ -42,6 +42,11 @@ test('vistoriador autenticado exige duas provas e critérios, sem destino não i
  assert.match(central,/data-inspection-role="selfie"/);
  assert.match(central,/!inspectorProof\.photo\|\|!inspectorProof\.selfie/);
  assert.match(central,/ops\.activeInspection\(\)/);
+ assert.match(central,/ops\.currentInspection\(\)/);
+ assert.match(central,/data-ops-start/);
+ assert.match(central,/assignment\?\.started_at\?/);
+ assert.match(ops,/currentInspection:\(\)=>dispatches\.find/);
+ assert.match(ops,/inspectorAssignment\?'inspections':'dispatches'/);
  assert.match(central,/Sem vistoria pendente/);
 });
 test('cabeçalho e popover com posicionamento absoluto, tema grafite carregado nos dois apps',()=>{
