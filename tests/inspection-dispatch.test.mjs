@@ -51,10 +51,14 @@ test('COI cadastra destino, solicita vistoriador e portal isola laudo por client
   assert.equal((await req('/dispatches/'+sent.body.id+'/complete','POST',{note:'Local verificado e documentado com selfie.'},inspector)).status,422);
   assert.equal(await upload('front'),201);
   assert.equal((await req('/dispatches/'+sent.body.id+'/complete','POST',{note:'Local verificado, fotos e laudo entregues ao COI.'},inspector)).status,200);
-  const typed=await req('/dispatches','POST',{kind:'inspection',workerId:worker.id,address:'Rua de Teste, 345, Centro, Divinópolis',reason:'Vistoria extra de rotina solicitada pelo COI.'},admin);
+  const typed=await req('/dispatches','POST',{kind:'inspection',workerId:worker.id,address:'Rua de Teste, 345, Centro, Divinópolis',reason:'Vistoria extra de rotina solicitada pelo COI.',latitude:-20.145,longitude:-44.892,routePoints:[{lat:-20.146,lng:-44.89,label:'Portão lateral'},{lat:-20.1453,lng:-44.891,label:'Entrada técnica'}]},admin);
   assert.equal(typed.status,201,'COI pode informar novo endereço sem cadastro de destino');
   const typedAssignment=(await req('/dispatches','GET',null,inspector)).body.dispatches.find(d=>d.id===typed.body.id);
   assert.equal(typedAssignment.address,'Rua de Teste, 345, Centro, Divinópolis');
+  assert.equal(typedAssignment.latitude,-20.145);
+  assert.deepEqual(JSON.parse(typedAssignment.route_points),[{lat:-20.146,lng:-44.89,label:'Portão lateral'},{lat:-20.1453,lng:-44.891,label:'Entrada técnica'}]);
+  const invalid=await req('/dispatches','POST',{kind:'inspection',workerId:worker.id,address:'Rua Teste, 400',reason:'Vistoria com coordenadas inválidas.',routePoints:[{lat:300,lng:0}]},admin);
+  assert.equal(invalid.status,422,'Coordenadas do trajeto precisam ser validadas pelo servidor');
   const allowed=await req('/events','GET',null,client);
   const blocked=await req('/events','GET',null,other);
   assert.ok(allowed.body.events.some(e=>e.id===event.body.id));
