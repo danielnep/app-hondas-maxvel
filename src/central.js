@@ -102,7 +102,11 @@ function guardPlannedRoute(){return routes.find(r=>r.id===guardRound?.routeId)||
 function guardStopGps(){if(guardWatch!=null){navigator.geolocation?.clearWatch(guardWatch);guardWatch=null;}}
 function guardUpdateFix(fix){
  if(!pointOf(fix)||!Number.isFinite(fix.accuracy)||fix.accuracy>GUARD_RADIUS_METERS)return;
- guardFix=fix;if(guardMap)guardMap.update({position:fix});
+ guardFix=fix;if(guardMap){
+  // Primeiro GPS real define a base visual antes mesmo de iniciar a ronda.
+  if(!guardRound&&!guardMap.route.baseKnown){const planned=guardPlannedRoute();if(planned){const revised=buildGuardRoute(planned,fix);if(revised)guardMap.setRoute(revised,null);}}
+  guardMap.update({position:fix});
+ }
  const info=guardRound?nextGuardState(guardRound,guardFix):null;
  if(info&&guardRound.insideSince!=null&&!info.inside){guardRound=info.state;guardSave();render();}
  const gps=document.querySelector('[data-guard-gps]');if(gps)gps.textContent='GPS ativo · precisão '+Math.round(fix.accuracy)+' m';
