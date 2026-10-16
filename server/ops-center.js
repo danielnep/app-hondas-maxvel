@@ -176,8 +176,10 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const worker=db.prepare('SELECT id,name,site,role,active FROM users WHERE id=? AND role=?').get(clean(data.workerId),role);
    const dest=kind==='vistoria'?db.prepare('SELECT * FROM inspection_destinations WHERE id=? AND active=1').get(clean(data.destinationId)):null;
    const address=dest?.address||clean(data.address),site=dest?.client_name||worker?.site||'';
-   if(!worker||!worker.active||kind==='vistoria'&&!dest||address.length<5||address.length>350||reason.length<10||reason.length>1000){
-    resp(res,422,{error:'Escolha um colaborador disponível, destino autorizado e justificativa com 10 ou mais caracteres'});return true;
+   // Destinos já cadastrados prevalecem; o COI também pode informar um endereço
+   // específico para uma vistoria avulsa, sem criar um cliente fictício.
+   if(!worker||!worker.active||(kind==='vistoria'&&clean(data.destinationId)&&!dest)||address.length<5||address.length>350||reason.length<10||reason.length>1000){
+    resp(res,422,{error:'Selecione um profissional, local cadastrado ou endereço válido, e descreva o motivo (mínimo 10 caracteres)'});return true;
    }
    if(!availability().some(w=>w.id===worker.id&&w.status==='Disponível')){
     resp(res,409,{error:'Profissional indisponível. Atualize a presença.'});return true;
