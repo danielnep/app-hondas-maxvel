@@ -39,6 +39,18 @@ test('COI cadastra destino, solicita vistoriador e portal isola laudo por client
   const sent=await req('/dispatches','POST',{kind:'inspection',workerId:worker.id,destinationId:destination.body.id,reason:'Realizar vistoria de rotina no imóvel protegido.'},admin);
   assert.equal(sent.status,201);
   assert.equal((await req('/dispatches/'+sent.body.id+'/start','POST',{position:{lat:-20.14,lng:-44.89,accuracy:10}},inspector)).status,200);
+  const inProgress=(await req('/availability','GET',null,admin)).body.inspectors.find(w=>w.id===worker.id);
+  assert.equal(inProgress.status,'Em vistoria','profissional já está no campo, mas continua recebendo atribuições');
+  const followup=await req('/dispatches','POST',{kind:'inspection',workerId:worker.id,address:'Rua das Laranjeiras, 180, Centro, Divinópolis',
+    latitude:-20.151,longitude:-44.892,reason:'Verificar local adicional solicitado durante o primeiro atendimento.'},admin);
+  assert.equal(followup.status,201,'COI adiciona segunda vistoria enquanto a primeira está em curso');
+  const queue=(await req('/dispatches','GET',null,inspector)).body.dispatches.filter(d=>d.kind==='vistoria'&&!d.completed_at);
+  assert.ok(queue.some(d=>d.id===sent.body.id)&&queue.some(d=>d.id===followup.body.id));
+  const arrival=await req('/dispatches/'+sent.body.id+'/arrive','POST',{position:{lat:-20.14,lng:-44.89,accuracy:10}},inspector);
+  assert.equal(arrival.status,200,'vistoriador marca chegada após sair da base');
+  const arrived=(await req('/dispatches','GET',null,inspector)).body.dispatches.find(d=>d.id===sent.body.id);
+  assert.ok(arrived.arrived_at&&arrived.started_at<=arrived.arrived_at);
+
   const event=await req('/events','POST',{kind:'inspection',occurredAt:Date.now(),description:'Inspeção completa com registro dos quatro critérios',details:{dispatchId:sent.body.id,criteria:{acessos:true,estrutura:true,equipamentos:true,sinalizacao:true}}},inspector);
   assert.equal(event.status,201);
   const finishWithoutEvidence=await req('/dispatches/'+sent.body.id+'/complete','POST',{note:'Local conferido e documentado com evidências.'},inspector);
