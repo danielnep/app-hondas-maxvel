@@ -146,8 +146,7 @@ try{
      throw Error('Mapa e alertas desktop estão sobrepostos: '+JSON.stringify(layout));
    }
    await tap(page,'[data-view="notificacoes"]:visible');
-   await tap(page,'[data-action="open-incidents"]');
-   await tap(page,'.list-row[data-action="incident-detail"]');
+   await tap(page,'.rp-event-columns [data-action="notification-detail"][data-id="rev3-fixture-notice-v04"]');
    await (await revealDialogControl(page,'#incident-review-form [name="status"]')).selectOption('Em análise');
    // O responsável é derivado do usuário autenticado. Não pode ser editado na UI.
    const assignee=await revealDialogControl(page,'#incident-review-form [name="assignee"]');
@@ -157,7 +156,6 @@ try{
     throw Error('Responsável não corresponde ao perfil administrativo autenticado');
    await (await revealDialogControl(page,'#incident-review-form [name="note"]')).fill('Encaminhado para conferência da iluminação.');
    await tap(page,'[data-action="incident-review"]');
-   await tap(page,'[data-action="nav-alerts"]');
    await tap(page,'[data-view="rondas"]:visible');
    if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Agenda sem múltiplos vigias');
    await capture(page,'schedule',width,height);
