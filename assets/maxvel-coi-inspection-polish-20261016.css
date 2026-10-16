@@ -89,7 +89,7 @@
 }
 /* Eventos: cada natureza ocupa uma coluna e um divisor VERTICAL real. */
 .dashboard .rp-event-columns{
- display:grid!important;grid-template-columns:repeat(5,minmax(170px,1fr))!important;
+ display:grid!important;grid-template-columns:none!important;grid-auto-flow:column!important;grid-auto-columns:minmax(165px,1fr)!important;
  grid-auto-flow:row!important;grid-auto-columns:auto!important;gap:0!important;
  width:100%!important;min-width:0!important;overflow-x:auto!important;
  align-items:stretch!important;border:1px solid #44444c!important;border-radius:15px!important;
@@ -129,7 +129,7 @@
 .rp-history-category h2{display:flex;align-items:center;gap:9px;font-size:15px;margin:0 0 8px}
 .rp-history-category h2 span{font-size:11px;border-radius:20px;padding:2px 6px;background:#36363d}
 @media(max-width:920px){
- .dashboard .rp-event-columns{grid-template-columns:repeat(5,minmax(75vw,1fr))!important;scroll-snap-type:x proximity}
+ .dashboard .rp-event-columns{grid-template-columns:none!important;grid-auto-columns:minmax(75vw,1fr)!important;scroll-snap-type:x proximity}
  .dashboard .rp-event-column{scroll-snap-align:start}
 }
 /* Histórico, central autenticada e monitoramento */
@@ -151,7 +151,7 @@
  background:#8f1830!important;border-color:#fa3e59!important;
 }
 .rp-coi-event-columns{
- display:grid!important;grid-template-columns:repeat(6,minmax(150px,1fr));
+ display:grid!important;grid-template-columns:none!important;grid-auto-flow:column!important;grid-auto-columns:minmax(165px,1fr)!important;
  overflow-x:auto;gap:0;border:1px solid #44444c;border-radius:14px;
  background:#17171c;
 }
@@ -237,7 +237,7 @@
 .rp-inspection-request-dialog :is(select,input,textarea){padding:10px;min-height:43px;width:100%;border-radius:9px;border:1px solid #5a5a62;background:#151519;color:#f6f6f8}
 .rp-inspection-request-dialog textarea{min-height:80px}
 @media(max-width:1060px){
- .rp-coi-event-columns{grid-template-columns:repeat(6,minmax(180px,1fr));scroll-snap-type:x proximity}
+ .rp-coi-event-columns{grid-template-columns:none!important;grid-auto-columns:minmax(180px,1fr)!important;scroll-snap-type:x proximity}
  .rp-coi-event-column{scroll-snap-align:start}
 }
 @media(max-width:680px){
@@ -246,7 +246,7 @@
  .rp-inspector-map{min-height:210px}
  .rp-inspector-destination,.rp-inspector-empty-copy{padding:18px}
  .rp-inspector-form,.rp-inspector-history{padding:16px}
- .rp-coi-event-columns{grid-template-columns:repeat(6,minmax(80vw,1fr))}
+ .rp-coi-event-columns{grid-template-columns:none!important;grid-auto-columns:minmax(80vw,1fr)!important}
  .rp-demo-coi-dispatch{flex-direction:column;align-items:stretch}
 }
 @media(prefers-reduced-motion:reduce){.rp-inspector-screen *, .rp-coi-event-screen *{transition:none!important;animation:none!important}}
