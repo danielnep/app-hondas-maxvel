@@ -150,14 +150,14 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    '<label>Endereço ou ponto específico<input name="address" required minlength="5" maxlength="350" placeholder="Rua, número, local ou referência" autocomplete="street-address"></label>'+
    '<label class="ops-reason">Motivo do despacho <span class="ops-required">Obrigatório</span><textarea name="reason" required minlength="10" maxlength="1000" placeholder="Explique o que ocorreu e o que deve ser verificado"></textarea></label>'+
    '<div class="ops-dispatch-actions"><button type="button" data-ops-close-dispatch>Cancelar</button><button class="primary" type="submit">Registrar despacho e notificar</button></div></form></dialog>'+
-   '<section class="surface ops-inspector-section"><h2>Solicitar Vistoriador</h2><p class="muted">Destinos selecionáveis são cadastrados pela Administração. O profissional não escolhe o cliente.</p>'+
+   '<section class="surface ops-inspector-section"><h2>Solicitar vistoria</h2><p class="muted">Escolha o vistoriador, um local cadastrado ou digite um endereço. A solicitação fica vinculada ao COI e aparece no aplicativo do profissional.</p>'+
  '<div class="ops-worker-list">'+(inspectors.length?inspectors.map(w=>'<button type="button" class="ops-worker-row ops-worker-select" data-ops-select-inspector="'+esc(w.id)+'" '+
- (w.status!=='Disponível'||!destinations.length?'disabled':'')+'><b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.status==='Disponível'?'ready':'off')+'">'+esc(w.status)+'</span><small>Última atividade: '+stamp(w.last_seen)+'</small></button>').join(''):'<p class="empty">Nenhum vistoriador cadastrado.</p>')+'</div>'+
+ (w.status!=='Disponível'?'disabled':'')+'><b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.status==='Disponível'?'ready':'off')+'">'+esc(w.status)+'</span><small>Última atividade: '+stamp(w.last_seen)+'</small></button>').join(''):'<p class="empty">Nenhum vistoriador cadastrado.</p>')+'</div>'+
  '<dialog id="ops-inspector-modal" class="ops-dispatch-modal"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESTINO AUTORIZADO</div><h2>Solicitar Vistoriador</h2><p id="ops-inspector-name" class="muted"></p></div><button type="button" data-ops-close-inspector aria-label="Fechar">✕</button></div>'+
  '<form id="ops-inspector-form" class="ops-dispatch-form"><input type="hidden" name="workerId"><input type="hidden" name="kind" value="inspection">'+
- '<label>Cliente / local cadastrado<select name="destinationId" required><option value="">Selecione</option>'+
+ '<label>Local cadastrado<select name="destinationId"><option value="">Selecionar local ou informar abaixo</option>'+
  destinations.filter(d=>d.active).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.client_name+' · '+d.address)+'</option>').join('')+
- '</select></label><label>Justificativa do despacho<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a inspeção solicitada"></textarea></label>'+
+ '</select></label><label>Outro endereço (quando não cadastrado)<input name="address" maxlength="350" minlength="5" autocomplete="street-address" placeholder="Rua, número, bairro e cidade"></label><label>Informações e objetivo da vistoria<textarea name="reason" minlength="10" maxlength="1000" required placeholder="O que deve ser vistoriado e o motivo da solicitação"></textarea></label>'+
  '<div class="ops-dispatch-actions"><button type="button" data-ops-close-inspector>Cancelar</button><button class="primary" type="submit">Enviar vistoriador</button></div></form></dialog></section>'+
  (manager()?'<section class="surface"><h2>Clientes autorizados para vistoria</h2>'+
  '<form id="ops-destination-form" class="stack"><div class="grid">'+
@@ -266,7 +266,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }
   if(form.id==='ops-inspector-form'){
    const data=Object.fromEntries(new FormData(form));
-   if(!data.workerId||!data.destinationId)throw Error('Selecione profissional e destino autorizado.');
+   if(!data.workerId||!data.destinationId&&String(data.address||'').trim().length<5)throw Error('Selecione um local cadastrado ou informe o endereço completo.');
    await api('/dispatches',{method:'POST',data});
    document.querySelector('#ops-inspector-modal')?.close();
    flash('Vistoriador despachado para o local selecionado.');await refresh(current,false);openNotice({page:'dispatches'});return true;
