@@ -21,7 +21,7 @@ test('COI prioriza pessoas, tratativas, rondas e vistorias em vez de mapa genér
  const monitor=read('src/coi-monitor.js');
  assert.match(central,/function monitorView\(\)\{/);
  assert.match(central,/coi\.render/);
- assert.match(central,/\['treatments','Tratativas'/);
+ assert.match(central,/\['treatments','Histórico concluído'/);
  assert.match(central,/function treatmentsView\(\)/);
  assert.match(monitor,/data-coi-tab="rondas"/);
  assert.match(monitor,/data-coi-tab="vistorias"/);
@@ -31,7 +31,7 @@ test('COI prioriza pessoas, tratativas, rondas e vistorias em vez de mapa genér
 });
 
 test('Vistoriador e Cliente preservam dados reais com organização guiada',()=>{
- assert.match(central,/rp2-inspection-checklist/);
+ assert.match(central,/rp-inspector-photo-grid/);
  assert.match(central,/name="dispatchId"/);
  assert.match(central,/name="observation"/);
  assert.match(central,/rp2-client-timeline/);
