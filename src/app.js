@@ -793,8 +793,9 @@ function notificationsView(){
 }
 function occurrences(){
  const done=demoEventNotifications().filter(n=>!!n.seenAt).sort((a,b)=>b.at-a.at);
- const groups=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['deviation','Desvios e GPS']];
- const kind=n=>n.kind==='deviation'||n.kind==='gps_issue'?'deviation':n.kind||'alert';
+ const priority=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['deviation','Desvios'],['gps_issue','Falhas de GPS']];
+ const kind=n=>n.kind||'alert',known=new Set(priority.map(([key])=>key));
+ const groups=[...priority,...[...new Set(done.map(kind))].filter(key=>!known.has(key)).map(key=>[key,key])];
  return pageTitle('Histórico de eventos concluídos','Registros finalizados e respostas preservadas para consulta.',btn('Ver eventos pendentes','nav-alerts','small'))+
  '<section class="rp-completed-history"><header><strong>'+done.length+' registro(s) concluído(s)</strong><small>Consulta sem edição</small></header>'+
  (done.length?groups.map(([key,label])=>{const rows=done.filter(n=>kind(n)===key);return rows.length?'<section class="rp-history-category"><h2>'+label+' <span>'+rows.length+'</span></h2>'+rows.map(n=>notificationRow(n,true)).join('')+'</section>':'';}).join(''):'<div class="rp-column-empty">Ainda não há eventos concluídos.</div>')+'</section>';
