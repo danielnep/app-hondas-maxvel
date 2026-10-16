@@ -1,4 +1,5 @@
 import {routeWaypoints} from './domain.js';
+import {fetchInspectionStreetPath} from './inspection-street-route.js';
 
 /**
  * Maps use genuine OpenStreetMap tiles when Leaflet and the network are available.
@@ -41,10 +42,11 @@ const latlng=p=>[p.lat,p.lng];
 const closePositions=(a,b)=>Math.hypot((a.lat-b.lat)*111320,(a.lng-b.lng)*111320*Math.cos(a.lat*Math.PI/180))<2;
 const markerHtml=(content,kind='point')=>`<span class="map-marker map-marker-${kind}">${content}</span>`;
 export class PatrolMap{
- constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false,positionVerified=true}={}){
+ constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false,positionVerified=true,onStreetRoute=()=>{}}={}){
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;this.standbyClean=standbyClean;
   this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.positionVerified=positionVerified;this.tracePositions=positionVerified?[this.position]:[];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
-  this.showFallback();this.setup();
+  this.streetPath=null;this.streetRequest=null;this.streetEpoch=0;this.onStreetRoute=onStreetRoute;
+  this.showFallback();this.setup();if(this.route.inspectionMode)this.loadStreetPath();
  }
  showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session,this.positionVerified)}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
  async setup(){try{
@@ -113,9 +115,13 @@ export class PatrolMap{
    this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillOpacity:.10,interactive:false}));
    return;
   }
-  const pts=routeWaypoints(this.route).map(latlng);
-  add(L.polyline(pts,{color:'#0C0D0F',weight:13,opacity:.9,lineJoin:'round',interactive:false}));
-  add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:'11 8',lineJoin:'round',interactive:false}));
+  // Geometria por ruas quando a consulta externa funciona; senão o corredor
+  // indicativo base → 1 → 2... permanece visível (sem voltar à base).
+  const pts=(this.route.inspectionMode&&this.streetPath?.length>1?this.streetPath:routeWaypoints(this.route)).map(latlng);
+  if(pts.length>1){
+   add(L.polyline(pts,{color:'#08090d',weight:12,opacity:.92,lineJoin:'round',interactive:false}));
+   add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:this.route.inspectionMode&&this.streetPath?.length>1?null:'11 8',lineJoin:'round',interactive:false}));
+  }
   const bases=[this.route.base,...this.route.points];
   bases.forEach((p,i)=>{
    const inspection=this.route.inspectionMode===true;
@@ -136,9 +142,47 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
   }
   this.accuracyCircle=this.positionVerified?add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillColor:'#55C9F5',fillOpacity:.14,interactive:false})):null;
  }
+ async loadStreetPath(){
+  const epoch=++this.streetEpoch;
+  this.streetRequest?.abort();
+  this.streetRequest=null;this.streetPath=null;
+  if(!this.route.inspectionMode)return;
+  if(!this.route.baseKnown){
+   this.onStreetRoute('Sem posição de partida: ative o GPS para traçar o trajeto.');
+   return;
+  }
+  if(!this.route.points.length){
+   this.onStreetRoute('Nenhum destino no mapa.');
+   return;
+  }
+  const controller=new AbortController();this.streetRequest=controller;
+  this.onStreetRoute('Calculando percurso pelas ruas…');
+  const timeout=setTimeout(()=>controller.abort(),9000);
+  try{
+   const coordinates=await fetchInspectionStreetPath(this.route,{signal:controller.signal});
+   if(this.destroyed||epoch!==this.streetEpoch||controller.signal.aborted)return;
+   if(!coordinates?.length){
+    this.onStreetRoute('Percurso indicativo · rota viária indisponível.');
+    return;
+   }
+   this.streetPath=coordinates;
+   this.onStreetRoute('Percurso viário calculado · destinos numerados no mapa.');
+   if(this.instance){this.refreshGeometry();this.fit();}
+  }catch{
+   if(!this.destroyed&&epoch===this.streetEpoch)
+    this.onStreetRoute('Percurso indicativo · sem roteamento viário neste momento.');
+  }finally{
+   clearTimeout(timeout);
+   if(this.streetRequest===controller)this.streetRequest=null;
+  }
+ }
  setRoute(route,session=this.session){
   if(this.destroyed)return;
+  const previous=routeWaypoints(this.route).map(p=>p.lat+','+p.lng).join(';'),
+    next=routeWaypoints(route).map(p=>p.lat+','+p.lng).join(';');
+  const changed=previous!==next||this.route.baseKnown!==route.baseKnown;
   this.route=route;this.session=session;
+  if(changed&&route.inspectionMode)this.loadStreetPath();
   if(this.instance){this.refreshGeometry();this.fit();}
   else this.showFallback();
  }
@@ -175,5 +219,5 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
  center(){if(this.instance)this.instance.panTo(latlng(this.position),{animate:true});}
  fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds([[b.minLat,b.minLng],[b.maxLat,b.maxLng]],{padding:[45,45],maxZoom:18});}
  invalidate(){this.instance?.invalidateSize(false)}
- destroy(){this.destroyed=true;clearTimeout(this.tileFallbackTimer);this.instance?.remove();this.instance=null;this.liveLayer=null;if(this.container)this.container.innerHTML=''}
+ destroy(){this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();clearTimeout(this.tileFallbackTimer);this.instance?.remove();this.instance=null;this.liveLayer=null;if(this.container)this.container.innerHTML=''}
 }
