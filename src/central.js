@@ -354,13 +354,13 @@ function eventList(rows){
  return rows.length?'<div class="list">'+rows.map(e=>'<button class="list-item" data-event="'+id(e.id)+'"><span><b>'+escape(friendly[e.kind]||e.kind)+'</b><small>'+fmt(e.occurred_at)+' · '+escape(e.description||'Sem descrição')+'</small></span><span data-event-operational-status class="pill '+(isPending(e)?'treatment-open':'treatment-resolved')+'">'+escape(e.status==='em_analise'?'Em aberto · Em análise':stateLabel(e))+'</span></button>').join('')+'</div>':'<div class="empty">Nenhum registro encontrado.</div>';
 }
 function treatmentsView(){
- const finished=events.filter(e=>!isPending(e)).sort((a,b)=>b.occurred_at-a.occurred_at);
+ const finished=events.filter(e=>!isPending(e)&&e.kind!=='message').sort((a,b)=>b.occurred_at-a.occurred_at);
  return '<section class="rp-coi-event-screen"><header class="rp-coi-section-header"><div><div class="eyebrow">CONSULTA E AUDITORIA</div><h1>Histórico de eventos concluídos</h1><p>Eventos finalizados, com responsáveis e respostas registrados. Esta tela é somente leitura.</p></div><button type="button" data-page="events">Ver pendências</button></header>'+
  '<section class="rp-coi-history"><div class="rp-history-count">'+finished.length+' evento(s) concluído(s)</div>'+
  (finished.length?finished.map(e=>'<button type="button" class="rp-finished-line" data-event="'+escape(e.id)+'"><span class="rp-finished-symbol">'+escape(typeInfo(e.kind).icon)+'</span><span><strong>'+escape(friendly[e.kind]||typeInfo(e.kind).label)+'</strong><small>'+escape(e.description||'Sem descrição')+'</small><small>'+escape(e.reporter_name||'Equipe de campo')+' · '+fmt(e.occurred_at)+'</small></span><b>Concluído</b></button>').join(''):'<p class="empty">Nenhum evento concluído neste período.</p>')+'</section></section>';
 }
 function eventsView(){
- const queue=events.filter(isPending).sort((a,b)=>b.occurred_at-a.occurred_at);
+ const queue=events.filter(e=>isPending(e)&&e.kind!=='message').sort((a,b)=>b.occurred_at-a.occurred_at);
  const priority=[['panic','Pânicos'],['incident','Ocorrências'],['alert','Alertas'],['inspection','Vistorias'],['route_deviation','Desvios de rota'],['gps_issue','GPS']];
  const defined=new Set(priority.map(([kind])=>kind));
  const categories=[...priority,...[...new Set(queue.map(e=>e.kind))].filter(kind=>!defined.has(kind)).map(kind=>[kind,typeInfo(kind).label])];
