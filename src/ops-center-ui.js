@@ -132,9 +132,10 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }).join('');
  }
  function notificationsView(){
-  const list=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message'),groups=new Map();
+  const list=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message').filter(n=>n.event_id?n.event_status!=='resolvida':n.dispatch_id?!n.dispatch_completed_at:!n.read_at);
+  const groups=new Map(['panic','incident','alert','inspection','dispatch','gps_issue','route_deviation'].map(k=>[k,[]]));
   for(const n of list){const kind=n.kind==='review'?n.event_kind:n.kind;if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
-  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · EVENTOS RECEBIDOS</div><h1>Eventos</h1><p class="muted">Colunas por tipo, da recepção mais recente à mais antiga. Abrir um evento não conclui sua tratativa.</p></div></header><div class="rp-event-columns">'+([...groups].map(([kind,items])=>'<section class="rp-event-column"><header><h2>'+esc(kind==='dispatch'?'Despachos':typeInfo(kind).label)+'</h2>'+(items.some(n=>!n.read_at)?'<b class="rp-unread-count">'+items.filter(n=>!n.read_at).length+'</b>':'')+'</header>'+cards(items.slice().sort((a,b)=>b.created_at-a.created_at||b.id.localeCompare(a.id)))+'</section>').join('')||'<p class="empty">Nenhum evento recebido.</p>')+'</div>'+(nextCursor?'<button type="button" data-ops-more>Carregar eventos anteriores</button>':'')+'</section>';
+  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · EVENTOS RECEBIDOS</div><h1>Eventos</h1><p class="muted">Apenas pendências, separadas em colunas por tipo. Ler não equivale a concluir.</p></div></header><div class="rp-event-columns">'+([...groups].map(([kind,items])=>'<section class="rp-event-column"><header><h2>'+esc(kind==='dispatch'?'Despachos':typeInfo(kind).label)+'</h2>'+(items.some(n=>!n.read_at)?'<b class="rp-unread-count">'+items.filter(n=>!n.read_at).length+'</b>':'')+'</header>'+cards(items.slice().sort((a,b)=>b.created_at-a.created_at||b.id.localeCompare(a.id)))+'</section>').join('')||'<p class="empty">Nenhum evento recebido.</p>')+'</div>'+(nextCursor?'<button type="button" data-ops-more>Carregar eventos anteriores</button>':'')+'</section>';
  }
 
  function dispatchesView({users,rounds,events}){
@@ -150,14 +151,14 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    '<label>Endereço ou ponto específico<input name="address" required minlength="5" maxlength="350" placeholder="Rua, número, local ou referência" autocomplete="street-address"></label>'+
    '<label class="ops-reason">Motivo do despacho <span class="ops-required">Obrigatório</span><textarea name="reason" required minlength="10" maxlength="1000" placeholder="Explique o que ocorreu e o que deve ser verificado"></textarea></label>'+
    '<div class="ops-dispatch-actions"><button type="button" data-ops-close-dispatch>Cancelar</button><button class="primary" type="submit">Registrar despacho e notificar</button></div></form></dialog>'+
-   '<section class="surface ops-inspector-section"><h2>Solicitar Vistoriador</h2><p class="muted">Destinos selecionáveis são cadastrados pela Administração. O profissional não escolhe o cliente.</p>'+
+   '<section class="surface ops-inspector-section"><h2>Solicitar vistoria</h2><p class="muted">Escolha um vistoriador disponível e um local cadastrado ou informe um endereço. As instruções serão enviadas ao profissional.</p>'+
  '<div class="ops-worker-list">'+(inspectors.length?inspectors.map(w=>'<button type="button" class="ops-worker-row ops-worker-select" data-ops-select-inspector="'+esc(w.id)+'" '+
- (w.status!=='Disponível'||!destinations.length?'disabled':'')+'><b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.status==='Disponível'?'ready':'off')+'">'+esc(w.status)+'</span><small>Última atividade: '+stamp(w.last_seen)+'</small></button>').join(''):'<p class="empty">Nenhum vistoriador cadastrado.</p>')+'</div>'+
- '<dialog id="ops-inspector-modal" class="ops-dispatch-modal"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESTINO AUTORIZADO</div><h2>Solicitar Vistoriador</h2><p id="ops-inspector-name" class="muted"></p></div><button type="button" data-ops-close-inspector aria-label="Fechar">✕</button></div>'+
+ (w.status!=='Disponível'?'disabled':'')+'><b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.status==='Disponível'?'ready':'off')+'">'+esc(w.status)+'</span><small>Última atividade: '+stamp(w.last_seen)+'</small></button>').join(''):'<p class="empty">Nenhum vistoriador cadastrado.</p>')+'</div>'+
+ '<dialog id="ops-inspector-modal" class="ops-dispatch-modal"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESTINO AUTORIZADO</div><h2>Solicitar vistoria</h2><p id="ops-inspector-name" class="muted"></p></div><button type="button" data-ops-close-inspector aria-label="Fechar">✕</button></div>'+
  '<form id="ops-inspector-form" class="ops-dispatch-form"><input type="hidden" name="workerId"><input type="hidden" name="kind" value="inspection">'+
- '<label>Cliente / local cadastrado<select name="destinationId" required><option value="">Selecione</option>'+
+ '<label>Destino cadastrado (opcional)<select name="destinationId"><option value="">Informar outro endereço</option>'+
  destinations.filter(d=>d.active).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.client_name+' · '+d.address)+'</option>').join('')+
- '</select></label><label>Justificativa do despacho<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a inspeção solicitada"></textarea></label>'+
+ '</select></label><label>Ou digite o endereço completo<input name="address" minlength="5" maxlength="350" autocomplete="street-address" placeholder="Rua, número, bairro, cidade e referência"></label><label>Justificativa e instruções da vistoria<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a inspeção solicitada"></textarea></label>'+
  '<div class="ops-dispatch-actions"><button type="button" data-ops-close-inspector>Cancelar</button><button class="primary" type="submit">Enviar vistoriador</button></div></form></dialog></section>'+
  (manager()?'<section class="surface"><h2>Clientes autorizados para vistoria</h2>'+
  '<form id="ops-destination-form" class="stack"><div class="grid">'+
@@ -177,7 +178,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    const actions=['ronda','vistoriador'].includes(current?.role)&&!d.completed_at?'<div class="ops-dispatch-buttons">'+
     (!d.acknowledged_at?'<button type="button" data-ops-ack="'+esc(d.id)+'">Confirmar recebimento</button>':'')+
     (!d.started_at?'<button type="button" class="ops-start-button" data-ops-start="'+esc(d.id)+'">Iniciar atendimento</button>':
-     '<button type="button" class="ops-finish-button" data-ops-finish="'+esc(d.id)+'">Concluir atendimento</button>')+'</div>':'';
+     (d.kind==='vistoria'?'<button type="button" class="ops-finish-button" data-ops-page="inspections">Abrir checklist da vistoria</button>':'<button type="button" class="ops-finish-button" data-ops-finish="'+esc(d.id)+'">Concluir atendimento</button>'))+'</div>':'';
    return '<article class="ops-dispatch-line"><div><b>'+esc(d.worker||'Vigia')+'</b><span class="pill '+(d.completed_at?'ok':d.started_at?'warning':'')+'">'+label+'</span></div>'+
     '<strong>'+esc(d.address)+'</strong><p>'+esc(d.reason)+'</p><a class="ops-destination-link" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(d.address)+'">Abrir endereço no mapa ↗</a><small>Enviado '+stamp(d.created_at)+' · Operador: '+esc(d.author||'Não informado')+'</small>'+
     (d.started_at?'<small>Iniciado '+stamp(d.started_at)+'</small>':'')+
@@ -266,7 +267,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }
   if(form.id==='ops-inspector-form'){
    const data=Object.fromEntries(new FormData(form));
-   if(!data.workerId||!data.destinationId)throw Error('Selecione profissional e destino autorizado.');
+   if(!data.workerId||(!data.destinationId&&!String(data.address||'').trim()))throw Error('Selecione o vistoriador e informe um local cadastrado ou endereço.');
    await api('/dispatches',{method:'POST',data});
    document.querySelector('#ops-inspector-modal')?.close();
    flash('Vistoriador despachado para o local selecionado.');await refresh(current,false);openNotice({page:'dispatches'});return true;
