@@ -719,9 +719,9 @@ function inspectionView(){
   '<div class="rp-field-wizard-head"><div><strong>Vistoria · '+escape(assignment.address)+'</strong><small>Checklist operacional e evidências</small></div><button type="button" data-wizard-close aria-label="Fechar checklist">✕</button></div>'+
   '<input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'">'+inspectionWizardHtml(inspectorDraft)+'</form></dialog>':'';
  return '<section class="stack rp-inspector-workspace">'+stage+form+
- '<section class="surface rp-inspector-history"><header class="toolbar"><h2>Vistorias concluídas</h2><span>'+entries.length+' registro(s)</span></header>'+
- (entries.length?entries.slice(0,12).map(e=>'<div class="list-item"><span><b>'+fmt(e.occurred_at)+'</b><small>'+escape(e.description)+'</small></span><strong>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</strong></div>').join(''):'<p class="empty">Ainda não há vistorias concluídas.</p>')+'</section>'+
- '<p class="muted">O circuito indica proximidade geográfica e não substitui a navegação viária. O GPS registra posições reais somente quando autorizado e disponível.</p></section>';
+ '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de vistorias"><header><div><small>'+entries.length+' REGISTROS</small><h2>Histórico de vistorias</h2></div><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+
+ (entries.length?entries.slice(0,40).map(e=>'<div class="rp-inspection-history-row"><span><strong>'+fmt(e.occurred_at)+'</strong><small>'+escape(e.description)+'</small></span><b>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</b></div>').join(''):'<p class="empty">Ainda não há vistorias concluídas.</p>')+
+ '<p class="rp-inspection-dialog-note">Registros de vistorias concluídas na operação autenticada.</p></div></dialog></section>';
 }
 
 function render(){
