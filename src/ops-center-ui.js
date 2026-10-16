@@ -234,7 +234,8 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    const position=await requireLocation();
    await api('/dispatches/'+target.dataset.opsStart+'/start',{method:'POST',data:{position}});
    flash('Atendimento iniciado com data, hora e posição GPS.');
-   await refresh(current,false);openNotice({page:'dispatches'});return true;
+   const inspectorAssignment=current?.role==='vistoriador'&&dispatches.some(d=>d.id===target.dataset.opsStart&&d.kind==='vistoria');
+   await refresh(current,false);openNotice({page:inspectorAssignment?'inspections':'dispatches'});return true;
   }
   if(target.dataset.opsPage){openNotice({page:target.dataset.opsPage});return true;}
   if(target.dataset.opsAck){
@@ -290,5 +291,5 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    return true;
   }catch(error){input.checked=!enabled;throw error}
  }
- return {refresh,allowed,badge,summary:()=>treatmentSummary,attention:()=>attention,assignmentBanner,present,connectLive,stopLive,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread,monitoringData:()=>({availability:[...availability,...inspectors],dispatches}),activeInspection:()=>dispatches.find(d=>d.kind==='vistoria'&&d.started_at&&!d.completed_at)||null};
+ return {refresh,allowed,badge,summary:()=>treatmentSummary,attention:()=>attention,assignmentBanner,present,connectLive,stopLive,notificationsView,dispatchesView,vigilanteDispatches,permissionsView,click,submit,change,unread,monitoringData:()=>({availability:[...availability,...inspectors],dispatches}),activeInspection:()=>dispatches.find(d=>d.kind==='vistoria'&&d.started_at&&!d.completed_at)||null,currentInspection:()=>dispatches.find(d=>d.kind==='vistoria'&&!d.completed_at)||null};
 }
