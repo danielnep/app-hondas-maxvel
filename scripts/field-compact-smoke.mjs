@@ -50,9 +50,14 @@ try{
   await page.locator('#incident-form button[type=submit]').click();
   await page.locator('#dialog').waitFor({state:'hidden'});
   await page.locator('[data-ops="central-message"]').click();
-  await page.locator('#demo-chat-form input').fill('Mensagem de teste ao COI');
+  await page.locator('[data-action="demo-chat-open"]').click();
+  await page.locator('#demo-chat-body').fill('Mensagem de teste ao COI');
   await page.locator('#demo-chat-form button').click();
-  assert.match(await page.locator('.field-chat-messages').innerText(),/Mensagem de teste ao COI/);
+  assert.match(await page.locator('.field-chat-thread').innerText(),/Mensagem de teste ao COI/);
+  await page.locator('[data-action="demo-chat-list"]').click();
+  assert.match(await page.locator('.field-chat-contact-row').innerText(),/Mensagem de teste ao COI/);
+  await page.locator('.field-chat-back').click();
+  assert.ok(await page.locator('.patrol-actions').isVisible());
   assert.deepEqual(errors,[]);
   console.log('PASS compact field flows',width);
   await context.close();

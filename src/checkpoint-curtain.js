@@ -33,9 +33,10 @@ export function createCheckpointCurtain(api){
      '<span class="rp2-evidence-preview-copy"><strong>'+safe(label)+'</strong><small>'+safe(item.file.name)+'</small></span>'+
      '<button type="button" data-evidence-remove="'+i+'" aria-label="Remover '+safe(label)+'" title="Remover '+safe(label)+'">×</button></div>';
    }).join('')+'</div>'
-   :'<p class="rp2-evidence-empty">Nenhuma imagem ou arquivo anexado.</p>';
+   :'';
+  if(list)list.hidden=!evidenceFiles.length;
   const count=root.querySelector('[data-evidence-count]');
-  if(count)count.textContent=evidenceFiles.filter(item=>item.view).length+' foto(s) do ponto';
+  if(count){const n=evidenceFiles.filter(item=>item.view).length;count.textContent=n===0?'Nenhuma foto':n===1?'1 foto':' '+n+' fotos';}
  }
  const status=()=>{
   if(!root)return;
@@ -80,12 +81,12 @@ export function createCheckpointCurtain(api){
   root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel" tabindex="-1">'+
    '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
-   '<div class="checkpoint-stopwatch" role="timer" aria-live="off"><strong><span data-dwell-seconds>00</span><small> min:seg</small></strong><small data-dwell-message role="status" aria-live="polite">Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
-   '<div class="checkpoint-after-timer"><div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">0 foto(s) do ponto</small></div>'+
+   '<div class="checkpoint-stopwatch" role="timer" aria-live="off"><strong><span data-dwell-seconds>00:30</span></strong><small data-dwell-message role="status" aria-live="polite">Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
+   '<div class="checkpoint-after-timer"><div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">Nenhuma foto</small></div>'+
    '<div class="checkpoint-view-grid" role="group" aria-label="Fotos do ponto"><button type="button" class="checkpoint-view-action" data-evidence-kind="point-photo" aria-label="Adicionar foto do ponto"><span aria-hidden="true">▧<b>+</b></span><small>Foto</small></button><button type="button" class="checkpoint-view-action" data-evidence-view="selfie" aria-label="Adicionar selfie"><span aria-hidden="true">▧<b>+</b></span><small>Selfie</small></button></div>'+
    '<label class="checkpoint-photo-direction">Direção da foto<select data-photo-direction>'+EVIDENCE_VIEWS.filter(([v])=>v!=='selfie').map(([v,label])=>'<option value="'+v+'">'+label+'</option>').join('')+'</select></label>'+
    '<p class="checkpoint-evidence-hint" data-evidence-required-hint></p>'+
-   '<details class="checkpoint-extra"><summary>Outras evidências</summary><div class="checkpoint-tools">'+evidenceButtons()+'</div></details></div>'+
+   '<details class="checkpoint-extra"><summary>Vídeo e áudio (opcionais)</summary><div class="checkpoint-tools">'+evidenceButtons({kinds:['video','audio'],includeList:false})+'</div></details><div class="evidence-attachment-list" data-evidence-attachments hidden aria-live="polite"></div></div>'+
    '<div class="checkpoint-utility-row" aria-label="Ferramentas do ponto"><button type="button" data-curtain-torch aria-label="Autorizar câmera e ativar lanterna"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8l-2 7 4 4-6 8-6-8 4-4-2-7Z"/><path d="M11 11l2 2M18 18h3M3 18h3"/></svg> <span>Lanterna</span></button>'+
    '<button type="button" class="checkpoint-panic" data-ops="panic-confirm">⚠ PÂNICO</button></div>'+
    '<fieldset class="checkpoint-condition" data-curtain-observation-wrap hidden><legend>Condições encontradas neste ponto</legend>'+
@@ -93,7 +94,7 @@ export function createCheckpointCurtain(api){
    '<label><input type="radio" name="point-state" value="attention"> Situação que exige atenção</label>'+
    '<label class="checkpoint-note"><span data-curtain-note-hint>Observações complementares (opcionais).</span><textarea maxlength="1400" placeholder="Descreva as condições do ponto e, se necessário, informe o que encontrou." data-checkpoint-observation></textarea></label></fieldset>'+
    '<button class="checkpoint-submit" data-curtain-submit disabled>Finalizar ponto e seguir para o próximo</button>'+
-   '<small class="checkpoint-footnote">Finalize para registrar as condições e evidências do ponto.</small>'+
+   ''+
    '</div>';
   document.body.append(root);root.querySelector('textarea').addEventListener('input',status);root.querySelectorAll('[name="point-state"]').forEach(input=>input.addEventListener('change',status));
   // Compartilha o controlador da lanterna do cockpit, inclusive no APK nativo.

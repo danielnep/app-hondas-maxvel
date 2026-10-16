@@ -4,6 +4,11 @@ on:
   push:
     paths:
       - 'scripts/ux-mobile-audit.mjs'
+      - 'scripts/field-compact-smoke.mjs'
+      - 'src/checkpoint-curtain.js'
+      - 'src/media-capture.js'
+      - 'assets/field-compact.css'
+      - 'assets/mobile-critical-20261016.css'
       - 'src/app.js'
       - 'src/map.js'
       - 'assets/horizon-operacional.css'
