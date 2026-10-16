@@ -132,9 +132,11 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }).join('');
  }
  function notificationsView(){
-  const list=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message'),groups=new Map();
-  for(const n of list){const kind=n.kind==='review'?n.event_kind:n.kind;if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
-  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · EVENTOS RECEBIDOS</div><h1>Eventos</h1><p class="muted">Colunas por tipo, da recepção mais recente à mais antiga. Abrir um evento não conclui sua tratativa.</p></div></header><div class="rp-event-columns">'+([...groups].map(([kind,items])=>'<section class="rp-event-column"><header><h2>'+esc(kind==='dispatch'?'Despachos':typeInfo(kind).label)+'</h2>'+(items.some(n=>!n.read_at)?'<b class="rp-unread-count">'+items.filter(n=>!n.read_at).length+'</b>':'')+'</header>'+cards(items.slice().sort((a,b)=>b.created_at-a.created_at||b.id.localeCompare(a.id)))+'</section>').join('')||'<p class="empty">Nenhum evento recebido.</p>')+'</div>'+(nextCursor?'<button type="button" data-ops-more>Carregar eventos anteriores</button>':'')+'</section>';
+  const list=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message')
+   .sort((a,b)=>b.created_at-a.created_at||b.id.localeCompare(a.id));
+  return '<section class="stack ops-inbox-3"><header class="toolbar"><div><div class="eyebrow">CENTRAL · COMUNICAÇÕES</div><h1>Notificações</h1><p class="muted">Todos os avisos em ordem de recebimento. Toque para abrir o registro; visualizar não significa concluir.</p></div></header>'+
+  '<div class="rp-notification-stream">'+(list.length?cards(list):'<p class="empty">Nenhuma notificação recebida.</p>')+'</div>'+
+  (nextCursor?'<button type="button" data-ops-more>Carregar notificações anteriores</button>':'')+'</section>';
  }
 
  function dispatchesView({users,rounds,events}){
