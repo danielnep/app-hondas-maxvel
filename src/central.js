@@ -20,13 +20,17 @@ const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS
 let composeKind='message';
 const coi=createCoiMonitor();
 let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
-let inspectorPosition=null,inspectorWatch=null,inspectorSignature='',inspectorBase=null;
+let inspectorPosition=null,inspectorWatch=null,inspectorSignature='',inspectorBase=null,inspectorPresenceAt=0;
 try{const saved=JSON.parse(sessionStorage.getItem('rondaspro-inspector-base')||'null');inspectorBase=pointOf(saved)}catch{}
 function inspectionQueueNow(){return queueInspections(ops.inspectionDispatches(),inspectorPosition,inspectorBase)}
 function inspectionPosition(){return pointOf(inspectorPosition)||pointOf(inspectorBase)}
 function updateInspectorGps(fix){
  inspectorPosition=fix;
  if(inspectionMap)inspectionMap.update({position:fix});
+ if(account?.role==='vistoriador'&&Date.now()-inspectorPresenceAt>12000){
+  inspectorPresenceAt=Date.now();
+  void api('/presence',{method:'POST',data:{position:fix}}).catch(()=>{});
+ }
  const status=document.querySelector('[data-inspection-gps-state]');
  if(status)status.textContent='GPS ativo · precisão '+Math.round(fix.accuracy||0)+' m';
  const next=inspectionQueueNow()[0],target=pointOf(next),distance=target?metersBetween(fix,target):Infinity;
