@@ -157,7 +157,8 @@ try{
     throw Error('Responsável não corresponde ao perfil administrativo autenticado');
    await (await revealDialogControl(page,'#incident-review-form [name="note"]')).fill('Encaminhado para conferência da iluminação.');
    await tap(page,'[data-action="incident-review"]');
-   await tap(page,'[data-action="nav-alerts"]');
+   // Após a análise, Eventos continua sendo a área de pendências.
+   if(!await page.locator('.rp-event-columns').count())await tap(page,'[data-view="notificacoes"]:visible');
    await tap(page,'[data-view="rondas"]:visible');
    if(!await page.locator('.schedule-list .schedule-row').count())throw Error('Agenda sem múltiplos vigias');
    await capture(page,'schedule',width,height);
