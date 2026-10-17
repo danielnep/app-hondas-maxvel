@@ -454,42 +454,42 @@
 }
 /* Solicitar vistoria: só o conjunto de campos rola; a ação fica fixa e alcançável.
    Não muda os critérios do COI nem envia por si só. */
-#dialog.rp-flow-dialog[open]:has(#demo-inspection-request){
+#dialog[open]:has(#demo-inspection-request){
  display:flex!important;flex-direction:column!important;box-sizing:border-box!important;
  width:min(620px,calc(100vw - 24px))!important;max-width:620px!important;
  height:min(745px,calc(100dvh - 28px))!important;max-height:calc(100dvh - 28px)!important;
  overflow:hidden!important;padding:18px 19px 0!important;margin:auto!important;gap:0!important;
  background:#1a1c22!important;border:1px solid #454b55!important;border-radius:15px!important
 }
-#dialog.rp-flow-dialog[open]:has(#demo-inspection-request)>h2{flex:none!important;margin:5px 40px 8px 0!important}
-#dialog.rp-flow-dialog[open]:has(#demo-inspection-request)>p{flex:none!important;margin:0 0 12px!important}
-#dialog.rp-flow-dialog[open]:has(#demo-inspection-request)>.eyebrow{flex:none!important}
-#dialog.rp-flow-dialog[open] #demo-inspection-request{
+#dialog[open]:has(#demo-inspection-request)>h2{flex:none!important;margin:5px 40px 8px 0!important}
+#dialog[open]:has(#demo-inspection-request)>p{flex:none!important;margin:0 0 12px!important}
+#dialog[open]:has(#demo-inspection-request)>.eyebrow{flex:none!important}
+#dialog[open] #demo-inspection-request{
  flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important;
  display:flex!important;flex-direction:column!important;gap:0!important;margin:0!important
 }
-#dialog.rp-flow-dialog[open] #demo-inspection-request .rp-request-fields{
+#dialog[open] #demo-inspection-request .rp-request-fields{
  flex:1 1 auto!important;min-height:0!important;display:grid!important;gap:11px!important;
  overflow-y:auto!important;overscroll-behavior:contain!important;
  padding:3px 8px 14px 1px!important;scrollbar-width:thin!important
 }
-#dialog.rp-flow-dialog[open] #demo-inspection-request .modal-actions{
+#dialog[open] #demo-inspection-request .modal-actions{
  flex:0 0 auto!important;display:flex!important;justify-content:flex-end!important;
  position:relative!important;bottom:auto!important;margin:0 -19px!important;
  padding:13px 19px calc(14px + env(safe-area-inset-bottom,0px))!important;
  background:#242730!important;border-top:1px solid #464f5b!important;
  box-shadow:0 -7px 17px #0004!important;z-index:2!important
 }
-#dialog.rp-flow-dialog[open] #demo-inspection-request button[type="submit"]{
+#dialog[open] #demo-inspection-request button[type="submit"]{
  min-height:46px!important;min-width:180px!important;font-weight:750!important;
  background:#e7edf5!important;border:1px solid #e7edf5!important;color:#181a20!important
 }
 @media(max-width:600px){
- #dialog.rp-flow-dialog[open]:has(#demo-inspection-request){
+ #dialog[open]:has(#demo-inspection-request){
   padding:14px 14px 0!important;width:calc(100vw - 16px)!important;border-radius:12px!important
  }
- #dialog.rp-flow-dialog[open] #demo-inspection-request .modal-actions{margin:0 -14px!important;padding:10px 14px!important}
- #dialog.rp-flow-dialog[open] #demo-inspection-request button[type="submit"]{width:100%!important}
+ #dialog[open] #demo-inspection-request .modal-actions{margin:0 -14px!important;padding:10px 14px!important}
+ #dialog[open] #demo-inspection-request button[type="submit"]{width:100%!important}
 }
 /* Ações destrutivas permanecem disponíveis mediante disclosure + confirmação. */
 .dashboard .rp-data-danger-zone{
