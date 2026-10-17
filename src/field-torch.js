@@ -130,9 +130,16 @@ export function createFieldTorch({
   const allowed=dash&&['ronda','vistoriador'].includes(dash.dataset.torchRole||'');
   if(!allowed){if(active()||busy)stop();return;}
   if(!dash.querySelector('[data-field-torch]')){
-   const el=doc.createElement('button');el.type='button';el.className='field-torch-fab';
-   el.setAttribute('data-field-torch','');el.innerHTML=glyph+'<span>Lanterna</span>';
-   el.addEventListener('click',toggle);dash.append(el);
+   // O vistoriador já possui lanterna no mapa. Usá-la como controle único
+   // impede a criação de um segundo botão flutuante na mesma tela.
+   const inspectorButton=dash.querySelector('[data-inspection-cockpit] [data-field-tool-torch]');
+   if(inspectorButton){
+    inspectorButton.setAttribute('data-field-torch','');
+   }else{
+    const el=doc.createElement('button');el.type='button';el.className='field-torch-fab';
+    el.setAttribute('data-field-torch','');el.innerHTML=glyph+'<span>Lanterna</span>';
+    el.addEventListener('click',toggle);dash.append(el);
+   }
   }
   paint();
  }
