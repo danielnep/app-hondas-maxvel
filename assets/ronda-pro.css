@@ -1,12 +1,11 @@
 @import url('./checkpoint-curtain.css?v=1');
 
-@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');
 
 /* Consolidacao das 18 folhas anteriores, ordem original preservada. Arquivos legados mantidos temporariamente para auditoria de regressao. */
 
 /* ORIGINAL: assets/ronda-pro.css */
 
-500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');
 :root{font-size:14px;line-height:1.5}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
