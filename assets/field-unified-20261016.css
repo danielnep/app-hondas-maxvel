@@ -32,9 +32,9 @@
  padding:14px 18px 17px;border-top:1px solid #414c59;background:#222830;flex:none}
 .rp-field-wizard-controls button{border:1px solid #495767!important;background:#29313b!important;
  min-height:45px!important;padding:10px 17px!important;color:#fff!important;border-radius:10px!important;font-weight:700!important}
-.rp-field-wizard-controls button.rp-field-wizard-forward{background:#e7edf5!important;border-color:#e7edf5!important;flex:1}
+.rp-field-wizard-controls button.rp-field-wizard-forward{background:#e7edf5!important;border-color:#e7edf5!important;color:#151a20!important;flex:1}
 .rp-field-wizard-controls button:disabled{opacity:.42!important}
-.rp-inspection-main-action{background:#e7edf5!important;border-color:#e7edf5!important}
+.rp-inspection-main-action{background:#e7edf5!important;border-color:#e7edf5!important;color:#151a20!important}
 .rp-field-chat-overlay{margin:auto!important;position:fixed;inset:0;box-sizing:border-box;
  width:min(96vw,960px)!important;height:min(92dvh,900px)!important;max-height:92dvh!important;
  padding:0!important;border:1px solid #44515e!important;border-radius:17px!important;
@@ -80,7 +80,7 @@
 #central-root .rp-guard-workspace .rp-inspection-commands .patrol-action-heading{padding:11px 14px;border-bottom:1px solid #44515f}
 #central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-commands-body{padding:12px 14px}
 #central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-main-action{min-height:48px;border:1px solid #e7edf5;
- background:#e7edf5;border-radius:10px;color:#fff;padding:10px;font-weight:750;width:100%}
+ background:#e7edf5;border-radius:10px;color:#151a20;padding:10px;font-weight:750;width:100%}
 #central-root .rp-guard-workspace .rp-inspection-map-fit{background:#263440;color:#fff;border:1px solid #4c5968;border-radius:10px;min-height:40px}
 #central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming{border-top:1px solid #43505d}
 #central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming summary{padding:12px 14px;cursor:pointer}
