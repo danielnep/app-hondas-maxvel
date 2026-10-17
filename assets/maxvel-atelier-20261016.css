@@ -207,7 +207,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 .dashboard .rp-demo-inspection-form .button.primary,
 .dashboard .rp-inspection-request .button.primary,
 #central-root .rp-coi-request-strip button.primary{
- background:#e9edf3!important;border-color:#e9edf3!important;color:#fff!important;
+ background:#e9edf3!important;border-color:#e9edf3!important;color:#151a20!important;
  box-shadow:none!important;transition:background .15s ease,transform .15s ease!important;
 }
 .dashboard .rp-demo-coi-command .button.primary:hover,
