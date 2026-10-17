@@ -702,10 +702,10 @@ function demoCoiView(){
  return '<section class="coi-demo-page">'+pageTitle('COI · Central de acompanhamento','Acompanhe a equipe e responda às ocorrências. Os dados abaixo são somente uma demonstração.')+
  '<div class="rp-demo-coi-command"><div><span class="eyebrow">CENTRAL DE OPERAÇÕES</span><strong>Vistorias sob demanda e de rotina</strong><small>Designe local, instruções e profissional no mesmo fluxo.</small></div><button type="button" class="button primary" data-action="demo-request-inspection">'+ic('clipboard')+' Solicitar vistoria</button></div>'+
  '<div class="coi-demo-topline"><span class="ops-live-dot"></span><strong>Atendimento e acompanhamento</strong><small>Posto demonstrativo · '+esc(DEMO_WATCHERS[0].unit)+'</small><span>Dados locais</span></div>'+
- '<div class="coi-demo-metrics">'+summary.map(([k,v])=>'<div><b>'+v+'</b><span>'+k+'</span></div>').join('')+'</div>'+coiFocusHtml+
+ '<div class="coi-demo-metrics">'+summary.map(([k,v])=>'<div><b>'+v+'</b><span>'+k+'</span></div>').join('')+'</div><div class="rp-coi-desktop-grid">'+coiFocusHtml+
  (current?'<section class="coi-demo-record"><h2>Última ronda</h2><h3>'+esc(current.name)+' · '+esc(current.route.name)+'</h3><p>'+fmt(current.startedAt)+'</p><div id="ops-map" class="map-container large coi-demo-map"></div><button type="button" class="rp-coi-percurso-link" data-action="session-detail" data-id="'+esc(current.id)+'">Abrir percurso e detalhes <span aria-hidden="true">↗</span></button><small>Mapa ilustrativo da demonstração.</small></section>':'<p class="empty">Nenhuma ronda registrada.</p>')+
  '<section class="coi-demo-content"><header class="toolbar"><h2>Rondas e vistorias recentes</h2><button type="button" class="rp-coi-history-link" data-view="historico-operacional">Ver histórico <span aria-hidden="true">↗</span></button></header>'+demoActivityRows().slice(0,5).map(demoActivityRow).join('')+'</section>'+
- '<p class="map-caption">Demonstração: os registros não representam uma operação de vigilância ao vivo. Para o COI autenticado, acesse a Central Operacional.</p></section>';
+ '</div><p class="map-caption">Demonstração: os registros não representam uma operação de vigilância ao vivo. Para o COI autenticado, acesse a Central Operacional.</p></section>';
 }
 function overview(){
  if(user?.role==='admin')return dashboardV4();
