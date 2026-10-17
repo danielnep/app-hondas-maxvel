@@ -10,6 +10,9 @@ test('desktop amplo exibe painéis simultâneos sem retirar abas do mobile/table
  assert.match(app,/shell\.classList\.toggle\('v4-wide-workspace',multiple\)/);
  assert.match(app,/root\.classList\.toggle\('ux-wide-workspace',multiple\)/);
  assert.match(app,/node\.hidden=!multiple&&id!==selected/);
+ assert.match(app,/const multiple=wideDesktop\.matches&&\(user\.role!=='admin'\|\|selected==='resumo'\)/);
+ assert.match(app,/shell\.classList\.toggle\('v4-desktop-focus',wideDesktop\.matches&&!multiple\)/);
+ assert.match(app,/node\.setAttribute\('aria-hidden',String\(node\.hidden\)\)/);
  assert.match(app,/nodes\[key\]\.hidden=!multiple&&selected\(\)!==key/);
  assert.match(app,/cleanupLayoutBreakpoint\(\)/);
  assert.match(css,/@media \(min-width:1280px\)/);

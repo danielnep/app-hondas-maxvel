@@ -17,6 +17,7 @@ const icons={
  panic:'<circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 4h.01"/>',
  help:'<circle cx="12" cy="12" r="10"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 4h.01"/>',
  locate:'<circle cx="12" cy="12" r="7"/><path d="M12 1v5m0 12v5M1 12h5m12 0h5"/>',
+ torch:'<path d="M9 2h6l1 5-4 4-4-4 1-5Z"/><path d="M10 11v10m4-10v10M7 22h10"/>',
  arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>'
 };
 const svg=key=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[key]+'</svg>';
@@ -30,9 +31,9 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-depart"':'data-inspection-depart')+'>Iniciar deslocamento '+svg('arrow')+'</button>':
   '<span class="rp-inspection-ready">Aguardando solicitação do COI</span>';
  const first=html(current?.address||current?.site||'Nenhum destino atribuído');
- const directions=current?coords?
-  'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(coords.lat+','+coords.lng):
-  'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(current.address||current.site||''):'';
+ const destination=coords?coords.lat+','+coords.lng:String(current?.address||current?.site||'');
+ const directions=current?'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(destination):'';
+ const waze=current?'https://www.waze.com/ul?'+(coords?'ll=':'q=')+encodeURIComponent(destination)+'&navigate=yes':'';
  const count=queue.length;
  return '<div class="patrol-workspace rp-inspection-cockpit" data-inspection-cockpit data-mode="'+mode+'">'+
  '<section class="patrol-map-panel rp-inspection-map-panel" aria-label="Mapa operacional de vistorias">'+
@@ -42,6 +43,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
     '<button type="button" class="rp-inspection-map-fit" '+(mode==='demo'?'data-action="demo-inspection-fit"':'data-inspection-fit')+' aria-label="Enquadrar destinos">'+svg('locate')+'</button></header>'+
    '<div class="rp-inspection-map-controls"><button type="button" class="rp-inspection-panic" data-field-tool-panic aria-label="Acionar pânico">'+svg('panic')+'<span>PÂNICO</span></button>'+
     '<button type="button" class="rp-inspection-help" data-inspection-help-open aria-label="Ajuda do mapa">'+svg('help')+'</button></div>'+
+   '<button type="button" class="rp-inspection-torch" data-field-tool-torch aria-label="Ligar ou desligar lanterna">'+svg('torch')+'<span>Lanterna</span></button>'+
    '<nav class="rp-inspection-map-actions" aria-label="Comunicação de campo">'+
     '<button type="button" data-field-tool-alert>'+svg('alert')+'<span>Enviar alerta</span></button>'+
     '<button type="button" data-field-tool-incident>'+svg('incident')+'<span>Registrar<br>ocorrência</span></button>'+
@@ -57,7 +59,9 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
    '<p class="rp-inspection-instruction" data-inspection-instructions>'+html(current?.instructions||current?.reason||'O COI enviará os locais que precisam de vistoria.')+'</p>'+
    '<small class="rp-inspection-distance" data-inspection-distance>'+(distance!==null?'Distância em linha reta: '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m'):'Localização ou destino sem coordenadas')+'</small>'+
    '<div class="rp-inspection-primary-actions">'+action+
-   (current?'<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(directions)+'" aria-label="Abrir navegação viária para o destino">Navegar ↗</a>':'')+'</div>'+
+   (current?'<nav class="rp-inspection-directions" aria-label="Abrir destino em aplicativo de navegação">'+
+   '<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(directions)+'" aria-label="Abrir destino no Google Maps">Google Maps ↗</a>'+
+   '<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(waze)+'" aria-label="Abrir destino no Waze">Waze ↗</a></nav>':'')+'</div>'+
   '</div>'+
  '</section>'+
  '<dialog class="rp-inspection-dialog" data-inspection-circuit-modal aria-label="Circuito e próximas vistorias">'+
@@ -69,12 +73,12 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
  '<dialog class="rp-inspection-dialog rp-inspection-help-dialog" data-inspection-help-dialog aria-label="Ajuda do mapa">'+
   '<header><h2>Mapa operacional</h2><button type="button" data-inspection-modal-close aria-label="Fechar janela">✕</button></header>'+
   '<p>O mapa acompanha sua localização quando o GPS está ativo. Os marcadores indicam os destinos definidos pelo COI.</p>'+
-  '<p>Use Navegar para abrir o trajeto nas vias públicas. Para iniciar ou concluir uma vistoria, utilize o botão do painel inferior.</p>'+
+  '<p>Use Google Maps ou Waze para abrir o trajeto nas vias públicas. Para iniciar ou concluir uma vistoria, utilize o botão do painel inferior.</p>'+
  '</dialog>'+
  '</div>';
 }
 // Controles compartilhados entre o modo demonstrativo e a operação autenticada.
-document.addEventListener('click',event=>{
+if(typeof document!=='undefined')document.addEventListener('click',event=>{
  const control=event.target.closest('[data-inspection-circuit-open],[data-inspection-history-open],[data-inspection-help-open],[data-inspection-modal-close]');
  if(!control)return;
  const cockpit=control.closest('[data-inspection-cockpit]'),scope=cockpit||document;

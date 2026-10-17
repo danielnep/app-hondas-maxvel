@@ -41,7 +41,8 @@ export function createRoundWizard({dialog,showDialog,settings,onMap,onSave,notif
   }
   const footer='<nav class="wizard-nav"><button type="button" data-wizard="back" '+(step===0?'disabled':'')+'>Voltar</button>'+
      '<button type="button" class="button primary" data-wizard="'+(step===3?'save':'next')+'">'+(step===3?'Confirmar programação':'Continuar')+'</button></nav>';
-  return '<div class="round-wizard"><div class="wizard-head">'+head+'</div><div class="wizard-body">'+content+'</div>'+footer+
+  return '<div class="round-wizard"><div class="wizard-head">'+head+'</div><div class="wizard-body">'+content+'</div>'+
+   '<p class="wizard-feedback" data-wizard-feedback role="alert" hidden></p>'+footer+
    '<small>Cenário fictício · salvo apenas neste navegador.</small></div>';
  }
  function pick(location,name){
@@ -66,11 +67,16 @@ export function createRoundWizard({dialog,showDialog,settings,onMap,onSave,notif
    });
   }
  }
+ function wizardError(message){
+  const box=dialog.querySelector('[data-wizard-feedback]');
+  if(box){box.hidden=false;box.textContent=message;}
+  notify(message);
+ }
  function consumeTimes(){
   const a=dialog.querySelector('#wizard-start')?.value,b=dialog.querySelector('#wizard-end')?.value;
   const from=new Date(a||'').getTime(),to=new Date(b||'').getTime();
   if(!Number.isFinite(from)||!Number.isFinite(to)||to<=from||to-from>12*3600000||from<Date.now()-60000){
-   notify('Escolha início e término futuros, em intervalo de até 12 horas.');return false;
+   wizardError('Escolha início e término futuros, em intervalo de até 12 horas.');return false;
   }
   startAt=a;endAt=b;return true;
  }
@@ -85,27 +91,27 @@ export function createRoundWizard({dialog,showDialog,settings,onMap,onSave,notif
   if(action==='back'){step=Math.max(0,step-1);render();return;}
   if(action==='next'){
    if(step===1&&!consumeTimes())return;
-   if(step===2&&points.length===0){notify('Marque ao menos um ponto no mapa ou digite um endereço.');return;}
+   if(step===2&&points.length===0){wizardError('Marque ao menos um ponto no mapa ou digite um endereço.');return;}
    step=Math.min(3,step+1);render();return;
   }
   if(action==='remove'){points.pop();render();return;}
   if(action==='coordinates'){
    const lat=dialog.querySelector('#wizard-lat')?.value,lng=dialog.querySelector('#wizard-lng')?.value;
-   if(!lat||!lng){notify('Informe latitude e longitude.');return;}
+   if(!lat||!lng){wizardError('Informe latitude e longitude.');return;}
    pick({lat:Number(lat),lng:Number(lng)});return;
   }
   if(action==='address'){
    const address=dialog.querySelector('#wizard-address')?.value.trim();
-   if(!address||address.length<4){notify('Informe rua e número.');return;}
+   if(!address||address.length<4){wizardError('Informe rua e número.');return;}
    target.disabled=true;target.textContent='Localizando…';
    try{
     const full=/Divin[óo]polis/i.test(address)?address:address+', Divinópolis, MG, Brasil';
     const res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q='+encodeURIComponent(full));
     if(!res.ok)throw Error('geocoding');
     const items=await res.json();
-    if(!items[0]){notify('Endereço não encontrado. Toque no mapa ou use coordenadas.');return;}
+    if(!items[0]){wizardError('Endereço não encontrado. Toque no mapa ou use coordenadas.');return;}
     pick({lat:Number(items[0].lat),lng:Number(items[0].lon)},address);
-   }catch{notify('Busca de endereço indisponível. Use o mapa ou coordenadas.');}
+   }catch{wizardError('Busca de endereço indisponível. Use o mapa ou coordenadas.');}
    finally{if(target.isConnected){target.disabled=false;target.textContent='Localizar';}}
    return;
   }
