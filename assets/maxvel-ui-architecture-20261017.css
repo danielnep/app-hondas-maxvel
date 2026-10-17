@@ -1,0 +1,302 @@
+/* MAXVEL | Sistema visual operacional 2026-10-17
+   Fonte unica para shell, menus, dialogs e chat.
+   Nao alterar geocerca, rotas, checklists ou autorizacao por CSS.
+*/
+:root{
+ --mx-ui-bg:#0e0d0f;--mx-ui-surface:#19181b;--mx-ui-rise:#252327;
+ --mx-ui-line:#3b373c;--mx-ui-text:#f4f1f3;--mx-ui-muted:#b7b0b4;
+ --mx-ui-accent:#ee3552;--mx-ui-focus:#f790a5;
+}
+.dashboard :is(button,a,input,textarea,select,summary):focus-visible,
+#central-root :is(button,a,input,textarea,select,summary):focus-visible{
+ outline:2px solid var(--mx-ui-focus)!important;outline-offset:2px!important;
+}
+/* Barra utilitaria: acoes leves, nunca cards. */
+.dashboard .app-header .rp-header-tools{
+ gap:2px!important;flex:none!important;align-items:center!important;
+}
+.dashboard .app-header .rp-header-popover{
+ position:static!important;overflow:visible!important;isolation:auto!important;
+}
+.dashboard .app-header .rp-header-popover>summary.rp-blue-button,
+.dashboard .app-header .rp-header-popover>summary.rp-blue-button.has-unread{
+ display:grid!important;place-items:center!important;position:relative!important;
+ width:44px!important;height:44px!important;min-height:44px!important;min-width:44px!important;
+ background:transparent!important;border:0!important;border-radius:9px!important;
+ box-shadow:none!important;color:var(--mx-ui-text)!important;padding:8px!important;
+}
+.dashboard .app-header .rp-header-popover>summary.rp-blue-button:hover,
+.dashboard .app-header .rp-header-popover[open]>summary.rp-blue-button{
+ background:#292529!important;
+}
+.dashboard .app-header .rp-header-popover .rp-unread-count{
+ background:var(--mx-ui-accent)!important;color:#fff!important;box-shadow:none!important;
+}
+.dashboard .app-header .rp-popover-list,
+.dashboard .shell-main .app-header .rp-popover-list{
+ position:fixed!important;top:calc(77px + env(safe-area-inset-top,0px))!important;
+ right:12px!important;left:auto!important;inset-inline-start:auto!important;
+ transform:none!important;width:min(365px,calc(100vw - 24px))!important;
+ min-width:0!important;max-width:calc(100vw - 24px)!important;
+ max-height:min(62dvh,460px)!important;overflow-y:auto!important;overflow-x:hidden!important;
+ padding:9px 11px!important;z-index:6100!important;
+ background:var(--mx-ui-surface)!important;border:1px solid var(--mx-ui-line)!important;
+ border-radius:12px!important;box-shadow:0 15px 38px #000c!important;
+}
+.dashboard .app-header .rp-popover-list>strong{
+ font-size:13px!important;color:var(--mx-ui-text)!important;padding:5px 0 8px!important;
+}
+.dashboard .app-header .rp-popover-list .rp-notice-row{
+ min-height:57px!important;height:auto!important;display:grid!important;
+ grid-template-columns:25px minmax(0,1fr) 16px!important;gap:8px!important;
+ padding:8px 2px!important;margin:0!important;background:transparent!important;
+ border:0!important;border-bottom:1px solid #343135!important;
+ border-radius:0!important;box-shadow:none!important;
+}
+.dashboard .app-header .rp-popover-list .rp-notice-row:hover{
+ background:#252126!important;
+}
+.dashboard .app-header .rp-popover-list .rp-notice-row .event-icon{
+ width:24px!important;height:24px!important;min-width:24px!important;
+ border:0!important;background:transparent!important;color:#f1adb9!important;
+}
+.dashboard .app-header .rp-popover-list .rp-notice-copy strong{
+ font-size:12px!important;line-height:1.35!important;max-width:100%!important;
+}
+.dashboard .app-header .rp-popover-list .rp-notice-copy small{
+ font-size:10px!important;white-space:normal!important;line-height:1.3!important;
+}
+.dashboard .app-header .rp-popover-list button[data-action]{
+ width:100%!important;text-align:left!important;min-width:0!important;
+ margin:0!important;padding:10px 2px!important;border:0!important;
+ border-bottom:1px solid #343135!important;border-radius:0!important;
+ background:transparent!important;color:var(--mx-ui-text)!important;
+ box-shadow:none!important;
+}
+.dashboard .app-header .rp-popover-list button[data-action] small{
+ display:block;white-space:normal!important;color:var(--mx-ui-muted)!important;
+ font-size:11px!important;overflow-wrap:anywhere!important;
+}
+.dashboard .app-header .rp-popover-list button[data-view=notificacoes]{
+ min-height:40px!important;margin-top:6px!important;background:transparent!important;
+ border:0!important;color:#f2bbc8!important;
+}
+/* Navigacao / perfil sao menus, nao janelas de pagina inteira. */
+#dialog.rp-flow-dialog[open]:has(.ux-access-menu),
+#dialog.rp-flow-dialog[open]:has(.profile-modal),
+#dialog.rp-flow-dialog[open]:has(.role-picker-list){
+ display:block!important;height:auto!important;min-height:0!important;
+ max-height:min(78dvh,650px)!important;width:min(440px,calc(100vw - 24px))!important;
+ max-width:calc(100vw - 24px)!important;overflow-y:auto!important;
+ padding:20px 15px 14px!important;margin:auto!important;
+ border-radius:15px!important;
+}
+#dialog.rp-flow-dialog[open] :is(.ux-access-menu,.profile-modal){
+ min-height:0!important;height:auto!important;max-height:none!important;padding-bottom:4px!important;
+}
+#dialog.rp-flow-dialog[open] .ux-access-menu h2{
+ font-size:clamp(22px,6vw,28px)!important;margin-bottom:14px!important;
+}
+#dialog.rp-flow-dialog[open] .ux-access-menu button[data-view]{
+ min-height:48px!important;padding:10px 14px!important;
+ background:transparent!important;border:0!important;
+ border-bottom:1px solid var(--mx-ui-line)!important;border-radius:0!important;
+ box-shadow:none!important;
+}
+#dialog.rp-flow-dialog[open] .profile-modal button{
+ border-radius:8px!important;box-shadow:none!important;
+}
+/* Chat demonstrativo em painel proporcional, com uma unica barra e conteudo flexivel. */
+#rp-demo-chat-overlay.rp-field-chat-overlay{
+ display:flex!important;flex-direction:column!important;
+ position:fixed!important;inset:auto!important;top:50%!important;left:50%!important;
+ right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;
+ width:min(560px,calc(100vw - 20px))!important;max-width:calc(100vw - 20px)!important;
+ height:min(68dvh,660px)!important;min-height:0!important;
+ max-height:calc(100dvh - 24px)!important;
+ padding:0!important;border:1px solid #514149!important;
+ border-radius:14px!important;background:var(--mx-ui-bg)!important;overflow:hidden!important;
+}
+#rp-demo-chat-overlay .rp-field-chat-overlay-head{
+ height:48px!important;min-height:48px!important;flex:0 0 48px!important;
+ padding:7px 13px!important;background:var(--mx-ui-surface)!important;
+ border-bottom:1px solid var(--mx-ui-line)!important;
+}
+#rp-demo-chat-overlay .rp-field-chat-overlay-head strong{
+ font-size:13px!important;letter-spacing:0!important;
+}
+#rp-demo-chat-overlay .rp-field-chat-overlay-head button{
+ width:38px!important;min-width:38px!important;height:36px!important;
+ min-height:36px!important;border:0!important;background:transparent!important;
+ color:var(--mx-ui-text)!important;border-radius:8px!important;
+}
+#rp-demo-chat-overlay .field-chat-screen{
+ flex:1 1 auto!important;display:flex!important;flex-direction:column!important;
+ width:100%!important;min-height:0!important;max-width:none!important;
+ height:auto!important;max-height:none!important;margin:0!important;background:var(--mx-ui-bg)!important;
+}
+#rp-demo-chat-overlay .field-chat-topbar{display:none!important}
+#rp-demo-chat-overlay .field-chat-surface{
+ flex:1 1 auto!important;display:flex!important;min-height:0!important;
+ padding:0!important;border:0!important;background:var(--mx-ui-bg)!important;
+ border-radius:0!important;
+}
+#rp-demo-chat-overlay .field-chat-conversation{
+ display:flex!important;flex:1 1 auto!important;flex-direction:column!important;
+ min-width:0!important;min-height:0!important;height:auto!important;
+}
+#rp-demo-chat-overlay .field-chat-threadbar{
+ min-height:53px!important;flex:0 0 auto!important;
+ padding:7px 12px!important;background:var(--mx-ui-surface)!important;
+ border-bottom:1px solid var(--mx-ui-line)!important;
+}
+#rp-demo-chat-overlay .field-chat-threadbar :is(strong,small){color:var(--mx-ui-text)!important}
+#rp-demo-chat-overlay .field-chat-avatar{
+ background:#3c2b31!important;color:#f5d4de!important;
+}
+#rp-demo-chat-overlay .field-chat-thread{
+ flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;
+ background:var(--mx-ui-bg)!important;padding:12px!important;gap:9px!important;
+}
+#rp-demo-chat-overlay .field-chat-bubble{
+ background:#272328!important;border:0!important;border-radius:12px 12px 12px 3px!important;
+ box-shadow:none!important;max-width:84%!important;
+}
+#rp-demo-chat-overlay .field-chat-bubble.is-mine{
+ background:#503039!important;border:0!important;border-radius:12px 12px 3px 12px!important;
+ box-shadow:none!important;
+}
+#rp-demo-chat-overlay .field-chat-compose{
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+ align-items:center!important;gap:8px!important;flex:0 0 auto!important;
+ padding:9px!important;border-top:1px solid var(--mx-ui-line)!important;
+ background:var(--mx-ui-surface)!important;min-width:0!important;
+}
+#rp-demo-chat-overlay .field-chat-compose input{
+ min-width:0!important;width:100%!important;box-sizing:border-box!important;
+ height:44px!important;min-height:44px!important;margin:0!important;
+ padding:9px 12px!important;border-radius:9px!important;
+ border:1px solid #605259!important;background:#151316!important;
+ box-shadow:none!important;color:#fff!important;font-size:15px!important;
+}
+#rp-demo-chat-overlay .field-chat-compose .button.primary{
+ min-width:72px!important;height:44px!important;min-height:44px!important;
+ border-radius:9px!important;background:#c42b49!important;border-color:#c42b49!important;
+}
+#rp-demo-chat-overlay:has(.field-chat-list){
+ height:auto!important;max-height:min(65dvh,500px)!important;
+}
+#rp-demo-chat-overlay:has(.field-chat-list) .field-chat-screen{
+ flex:0 1 auto!important;max-height:calc(65dvh - 48px)!important;
+}
+#rp-demo-chat-overlay .field-chat-list{
+ background:var(--mx-ui-bg)!important;padding:8px 12px!important;
+}
+#rp-demo-chat-overlay .field-chat-contact-row{
+ min-height:60px!important;background:transparent!important;border:0!important;
+ border-bottom:1px solid var(--mx-ui-line)!important;border-radius:0!important;
+}
+#rp-demo-chat-overlay .field-chat-local-note{padding:12px 4px!important;color:var(--mx-ui-muted)!important}
+#rp-demo-chat-overlay .field-chat-auth-link{color:#f7b4c2!important}
+:where(.dashboard,#central-root) :is(.field-chat-surface,.chat-workspace,.chat-thread,.chat-sidebar){
+ background-color:var(--mx-ui-bg)!important;
+}
+:where(.dashboard,#central-root) :is(.field-chat-back,.field-chat-contact-row,.chat-conversation) {
+ border-radius:8px!important;box-shadow:none!important;
+}
+/* Mesma tipografia nos dois papeis de campo */
+.dashboard .rp-demo-inspector .rp-inspection-sheet-heading strong,
+.dashboard .patrol-actions .patrol-action-heading strong,
+#central-root .rp-inspection-sheet-heading strong{
+ font-size:15px!important;line-height:1.3!important;font-weight:750!important;
+}
+.dashboard .rp-demo-inspector .rp-inspection-route-bar strong{font-size:13px!important}
+@media(max-width:600px){
+ #rp-demo-chat-overlay.rp-field-chat-overlay{width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important}
+ .dashboard .app-header .rp-header-tools{gap:0!important}
+ .dashboard .app-header .rp-popover-list,
+ .dashboard .shell-main .app-header .rp-popover-list{
+ top:calc(78px + env(safe-area-inset-top,0px))!important;
+ left:10px!important;right:10px!important;width:calc(100vw - 20px)!important;
+ max-width:calc(100vw - 20px)!important;
+ }
+}
+@media(max-height:620px){
+ #rp-demo-chat-overlay.rp-field-chat-overlay{height:min(80dvh,500px)!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #rp-demo-chat-overlay *,.dashboard .app-header .rp-popover-list *{transition:none!important;animation:none!important}
+}
+
+
+/* Conversa vazia: altura proporcional ao conteudo. */
+#rp-demo-chat-overlay:has(.field-chat-empty){height:min(45dvh,390px)!important}
+@media(max-height:620px){#rp-demo-chat-overlay:has(.field-chat-empty){height:min(65dvh,330px)!important}}
+
+/* Controles de campo: uma unica barra integrada, nao tres cards azuis. */
+.dashboard .patrol-communication-actions,
+.dashboard .rp-inspection-map-actions{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:0!important;padding:4px!important;overflow:hidden!important;
+ background:rgba(22,20,24,.93)!important;border:1px solid #52464f!important;
+ border-radius:12px!important;box-shadow:0 8px 20px #0008!important;
+}
+.dashboard .patrol-communication-actions button,
+.dashboard .rp-inspection-map-actions button{
+ min-width:0!important;min-height:58px!important;height:62px!important;
+ background:transparent!important;border:0!important;border-radius:0!important;
+ box-shadow:none!important;color:#f6f2f4!important;
+ font-size:11px!important;padding:5px 4px!important;
+}
+.dashboard .patrol-communication-actions button+button,
+.dashboard .rp-inspection-map-actions button+button{
+ border-left:1px solid #453e45!important;
+}
+.dashboard .patrol-communication-actions button svg,
+.dashboard .rp-inspection-map-actions button svg{
+ color:#f5e9ee!important;filter:none!important;
+}
+.dashboard .patrol-communication-actions button:first-child svg,
+.dashboard .rp-inspection-map-actions button:first-child svg{color:#ffb56b!important}
+.dashboard .patrol-primary-flow .button.primary{
+ background:#b92947!important;border:1px solid #d34862!important;
+ color:#fff!important;box-shadow:none!important;
+}
+.dashboard button[data-field-torch],
+.dashboard .ux06-map-help{
+ border-color:#62575e!important;background:#252127!important;
+ color:#f5f1f4!important;box-shadow:0 4px 13px #0008!important;
+}
+.dashboard button[data-field-torch] svg,
+.dashboard .ux06-map-help svg{color:#f5f1f4!important}
+
+/* O cockpit de ronda possui seletores legados muito especificos: neutralizar na origem visual. */
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:0!important;max-width:100%!important;overflow:hidden!important;
+ background:#161417ef!important;border:1px solid #554650!important;
+ border-radius:12px!important;padding:3px!important;box-shadow:0 6px 16px #0009!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button,
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button:first-child{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;min-width:0!important;height:62px!important;min-height:62px!important;
+ padding:5px 2px!important;gap:4px!important;border:0!important;border-radius:0!important;
+ background:transparent!important;background-image:none!important;color:#fff!important;
+ box-shadow:none!important;animation:none!important;transform:none!important;
+ font-size:10px!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button+button{
+ border-left:1px solid #4a4248!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button svg,
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button:first-child svg{
+ color:#ece7e9!important;filter:none!important;width:23px!important;height:23px!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button:first-child svg{
+ color:#f3a45e!important;
+}
+.dashboard .ronda-page .patrol-actions .patrol-primary-flow>.button.primary.full{
+ background:#bb2946!important;background-image:none!important;border:1px solid #d34862!important;
+ color:#fff!important;box-shadow:none!important;
+}

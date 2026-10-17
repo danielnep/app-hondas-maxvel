@@ -74,7 +74,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
  '</div>';
 }
 // Controles compartilhados entre o modo demonstrativo e a operação autenticada.
-document.addEventListener('click',event=>{
+if(typeof document!=='undefined')document.addEventListener('click',event=>{
  const control=event.target.closest('[data-inspection-circuit-open],[data-inspection-history-open],[data-inspection-help-open],[data-inspection-modal-close]');
  if(!control)return;
  const cockpit=control.closest('[data-inspection-cockpit]'),scope=cockpit||document;
