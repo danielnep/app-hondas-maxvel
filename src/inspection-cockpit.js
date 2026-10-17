@@ -56,9 +56,9 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
    '<strong class="rp-inspection-destination" data-inspection-current-title>'+first+'</strong>'+
    '<p class="rp-inspection-instruction" data-inspection-instructions>'+html(current?.instructions||current?.reason||'As solicitações do COI aparecerão aqui.')+'</p>'+
    '<small class="rp-inspection-distance" data-inspection-distance>'+(distance!==null?'Distância em linha reta: '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m') :current?'Destino sem coordenadas':'')+'</small>'+
+  '</div>'+
    '<div class="rp-inspection-primary-actions">'+action+
    (current?'<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(directions)+'" aria-label="Abrir navegação viária para o destino">Navegar ↗</a>':'')+'</div>'+
-  '</div>'+
  '</section>'+
  '<dialog class="rp-inspection-dialog" data-inspection-circuit-modal aria-label="Circuito e próximas vistorias">'+
   '<header><div><small>CIRCUITO DO COI</small><h2>Próximas vistorias</h2></div><button type="button" data-inspection-modal-close aria-label="Fechar janela">✕</button></header>'+
