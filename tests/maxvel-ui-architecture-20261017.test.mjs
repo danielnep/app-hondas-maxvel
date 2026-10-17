@@ -30,3 +30,5 @@ test('troca para vistoriador nao aciona checklist automaticamente',()=>{
 });
 
 test('conversa vazia usa altura compacta',()=>{assert.match(load('assets/maxvel-ui-architecture-20261017.css'),/#rp-demo-chat-overlay:has/)});
+
+test('controles de campo nao recuperam cartoes azuis',()=>{const css=load('assets/maxvel-ui-architecture-20261017.css');assert.match(css,/patrol-communication-actions/);assert.match(css,/border-left:1px solid #453e45/);assert.match(css,/patrol-primary-flow/)});
