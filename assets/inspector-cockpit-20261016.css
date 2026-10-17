@@ -78,7 +78,7 @@
  flex:1 1 240px!important;min-height:49px!important;width:auto!important;
  border:1px solid #e7edf5!important;border-radius:11px!important;background:#e7edf5!important;
  padding:10px 15px!important;font-size:14px!important;font-weight:750!important;
- color:white!important;box-shadow:none!important}
+ color:#151a20!important;box-shadow:none!important}
 .dashboard .rp-inspection-navigate,#central-root .rp-inspection-navigate{
  flex:1 1 140px!important;display:flex!important;align-items:center!important;justify-content:center!important;
  min-height:48px!important;text-align:center!important;text-decoration:none!important;
