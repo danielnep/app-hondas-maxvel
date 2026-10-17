@@ -321,3 +321,32 @@
   right:14px!important;top:86px!important;width:62px!important;height:62px!important;min-height:62px!important
  }
 }
+
+
+/* COI: substitui controles com aparência padrão por ações tipográficas discretas.
+   Mesmo padrão cinza neutro/azul informativo usado no cockpit. */
+.dashboard .coi-demo-record .rp-coi-percurso-link{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;
+ width:auto!important;max-width:100%!important;min-height:43px!important;margin:9px 0 0!important;
+ padding:8px 13px!important;border:1px solid #424b56!important;border-radius:9px!important;
+ background:#262a31!important;color:#eef4fa!important;font-size:12px!important;font-weight:750!important;
+ box-shadow:none!important;line-height:1.4!important
+}
+.dashboard .coi-demo-content .rp-coi-history-link{
+ display:inline-flex!important;align-items:center!important;gap:8px!important;flex:none!important;
+ min-height:43px!important;padding:8px 9px!important;margin:0!important;
+ background:transparent!important;color:#7cd0f8!important;border:0!important;
+ border-radius:8px!important;box-shadow:none!important;font-size:12px!important;font-weight:750!important
+}
+.dashboard .coi-demo-record .rp-coi-percurso-link span,
+.dashboard .coi-demo-content .rp-coi-history-link span{font-size:16px;font-weight:750}
+.dashboard .coi-demo-record .rp-coi-percurso-link:focus-visible,
+.dashboard .coi-demo-content .rp-coi-history-link:focus-visible{outline:3px solid #47b6ec;outline-offset:2px}
+.dashboard :is(.coi-demo-record,.coi-demo-content){
+ border-color:#454a53!important;background:#1c1e23!important;color:#f3f5f8!important
+}
+@media(max-width:600px){
+ .dashboard .coi-demo-content header.toolbar{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:7px!important}
+ .dashboard .coi-demo-content header.toolbar h2{flex:1 1 190px!important;min-width:0!important;font-size:18px!important;line-height:1.25!important}
+ .dashboard .coi-demo-content .rp-coi-history-link{margin-left:0!important}
+}
