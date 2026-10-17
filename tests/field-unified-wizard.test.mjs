@@ -29,8 +29,9 @@ test('anormalidade obriga descrição e conclusão requer verificação real',()
  assert.ok(inspectionProblems(empty,{final:true}).length>=2);
 });
 test('um único app mantém todos os controles da ronda e vistoria, e modal de mensagens',()=>{
- const inspector=read('src/inspection-cockpit.js'),central=read('src/central.js'),demo=read('src/app.js'),chat=read('src/internal-chat-ui.js');
- for(const name of ['data-field-tool-torch','data-field-tool-panic','data-field-tool-alert','data-field-tool-incident','data-field-tool-chat'])assert.ok(inspector.includes(name),name);
+ const inspector=read('src/inspection-cockpit.js'),guard=read('src/field-guard-circuit.js'),central=read('src/central.js'),demo=read('src/app.js'),chat=read('src/internal-chat-ui.js');
+ assert.ok(guard.includes('data-field-tool-torch')&&demo.includes('data-field-tool-torch'),'lanterna preservada no campo unificado');
+ for(const name of ['data-field-tool-panic','data-field-tool-alert','data-field-tool-incident','data-field-tool-chat'])assert.ok(inspector.includes(name),name);
  assert.match(central,/data-wizard-next/);assert.match(central,/inspectionPayload\(inspectorDraft\)/);
  assert.match(demo,/demo-wizard-open/);assert.match(demo,/inspectionPayload\(demoInspectionDraft\)/);
  assert.match(chat,/rp-field-chat-overlay/);assert.match(chat,/conversations\.slice\(0,5\)/);
