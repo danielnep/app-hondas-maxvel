@@ -179,3 +179,26 @@
  :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
  .rp-inspection-cockpit .rp-inspection-map-actions button{font-size:10px!important}
 }
+
+/* CORREÇÃO: ação de confirmação sempre acessível, sem prender o rodapé
+   no conteúdo rolável da vistoria. O conteúdo informativo pode rolar. */
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-commands{
+ display:flex!important;flex-direction:column!important;overflow:hidden!important;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-sheet-heading{flex:0 0 auto!important}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-commands-body{
+ min-height:0!important;flex:1 1 auto!important;overflow-y:auto!important;
+ overscroll-behavior-y:contain;scrollbar-width:thin;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-commands>.rp-inspection-primary-actions{
+ flex:0 0 auto!important;position:relative!important;bottom:auto!important;
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+ padding:8px 12px 10px!important;margin:0!important;
+ border-top:1px solid #49404a;background:#1b1920!important;
+}
+.rp-inspection-commands>.rp-inspection-primary-actions:empty{display:none!important}
+.rp-inspection-commands>.rp-inspection-primary-actions:not(:has(button,a)){display:none!important}
