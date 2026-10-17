@@ -17,6 +17,7 @@ const icons={
  panic:'<circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 4h.01"/>',
  help:'<circle cx="12" cy="12" r="10"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 4h.01"/>',
  locate:'<circle cx="12" cy="12" r="7"/><path d="M12 1v5m0 12v5M1 12h5m12 0h5"/>',
+ torch:'<path d="M9 2h6l1 5-4 4-4-4 1-5Z"/><path d="M10 11v10m4-10v10M7 22h10"/>',
  arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>'
 };
 const svg=key=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[key]+'</svg>';
@@ -42,6 +43,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
     '<button type="button" class="rp-inspection-map-fit" '+(mode==='demo'?'data-action="demo-inspection-fit"':'data-inspection-fit')+' aria-label="Enquadrar destinos">'+svg('locate')+'</button></header>'+
    '<div class="rp-inspection-map-controls"><button type="button" class="rp-inspection-panic" data-field-tool-panic aria-label="Acionar pânico">'+svg('panic')+'<span>PÂNICO</span></button>'+
     '<button type="button" class="rp-inspection-help" data-inspection-help-open aria-label="Ajuda do mapa">'+svg('help')+'</button></div>'+
+   '<button type="button" class="rp-inspection-torch" data-field-tool-torch aria-label="Ligar ou desligar lanterna">'+svg('torch')+'<span>Lanterna</span></button>'+
    '<nav class="rp-inspection-map-actions" aria-label="Comunicação de campo">'+
     '<button type="button" data-field-tool-alert>'+svg('alert')+'<span>Enviar alerta</span></button>'+
     '<button type="button" data-field-tool-incident>'+svg('incident')+'<span>Registrar<br>ocorrência</span></button>'+
@@ -76,7 +78,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
  '</div>';
 }
 // Controles compartilhados entre o modo demonstrativo e a operação autenticada.
-document.addEventListener('click',event=>{
+if(typeof document!=='undefined')document.addEventListener('click',event=>{
  const control=event.target.closest('[data-inspection-circuit-open],[data-inspection-history-open],[data-inspection-help-open],[data-inspection-modal-close]');
  if(!control)return;
  const cockpit=control.closest('[data-inspection-cockpit]'),scope=cockpit||document;
