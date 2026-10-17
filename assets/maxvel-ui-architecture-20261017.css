@@ -232,3 +232,71 @@
 /* Conversa vazia: altura proporcional ao conteudo. */
 #rp-demo-chat-overlay:has(.field-chat-empty){height:min(45dvh,390px)!important}
 @media(max-height:620px){#rp-demo-chat-overlay:has(.field-chat-empty){height:min(65dvh,330px)!important}}
+
+/* Controles de campo: uma unica barra integrada, nao tres cards azuis. */
+.dashboard .patrol-communication-actions,
+.dashboard .rp-inspection-map-actions{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:0!important;padding:4px!important;overflow:hidden!important;
+ background:rgba(22,20,24,.93)!important;border:1px solid #52464f!important;
+ border-radius:12px!important;box-shadow:0 8px 20px #0008!important;
+}
+.dashboard .patrol-communication-actions button,
+.dashboard .rp-inspection-map-actions button{
+ min-width:0!important;min-height:58px!important;height:62px!important;
+ background:transparent!important;border:0!important;border-radius:0!important;
+ box-shadow:none!important;color:#f6f2f4!important;
+ font-size:11px!important;padding:5px 4px!important;
+}
+.dashboard .patrol-communication-actions button+button,
+.dashboard .rp-inspection-map-actions button+button{
+ border-left:1px solid #453e45!important;
+}
+.dashboard .patrol-communication-actions button svg,
+.dashboard .rp-inspection-map-actions button svg{
+ color:#f5e9ee!important;filter:none!important;
+}
+.dashboard .patrol-communication-actions button:first-child svg,
+.dashboard .rp-inspection-map-actions button:first-child svg{color:#ffb56b!important}
+.dashboard .patrol-primary-flow .button.primary{
+ background:#b92947!important;border:1px solid #d34862!important;
+ color:#fff!important;box-shadow:none!important;
+}
+.dashboard button[data-field-torch],
+.dashboard .ux06-map-help{
+ border-color:#62575e!important;background:#252127!important;
+ color:#f5f1f4!important;box-shadow:0 4px 13px #0008!important;
+}
+.dashboard button[data-field-torch] svg,
+.dashboard .ux06-map-help svg{color:#f5f1f4!important}
+
+/* O cockpit de ronda possui seletores legados muito especificos: neutralizar na origem visual. */
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:0!important;max-width:100%!important;overflow:hidden!important;
+ background:#161417ef!important;border:1px solid #554650!important;
+ border-radius:12px!important;padding:3px!important;box-shadow:0 6px 16px #0009!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button,
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button:first-child{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;min-width:0!important;height:62px!important;min-height:62px!important;
+ padding:5px 2px!important;gap:4px!important;border:0!important;border-radius:0!important;
+ background:transparent!important;background-image:none!important;color:#fff!important;
+ box-shadow:none!important;animation:none!important;transform:none!important;
+ font-size:10px!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button+button{
+ border-left:1px solid #4a4248!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button svg,
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button:first-child svg{
+ color:#ece7e9!important;filter:none!important;width:23px!important;height:23px!important;
+}
+.dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-communication-actions button:first-child svg{
+ color:#f3a45e!important;
+}
+.dashboard .ronda-page .patrol-actions .patrol-primary-flow>.button.primary.full{
+ background:#bb2946!important;background-image:none!important;border:1px solid #d34862!important;
+ color:#fff!important;box-shadow:none!important;
+}
