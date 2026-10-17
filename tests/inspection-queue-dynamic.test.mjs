@@ -41,7 +41,7 @@ test('cockpit preserva mapa da ronda e sequência visual, mas restringe laudo à
  const idle=inspectionCockpit({mapId:'inspection-map'});
  assert.match(idle,/id="inspection-map"/);
  assert.match(idle,/patrol-workspace/);
- assert.match(idle,/Aguardando solicitações|Nenhum destino atribuído/);
+ assert.match(idle,/Aguardando COI|Sem destinos atribuídos/);
  const pending=inspectionCockpit({mapId:'inspection-map',queue:[row],mode:'real'});
  assert.match(pending,/data-inspection-depart/);
  assert.doesNotMatch(pending,/id="inspection-form"/);
