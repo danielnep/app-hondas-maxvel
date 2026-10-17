@@ -55,6 +55,6 @@ test('tela não mantém força de 100dvh nas janelas e evita vermelho em ação 
  assert.match(css,/\.rp-inspection-main-action\{[\s\S]*?background:#edf0f5!important/);
  assert.match(css,/\.rp-inspection-directions/);
  const index=read('index.html'),central=read('central.html');
- assert.match(index,/inspector-patrol-parity-20261016\.css\?v=2/);
- assert.match(central,/inspector-patrol-parity-20261016\.css\?v=2/);
+ assert.match(index,/inspector-patrol-parity-20261016\.css\?v=3/);
+ assert.match(central,/inspector-patrol-parity-20261016\.css\?v=3/);
 });
