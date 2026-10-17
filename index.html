@@ -22,18 +22,18 @@
  <link rel="stylesheet" href="./assets/rondas-pro-flow-20261014.css?v=4">
  <link rel="stylesheet" href="./assets/maxvel-premium-system-20261014.css?v=3">
  <link rel="stylesheet" href="./assets/coi-operations-v3.css?v=1">
-<link rel="stylesheet" href="/assets/uiux-refinement.css?v=2"><link rel="stylesheet" href="/assets/events-chat-history.css?v=2"><link rel="stylesheet" href="./assets/field-compact.css?v=1"><link rel="stylesheet" href="./assets/mobile-critical-20261016.css?v=1"><link rel="stylesheet" href="./assets/maxvel-atelier-20261016.css?v=2"><link rel="stylesheet" href="./assets/maxvel-field-refinement-20261016.css?v=1"><link rel="stylesheet" href="./assets/maxvel-print-qa-20261016.css?v=1"><link rel="stylesheet" href="./assets/inspector-cockpit-20261016.css?v=1"><link rel="stylesheet" href="./assets/field-unified-20261016.css?v=1"><link rel="stylesheet" href="./assets/inspector-patrol-parity-20261016.css?v=2"></head>
+<link rel="stylesheet" href="/assets/uiux-refinement.css?v=2"><link rel="stylesheet" href="/assets/events-chat-history.css?v=2"><link rel="stylesheet" href="./assets/field-compact.css?v=1"><link rel="stylesheet" href="./assets/mobile-critical-20261016.css?v=1"><link rel="stylesheet" href="./assets/maxvel-atelier-20261016.css?v=3"><link rel="stylesheet" href="./assets/maxvel-field-refinement-20261016.css?v=2"><link rel="stylesheet" href="./assets/maxvel-print-qa-20261016.css?v=1"><link rel="stylesheet" href="./assets/inspector-cockpit-20261016.css?v=2"><link rel="stylesheet" href="./assets/field-unified-20261016.css?v=2"><link rel="stylesheet" href="./assets/inspector-patrol-parity-20261016.css?v=3"></head>
 <body>
  <a href="#main" class="skip-link">Ir para o conteúdo</a>
  <div id="app"><div class="boot"><img src="./assets/maxvel-logo.webp" width="180" height="56" alt="Maxvel"><strong>Rondas Pro</strong><span>Preparando o ambiente operacional…</span></div></div>
  <div id="toast" role="status" aria-live="polite"></div>
  <dialog id="dialog" aria-label="Janela de informações"></dialog>
- <script type="module" src="./src/app.js?v=61"></script>
+ <script type="module" src="./src/app.js?v=62"></script>
  <script type="module" src="./src/inspection-demo-camera.js?v=1"></script>
  <script type="module" src="./src/soft-polish.js?v=1"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.includes("appassets.androidplatform.net")){
-  const updateKey="rondas-pro-updated-v47";
+  const updateKey="rondas-pro-updated-v48";
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
     if(sessionStorage.getItem(updateKey))return;
     sessionStorage.setItem(updateKey,"1");
@@ -44,12 +44,12 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.in
       const notice=document.createElement("div");
       notice.setAttribute("role","status");
       notice.style.cssText="position:fixed;left:14px;right:14px;bottom:16px;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #38bdf8;border-radius:12px;background:#09090bf2;color:#fff;box-shadow:0 12px 36px #000a";
-      notice.innerHTML="<span>Nova versão pronta. Atualize após terminar a ronda.</span><button type='button' style='padding:9px 12px;background:#a92543;color:#fff;border:0;border-radius:8px'>Atualizar</button>";
+      notice.innerHTML="<span>Nova versão pronta. Atualize após terminar a ronda.</span><button type='button' style='padding:9px 12px;background:#e7edf5;color:#151b22;border:0;border-radius:8px'>Atualizar</button>";
       notice.querySelector("button").addEventListener("click",()=>location.reload());
       document.body.append(notice);
     }
   });
-  navigator.serviceWorker.register("./sw.js?v=47",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register("./sw.js?v=48",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
 }
 </script>
 </body>
