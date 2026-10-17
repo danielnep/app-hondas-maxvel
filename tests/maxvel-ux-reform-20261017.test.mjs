@@ -24,3 +24,11 @@ test('reforma reforça estados, contraste, toque e preferência de movimento',()
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
  assert.match(css,/\.rp-event-columns/);
 });
+
+test('ação crítica da vistoria é irmã da área rolável e permanece visível',()=>{
+ const c=read('src/inspection-cockpit.js');
+ assert.match(c,/<\/div>'\+\s*'<div class="rp-inspection-primary-actions">/);
+ const css=read('assets/maxvel-ux-reform-20261017.css');
+ assert.match(css,/rp-inspection-commands>\.rp-inspection-primary-actions/);
+ assert.match(css,/flex:0 0 auto!important/);
+});
