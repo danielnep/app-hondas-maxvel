@@ -9,6 +9,7 @@ const inspector=read('src/inspection-cockpit.js');
 const index=read('index.html');
 const central=read('central.html');
 const sw=read('sw.js');
+const demoStyles=read('assets/demo-roles.css');
 
 test('vistoriador não cria segunda lanterna ao trocar de área',()=>{
  assert.match(torch,/const inspectorButton=dash\.querySelector\('\[data-inspection-cockpit\] \[data-field-tool-torch\]'\)/);
@@ -57,4 +58,9 @@ test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
   assert.match(page,/inspector-patrol-parity-20261016\.css\?v=3/);
   assert.match(page,/maxvel-field-refinement-20261016\.css\?v=2/);
  }
+});
+
+test('minimapa da Administração contém camadas Leaflet dentro de sua própria área',()=>{
+ assert.match(demoStyles,/\\.demo-mini-route-map\\{position:relative;isolation:isolate;overflow:hidden;height:206px/);
+ assert.match(index,/demo-roles\\.css\\?v=4/);
 });
