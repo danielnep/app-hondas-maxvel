@@ -694,3 +694,17 @@
   font-size:10px!important
  }
 }
+
+
+/* Painel do vigia mantém o mesmo contorno grafite do vistoriador.
+   Vermelho fica reservado ao botão de pânico e aos riscos reais. */
+@media(max-width:900px){
+ .dashboard .ronda-page .patrol-workspace .patrol-actions,
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+  border-color:#414a55!important;
+  border-top-color:#414a55!important;
+  border-right-color:#414a55!important;
+  border-bottom-color:#414a55!important;
+  border-left-color:#414a55!important
+ }
+}
