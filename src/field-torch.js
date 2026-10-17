@@ -129,13 +129,16 @@ export function createFieldTorch({
   const dash=doc?.querySelector?.('.dashboard')||doc?.querySelector?.('#central-root[data-torch-role]');
   const allowed=dash&&['ronda','vistoriador'].includes(dash.dataset.torchRole||'');
   if(!allowed){if(active()||busy)stop();return;}
-  if(!dash.querySelector('[data-field-torch]')){
-   // O vistoriador já possui lanterna no mapa. Usá-la como controle único
-   // impede a criação de um segundo botão flutuante na mesma tela.
-   const inspectorButton=dash.querySelector('[data-inspection-cockpit] [data-field-tool-torch]');
-   if(inspectorButton){
-    inspectorButton.setAttribute('data-field-torch','');
-   }else{
+  // Só existe uma lanterna visual por perfil. O botão global do Vigia
+  // não acompanha o Vistoriador quando a área é trocada na mesma página.
+  const inspectorButton=dash.querySelector('[data-inspection-cockpit] [data-field-tool-torch]');
+  const globalButton=dash.querySelector('.field-torch-fab[data-field-torch]');
+  if(inspectorButton){
+   globalButton?.remove();
+   inspectorButton.setAttribute('data-field-torch','');
+  }else{
+   dash.querySelector('[data-inspection-cockpit] [data-field-tool-torch][data-field-torch]')?.removeAttribute('data-field-torch');
+   if(!globalButton){
     const el=doc.createElement('button');el.type='button';el.className='field-torch-fab';
     el.setAttribute('data-field-torch','');el.innerHTML=glyph+'<span>Lanterna</span>';
     el.addEventListener('click',toggle);dash.append(el);
