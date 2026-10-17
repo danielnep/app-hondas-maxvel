@@ -28,12 +28,12 @@
 .demo-admin-route-header h2{margin:3px 0}
 .demo-admin-route-header p{font-size:12px;opacity:.75}
 .demo-admin-route-line{display:grid;grid-template-columns:minmax(210px,35%) minmax(0,1fr);overflow:hidden;border-radius:12px;border:1px solid rgba(185,191,203,.23);min-height:206px;background:var(--surface,#151518)}
-.demo-mini-route-map{min-height:206px;background:#10151b}
+.demo-mini-route-map{position:relative;isolation:isolate;overflow:hidden;height:206px;min-height:206px;background:#171d25}
 .demo-admin-route-line>div:last-child{padding:16px;display:grid;align-content:start;gap:8px}
 .demo-admin-route-line h3{font-size:15px;margin:0}
 .demo-admin-route-line p{font-size:12px;opacity:.8;margin:0}
 .demo-admin-route-line .button{justify-self:start}
-.demo-route-flag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#f2bdca}
+.demo-route-flag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#a9c6d9}
 .simulation-roles{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
 .simulation-roles button{flex-shrink:0}
 @media(max-width:760px){.demo-role-columns,.demo-admin-route-line{grid-template-columns:minmax(0,1fr)}.demo-role-columns .map-container{height:250px;min-height:250px}.demo-admin-route-header .button{width:100%;justify-content:center}.demo-mini-route-map{height:220px;min-height:220px}.demo-role-view,.demo-admin-route-queue{gap:12px}.demo-role-columns>section,.demo-role-columns>form{padding:13px}.demo-admin-route-line>div:last-child{padding:14px}.simulation-roles{justify-content:flex-start}}
