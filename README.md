@@ -1,3 +1,9 @@
+## CSS atual · higienização de 17/10/2026
+
+Cinco fontes canônicas, editadas diretamente. `index.html`: `ronda-pro.css` → `operational.css` → `mobile-critical.css` → `field.css`. `central.html`: `central.css` → `operational.css` → `field.css`. A ordem preserva os contratos de cada acesso. Nenhuma folha depende de um CSS legado ou de um gerador que reconstrói temas antigos.
+
+Validação: `npm ci`, `npm run check:styles`, `npm run check`, `npm test`. [Inventário, defeitos corrigidos e limites da auditoria](docs/HIGIENIZACAO-CSS-20261017.md).
+
 # Rondas Pro · Grupo Maxvel
 
 ## Eventos, chat interno e histórico — 15/10/2026
@@ -41,7 +47,7 @@ A revisão visual de 13/10/2026 substitui os controles totalmente retos e os det
 
 ## Revisão 08 · marca real e consistência visual
 
-A interface utiliza a imagem original fornecida da Maxvel ao lado do nome **Rondas Pro**. A navegação móvel foi transferida para o menu no cabeçalho, sem barra inferior. Painéis, botões, campos e janelas têm cantos retos; apenas as geocercas e os marcadores geográficos mantêm círculos. Um único CSS compilado (`assets/ronda-pro.css`) preserva a estrutura dos componentes e aplica uma paleta grafite/vermelho. Execute `python3 scripts/build-styles.py` ao alterar a estrutura, o tema ou o layout.
+A interface utiliza a imagem original fornecida da Maxvel ao lado do nome **Rondas Pro**. A navegação móvel foi transferida para o menu no cabeçalho, sem barra inferior. Painéis, botões, campos e janelas têm cantos retos; apenas as geocercas e os marcadores geográficos mantêm círculos. Um único CSS compilado (`assets/ronda-pro.css`) preserva a estrutura dos componentes e aplica uma paleta grafite/vermelho. O gerador histórico foi retirado: as cinco fontes CSS atuais são editadas diretamente. Consulte [a auditoria CSS atual](docs/HIGIENIZACAO-CSS-20261017.md).
 
 O mapa começa com OpenStreetMap e aplica a aparência escura aos tiles. A fonte anterior podia devolver uma imagem HTTP 200 contendo “API KEY REQUIRED”, sem disparar `tileerror`. Falhas reais de carregamento mantêm a rota esquemática identificada.
 

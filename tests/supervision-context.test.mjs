@@ -1,10 +1,11 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DEMO_WATCHERS,demoSchedule,routeForProgram,routeForWatcher} from '../src/scheduling.js';
 import {corridorDistance,distanceMeters,routeWaypoints} from '../src/domain.js';
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const styles=readFileSync(new URL('../assets/maxvel-mobile-02.css',import.meta.url),'utf8');
+const styles=readStyles('app-shell');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 
 test('os quatro vigias tem geometria demonstrativa diferente e consistente',()=>{

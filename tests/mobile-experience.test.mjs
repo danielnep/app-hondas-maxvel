@@ -1,9 +1,10 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const theme=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
+const theme=readStyles('application');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const gradle=readFileSync(new URL('../android/app/build.gradle',import.meta.url),'utf8');
 

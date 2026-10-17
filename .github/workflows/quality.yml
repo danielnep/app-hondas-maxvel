@@ -15,6 +15,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Instalar dependências de validação
+        run: npm ci
+      - name: Validar CSS canônico
+        run: npm run check:styles
       - name: Validar sintaxe
         run: npm run check
       - name: Testes de domínio e interface

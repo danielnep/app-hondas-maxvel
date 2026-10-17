@@ -1,7 +1,8 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-const styles=readFileSync(new URL('../assets/horizon-operacional.css',import.meta.url),'utf8');
+const styles=readStyles('maxvel-premium-system-20261014');
 const manifest=readFileSync(new URL('../android/app/src/main/AndroidManifest.xml',import.meta.url),'utf8');
 const service=readFileSync(new URL('../android/app/src/main/java/br/com/horizon/maxvel/PatrolLocationService.java',import.meta.url),'utf8');
 const activity=readFileSync(new URL('../android/app/src/main/java/br/com/horizon/maxvel/MainActivity.java',import.meta.url),'utf8');
@@ -14,9 +15,9 @@ function luminance(hex){
 function ratio(a,b){const l=[luminance(a),luminance(b)].sort((a,b)=>b-a);return (l[0]+.05)/(l[1]+.05);}
 
 test('cores primárias usadas no tema têm pelo menos contraste AA para texto comum',()=>{
- for(const [fg,bg] of [['FFFFFF','0D61C3'],['E8F3FC','0B1D30'],['E8F3FC','102A42'],['0D2B45','F7FBFF']])assert.ok(ratio(fg,bg)>=4.5,fg+'/'+bg+' = '+ratio(fg,bg).toFixed(2));
- assert.match(styles,/#0D61C3/i);
- assert.match(styles,/#0B1D30/i);
+ const tokens=Object.fromEntries([...styles.matchAll(/--mxp-([a-z-]+):#([0-9a-f]{6})/gi)].map(m=>[m[1],m[2]]));
+ for(const [fg,bg] of [['ink','canvas'],['muted','panel']])assert.ok(ratio(tokens[fg],tokens[bg])>=4.5,fg+'/'+bg);
+
 });
 
 test('aplicativo Android declara rastreamento transparente com encerramento visível',()=>{

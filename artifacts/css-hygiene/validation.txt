@@ -1,0 +1,8 @@
+npm test: 224/224 pass
+npm run check: PASS
+npm run check:styles: PASS
+Computed CSS comparison: 20/20 scenarios, zero property differences against the baseline with the isolated missing-brace repair.
+Field flows: PASS at 320, 390, 768, 1366px.
+Inspection map: PASS for 1 and 3 destinations.
+Authenticated central: PASS at 390 and 1366px on recheck; an initial intermittent draft-preservation failure is recorded in the audit.
+Android device/APK: not executed.

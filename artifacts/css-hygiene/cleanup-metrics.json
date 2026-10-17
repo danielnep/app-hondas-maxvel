@@ -1,0 +1,226 @@
+[
+  {
+    "file": "ronda-pro.css",
+    "bytesBefore": 390718,
+    "bytesAfter": 384815,
+    "redundantDeclarations": 245,
+    "emptyRules": 39,
+    "remainingDifferentValues": 282,
+    "examples": [
+      {
+        "selector": ".checkpoint-curtain-panel",
+        "property": "background",
+        "earlier": "linear-gradient(160deg,rgba(25,25,30,.96),rgba(10,10,12,.95))",
+        "later": "#19191e",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain-panel",
+        "property": "box-shadow",
+        "earlier": "0 24px 78px rgba(0,0,0,.8)",
+        "later": "0 28px 90px rgba(0,0,0,.83),inset 0 1px rgba(255,255,255,.1)",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain-panel h2",
+        "property": "margin",
+        "earlier": "5px 0",
+        "later": "4px 0 2px",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain-panel h2",
+        "property": "font-size",
+        "earlier": "clamp(21px,5vw,28px)",
+        "later": "clamp(21px,4vw,27px)",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain .checkpoint-stopwatch",
+        "property": "padding",
+        "earlier": "18px 14px",
+        "later": "8px 12px",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain .checkpoint-stopwatch",
+        "property": "background",
+        "earlier": "radial-gradient(circle at 50% 15%,rgba(14,165,233,.17),rgba(9,9,11,.92))",
+        "later": "#1c2832",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain .checkpoint-stopwatch",
+        "property": "border",
+        "earlier": "1px solid rgba(186,230,253,.50)",
+        "later": "1px solid rgba(128,212,252,.44)",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain .checkpoint-stopwatch",
+        "property": "border-radius",
+        "earlier": "14px",
+        "later": "13px",
+        "context": []
+      }
+    ]
+  },
+  {
+    "file": "central.css",
+    "bytesBefore": 49988,
+    "bytesAfter": 49981,
+    "redundantDeclarations": 0,
+    "emptyRules": 0,
+    "remainingDifferentValues": 0,
+    "examples": []
+  },
+  {
+    "file": "operational.css",
+    "bytesBefore": 112947,
+    "bytesAfter": 112594,
+    "redundantDeclarations": 15,
+    "emptyRules": 2,
+    "remainingDifferentValues": 20,
+    "examples": [
+      {
+        "selector": "#central-root .coi3-treatment-row",
+        "property": "padding",
+        "earlier": "15px 4px",
+        "later": "18px 10px",
+        "context": []
+      },
+      {
+        "selector": "#central-root .coi3-treatment-badge",
+        "property": "margin-left",
+        "earlier": "46px",
+        "later": "48px",
+        "context": [
+          "@media (max-width:760px)"
+        ]
+      },
+      {
+        "selector": ".dashboard .app-header .brand .ronda-pro-wordmark",
+        "property": "font-size",
+        "earlier": "14px",
+        "later": "13px",
+        "context": [
+          "@media (max-width:350px)"
+        ]
+      },
+      {
+        "selector": ".dashboard .app-header .brand .brand-partner",
+        "property": "width",
+        "earlier": "30px",
+        "later": "26px",
+        "context": [
+          "@media (max-width:350px)"
+        ]
+      },
+      {
+        "selector": ".dashboard .app-header .brand .brand-partner",
+        "property": "flex-basis",
+        "earlier": "30px",
+        "later": "26px",
+        "context": [
+          "@media (max-width:350px)"
+        ]
+      },
+      {
+        "selector": ".checkpoint-curtain .checkpoint-curtain-panel",
+        "property": "max-height",
+        "earlier": "calc(100dvh - 20px)",
+        "later": "calc(100dvh - 24px)",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain .checkpoint-curtain-panel",
+        "property": "padding",
+        "earlier": "20px 18px calc(24px + env(safe-area-inset-bottom,0px))",
+        "later": "16px",
+        "context": []
+      },
+      {
+        "selector": ".checkpoint-curtain .checkpoint-curtain-panel",
+        "property": "display",
+        "earlier": "block",
+        "later": "flex",
+        "context": []
+      }
+    ]
+  },
+  {
+    "file": "mobile-critical.css",
+    "bytesBefore": 23401,
+    "bytesAfter": 23401,
+    "redundantDeclarations": 0,
+    "emptyRules": 0,
+    "remainingDifferentValues": 0,
+    "examples": []
+  },
+  {
+    "file": "field.css",
+    "bytesBefore": 112887,
+    "bytesAfter": 112731,
+    "redundantDeclarations": 7,
+    "emptyRules": 0,
+    "remainingDifferentValues": 12,
+    "examples": [
+      {
+        "selector": ":is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-main-action",
+        "property": "background",
+        "earlier": "#e7edf5",
+        "later": "#edf0f5",
+        "context": []
+      },
+      {
+        "selector": ":is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-main-action",
+        "property": "border",
+        "earlier": "1px solid #e7edf5",
+        "later": "1px solid #edf0f5",
+        "context": []
+      },
+      {
+        "selector": ":is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-main-action",
+        "property": "white-space",
+        "earlier": "nowrap",
+        "later": "normal",
+        "context": []
+      },
+      {
+        "selector": ":is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-primary-actions",
+        "property": "grid-template-columns",
+        "earlier": "minmax(0,1fr) auto",
+        "later": "minmax(0,1fr)",
+        "context": []
+      },
+      {
+        "selector": ":is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-primary-actions",
+        "property": "gap",
+        "earlier": "8px",
+        "later": "7px",
+        "context": []
+      },
+      {
+        "selector": ".rp-field-wizard-controls button.rp-field-wizard-forward",
+        "property": "background",
+        "earlier": "#e7edf5",
+        "later": "#e7ebf1",
+        "context": []
+      },
+      {
+        "selector": ".rp-field-wizard-controls button.rp-field-wizard-forward",
+        "property": "border-color",
+        "earlier": "#e7edf5",
+        "later": "#e7ebf1",
+        "context": []
+      },
+      {
+        "selector": ".rp-field-verification",
+        "property": "background",
+        "earlier": "#252b34",
+        "later": "#24262d",
+        "context": []
+      }
+    ]
+  }
+]

@@ -8,20 +8,10 @@
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
  <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/webp" href="./assets/maxvel-logo.webp"><link rel="apple-touch-icon" href="./assets/maxvel-logo.webp">
 
-
-
-
-
-
-
- <link rel="stylesheet" href="./assets/ronda-pro.css?v=18">
- 
- 
- 
- 
- 
- 
- 
+<link rel="stylesheet" href="./assets/ronda-pro.css?v=49">
+<link rel="stylesheet" href="./assets/operational.css?v=49">
+<link rel="stylesheet" href="./assets/mobile-critical.css?v=49">
+<link rel="stylesheet" href="./assets/field.css?v=49">
 </head>
 <body>
  <a href="#main" class="skip-link">Ir para o conteúdo</a>
@@ -33,7 +23,7 @@
  <script type="module" src="./src/soft-polish.js?v=1"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.includes("appassets.androidplatform.net")){
-  const updateKey="rondas-pro-updated-v48";
+  const updateKey="rondas-pro-updated-v49";
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
     if(sessionStorage.getItem(updateKey))return;
     sessionStorage.setItem(updateKey,"1");
@@ -49,7 +39,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.in
       document.body.append(notice);
     }
   });
-  navigator.serviceWorker.register("./sw.js?v=48",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register("./sw.js?v=49",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
 }
 </script>
 </body>

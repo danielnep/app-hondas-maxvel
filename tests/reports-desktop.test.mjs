@@ -1,8 +1,9 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const js=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const css=readFileSync(new URL('../assets/horizon-operacional.css',import.meta.url),'utf8');
+const css=readStyles('app-shell');
 const start=js.indexOf('function reports(){'),stop=js.indexOf('\nfunction ',start+1),reports=js.slice(start,stop);
 
 test('relatório calcula progresso somente com dados das rondas e eventos locais',()=>{

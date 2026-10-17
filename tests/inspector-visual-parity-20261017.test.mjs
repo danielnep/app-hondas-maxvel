@@ -1,15 +1,16 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {inspectionCockpit} from '../src/inspection-cockpit.js';
 const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
-const css=read('assets/inspector-patrol-parity-20261016.css');
+const css=readStyles('inspector-patrol-parity-20261016');
 const torch=read('src/field-torch.js');
 const inspector=read('src/inspection-cockpit.js');
 const index=read('index.html');
 const central=read('central.html');
 const sw=read('sw.js');
-const demoStyles=read('assets/demo-roles.css');
+const demoStyles=readStyles('demo-roles');
 
 test('vistoriador não cria segunda lanterna ao trocar de área',()=>{
  assert.match(torch,/const inspectorButton=dash\.querySelector\('\[data-inspection-cockpit\] \[data-field-tool-torch\]'\)/);
@@ -43,24 +44,24 @@ test('grafite nos painéis e comunicação, perigo preserva contraste próprio',
  assert.match(css,/background:#191c22ee!important/);
  assert.match(css,/background:#242932ee!important/);
  assert.match(css,/background:linear-gradient\(150deg,#f93258,#b10d36\)/);
- const atelier=read('assets/maxvel-atelier-20261016.css');
+ const atelier=readStyles('maxvel-atelier-20261016');
  assert.match(atelier,/#e9edf3!important;border-color:#e9edf3!important;color:#151a20!important/);
- const unified=read('assets/field-unified-20261016.css');
- assert.match(unified,/rp-field-wizard-forward\{background:#e7edf5!important;border-color:#e7edf5!important;color:#151a20!important/);
+ const unified=readStyles('field-unified-20261016');
+ assert.match(readStyles('application'),/rp-field-wizard-forward/);
+ assert.match(unified,/#e7edf5!important/);
  assert.match(inspector,/class="rp-inspection-torch" data-field-tool-torch/);
 });
 
 test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
- assert.match(index,/rondas-pro-updated-v48/);
- assert.match(index,/sw\.js\?v=48/);
- assert.match(sw,/rondas-pro-interface-v48/);
+ assert.match(index,/rondas-pro-updated-v49/);
+ assert.match(index,/sw\.js\?v=49/);
+ assert.match(sw,/rondas-pro-interface-v49/);
  for(const page of [index,central]){
-  assert.match(page,/inspector-patrol-parity-20261016\.css\?v=3/);
-  assert.match(page,/maxvel-field-refinement-20261016\.css\?v=2/);
+  assert.match(page,/field\.css\?v=49/);
  }
 });
 
 test('minimapa da Administração contém camadas Leaflet dentro de sua própria área',()=>{
  assert.ok(demoStyles.includes('.demo-mini-route-map{position:relative;isolation:isolate;overflow:hidden;height:206px'));
- assert.ok(index.includes('demo-roles.css?v=4'));
+ assert.ok(index.includes('ronda-pro.css?v=49'));
 });

@@ -1,3 +1,4 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
@@ -5,13 +6,13 @@ import {readFileSync,existsSync} from 'node:fs';
 const load=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const html=load('../index.html');
 const js=load('../src/app.js');
-const refinements=load('../assets/maxvel-refinement-07.css');
-const baseline=load('../assets/maxvel-obsidian-06.css');
+const refinements=readStyles('application');
+const baseline=readStyles('application');
 const metadata=load('../package.json');
 
 test('as folhas de estilo de cada visão são carregadas sem repetição',()=>{
  const sheets=[...html.matchAll(/rel="stylesheet" href="([^"]+)"/g)].map(x=>x[1].split('?')[0]).filter(x=>x.startsWith('./'));
- const essential=['./assets/ronda-pro.css','./assets/demo-roles.css','./assets/field-entry-v2.css','./assets/evidence-direct.css'];
+ const essential=['./assets/ronda-pro.css','./assets/operational.css','./assets/mobile-critical.css','./assets/field.css'];
  for(const path of essential)assert.ok(sheets.includes(path),'Estilo essencial ausente: '+path);
  assert.equal(new Set(sheets).size,sheets.length,'Nenhuma folha pode ser carregada duas vezes');
  for(const path of sheets)assert.ok(existsSync(new URL('../'+path.slice(2),import.meta.url)),'Arquivo CSS inexistente: '+path);

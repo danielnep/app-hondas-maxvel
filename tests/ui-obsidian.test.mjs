@@ -1,10 +1,11 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
+const css=readStyles('application');
 
 test('UI carrega a última camada de identidade Maxvel',()=>{
  assert.match(html,/ronda-pro\.css/);
@@ -19,7 +20,7 @@ test('marca pública no aplicativo não contém Horizon',()=>{
  assert.match(app,/maxvel-logo\.webp/);
 });
 test('desktop amplo apresenta mapa e alertas simultâneos, tablet mantém abas e menu lateral',()=>{
- const visual=readFileSync(new URL('../assets/maxvel-visual-2026.css',import.meta.url),'utf8');
+ const visual=readStyles('maxvel-visual-2026');
  assert.match(app,/if\(screen==='landing'\)return/);
  assert.match(app,/matchMedia\('\(min-width:1280px\)'\)/);
  assert.match(css,/@media\(min-width:901px\)/);

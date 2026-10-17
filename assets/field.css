@@ -1,0 +1,1613 @@
+/* Canonical stylesheet. Edit here; no legacy generator. */
+
+/* SECTION: maxvel-atelier-20261016 */
+/* Rondas Pro Maxvel | Refinamento institucional 16/10/2026.
+   Superfícies grafite, vermelho Maxvel e comunicação sem azul marinho. */
+:root{
+ --mx-atelier-canvas:#09090b;--mx-atelier-shell:#111115;--mx-atelier-raise:#1a1a1e;
+ --mx-atelier-line:#34343b;--mx-atelier-ink:#f6f5f6;--mx-atelier-muted:#a5a4ad;
+ --mx-atelier-accent:#49b7ed;
+}
+body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
+.dashboard .app-shell{min-width:0;background:var(--mx-atelier-canvas)!important}
+.dashboard .sidebar{background:#111114!important;border-right:1px solid #2f2e34!important}
+.dashboard .side-link{color:#c7c5cb!important;transition:background .16s ease,color .16s ease}
+.dashboard .side-link:hover{background:#242328!important;color:#fff!important}
+.dashboard .side-link.active{background:#29282e!important;color:#fff!important;box-shadow:inset 3px 0 0 var(--mx-atelier-accent)!important}
+.dashboard .side-link.active svg{color:#fff!important}
+.dashboard .side-link svg{color:#bfc0c6}
+.dashboard .app-header{
+ height:auto!important;min-height:74px!important;max-height:none!important;
+ padding:10px clamp(14px,2vw,26px)!important;display:flex!important;
+ align-items:center!important;justify-content:space-between!important;
+ gap:12px!important;flex-wrap:nowrap!important;
+ background:#101013!important;border-bottom:1px solid #36343a!important;
+}
+.dashboard .app-header>.eyebrow{min-width:0;white-space:nowrap}
+.dashboard .header-actions{display:flex!important;flex:0 1 auto;min-width:0;align-items:center;gap:8px!important;flex-wrap:nowrap!important}
+.dashboard .rp-header-tools{display:flex!important;flex:0 0 auto;align-items:center;gap:8px;min-width:0}
+.dashboard .app-header .rp-header-popover{display:inline-flex;position:relative;flex:0 0 auto}
+.dashboard .app-header .rp-header-popover>summary,.rp-blue-button{
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ min-height:42px;min-width:42px;background:#29282d!important;
+ border:1px solid #47464e!important;color:#f4f2f6!important;
+ border-radius:12px!important;box-shadow:none!important;
+}
+.rp-blue-button.has-unread{border-color:var(--mx-atelier-accent)!important;box-shadow:inset 0 0 0 1px #49b7ed44!important}
+.dashboard .app-header .rp-popover-list,.rp-popover-list{
+ position:absolute!important;inset:auto 0 auto auto!important;top:calc(100% + 12px)!important;
+ width:min(405px,calc(100vw - 24px));height:auto!important;max-height:min(75dvh,620px);
+ padding:12px;border-radius:16px!important;background:#1a191e!important;
+ border:1px solid #49464f!important;box-shadow:0 20px 65px #000d!important;z-index:10050;
+ overflow:auto;white-space:normal!important;
+}
+.dashboard .app-header .rp-popover-list:not(:has(.ops-notification-row)) p{max-width:30ch}
+.dashboard .app-header .user-pill{min-width:0;max-width:280px}
+.dashboard .app-header .user-pill>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dashboard .app-content:not(.ronda-page){background:var(--mx-atelier-canvas)!important;min-width:0}
+.dashboard .app-content .page-title h1,#central-root .toolbar h1{letter-spacing:-.03em;font-weight:750}
+.dashboard .app-content :is(.card,.coi-demo-record,.demo-role-site,.demo-role-metrics>div){border-color:#3a393f!important}
+.dashboard .app-content :is(.card,.coi-demo-record,.demo-role-site,.demo-role-metrics>div):not(.rp-inspection-viewport){background:#19191d!important}
+.dashboard .app-content .user-pill,.chat-avatar,.chat-conversation.is-selected,.chat-bubble.is-mine{background:#2a292f!important}
+.chat-conversation.is-selected{box-shadow:inset 3px 0 0 var(--mx-atelier-accent)!important}
+.chat-bubble.is-mine{border:1px solid #495361}
+.rp-unread-count{background:var(--mx-atelier-accent)!important;color:#fff!important}
+.rp-event-columns,.dashboard .rp-event-columns{
+ display:grid!important;grid-auto-flow:column!important;
+ grid-auto-columns:minmax(240px,1fr)!important;gap:0!important;
+ width:100%;min-width:0;overflow-x:auto;overscroll-behavior-inline:contain;
+ border:1px solid #333238;border-radius:15px;background:#131317;
+ scrollbar-width:thin;scrollbar-color:#555159 transparent;
+}
+.rp-event-column,.dashboard .rp-event-column{
+ border:0!important;border-right:1px solid #37343b!important;
+ border-radius:0!important;background:transparent!important;min-width:240px;
+ min-height:295px!important;max-height:min(72dvh,820px);overflow-y:auto;
+}
+.rp-event-column:last-child{border-right:none!important}
+.rp-event-column>header{
+ padding:17px 16px!important;background:#1f1e23!important;
+ border-bottom:1px solid #403c43!important;position:sticky;top:0;z-index:2;
+}
+.rp-event-column h2{font-size:14px!important;font-weight:750;letter-spacing:.01em}
+.rp-event-count{font-size:12px;display:inline-flex;align-items:center;justify-content:center;
+ min-width:24px;height:24px;border-radius:8px;background:#302d33;color:#e7e5e7}
+.rp-event-column .ops-notification-row,.rp-event-column .rp-notice-row{
+ border-radius:0!important;border:0!important;border-bottom:1px solid #343037!important;
+ border-left:2px solid transparent!important;background:transparent!important;
+ min-height:88px;max-width:100%;text-align:left;
+}
+.rp-event-column .ops-notification-row:hover,.rp-event-column .rp-notice-row:hover{background:#262329!important}
+.rp-event-column .is-unread,.rp-event-column .is-pending{border-left-color:var(--mx-atelier-accent)!important;background:#231b22!important}
+.rp-event-column .rp-notice-copy,.rp-event-column .ops-notification-row>*{min-width:0;overflow-wrap:anywhere}
+.rp-event-empty{padding:35px 15px;color:#a7a3ab;text-align:center;font-size:12px}
+.rp-treatment-archive{display:grid;gap:1px;background:#333038;border:1px solid #333038;border-radius:14px;overflow:hidden}
+.rp-archive-record{display:grid;gap:6px;padding:17px 20px;background:#17171b;min-width:0}
+.rp-archive-record>span:first-child,.rp-archive-record>small{font-size:12px;color:#aaa7af}
+.rp-archive-record>strong{font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.rp-archive-record p{margin:0;color:#d6d2d7;line-height:1.5;font-size:13px}
+.rp-archive-status{display:inline-flex;align-items:center;gap:5px;color:#abdfc1;font-size:12px;font-weight:650}
+.rp-archive-status svg{width:16px;height:16px}
+.rp-demo-coi-command{display:flex;align-items:center;justify-content:space-between;gap:18px;
+ padding:18px 20px;border:1px solid #414a55;border-radius:16px;
+ background:linear-gradient(125deg,#24282f,#171b21)!important}
+.rp-demo-coi-command>div{display:grid;gap:3px}
+.rp-demo-coi-command strong{font-size:17px}
+.rp-demo-coi-command small{color:#b8c2ce;font-size:12px}
+.rp-demo-coi-command .eyebrow{font-size:10px;color:#65c0ef}
+.rp-demo-coi-command button{white-space:nowrap}
+.rp-inspection-request{display:grid;gap:13px;margin-top:18px}
+.rp-inspection-request label{display:grid;gap:6px;color:#d7dfe8;font-size:13px}
+.rp-inspection-request :is(input,textarea,select){width:100%;max-width:100%;border-radius:10px!important;border:1px solid #49545f!important;background:#21262d!important;color:#fff;padding:11px 12px;min-height:42px}
+.rp-inspector-workspace{min-width:0}
+.rp-inspection-viewport{position:relative;isolation:isolate;overflow:hidden;border-radius:18px;
+ border:1px solid #444c57;min-height:320px;background:#151518}
+.rp-inspection-viewport .rp-inspection-map{width:100%!important;height:360px!important;min-height:320px!important;border:0!important;border-radius:0!important;background:#18181b!important}
+.rp-inspection-viewport.is-idle .rp-inspection-map{filter:blur(3px) brightness(.46) saturate(.55);pointer-events:none}
+.rp-inspection-map-note{position:absolute;inset:auto 0 0;z-index:402;display:grid;gap:5px;
+ padding:18px 20px 19px;background:linear-gradient(0deg,#121115 12%,#161519ed 70%,transparent);
+ max-height:65%;overflow-y:auto}
+.rp-inspection-map-note>strong{font-size:19px;line-height:1.25}
+.rp-inspection-map-note>span{font-size:13px;color:#d6d1d6}
+.rp-inspection-status{color:#69c5f0!important;font-size:11px!important;font-weight:800;letter-spacing:.08em}
+.rp-inspection-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:7px;justify-content:center;min-height:180px}
+.rp-inspection-viewport.is-idle .rp-inspection-map-note{inset:0;display:grid;place-items:center;background:#1010137d}
+.rp-inspection-empty strong{font-size:24px;color:#fafafa}
+.rp-inspection-empty span{font-size:14px;color:#dad6db}
+.rp-inspection-empty small{font-size:11px;color:#aaa5ac}
+.rp-inspection-selfie{width:100%;display:flex;justify-content:space-between;align-items:center;
+ padding:13px 16px;border:1px solid #4a5969!important;border-radius:11px!important;
+ background:#252a32!important;color:#fff!important;font-weight:700}
+.rp-inspection-selfie span{font-size:11px;color:#b7c4d0}
+.rp-inspection-declaration,.rp-demo-confirm{display:flex!important;align-items:flex-start;gap:12px;color:#ece8ee;line-height:1.4}
+.rp-inspection-declaration input,.rp-demo-confirm input{flex:0 0 20px;width:20px;height:20px}
+.rp-demo-inspector{display:grid;gap:15px}
+.rp-demo-inspection-form{padding:20px!important;border:1px solid #414852;border-radius:16px;background:#19181d!important;display:grid;gap:13px}
+.rp-demo-inspection-head h2{margin:6px 0;font-size:20px}
+.rp-demo-inspection-head p{font-size:13px;color:#c2bfc5}
+.rp-demo-check{display:flex!important;align-items:center;justify-content:space-between;gap:12px;
+ border-bottom:1px solid #373139;padding:11px 0;font-size:13px}
+.rp-demo-check select{min-width:140px;background:#242127;color:#fff;border:1px solid #514851;border-radius:9px;padding:10px}
+.rp-demo-photo-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rp-demo-photo-pair label{display:grid;gap:8px;min-width:0;border:1px dashed #625560;border-radius:12px;padding:13px;font-size:13px}
+.rp-demo-photo-pair input{width:100%;min-width:0;font-size:11px}
+.rp-demo-inspection-ready,.rp-demo-inspection-history{padding:20px;border:1px solid #353137;border-radius:14px;background:#18171b}
+.rp-demo-inspection-ready{display:grid;gap:8px}
+.rp-demo-inspection-ready span{color:#aaa5af;font-size:13px}
+.rp-demo-inspection-history h2{font-size:18px;margin:0 0 12px}
+#central-root .side.rp2-role-nav,#central-root .rp2-workspace .surface{background:#17171a!important;border-color:#3b3840!important}
+#central-root .rp2-role-nav .rp2-nav-item.active{background:#262d36!important;color:#fff!important}
+#central-root .rp2-role-nav .rp2-nav-item.active svg{color:#f1f4f8!important}
+#central-root .ops-inbox-3 .ops-notification-row.is-pending{background:#252a32!important}
+#central-root .rp-inspection-viewport{margin:16px 0}
+#central-root .rp-inspection-map-note{color:#fff}
+#central-root .rp2-inspection-form{max-width:880px}
+#central-root .ops-dispatch-modal{max-width:min(540px,calc(100vw - 26px));height:max-content;max-height:calc(100dvh - 24px);overflow:auto;border-radius:15px}
+.top{background:#131215!important}
+.top .top-actions{min-width:0;flex-wrap:nowrap;gap:9px}
+.top .rp-header-tools{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.top .rp-header-popover{position:relative}
+:where(button,a,input,select,textarea,summary):focus-visible{outline:2px solid #58c1f3!important;outline-offset:3px!important}
+@media(min-width:1450px){
+ .dashboard .app-shell{grid-template-columns:315px minmax(0,1fr)!important}
+ .dashboard .app-content:not(.ronda-page){max-width:100%!important}
+ .dashboard .rp-event-columns{grid-auto-columns:minmax(210px,1fr)!important}
+}
+@media(max-width:900px){
+ .dashboard .app-header{min-height:62px!important;height:62px!important;padding:7px 12px!important}
+ /* Logo institucional completo: preservar Rondas Pro e Grupo Maxvel em todas as larguras. */
+ .dashboard .app-header .brand.maxvel-only-brand{
+  display:grid!important;grid-template-columns:max-content 2px max-content!important;
+  align-items:center!important;justify-content:center!important;justify-items:center!important;
+  gap:clamp(3px,1vw,7px)!important;max-width:none!important;width:auto!important;
+  flex:1 1 auto!important;min-width:0!important;margin-inline:0!important;
+ }
+ .dashboard .app-header .brand .brand-product,
+ .dashboard .app-header .brand .brand-partner{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 auto!important;width:auto!important;min-width:0!important;
+ }
+ .dashboard .app-header .brand .brand-partner{flex-direction:column!important;gap:2px!important}
+ .dashboard .app-header .brand .ronda-pro-wordmark{font-size:clamp(12px,2.15vw,18px)!important}
+ .dashboard .app-header .brand .maxvel-real-logo{
+  display:block!important;width:clamp(27px,6vw,54px)!important;max-width:100%!important;height:auto!important;
+ }
+ .dashboard .app-header .header-actions{margin-left:auto;gap:5px!important}
+ .dashboard .app-header .header-actions .user-pill{max-width:46px;min-width:44px;justify-content:center;padding:0!important}
+ .dashboard .app-header .user-pill>span:not(.avatar){display:none!important}
+ .dashboard .app-header .user-pill>svg{display:none!important}
+ .dashboard .app-header .rp-popover-list{position:fixed!important;inset:auto 12px auto auto!important;top:calc(64px + env(safe-area-inset-top,0px))!important}
+ .dashboard .app-header .rp-header-popover>summary{width:40px!important;min-width:40px!important;height:42px!important}
+ .dashboard .app-content:not(.ronda-page){padding:20px 14px 48px!important}
+ .dashboard .rp-event-columns{grid-auto-columns:minmax(265px,86vw)!important;scroll-snap-type:x mandatory}
+ .dashboard .rp-event-column{scroll-snap-align:start}
+ .rp-demo-coi-command{align-items:stretch;flex-direction:column}
+ .rp-demo-coi-command button{width:100%;justify-content:center}
+ .rp-inspection-viewport .rp-inspection-map{height:340px!important}
+ .rp-demo-photo-pair{grid-template-columns:minmax(0,1fr)}
+ .rp-demo-check{align-items:stretch;flex-direction:column}
+ .rp-demo-check select{width:100%}
+ .rp-archive-record{padding:14px}
+ .top{padding-inline:11px!important}
+ .top-actions>span{display:none}
+ .top .rp-header-popover .rp-blue-button{font-size:0;min-width:40px}
+ .top .rp-header-popover .rp-blue-button span:not(.rp-unread-count){display:none}
+}
+@media(max-width:560px){
+ .dashboard .app-header .brand.maxvel-only-brand{max-width:none!important;gap:3px!important}
+ .dashboard .app-header .brand .ronda-pro-wordmark{font-size:clamp(12px,3.4vw,16px)!important}
+ .dashboard .app-header .brand .maxvel-real-logo{width:clamp(27px,8vw,39px)!important}
+ .dashboard .app-header .header-actions{gap:4px!important}
+ .dashboard .app-header .help-toggle{display:none!important}
+ .dashboard .app-header .rp-header-tools{gap:5px!important}
+ .dashboard .app-header .rp-popover-list{width:calc(100vw - 24px)!important}
+ .rp-inspection-empty strong{font-size:20px}
+}
+@media(prefers-reduced-motion:reduce){.dashboard .side-link{transition:none!important}}
+
+/* Capturas reais: ações primárias seguem o vermelho Maxvel, não gradiente azul. */
+.dashboard .rp-demo-coi-command .button.primary,
+.dashboard .rp-demo-inspection-form .button.primary,
+.dashboard .rp-inspection-request .button.primary,
+#central-root .rp-coi-request-strip button.primary{
+ background:#e9edf3!important;border-color:#e9edf3!important;color:#151a20!important;
+ box-shadow:none!important;transition:background .15s ease,transform .15s ease!important;
+}
+.dashboard .rp-demo-coi-command .button.primary:hover,
+.dashboard .rp-demo-inspection-form .button.primary:hover,
+#central-root .rp-coi-request-strip button.primary:hover{background:#d1dbe7!important}
+#central-root .rp-coi-request-strip{
+ display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:15px;
+ padding:18px 20px;border-radius:15px;border:1px solid #45505c;
+ background:linear-gradient(115deg,#252a31,#171b20);
+}
+#central-root .rp-coi-request-strip>div{display:grid;gap:5px;min-width:0}
+#central-root .rp-coi-request-strip strong{font-size:17px}
+#central-root .rp-coi-request-strip span{color:#c4bbc3;font-size:12px}
+#central-root .rp-coi-request-strip button{min-height:43px;white-space:nowrap}
+@media(max-width:760px){
+ #central-root .rp-coi-request-strip{flex-direction:column;align-items:stretch;padding:15px}
+ #central-root .rp-coi-request-strip button{width:100%}
+ .dashboard .rp-event-column{min-height:275px!important}
+}
+
+/* SECTION: maxvel-field-refinement-20261016 */
+/* Rondas Pro · tratamento visual Maxvel · Campo/COI 16.10.2026
+   Sem superfícies azul-marinho. Marca Maxvel e estados operacionais preservados. */
+:root{
+ --mx-accent:#5abce9;
+ --mx-accent-hover:#72caf0;
+ --mx-accent-wash:#25333e;
+ --mx-action-fill:linear-gradient(115deg,#293743,#314453);
+ --mx-action-hover:linear-gradient(115deg,#303e4a,#3c4d5c);
+ --mx-field-base:#0c0b0e;
+ --mx-field-surface:#191e26;
+ --mx-field-elevated:#262d36;
+ --mx-field-stroke:#414b58;
+ --mx-field-white:#f2f5f9;
+ --mx-field-muted:#bac6d1;
+ --mx-field-red:#f04a67;
+}
+.dashboard .app-content .field-chat-screen,
+.dashboard .app-content .rp-demo-inspector,
+#central-root .chat-page,
+#central-root .rp-inspector-workspace{min-width:0;color:var(--mx-field-white)}
+.dashboard .field-chat-screen{display:flex!important;flex-direction:column!important;gap:0!important;
+ width:100%!important;max-width:none!important;height:calc(100dvh - 154px)!important;
+ min-height:450px;background:var(--mx-field-base)!important;border:0!important}
+.dashboard .field-chat-topbar{background:transparent!important;border:0!important;padding:12px 0 16px!important;
+ display:flex;align-items:center;gap:14px;min-height:68px}
+.dashboard .field-chat-topbar h1{font-size:clamp(21px,3vw,28px)!important;letter-spacing:-.035em!important}
+.dashboard .field-chat-topbar small{color:#bbc6d2!important}
+.dashboard .field-chat-back{display:flex!important;justify-content:center;align-items:center;gap:8px!important;
+ border:1px solid var(--mx-field-stroke)!important;border-radius:12px!important;
+ background:#262d36!important;color:var(--mx-field-white)!important;box-shadow:none!important;
+ min-height:42px!important;padding:8px 12px!important;white-space:nowrap!important}
+.dashboard .field-chat-surface{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;
+ width:100%!important;max-width:none!important;border:0!important;border-radius:0!important;padding:0!important;
+ box-shadow:none!important;background:transparent!important}
+.dashboard .field-chat-conversation{height:100%!important;max-height:none!important;min-height:0!important;
+ display:flex!important;flex-direction:column!important;overflow:hidden!important;border:0!important;
+ border-radius:0!important;background:#151a20!important;box-shadow:none!important}
+.dashboard .field-chat-threadbar{background:#20262e!important;min-height:65px!important;
+ border-bottom:1px solid #404a55!important;padding:10px 17px!important}
+.dashboard .field-chat-threadbar :is(strong,small){color:#e9eef4!important}
+.dashboard .field-chat-avatar{background:#2b3946!important;color:#e8eff6!important}
+.dashboard .field-chat-thread{flex:1!important;min-height:0!important;overflow-y:auto!important;
+ background:#141a20!important;padding:20px clamp(12px,3vw,28px)!important;
+ scrollbar-color:#46525e #141a20}
+.dashboard .field-chat-bubble{background:#252d36!important;color:#f2f6fa!important;
+ border:1px solid #444f5b!important;border-radius:17px 17px 17px 5px!important;
+ max-width:min(82%,540px)!important;padding:12px 16px!important}
+.dashboard .field-chat-bubble.is-mine{background:#283746!important;border-color:#4a6476!important;
+ border-radius:17px 17px 5px 17px!important;box-shadow:inset -2px 0 0 #51c0ed!important}
+.dashboard .field-chat-bubble :is(p,small){color:#edf3f8!important}
+.dashboard .field-chat-bubble small{opacity:.67}
+.dashboard .field-chat-compose{flex:0 0 auto!important;display:grid!important;
+ grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important;
+ border-top:1px solid #414b57!important;border-radius:0!important;
+ padding:15px clamp(12px,2vw,22px)!important;background:#1a2027!important}
+.dashboard .field-chat-compose input{min-width:0!important;height:49px!important;min-height:49px!important;
+ border-radius:13px!important;border:1px solid #445360!important;
+ background:#141a20!important;color:white!important;padding:10px 14px!important;
+ box-shadow:none!important;font-size:15px!important}
+.dashboard .field-chat-compose .button.primary{min-width:94px!important;min-height:49px!important;
+ border-radius:13px!important;background:#e7edf5!important;border:1px solid #e7edf5!important;
+ color:#151b22!important;font-weight:750!important;box-shadow:none!important}
+.dashboard .field-chat-compose .button.primary:hover{background:#d0dae6!important}
+.dashboard .rp-direct-chat{display:flex!important;align-items:center;justify-content:center;
+ background:#26313b!important;color:#edf3f8!important;
+ border:1px solid #44515d!important;border-radius:12px!important;
+ min-width:44px!important;height:44px!important;box-shadow:none!important}
+.dashboard .rp-direct-chat svg{width:22px;height:22px}
+.dashboard .field-chat-list{background:#181e25!important;border:0!important}
+.dashboard .field-chat-contact-row{background:transparent!important;border:0!important;border-bottom:1px solid #404a55!important;
+ border-radius:0!important;min-height:70px!important}
+.dashboard .field-chat-contact-row:hover{background:#28313b!important}
+#central-root .chat-workspace{border:0!important;border-radius:0!important;background:#141a20!important;
+ box-shadow:none!important;min-height:min(70dvh,700px)!important}
+#central-root .chat-sidebar{background:#181e25!important;border-right:1px solid #46515e!important}
+#central-root .chat-main,#central-root .chat-thread{background:#141a20!important}
+#central-root .chat-thread-heading{background:#1f252d!important;border-bottom:1px solid #46515c!important}
+#central-root .chat-bubble{background:#252e38!important;border:1px solid #445360!important;border-radius:16px!important}
+#central-root .chat-bubble.is-mine{background:#293846!important;border-color:#496577!important}
+#central-root .chat-conversation.is-selected{background:#283541!important;border-left:3px solid #51bdec!important}
+#central-root .chat-composer{background:#1b181e!important;border-top:1px solid #44515e!important}
+#central-root .chat-compose-tools button,#central-root [data-chat-new],#central-root [data-chat-profile]{
+ border-radius:10px!important;background:#29313b!important;
+ border:1px solid #44515d!important;color:#edf3f8!important;min-height:40px}
+#central-root .chat-compose-tools button.primary{background:#ad203f!important;border-color:#de4964!important}
+.dashboard .rp-demo-inspector .rp-inspection-viewport,
+#central-root .rp-inspection-viewport{background:#171c22!important;border-color:#444f5d!important;
+ box-shadow:0 12px 32px #0004!important}
+.dashboard .rp-demo-inspection-form,#central-root .rp2-inspection-form{
+ background:#1b222a!important;border:1px solid #45505c!important;border-radius:18px!important;
+ padding:clamp(15px,3vw,26px)!important;box-shadow:0 16px 32px #0002!important;
+}
+.dashboard .rp-demo-inspection-form label,#central-root .rp2-inspection-form label{color:#e6edf4!important}
+.dashboard .rp-demo-inspection-form :is(select,input:not([type=checkbox]),textarea),
+#central-root .rp2-inspection-form :is(select,input:not([type=checkbox]),textarea){
+ background:#151a20!important;color:#e9f0f7!important;border:1px solid #44515f!important;
+ border-radius:11px!important;min-height:44px!important;padding:12px!important;
+ box-shadow:none!important}
+.dashboard .rp-demo-inspection-form select,#central-root .rp2-inspection-form select{
+ appearance:none!important;padding-right:32px!important;
+ background-image:linear-gradient(45deg,transparent 50%,#aebbc8 50%),linear-gradient(135deg,#aebbc8 50%,transparent 50%)!important;
+ background-position:calc(100% - 19px) 51%,calc(100% - 13px) 51%!important;background-size:6px 6px!important;background-repeat:no-repeat!important
+}
+.dashboard .rp-demo-check,#central-root .rp2-inspection-item{border-bottom:1px solid #45505c!important;
+ padding-block:15px!important}
+.dashboard .rp-demo-inspection-head,#central-root .rp2-inspection-header{border-color:#46515e!important}
+.dashboard .rp-demo-photo-pair label,#central-root .rp-inspection-multi-photo{
+ display:flex!important;flex-direction:column!important;gap:11px;
+ background:#252d36!important;border:1px dashed #5b6a78!important;
+ border-radius:15px!important;padding:16px!important;min-height:95px}
+#central-root .rp-inspection-multi-photo input{border:0!important;padding:4px!important;
+ background:transparent!important}
+#central-root .rp-inspection-multi-photo span{font-size:12px;color:#b7c4d0}
+#central-root .rp-inspection-selfie{
+ background:#293744!important;border:1px solid #56718a!important;color:#fff!important;
+ border-radius:13px!important;min-height:50px!important;padding:13px 17px!important;
+ font-size:14px!important;font-weight:750!important}
+#central-root .rp-inspection-selfie span{font-weight:450!important}
+.dashboard .rp-demo-inspection-form button[type=submit],
+#central-root .rp2-inspection-submit{background:#e7edf5!important;color:#151b22!important;
+ border:1px solid #e7edf5!important;border-radius:12px!important;min-height:53px!important;
+ font-weight:800!important;box-shadow:0 8px 20px #00000024!important}
+.dashboard .rp-demo-inspection-form button[type=submit]:hover,
+#central-root .rp2-inspection-submit:hover{background:#d1dbe7!important}
+#central-root .evidence-direct{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+#central-root .evidence-direct-btn{min-height:72px!important;display:flex!important;align-items:center!important;
+ justify-content:center!important;flex-direction:column!important;gap:7px!important;
+ background:#28313b!important;border:1px solid #45525f!important;
+ border-radius:13px!important;color:#edf3f9!important;font-weight:650}
+#central-root .evidence-direct-btn svg{width:21px!important;height:21px!important;color:#72c7ee!important}
+#central-root .evidence-direct-btn:hover{background:#303b46!important;border-color:#68bfe8!important}
+.rp-inspection-navigation{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:13px 0}
+.rp-inspection-navigation :is(button,a){display:inline-flex;align-items:center;justify-content:center;
+ padding:11px 16px!important;min-height:44px!important;text-decoration:none;
+ background:#28313b!important;border:1px solid #445360!important;border-radius:12px!important;
+ color:#edf3f9!important;font-weight:700!important;letter-spacing:0!important;font-size:13px!important}
+.rp-inspection-navigation :is(button,a):hover{background:#303b46!important;border-color:#6bbdec!important}
+.rp-inspection-navigation [data-inspection-gps-state],.rp-inspection-navigation [data-demo-inspection-gps]{
+ color:#bbc5d0;font-size:12px;padding-left:2px}
+#central-root .rp-inspection-map-note,.dashboard .rp-inspection-map-note{background:linear-gradient(0deg,#161c23ef,#161c23d9 58%,transparent)!important}
+#central-root .rp-inspection-map-note>small,.dashboard .rp-inspection-map-note>small{color:#c3cfda}
+#central-root .ops-inspector-section,#central-root .ops-inspection-section,
+#central-root .ops-dispatch-modal,#central-root .ops-worker-row{background:#1b232b!important;border-color:#46515c!important;color:#eaf0f7!important}
+#central-root .ops-dispatch-form :is(input,select,textarea){background:#171c22!important;border:1px solid #44515e!important;
+ color:#f4f7fa!important;border-radius:11px!important;min-height:44px}
+#central-root .ops-worker-row{border-radius:12px!important;transition:background .15s ease,transform .15s ease!important}
+#central-root .ops-worker-row:hover{background:#283541!important;transform:translateY(-1px)}
+#central-root .ops-dispatch-actions button,#central-root .ops-dispatch-buttons button,
+#central-root .coi3-actions button,#central-root .rp-coi-request-strip button,
+#central-root .rp2-contextbar button,#central-root .rp-inspection-awaiting button{
+ border-radius:12px!important;min-height:44px!important;padding:10px 15px!important;
+ background:#28313b!important;border:1px solid #45525f!important;
+ color:#f1f6fa!important;box-shadow:none!important}
+#central-root .ops-dispatch-actions button.primary,#central-root .rp-coi-request-strip button.primary,
+#central-root .rp-inspection-awaiting button.primary{background:#e7edf5!important;border-color:#e7edf5!important;color:#151b22!important}
+#central-root .ops-dispatch-actions button:hover,#central-root .ops-dispatch-buttons button:hover{background:#303c49!important}
+.rp-inspection-route-editor{display:grid;gap:12px;border:1px solid #45515e;
+ padding:15px;background:#252d36;border-radius:14px}
+.rp-inspection-route-editor>div:first-child{display:grid;gap:5px}
+.rp-inspection-route-editor strong{font-size:14px;color:#fff}
+.rp-inspection-route-editor small{font-size:12px;color:#bdc8d4;line-height:1.5}
+.rp-route-controls{display:flex;flex-wrap:wrap;gap:8px}
+.rp-route-controls button{background:#2a3440!important;border:1px solid #536b7f!important;
+ border-radius:10px!important;padding:10px 12px!important;min-height:40px!important;color:#fff!important;
+ font-size:12px!important;font-weight:680!important}
+.rp-route-controls button:hover{background:#354452!important}
+.rp-plan-map{min-height:230px;height:245px;width:100%;border:1px solid #46515d;border-radius:13px;
+ overflow:hidden;background:#111!important}
+.rp-route-status{color:#becad5;font-size:12px;margin:0}
+.dashboard :is(.rp-event-columns,.rp-archive-record,.rp-notice-row){background-color:#191f26!important}
+.dashboard .rp-notice-row{border-color:#434e5b!important}
+.dashboard .rp-popover-list{background:#202731!important;color:#f1f5f9!important;border-color:#485563!important}
+.dashboard .rp-popover-list .event-item{background:#252d36!important;border-bottom:1px solid #45515e!important;
+ border-radius:10px!important;margin-block:4px!important}
+.dashboard .rp-popover-list .event-item:hover{background:#303c48!important}
+.dashboard .rp-notice-icon,.dashboard .event-icon{background:#30272e!important;color:#8ad1ef!important}
+.dashboard .rp-blue-button{background:#29313b!important;border:1px solid #475563!important;
+ color:#edf3f9!important;box-shadow:none!important}
+.dashboard .rp-blue-button.has-unread{border-color:#52bde8!important;box-shadow:inset 0 -2px 0 #52bde8!important}
+@media(max-width:720px){
+ .dashboard .field-chat-screen{height:calc(100dvh - 105px)!important;min-height:350px}
+ .dashboard .field-chat-topbar{padding:9px 0 12px!important;gap:9px}
+ .dashboard .field-chat-topbar h1{font-size:23px!important}
+ .dashboard .field-chat-back{padding:8px!important;font-size:12px!important}
+ .dashboard .field-chat-compose{padding:10px!important}
+ .dashboard .field-chat-compose input{height:46px!important;min-height:46px!important}
+ .dashboard .field-chat-compose .button.primary{min-width:79px!important;min-height:46px!important}
+ .dashboard .field-chat-thread{padding-inline:12px!important}
+ .dashboard .field-chat-bubble{max-width:90%!important}
+ .dashboard .rp-inspection-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dashboard .rp-inspection-navigation [data-demo-inspection-gps]{grid-column:1/-1}
+ #central-root .rp-inspection-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #central-root .rp-inspection-navigation [data-inspection-gps-state]{grid-column:1/-1}
+ .rp-route-controls button{flex:1 1 auto}
+ .rp-plan-map{height:210px;min-height:210px}
+ #central-root .evidence-direct{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #central-root .ops-worker-row{transition:none!important;transform:none!important}
+}
+
+/* Popover compacto: lista operacional em vez de cards gigantes e azulados. */
+.dashboard .app-header .rp-popover-list{
+ width:min(400px,calc(100vw - 22px))!important;
+ padding:11px!important;max-height:min(76dvh,580px)!important;
+ overflow-y:auto!important;border-radius:15px!important;
+ background:#1b232b!important;box-shadow:0 18px 45px #000b!important;
+}
+.dashboard .app-header .rp-popover-list>strong{display:block;font-size:14px;line-height:1.4;
+ font-weight:800;color:#f8f5f7;padding:5px 7px 9px}
+.dashboard .app-header .rp-popover-list .rp-notice-row{
+ display:grid!important;grid-template-columns:33px minmax(0,1fr) 17px!important;
+ gap:9px!important;align-items:center!important;
+ width:100%!important;min-width:0!important;height:auto!important;min-height:80px!important;
+ padding:10px 11px!important;margin:3px 0!important;
+ border:1px solid #45515f!important;border-radius:11px!important;
+ background:#252d36!important;text-align:left!important
+}
+.dashboard .app-header .rp-popover-list .rp-notice-row .event-icon{
+ width:32px!important;height:32px!important;min-width:32px!important;display:grid!important;place-items:center!important;
+ border-radius:9px!important;background:#2b3d4d!important;color:#91cced!important}
+.dashboard .app-header .rp-popover-list .rp-notice-copy{min-width:0!important;display:flex!important;flex-direction:column;gap:3px!important}
+.dashboard .app-header .rp-popover-list .rp-notice-copy strong{
+ font-size:13px!important;line-height:1.26!important;color:#f1f5f9!important;
+ display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+ overflow:hidden!important;overflow-wrap:anywhere!important}
+.dashboard .app-header .rp-popover-list .rp-notice-copy small{
+ font-size:11px!important;line-height:1.25!important;
+ white-space:normal!important;color:#bac7d4!important;overflow:hidden!important}
+.dashboard .app-header .rp-popover-list .rp-notice-state{font-size:10px!important;
+ color:#b5c6d6!important;line-height:1.35!important}
+.dashboard .app-header .rp-popover-list .rp-notice-open{width:17px!important;height:17px!important;
+ justify-self:end;align-self:center;color:#c5d3df}
+.dashboard .app-header .rp-popover-list [data-view=notificacoes]{
+ display:flex!important;justify-content:center;align-items:center;
+ width:100%!important;min-height:40px!important;margin-top:8px!important;
+ color:#edf3f9!important;background:#2a3541!important;
+ border-radius:10px!important;border:1px solid #4d667a!important}
+
+/* Cartografia aberta com acabamento dark aplicado localmente aos tiles reais. */
+.rp-inspection-map .leaflet-tile,
+.rp-plan-map .leaflet-tile{
+ filter:grayscale(1) invert(.91) hue-rotate(180deg) brightness(.58) contrast(1.16)!important
+}
+.rp-inspection-map .leaflet-control-zoom a,
+.rp-plan-map .leaflet-control-zoom a{
+ background:#28313b!important;color:#fff!important;border-color:#485461!important
+}
+.rp-inspection-map .leaflet-control-attribution,
+.rp-plan-map .leaflet-control-attribution{
+ background:#191f26cc!important;color:#c1ccd8!important;font-size:9px!important
+}
+.rp-inspection-map .leaflet-control-attribution a,
+.rp-plan-map .leaflet-control-attribution a{color:#71c8ed!important}
+.dashboard .rp-chat-native .field-chat-threadbar [data-action="demo-chat-list"]{display:none!important}
+
+/* SECTION: maxvel-print-qa-20261016 */
+/* Correção visual aferida nos prints de 16/10/2026.
+   Preserva o grafite e o vermelho Maxvel. Não modifica o mapa do vigia. */
+:root{--mxqa-border:#49424a;--mxqa-surface:#1b191e;--mxqa-muted:#bdb5bf}
+.dashboard .app-content .dashboard-v4 .v4-pane[data-v4-pane="alertas"]{
+ height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list{
+ display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+ grid-auto-flow:row!important;grid-auto-rows:max-content!important;
+ overflow:visible!important;height:auto!important;max-height:none!important;
+ gap:0!important;min-width:0!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list>.event-item{
+ box-sizing:border-box!important;display:grid!important;
+ grid-template-columns:44px minmax(0,1fr) 24px!important;
+ grid-template-rows:auto!important;align-items:start!important;
+ gap:12px!important;flex:none!important;width:100%!important;
+ height:auto!important;max-height:none!important;min-height:100px!important;
+ padding:17px 10px!important;margin:0!important;
+ border:0!important;border-bottom:1px solid var(--mxqa-border)!important;
+ border-radius:0!important;background:transparent!important;
+ text-align:left!important;overflow:visible!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list>.event-item:last-child{border-bottom:0!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list .rp-notice-copy{
+ display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+ gap:5px!important;min-width:0!important;width:100%!important;
+ height:auto!important;overflow:visible!important;white-space:normal!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list .rp-notice-copy>*{
+ position:static!important;transform:none!important;margin:0!important;
+ width:100%!important;max-width:100%!important;height:auto!important;
+ white-space:normal!important;overflow-wrap:anywhere!important;
+ line-height:1.4!important;text-align:left!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list .rp-notice-copy strong{
+ font-size:14px!important;font-weight:750!important;line-height:1.44!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list .rp-notice-copy small{
+ font-size:12px!important;color:var(--mxqa-muted)!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list .rp-notice-state{
+ display:block!important;font-size:12px!important;font-weight:650!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list .event-icon{
+ width:42px!important;height:42px!important;min-width:0!important;
+ display:grid!important;place-items:center!important;align-self:center!important;
+ margin:0!important;border-radius:10px!important}
+.dashboard .app-content .dashboard-v4 .v4-alerts-list .rp-notice-open{
+ align-self:center!important;justify-self:end!important;position:static!important}
+.dashboard .app-content .dashboard-v4 .v4-pane-foot{
+ position:static!important;height:auto!important;min-height:0!important;
+ margin-top:14px!important;padding-top:14px!important}
+
+/* Histórico: itens inteiros, sem borda lateral solta nem texto comprimido. */
+.dashboard .rp-history-list,#central-root [data-activity-results]{
+ display:grid!important;gap:10px!important;min-width:0!important}
+.dashboard .rp-history-list .rp-history-entry{
+ display:grid!important;grid-template-columns:42px minmax(0,1fr)!important;
+ align-items:stretch!important;gap:0!important;
+ background:var(--mxqa-surface)!important;border:1px solid var(--mxqa-border)!important;
+ border-radius:13px!important;overflow:hidden!important}
+.dashboard .rp-history-list .rp-history-entry>label{
+ display:grid;place-items:center;cursor:pointer;padding:8px}
+.dashboard .rp-history-list .rp-history-entry input{
+ width:18px!important;height:18px!important;accent-color:#c52e50;cursor:pointer}
+.dashboard .app-content .rp-history-list .rp-activity-row,
+.dashboard .app-content .rp-activity-row,
+#central-root .rp-activity-row{
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+ grid-template-rows:auto!important;align-items:center!important;
+ column-gap:14px!important;row-gap:6px!important;
+ width:100%!important;height:auto!important;max-height:none!important;
+ min-height:78px!important;padding:15px 17px!important;margin:0!important;
+ border:1px solid var(--mxqa-border)!important;border-radius:12px!important;
+ background:var(--mxqa-surface)!important;box-shadow:none!important;
+ text-align:left!important;overflow:visible!important}
+.dashboard .app-content .rp-history-list .rp-history-entry .rp-activity-row{
+ border:0!important;border-radius:0!important;background:transparent!important;
+ min-width:0!important;padding:13px 12px!important}
+.dashboard .app-content .rp-activity-row>span,
+#central-root .rp-activity-row>span{
+ display:flex!important;flex-direction:column!important;gap:5px!important;
+ min-width:0!important;align-items:flex-start!important;text-align:left!important;
+ overflow-wrap:anywhere!important;white-space:normal!important;
+ position:static!important;margin:0!important}
+.dashboard .app-content .rp-activity-row>span:last-child,
+#central-root .rp-activity-row>span:last-child{
+ font-size:12px!important;white-space:normal!important;
+ align-self:center!important;text-align:right!important;align-items:flex-end!important}
+.dashboard .app-content .rp-activity-row strong,
+#central-root .rp-activity-row strong{display:block!important;line-height:1.35!important;font-size:14px!important}
+.dashboard .app-content .rp-activity-row small,
+#central-root .rp-activity-row small{display:block!important;line-height:1.45!important;font-size:12px!important;color:var(--mxqa-muted)!important}
+.dashboard .rp-history-toolbar{
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+ gap:10px;margin:16px 0!important}
+.dashboard .rp-history-toolbar .rp-history-actions{
+ display:flex;flex-wrap:wrap;align-items:center;gap:9px}
+.dashboard .rp-history-actions button{
+ min-height:42px!important;padding:10px 14px!important;border:1px solid #5d4a54!important;
+ border-radius:10px!important;background:#272127!important;color:#f3e8ee!important;
+ font-size:13px!important;font-weight:650!important}
+.dashboard .rp-history-actions button[data-action="demo-history-delete-all"]{
+ border-color:#a23a50!important;color:#ffb6c4!important}
+.dashboard .rp-history-actions button:disabled{opacity:.4!important;cursor:not-allowed!important}
+.dashboard .rp-history-pagination{display:flex;flex-wrap:wrap;align-items:center;
+ gap:10px;justify-content:space-between;margin:18px 0}
+
+/* Legibilidade consistente nas listas operacionais autenticadas. */
+#central-root .list,#central-root .coi3-treatment-list{min-width:0}
+#central-root .coi3-treatment-row,#central-root .list-item{
+ box-sizing:border-box!important;min-width:0!important;height:auto!important;
+ max-height:none!important;align-items:start!important;overflow-wrap:anywhere!important;
+ line-height:1.4!important}
+#central-root .coi3-treatment-copy{min-width:0!important;display:flex!important;flex-direction:column!important;gap:6px!important}
+#central-root .coi3-treatment-copy>*{position:static!important;white-space:normal!important;overflow-wrap:anywhere!important}
+
+/* Mapa da vistoria: missão visível sem cartão cobrindo o mapa inteiro. */
+.dashboard .rp-demo-inspector .rp-inspection-map-note,
+#central-root .rp-inspector-workspace .rp-inspection-map-note{
+ padding:20px!important;max-width:100%!important;box-sizing:border-box!important;
+ display:grid!important;gap:7px!important;line-height:1.4!important}
+.dashboard .rp-inspection-map-note strong,#central-root .rp-inspection-map-note strong{
+ overflow-wrap:anywhere!important;line-height:1.3!important}
+.dashboard .coi-demo-inspection-current{
+ background:#1b191e;border:1px solid var(--mxqa-border);border-radius:16px;
+ padding:18px;margin:18px 0;min-width:0}
+.dashboard .coi-demo-inspection-current h2{font-size:19px;margin:4px 0 8px}
+.dashboard .coi-demo-inspection-current .coi-demo-inspection-head{
+ display:flex;flex-wrap:wrap;justify-content:space-between;align-items:start;gap:10px}
+.dashboard .coi-demo-inspection-current .coi-demo-inspection-head span{
+ color:#f08da3;font-size:12px;font-weight:800}
+.dashboard .coi-demo-inspection-current .rp-coi-route-map{
+ height:clamp(260px,48vw,390px);width:100%;overflow:hidden;
+ border-radius:12px;margin:14px 0;background:#121115}
+.dashboard .coi-demo-inspection-current .coi-inspection-list{display:grid;gap:9px;margin-top:14px}
+.dashboard .coi-demo-inspection-current .coi-inspection-list article{
+ padding:12px 14px;border:1px solid var(--mxqa-border);border-radius:10px}
+.dashboard .coi-demo-inspection-current button{
+ border:1px solid #65535c!important;border-radius:10px!important;
+ min-height:42px!important;padding:9px 14px!important}
+@media(max-width:560px){
+ .dashboard .app-content .dashboard-v4 .v4-alerts-list>.event-item{
+  grid-template-columns:34px minmax(0,1fr) 18px!important;
+  gap:9px!important;padding:15px 4px!important}
+ .dashboard .app-content .dashboard-v4 .v4-alerts-list .event-icon{
+  width:34px!important;height:34px!important}
+ .dashboard .app-content .rp-activity-row,
+ #central-root .rp-activity-row{
+  grid-template-columns:minmax(0,1fr)!important;padding:13px!important;row-gap:9px!important}
+ .dashboard .app-content .rp-activity-row>span:last-child,
+ #central-root .rp-activity-row>span:last-child{
+  align-items:flex-start!important;text-align:left!important}
+ .dashboard .rp-history-list .rp-history-entry{grid-template-columns:38px minmax(0,1fr)!important}
+ .dashboard .rp-history-list .rp-history-entry .rp-activity-row{padding:13px 8px!important}
+}
+
+/* SECTION: inspector-cockpit-20261016 */
+/* Cockpit do vistoriador. Reutiliza exatamente o componente cartográfico
+   PatrolMap das rondas; só o fluxo de tarefas e os controles mudam.
+   Identidade grafite / vermelho Maxvel, sem azul-marinho. */
+.dashboard .rp-demo-inspector .rp-inspection-cockpit,
+#central-root .rp-inspector-workspace .rp-inspection-cockpit{
+ display:block!important;position:relative!important;width:100%!important;
+ max-width:none!important;min-width:0!important;margin:0!important;padding:0!important;
+ background:#101013!important;border:0!important;border-radius:18px!important;
+ overflow:hidden!important;box-shadow:0 15px 38px #0007!important}
+.dashboard .rp-demo-inspector .rp-inspection-map-panel,
+#central-root .rp-inspector-workspace .rp-inspection-map-panel{
+ display:flex!important;flex-direction:column!important;width:100%!important;
+ min-height:540px!important;height:calc(100dvh - 110px)!important;
+ max-height:1000px!important;position:relative!important;margin:0!important;
+ background:#111113!important;border:1px solid #414a56!important;border-radius:18px!important;
+ overflow:hidden!important}
+.dashboard .rp-demo-inspector .rp-inspection-map-panel .patrol-map-heading,
+#central-root .rp-inspector-workspace .rp-inspection-map-panel .patrol-map-heading{
+ z-index:5!important;min-height:72px!important;flex:none!important;
+ border:0!important;border-bottom:1px solid #414a56!important;
+ background:#191c22!important;padding:12px 16px!important}
+.dashboard .rp-demo-inspector .rp-inspection-map-canvas,
+#central-root .rp-inspector-workspace .rp-inspection-map-canvas{
+ flex:1 1 auto!important;width:100%!important;height:auto!important;max-height:none!important;
+ min-height:320px!important;position:relative!important;overflow:hidden!important;
+ padding:0!important;margin:0!important;border:0!important;border-radius:0!important}
+.dashboard .rp-demo-inspector .rp-inspector-map,
+#central-root .rp-inspector-workspace .rp-inspector-map{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ min-height:0!important;max-height:none!important;background:#111114!important;
+ border:0!important;border-radius:0!important;overflow:hidden!important}
+.dashboard .rp-inspector-map .map-live-layer,#central-root .rp-inspector-map .map-live-layer{
+ position:absolute!important;inset:0!important}
+.dashboard .rp-inspection-map-fit,#central-root .rp-inspection-map-fit{
+ width:44px!important;height:44px!important;min-height:44px!important;flex:none!important;
+ border-radius:12px!important;border:1px solid #495461!important;color:#f2f5f9!important;
+ font-size:23px!important;font-weight:700!important;background:#2a232b!important}
+.dashboard .rp-inspection-map-hud,#central-root .rp-inspection-map-hud{
+ position:absolute!important;z-index:4!important;top:12px!important;left:12px!important;
+ right:12px!important;max-width:500px!important;display:flex!important;flex-direction:column!important;
+ gap:5px!important;padding:13px 16px!important;color:#fff!important;border-radius:13px!important;
+ background:#181519e8!important;border:1px solid #4b5664!important;
+ box-shadow:0 8px 24px #0005!important;pointer-events:none!important}
+.dashboard .rp-inspection-map-hud .rp-inspection-hud-label,
+#central-root .rp-inspection-map-hud .rp-inspection-hud-label{
+ color:#59bdec!important;font-weight:800!important;font-size:11px!important;
+ letter-spacing:.06em!important}
+.dashboard .rp-inspection-map-hud strong,#central-root .rp-inspection-map-hud strong{
+ font-size:18px!important;line-height:1.32!important;overflow-wrap:anywhere!important}
+.dashboard .rp-inspection-map-hud small,#central-root .rp-inspection-map-hud small{
+ font-size:12px!important;color:#c0cad5!important;line-height:1.4!important}
+.dashboard .rp-inspection-map-panel .patrol-map-footer,
+#central-root .rp-inspection-map-panel .patrol-map-footer{
+ z-index:5!important;flex:none!important;background:#191c22!important;border-top:1px solid #414954!important;
+ display:flex!important;gap:7px!important;flex-wrap:wrap!important;
+ min-height:47px!important;padding:10px 15px!important;color:#c0cbd6!important;
+ font-size:11px!important}
+.dashboard .rp-inspection-cockpit .rp-inspection-commands,
+#central-root .rp-inspection-cockpit .rp-inspection-commands{
+ position:absolute!important;z-index:6!important;left:13px!important;right:13px!important;
+ bottom:59px!important;width:auto!important;max-width:660px!important;
+ max-height:45%!important;overflow-y:auto!important;overflow-x:hidden!important;
+ border:1px solid #414a55!important;border-radius:16px!important;background:#20252cf2!important;
+ box-shadow:0 15px 38px #000b!important;backdrop-filter:blur(12px)!important;
+ display:grid!important;gap:0!important;padding:0!important;margin:0 auto!important}
+.dashboard .rp-inspection-commands .patrol-action-heading,
+#central-root .rp-inspection-commands .patrol-action-heading{
+ padding:12px 15px!important;background:transparent!important;border-bottom:1px solid #414a55!important;
+ color:#f1f4f8!important;font-size:13px!important;min-height:auto!important}
+.dashboard .rp-inspection-commands .rp-inspection-commands-body,
+#central-root .rp-inspection-commands .rp-inspection-commands-body{
+ padding:13px 15px!important;display:grid!important;gap:11px!important}
+.dashboard .rp-inspection-commands-body p,#central-root .rp-inspection-commands-body p{
+ margin:0!important;font-size:13px!important;color:#cfd8e1!important;line-height:1.4!important}
+.dashboard .rp-inspection-primary-actions,#central-root .rp-inspection-primary-actions{
+ display:flex!important;align-items:stretch!important;gap:10px!important;flex-wrap:wrap!important}
+.dashboard .rp-inspection-main-action,#central-root .rp-inspection-main-action{
+ flex:1 1 240px!important;min-height:49px!important;width:auto!important;
+ border:1px solid #e7edf5!important;border-radius:11px!important;background:#e7edf5!important;
+ padding:10px 15px!important;font-size:14px!important;font-weight:750!important;
+ color:#151a20!important;box-shadow:none!important}
+.dashboard .rp-inspection-navigate,#central-root .rp-inspection-navigate{
+ flex:1 1 140px!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ min-height:48px!important;text-align:center!important;text-decoration:none!important;
+ font-size:13px!important;font-weight:700!important;border:1px solid #485361!important;
+ border-radius:11px!important;background:#242a32!important;color:#dce4ed!important;
+ padding:9px 12px!important}
+.dashboard .rp-inspection-ready,#central-root .rp-inspection-ready{
+ font-weight:700!important;color:#8fc9e5!important;padding:9px 0!important;line-height:1.4!important}
+.dashboard .rp-inspection-upcoming,#central-root .rp-inspection-upcoming{
+ border-top:1px solid #48535e!important;margin:0!important;padding:0!important}
+.dashboard .rp-inspection-upcoming summary,#central-root .rp-inspection-upcoming summary{
+ display:flex!important;justify-content:space-between!important;align-items:center!important;
+ gap:9px!important;cursor:pointer!important;min-height:46px!important;padding:12px 15px!important;
+ color:#f0f4f8!important;font-size:13px!important;font-weight:650!important}
+.dashboard .rp-inspection-upcoming ol,#central-root .rp-inspection-upcoming ol{
+ list-style:none!important;margin:0!important;padding:3px 13px 12px!important;
+ display:grid!important;gap:8px!important}
+.dashboard .rp-inspection-stop,#central-root .rp-inspection-stop{
+ display:flex!important;align-items:center!important;gap:11px!important;
+ border:1px solid #48535e!important;border-radius:10px!important;
+ background:#242b34!important;padding:11px!important;min-width:0!important}
+.dashboard .rp-inspection-stop.is-next,#central-root .rp-inspection-stop.is-next{
+ border-color:#55bceb!important;background:#25333e!important}
+.dashboard .rp-stop-order,#central-root .rp-stop-order{
+ display:grid!important;place-items:center!important;flex:none!important;width:29px!important;height:29px!important;
+ border-radius:9px!important;background:#2b3d4d!important;color:white!important;font-weight:800!important}
+.dashboard .rp-inspection-stop>div,#central-root .rp-inspection-stop>div{
+ min-width:0!important;flex:1 1 auto!important;display:grid!important;gap:3px!important}
+.dashboard .rp-inspection-stop strong,#central-root .rp-inspection-stop strong{
+ font-size:13px!important;overflow-wrap:anywhere!important;line-height:1.3!important}
+.dashboard .rp-inspection-stop small,#central-root .rp-inspection-stop small{
+ color:#b8c6d2!important;font-size:11px!important;line-height:1.4!important;overflow-wrap:anywhere!important}
+.dashboard .rp-stop-next,#central-root .rp-stop-next{
+ flex:none!important;color:#79c5ea!important;font-size:10px!important;font-weight:800!important}
+.dashboard .rp-inspection-upcoming>small,#central-root .rp-inspection-upcoming>small{
+ display:block!important;padding:0 14px 12px!important;color:#c4b9c2!important;font-size:11px!important}
+.dashboard .rp-inspection-visit-form,#central-root .rp-inspection-visit-form{
+ margin:18px 0!important;padding:18px!important;background:#1a1e25!important;
+ border:1px solid #444e5b!important;border-radius:15px!important}
+@media(max-width:700px){
+ .dashboard .rp-demo-inspector .rp-inspection-cockpit,
+ #central-root .rp-inspector-workspace .rp-inspection-cockpit{border-radius:0!important;margin:0 -12px!important;width:calc(100% + 24px)!important}
+ .dashboard .rp-demo-inspector .rp-inspection-map-panel,
+ #central-root .rp-inspector-workspace .rp-inspection-map-panel{
+  min-height:460px!important;height:calc(100dvh - 83px)!important;
+  max-height:none!important;border-radius:0!important;border-inline:0!important}
+ .dashboard .rp-inspection-cockpit .rp-inspection-commands,
+ #central-root .rp-inspection-cockpit .rp-inspection-commands{
+  left:10px!important;right:10px!important;bottom:54px!important;max-height:47%!important}
+ .dashboard .rp-inspection-map-hud,#central-root .rp-inspection-map-hud{
+  top:10px!important;left:10px!important;right:10px!important;max-width:none!important;
+  padding:10px 13px!important}
+ .dashboard .rp-inspection-map-hud strong,#central-root .rp-inspection-map-hud strong{font-size:15px!important}
+ .dashboard .rp-inspection-map-panel .patrol-map-heading,
+ #central-root .rp-inspection-map-panel .patrol-map-heading{min-height:64px!important;padding:8px 12px!important}
+ .dashboard .rp-inspection-commands .rp-inspection-commands-body,
+ #central-root .rp-inspection-commands .rp-inspection-commands-body{padding:10px 12px!important}
+ .dashboard .rp-inspection-primary-actions,#central-root .rp-inspection-primary-actions{display:grid!important;grid-template-columns:1fr 1fr!important}
+ .dashboard .rp-inspection-main-action,#central-root .rp-inspection-main-action{min-width:0!important;min-height:52px!important;font-size:12px!important}
+ .dashboard .rp-inspection-navigate,#central-root .rp-inspection-navigate{min-width:0!important;font-size:12px!important}
+}
+
+/* SECTION: field-unified-20261016 */
+/* CAMPO UNIFICADO · Maxvel grafite e vermelho institucional. Sem azul marinho. */
+.rp-field-wizard-dialog{
+ width:min(94vw,630px)!important;max-height:min(91dvh,810px)!important;
+ margin:auto!important;padding:0!important;border:1px solid #454f5c!important;
+ border-radius:19px!important;background:#1c2027!important;color:#edf2f7!important;
+ box-shadow:0 25px 90px #000c!important;overflow:hidden!important;
+}
+.rp-field-wizard-dialog::backdrop,.rp-field-chat-overlay::backdrop{background:#060508bd!important;backdrop-filter:blur(5px)!important}
+.rp-field-wizard-dialog>form{height:min(87dvh,765px);display:flex;flex-direction:column;overflow:hidden;margin:0!important}
+.rp-field-wizard-head{display:flex;align-items:center;justify-content:space-between;
+ padding:16px 18px;border-bottom:1px solid #414c59;background:#222830;gap:10px;flex:none}
+.rp-field-wizard-head strong{font-size:15px}.rp-field-wizard-head small{display:block;color:#b8c5d1}
+.rp-field-wizard-head button{border:1px solid #4a5562;background:#2a313a;color:#fff;padding:8px 11px;border-radius:10px}
+.rp-field-wizard{display:flex;flex-direction:column;flex:1}
+.rp-field-wizard-progress{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:15px 17px 9px}
+.rp-field-wizard-progress span{height:5px;background:#485460;border-radius:5px}
+.rp-field-wizard-progress span.done{background:#4bbef0}
+.rp-field-wizard>small{margin:0 18px 8px;font-size:11px;color:#85cbed;letter-spacing:.08em;font-weight:800}
+.rp-field-wizard-stage{padding:8px 19px 18px;overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:11px;scrollbar-width:thin;scrollbar-color:#465461 transparent}
+.rp-field-wizard-stage h3{font-size:19px;margin:0}.rp-field-wizard-stage p{font-size:12px;margin:0;color:#c3ced9;line-height:1.45}
+.rp-field-verification-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rp-field-verification{display:flex!important;gap:10px!important;align-items:center!important;
+ border:1px solid #44505d!important;padding:10px!important;border-radius:12px!important;
+ background:#252b34!important;margin:0!important;font-size:12px!important;font-weight:600!important;min-height:54px}
+.rp-field-verification input,.rp-field-issue-toggle input,.rp-field-wizard-stage input[type=checkbox]{width:18px!important;height:18px!important;min-width:18px!important;accent-color:#4bbef0!important}
+.rp-field-wizard-stage>label:not(.rp-field-verification){display:flex;flex-direction:column;gap:6px;font-size:12px}
+.rp-field-wizard-stage input[type=text],.rp-field-wizard-stage textarea{width:100%;min-width:0;box-sizing:border-box;
+ background:#171c23!important;color:#fff!important;border:1px solid #465361!important;border-radius:10px!important;padding:11px!important}
+.rp-field-wizard-stage .rp-field-issue-toggle{flex-direction:row!important;align-items:center;gap:9px!important;font-weight:650}
+.rp-field-wizard-error{margin:0 18px 9px!important;color:#f4d18c!important;font-size:12px!important}
+.rp-field-wizard-controls{display:flex;justify-content:space-between;gap:11px;
+ padding:14px 18px 17px;border-top:1px solid #414c59;background:#222830;flex:none}
+.rp-field-wizard-controls button{border:1px solid #495767!important;background:#29313b!important;
+ min-height:45px!important;padding:10px 17px!important;color:#fff!important;border-radius:10px!important;font-weight:700!important}
+.rp-field-wizard-controls button.rp-field-wizard-forward{background:#e7edf5!important;border-color:#e7edf5!important;flex:1}
+.rp-field-wizard-controls button:disabled{opacity:.42!important}
+.rp-inspection-main-action{background:#e7edf5!important;border-color:#e7edf5!important;color:#151a20!important}
+.rp-field-chat-overlay{margin:auto!important;position:fixed;inset:0;box-sizing:border-box;
+ width:min(96vw,960px)!important;height:min(92dvh,900px)!important;max-height:92dvh!important;
+ padding:0!important;border:1px solid #44515e!important;border-radius:17px!important;
+ background:#1a1f26!important;color:#f0f4f9!important;box-shadow:0 25px 110px #000c!important;overflow:hidden!important}
+.rp-field-chat-overlay-head{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;
+ height:53px;box-sizing:border-box;border-bottom:1px solid #414c59;background:#232933}
+.rp-field-chat-overlay-head button{background:#29323d;border:1px solid #495666;border-radius:9px;color:#fff;min-width:42px;min-height:35px}
+.rp-field-chat-overlay>.chat-page{height:calc(100% - 53px);min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.rp-field-chat-overlay .chat-workspace{flex:1;min-height:0;overflow:hidden}
+.rp-field-chat-overlay .chat-thread{flex:1;min-height:80px;overflow:auto}
+.rp-field-chat-overlay .chat-main{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.rp-field-quicktools{display:flex;align-items:stretch;flex-wrap:wrap;gap:8px;padding:10px 13px;background:#202731;border-bottom:1px solid #44505d}
+.rp-field-quicktools button{min-height:42px!important;background:#29333e!important;color:#f0f5fa!important;
+ border:1px solid #455462!important;border-radius:10px!important;padding:9px 12px!important;font-size:12px;font-weight:700}
+.rp-field-quicktools button.rp-urgent{background:#8b2339!important;border-color:#c04b64!important}
+.rp-field-wizard-stage .rp-inspection-selfie{min-height:44px;border-radius:9px}
+@media(max-width:600px){
+ .rp-field-wizard-dialog{width:100vw!important;max-height:100dvh!important;height:100dvh!important;border-radius:0!important}
+ .rp-field-wizard-dialog>form{height:100dvh}
+ .rp-field-verification-grid{grid-template-columns:1fr 1fr}
+ .rp-field-chat-overlay{width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
+ .rp-field-chat-overlay>.chat-page{height:calc(100% - 53px)}
+ .rp-field-wizard-stage{padding:8px 13px 14px}
+ .rp-field-wizard-controls{padding:12px}
+}
+
+/* Mesmo cockpit cartográfico para a ronda autenticada, sem trocar a marca Maxvel. */
+#central-root .rp-guard-workspace .rp-inspection-cockpit{position:relative;width:100%;max-width:none;
+ min-height:540px;border:1px solid #43505d;border-radius:17px;overflow:hidden;background:#161c23}
+#central-root .rp-guard-workspace .rp-inspection-map-panel{width:100%;height:calc(100dvh - 112px);min-height:540px;max-height:990px;
+ display:flex;flex-direction:column;position:relative;background:#161c23;overflow:hidden}
+#central-root .rp-guard-workspace .rp-inspection-map-panel .patrol-map-heading{min-height:65px;flex:none;
+ display:flex;align-items:center;justify-content:space-between;padding:12px 15px;background:#1c2027;border-bottom:1px solid #43505d;position:relative;z-index:3}
+#central-root .rp-guard-workspace .rp-inspection-map-panel .patrol-map-canvas{flex:1;position:relative;min-height:370px;width:100%;overflow:hidden}
+#central-root .rp-guard-workspace #guard-real-map{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0;background:#121215}
+#central-root .rp-guard-workspace .rp-inspection-map-panel .patrol-map-footer{padding:10px 15px;min-height:39px;z-index:3;background:#1b222a;border-top:1px solid #43505d;display:flex;justify-content:space-between;font-size:11px;gap:8px}
+#central-root .rp-guard-workspace .rp-inspection-map-hud{position:absolute;z-index:4;top:12px;left:12px;right:12px;
+ background:#1a222be8;border:1px solid #44515f;border-radius:12px;padding:12px;display:grid;gap:4px;pointer-events:none}
+#central-root .rp-guard-workspace .rp-inspection-map-hud .rp-inspection-hud-label{font-size:11px;font-weight:800;color:#63bfea}
+#central-root .rp-guard-workspace .rp-inspection-commands{position:absolute;z-index:6;left:12px;right:12px;bottom:52px;
+ max-width:690px;margin:auto;background:#202831ef;border:1px solid #66525e;border-radius:15px;box-shadow:0 15px 40px #0009;
+ max-height:45%;overflow-y:auto;backdrop-filter:blur(12px)}
+#central-root .rp-guard-workspace .rp-inspection-commands .patrol-action-heading{padding:11px 14px;border-bottom:1px solid #44515f}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-commands-body{padding:12px 14px}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-main-action{min-height:48px;border:1px solid #e7edf5;
+ background:#e7edf5;border-radius:10px;color:#151a20;padding:10px;font-weight:750;width:100%}
+#central-root .rp-guard-workspace .rp-inspection-map-fit{background:#263440;color:#fff;border:1px solid #4c5968;border-radius:10px;min-height:40px}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming{border-top:1px solid #43505d}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming summary{padding:12px 14px;cursor:pointer}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-upcoming ol{margin:0;padding:0 13px 13px;list-style:none;display:grid;gap:8px}
+#central-root .rp-guard-workspace .rp-inspection-commands .rp-inspection-stop{display:flex;gap:9px;padding:10px;border:1px solid #43505d;border-radius:10px}
+@media(max-width:700px){
+ #central-root .rp-guard-workspace .rp-inspection-cockpit{margin:0 -12px;width:calc(100% + 24px);border:0;border-radius:0}
+ #central-root .rp-guard-workspace .rp-inspection-map-panel{height:calc(100dvh - 85px);min-height:475px}
+ #central-root .rp-guard-workspace .rp-inspection-commands{left:9px;right:9px;bottom:49px;max-height:48%}
+ #central-root .rp-guard-workspace .rp-inspection-map-hud{top:10px;left:10px;right:10px}
+}
+
+/* Menus de cabeçalho sempre acima do mapa e das camadas do cockpit. */
+.dashboard .shell-main .app-header{position:relative!important;z-index:5000!important;isolation:isolate!important;overflow:visible!important}
+.dashboard .shell-main .app-header .header-actions,
+.dashboard .shell-main .app-header .rp-header-tools,
+.dashboard .shell-main .app-header .rp-header-popover{position:relative!important;z-index:5010!important;overflow:visible!important}
+.dashboard .shell-main .app-header .rp-popover-list{
+ position:absolute!important;z-index:5020!important;top:calc(100% + 7px)!important;
+ box-shadow:0 18px 42px #000b!important;pointer-events:auto!important
+}
+
+/* Cabeçalho autenticado de campo: central.html utiliza .top, não .app-header. */
+body:has(#central-root) > header.top{
+ position:sticky!important;z-index:5050!important;isolation:isolate!important;overflow:visible!important;
+}
+body:has(#central-root) > header.top .top-actions,
+body:has(#central-root) > header.top .rp-header-tools,
+body:has(#central-root) > header.top .rp-header-popover{
+ position:relative!important;z-index:5051!important;overflow:visible!important;
+}
+body:has(#central-root) > header.top .rp-popover-list{
+ z-index:5052!important;pointer-events:auto!important;
+}
+@media(max-width:720px){
+ body:has(#central-root) > header.top .rp-popover-list{
+  position:fixed!important;top:calc(64px + env(safe-area-inset-top,0px))!important;
+  right:12px!important;left:auto!important;width:min(410px,calc(100vw - 24px))!important;
+  max-height:calc(100dvh - 90px)!important;
+ }
+}
+
+/* SECTION: inspector-patrol-parity-20261016 */
+/* Rondas Pro | Paridade visual ronda x vistoriador. O MAPA permanece livre.
+   Complemento de ultimo carregamento para sobrepor folhas legadas sem alterar a ronda. */
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit{
+ position:relative!important;display:block!important;isolation:isolate!important;
+ min-height:520px!important;width:100%!important;max-width:none!important;
+ padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+ overflow:hidden!important;background:#0d0d10!important;box-shadow:none!important;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-panel{
+ height:calc(100dvh - 93px)!important;min-height:520px!important;max-height:none!important;
+ display:block!important;position:relative!important;border:0!important;border-radius:0!important;
+ margin:0!important;padding:0!important;overflow:hidden!important;background:#111114!important
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-canvas{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ min-height:0!important;max-height:none!important;display:block!important;
+ margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspector-map{
+ position:absolute!important;inset:0!important;height:100%!important;width:100%!important;
+ border:0!important;border-radius:0!important;min-height:0!important;max-height:none!important
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-route-bar{
+ position:absolute!important;z-index:800!important;top:12px!important;left:12px!important;right:12px!important;
+ display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
+ width:auto!important;min-height:56px!important;height:auto!important;margin:0!important;padding:8px 9px 8px 13px!important;
+ background:#17171ced!important;border:1px solid #36414d!important;border-radius:15px!important;
+ box-shadow:0 5px 20px #0006!important;backdrop-filter:blur(10px)!important
+}
+.rp-inspection-route-bar .patrol-map-heading-copy{flex:1 1 auto;min-width:0;display:grid;gap:2px}
+.rp-inspection-route-bar .patrol-map-heading-copy strong{
+ color:#f7f3f6!important;font-size:13px!important;line-height:1.3!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+.rp-inspection-route-bar .patrol-map-heading-copy small{
+ color:#bcb6be!important;font-size:11px!important;line-height:1.4!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-fit{
+ flex:none!important;width:43px!important;min-width:43px!important;height:43px!important;min-height:43px!important;
+ display:grid!important;place-items:center!important;border:1px solid #444b56!important;border-radius:12px!important;
+ padding:0!important;background:#22232a!important;color:#74c7ed!important;box-shadow:none!important
+}
+.rp-inspection-map-fit svg{width:22px;height:22px}
+.rp-inspection-map-controls{
+ position:absolute;z-index:850;left:16px;top:93px;
+ display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none
+}
+.rp-inspection-map-controls button{pointer-events:auto}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-panic{
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;
+ width:78px!important;height:78px!important;min-width:78px!important;min-height:78px!important;padding:8px!important;
+ border:4px solid #e27890!important;border-radius:50%!important;color:#fff!important;
+ background:linear-gradient(150deg,#f93258,#b10d36)!important;box-shadow:0 0 0 7px #9e213541,0 8px 25px #0008!important;
+ font-weight:850!important;line-height:1.05!important
+}
+.rp-inspection-panic svg{width:30px;height:30px;stroke-width:2.6}
+.rp-inspection-panic span{font-size:12px;letter-spacing:.04em}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-help{
+ display:grid!important;place-items:center!important;width:49px!important;height:49px!important;
+ min-width:49px!important;min-height:49px!important;padding:0!important;border:1px solid #65c7e7!important;
+ border-radius:50%!important;background:#12181edb!important;color:#fff!important;box-shadow:0 5px 16px #0009!important
+}
+.rp-inspection-help svg{width:23px;height:23px}
+.rp-inspection-map-actions{
+ position:absolute;z-index:830;bottom:max(13px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+ width:min(348px,calc(100% - 26px));margin:0;padding:0;pointer-events:auto
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-actions button{
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;
+ min-width:0!important;min-height:73px!important;height:73px!important;padding:6px 3px!important;
+ border:1px solid #596b7b!important;border-radius:13px!important;
+ background:linear-gradient(160deg,#302d35eb,#202029f5)!important;color:#f8f7fa!important;
+ box-shadow:0 9px 22px #0009!important;font-size:11px!important;line-height:1.1!important;font-weight:800!important;text-align:center!important
+}
+.rp-inspection-map-actions svg{display:block;flex:none;width:25px;height:25px;color:#58cbf1;stroke-width:2}
+.rp-inspection-map-actions button:first-child svg{color:#f8cf43}
+.rp-inspection-map-actions button span{white-space:normal}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands{
+ position:absolute!important;z-index:825!important;left:12px!important;right:12px!important;bottom:101px!important;
+ width:auto!important;max-width:560px!important;max-height:min(240px,32dvh)!important;
+ display:block!important;overflow:hidden!important;padding:0!important;margin:0 auto!important;
+ border:1px solid #414a55!important;border-top:2px solid #414a55!important;border-radius:17px!important;
+ background:#191e26ef!important;box-shadow:0 14px 36px #000b!important;backdrop-filter:blur(16px)!important
+}
+.rp-inspection-sheet-heading{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;gap:9px!important;
+ min-height:44px!important;padding:8px 13px!important;background:#1b2027!important;
+ border-bottom:1px solid #414954!important
+}
+.rp-inspection-sheet-heading>div{display:flex;align-items:center;gap:9px;min-width:0}
+.rp-inspection-sheet-heading strong{font-size:14px;color:#f5f3f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-inspection-sheet-indicator svg{display:block;width:20px;height:20px;color:#68c8e6}
+.rp-inspection-sheet-heading button{
+ flex:none;min-width:0;min-height:40px;border:0;background:transparent;color:#d9e3eb;font-size:12px;font-weight:750;padding:6px 3px
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-commands-body{
+ display:grid!important;gap:5px!important;padding:11px 14px 13px!important;min-height:0!important
+}
+.rp-inspection-step-label{font-size:10px;font-weight:850;color:#8cd2e9;letter-spacing:.09em}
+.rp-inspection-destination{font-size:14px;line-height:1.25;color:#f5f1f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-inspection-instruction{font-size:11px!important;color:#beb8c0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-inspection-distance{font-size:10px!important;color:#b8cbd0!important;white-space:nowrap!important}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-primary-actions{grid-template-columns:minmax(0,1fr) auto!important;gap:8px!important;margin-top:4px!important;align-items:stretch!important
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-main-action{
+ display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;
+ width:100%!important;min-width:0!important;flex:none!important;
+ padding:7px 10px!important;font-size:13px!important;white-space:nowrap!important;
+ border:1px solid #e7edf5!important;border-radius:12px!important;background:#e7edf5!important
+}
+.rp-inspection-main-action svg{width:20px;height:20px}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-navigate{
+ min-width:87px!important;flex:none!important;min-height:49px!important;height:49px!important;
+ border-radius:12px!important;background:#262c34!important;border:1px solid #465360!important;
+ color:#f6f1f5!important;padding:9px 11px!important;font-size:12px!important
+}
+.rp-inspection-ready{font-size:12px!important;align-self:center;padding:9px;color:#b9c5d0!important}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-status-readout{
+ position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;
+ overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;padding:0!important;margin:0!important;border:0!important
+}
+.rp-inspection-cockpit .rp-inspection-dialog,
+[data-inspection-history-dialog]{
+ position:fixed!important;inset:0!important;box-sizing:border-box!important;
+ width:min(470px,calc(100vw - 26px))!important;max-width:470px!important;
+ height:auto!important;max-height:min(76dvh,680px)!important;margin:auto!important;
+ padding:0!important;overflow:auto!important;border-radius:18px!important;
+ border:1px solid #58505b!important;background:#1b191f!important;color:#f7f5f7!important;
+ box-shadow:0 25px 70px #000c!important
+}
+.rp-inspection-dialog::backdrop,[data-inspection-history-dialog]::backdrop{background:#000b;backdrop-filter:blur(5px)}
+.rp-inspection-dialog header, [data-inspection-history-dialog] header{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;
+ gap:12px;background:#222027;border-bottom:1px solid #443a45;padding:15px 16px}
+.rp-inspection-dialog header h2,[data-inspection-history-dialog] header h2{font-size:17px;margin:3px 0}
+.rp-inspection-dialog header small,[data-inspection-history-dialog] header small{color:#71c6e9;font-size:10px;letter-spacing:.1em;font-weight:800}
+.rp-inspection-dialog header button,[data-inspection-history-dialog] header button{flex:none;min-width:42px;min-height:42px;border-radius:12px;
+ border:1px solid #5b4f5b;background:#332e36;color:white;font-size:18px}
+.rp-inspection-dialog .rp-inspection-upcoming{list-style:none!important;display:grid!important;gap:8px!important;
+ margin:0!important;padding:12px 14px!important;border:0!important;background:none!important}
+.rp-inspection-dialog .rp-inspection-stop{display:flex;gap:10px;align-items:center;border:1px solid #48404b;
+ border-radius:12px;padding:12px;background:#27242c}
+.rp-inspection-dialog .rp-inspection-stop div{display:grid;gap:3px;min-width:0}
+.rp-inspection-dialog .rp-inspection-stop strong{color:#fff}
+.rp-inspection-dialog .rp-inspection-stop small{color:#beb4bf}
+.rp-inspection-dialog .rp-stop-order{width:31px;height:31px;display:grid;place-items:center;
+ background:#2b3440;color:#fff;border-radius:9px;flex:none}
+.rp-inspection-dialog-note{padding:0 17px 12px;margin:0;font-size:11px;color:#c3bbc5}
+.rp-inspection-dialog-history{display:flex;align-items:center;gap:10px;width:calc(100% - 28px);min-height:46px;
+ padding:9px 14px;margin:0 14px 14px;border:1px solid #475362;border-radius:12px;background:#232b34;color:#fff;font-weight:700}
+.rp-inspection-dialog-history svg{width:20px;height:20px;color:#6aceee}
+.rp-inspection-help-dialog p{padding:9px 17px;color:#e3dce2;font-size:13px;line-height:1.55}
+[data-inspection-history-dialog] .rp-inspection-history-content{padding:12px 14px;display:grid;gap:9px}
+[data-inspection-history-dialog] .rp-inspection-history-row{display:grid;grid-template-columns:1fr auto;gap:8px;
+ border-bottom:1px solid #4a3d47;padding:11px 5px}
+[data-inspection-history-dialog] .rp-inspection-history-row span{display:grid;min-width:0;gap:4px}
+[data-inspection-history-dialog] .rp-inspection-history-row strong{color:#fff;font-size:13px}
+[data-inspection-history-dialog] .rp-inspection-history-row small{color:#c6bcc6;font-size:12px;overflow-wrap:anywhere}
+[data-inspection-history-dialog] .rp-inspection-history-row b{color:#c5d3df}
+@media(max-width:700px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit{width:calc(100% + 24px)!important;margin-inline:-12px!important;border:0!important;border-radius:0!important}
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-panel{
+  height:calc(100dvh - 83px)!important;min-height:495px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands{
+  bottom:100px!important;max-height:min(235px,31dvh)!important;left:9px!important;right:9px!important
+ }
+ .rp-inspection-route-bar{top:9px!important;left:9px!important;right:9px!important}
+ .rp-inspection-map-controls{left:14px;top:86px}
+ .rp-inspection-map-actions{gap:7px;width:min(344px,calc(100% - 25px))}
+}
+@media(max-height:660px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands{bottom:86px!important;max-height:38dvh!important}
+ .rp-inspection-map-actions button{min-height:65px!important;height:65px!important}
+ .rp-inspection-sheet-heading{min-height:39px!important}
+ .rp-inspection-commands-body{gap:3px!important}
+ .rp-inspection-instruction{display:none!important}
+}
+@media(prefers-reduced-motion:no-preference){
+ .rp-inspection-map-actions button:active,.rp-inspection-main-action:active,.rp-inspection-panic:active{transform:scale(.97)}
+}
+
+/* Rondas Pro · contrato visual de 17/10/2026
+   Regressões: vermelho excessivo, modais altos, controles crus, mapa oculto,
+   galeria em lugar de câmera, navegação incompleta e compositor inchado.
+   A folha atual é a última camada operacional, sem criar outra cascata. */
+:root{
+ --rp-field-surface:#191b20;
+ --rp-field-surface-elevated:#22252b;
+ --rp-field-border:#414852;
+ --rp-field-info:#43b3ec;
+ --rp-field-text:#f5f5f7;
+ --rp-field-danger:#ed1748;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands{
+ background:#191b20f2!important;border:1px solid #414852!important;border-top:1px solid #56616e!important;
+ max-height:min(330px,46dvh)!important
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-sheet-heading{
+ background:#181a20!important;border-bottom-color:#363d48!important
+}
+.rp-inspection-step-label,.rp-inspection-sheet-indicator svg{color:var(--rp-field-info)!important}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-main-action{
+ background:#edf0f5!important;border:1px solid #edf0f5!important;color:#15171c!important;
+ min-height:46px!important;height:auto!important;white-space:normal!important
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-primary-actions{
+ display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important
+}
+.rp-inspection-directions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-directions .rp-inspection-navigate{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;min-width:0!important;height:43px!important;min-height:43px!important;
+ padding:7px 10px!important;border:1px solid #4a515c!important;border-radius:10px!important;
+ color:#f3f4f7!important;background:#282b32!important;text-decoration:none!important;
+ font-size:12px!important;font-weight:750!important;white-space:nowrap!important
+}
+.rp-inspection-navigate:focus-visible,.rp-capture-button:focus-visible{
+ outline:3px solid var(--rp-field-info)!important;outline-offset:2px!important
+}
+.rp-field-wizard-dialog,.rp-field-wizard-dialog[open]{
+ box-sizing:border-box!important;width:min(calc(100vw - 22px),640px)!important;
+ height:auto!important;max-height:calc(100dvh - 24px)!important;
+ margin:auto!important;border-radius:16px!important;background:var(--rp-field-surface)!important;
+ border:1px solid var(--rp-field-border)!important
+}
+.rp-field-wizard-dialog>form,.rp-field-wizard-dialog[open]>form{
+ height:auto!important;max-height:calc(100dvh - 28px)!important;overflow:hidden!important
+}
+.rp-field-wizard{flex:0 1 auto!important;min-height:0!important}
+.rp-field-wizard-stage{flex:0 1 auto!important;max-height:min(57dvh,515px)!important;overflow-y:auto!important;gap:10px!important}
+.rp-field-wizard-head,.rp-field-wizard-controls{background:#202228!important;border-color:#343b44!important}
+.rp-field-wizard-controls button.rp-field-wizard-forward{
+ background:#e7ebf1!important;color:#17191f!important;border-color:#e7ebf1!important
+}
+.rp-field-verification{background:#24262d!important;border-color:#414852!important}
+.rp-field-wizard-stage input[type="checkbox"]{accent-color:#439ce3!important}
+.rp-field-wizard-stage .rp-field-issue-toggle{color:#e5e7ec!important}
+.rp-inspection-evidence{display:grid;gap:9px}
+.rp-inspection-capture-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.rp-field-wizard-stage .rp-inspection-capture-actions .rp-capture-button{
+ display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;
+ gap:10px!important;min-height:70px!important;min-width:0!important;padding:11px!important;
+ border:1px solid #4a5663!important;border-radius:12px!important;color:#f2f4f8!important;
+ background:#24282f!important;box-shadow:none!important;text-align:left!important
+}
+.rp-capture-button svg{flex:none;color:#5abcf2;display:block}
+.rp-capture-button span{display:grid;gap:3px;min-width:0}
+.rp-capture-button strong{font-size:13px;line-height:1.3}
+.rp-capture-button small{font-size:10px;color:#b7c4d1}
+.rp-capture-preview{font-size:12px;color:#c8d3df;margin:0!important;min-height:20px}
+.rp-capture-thumbnails{display:flex;gap:6px;overflow-x:auto;padding:6px 0}
+.rp-capture-thumb{flex:none;display:grid;gap:2px}
+.rp-capture-thumb img{display:block;width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #4b5662}
+.rp-capture-dialog{
+ position:fixed;inset:0;margin:auto;padding:0!important;max-width:min(480px,96vw);width:min(480px,96vw);
+ max-height:min(95dvh,830px);border:1px solid #4a5867;border-radius:16px;
+ background:#161a21;color:#f3f6fb;box-shadow:0 25px 70px #000a;overflow:hidden
+}
+.rp-capture-dialog::backdrop{background:#03050be0}
+.rp-capture-head,.rp-capture-footer{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:11px 15px}
+.rp-capture-head button,.rp-capture-footer button{min-width:44px;min-height:44px;padding:9px 13px;border:1px solid #485363;border-radius:9px;background:#252b36;color:#f3f6fb;font-weight:750}
+.rp-capture-footer [data-shutter]{background:#e9eff7;color:#111827;border-color:#e9eff7;flex:1}
+.rp-capture-dialog p{font-size:12px;color:#b7c4d4;margin:9px 15px}
+.rp-capture-viewport{background:#07080d;aspect-ratio:3/4;max-height:65dvh;overflow:hidden}
+.rp-capture-viewport video{display:block;width:100%;height:100%;object-fit:cover}
+.rp-field-chat-overlay,.rp-field-chat-overlay[open]{
+ box-sizing:border-box!important;width:min(96vw,750px)!important;height:min(78dvh,690px)!important;
+ max-height:calc(100dvh - 24px)!important;border-radius:15px!important;
+ background:#191b20!important;border-color:#414852!important
+}
+.rp-field-chat-overlay-head,.rp-field-chat-overlay .field-chat-threadbar,
+.rp-field-chat-overlay .field-chat-compose{background:#202329!important;border-color:#3b4451!important}
+.rp-field-chat-overlay .field-chat-compose{
+ display:flex!important;flex-direction:row!important;align-items:center!important;
+ gap:9px!important;min-height:64px!important;padding:10px 12px!important
+}
+.rp-field-chat-overlay .field-chat-compose input{
+ flex:1 1 auto!important;min-width:0!important;width:auto!important;margin:0!important;
+ height:44px!important;border-radius:12px!important;background:#12161c!important;color:#fff!important
+}
+.rp-field-chat-overlay .field-chat-compose button[type="submit"]{
+ display:grid!important;place-items:center!important;flex:0 0 44px!important;
+ width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;
+ padding:0!important;margin:0!important;border-radius:12px!important;
+ background:#328ee9!important;color:#fff!important;font-size:0!important
+}
+.rp-field-chat-overlay .field-chat-compose button[type="submit"]::after{
+ content:"↗";font-size:26px;line-height:1
+}
+#dialog[open],#central-panic-dialog[open],.rp-inspection-help-dialog[open]{
+ height:auto!important;min-height:0!important;max-height:min(85dvh,760px)!important;
+ overflow-y:auto!important;border-radius:16px!important
+}
+#dialog[open] :is(h2,p),#central-panic-dialog[open] :is(h2,p){height:auto!important}
+@media(max-width:600px){
+ .rp-field-wizard-dialog,.rp-field-wizard-dialog[open]{width:calc(100vw - 18px)!important;height:auto!important;max-height:calc(100dvh - 24px)!important;border-radius:14px!important}
+ .rp-field-wizard-dialog>form{height:auto!important;max-height:calc(100dvh - 28px)!important}
+ .rp-field-chat-overlay,.rp-field-chat-overlay[open]{width:calc(100vw - 18px)!important;height:min(80dvh,680px)!important;max-height:calc(100dvh - 20px)!important;border-radius:14px!important}
+ .rp-field-wizard-stage{padding:8px 12px 12px!important}
+ .rp-inspection-capture-actions{gap:7px}
+ .rp-field-wizard-stage .rp-inspection-capture-actions .rp-capture-button{padding:9px!important;min-height:66px!important}
+}
+
+/* Lanterna no mesmo mapa operacional, com silhueta da ronda e alvo 48px. */
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch{
+ position:absolute!important;z-index:850!important;right:16px!important;top:95px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;
+ gap:3px!important;width:72px!important;height:72px!important;min-height:72px!important;padding:8px!important;
+ background:#22252bdc!important;border:1px solid #556270!important;border-radius:50%!important;
+ color:#f5f7fa!important;box-shadow:0 8px 20px #0009!important
+}
+.rp-inspection-torch svg{height:23px;width:23px;color:#62c0f0}
+.rp-inspection-torch span{font-size:11px;font-weight:700}
+@media(max-width:600px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch{
+  right:14px!important;top:86px!important;width:62px!important;height:62px!important;min-height:62px!important
+ }
+}
+
+/* COI: substitui controles com aparência padrão por ações tipográficas discretas.
+   Mesmo padrão cinza neutro/azul informativo usado no cockpit. */
+.dashboard .coi-demo-record .rp-coi-percurso-link{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;
+ width:auto!important;max-width:100%!important;min-height:43px!important;margin:9px 0 0!important;
+ padding:8px 13px!important;border:1px solid #424b56!important;border-radius:9px!important;
+ background:#262a31!important;color:#eef4fa!important;font-size:12px!important;font-weight:750!important;
+ box-shadow:none!important;line-height:1.4!important
+}
+.dashboard .coi-demo-content .rp-coi-history-link{
+ display:inline-flex!important;align-items:center!important;gap:8px!important;flex:none!important;
+ min-height:43px!important;padding:8px 9px!important;margin:0!important;
+ background:transparent!important;color:#7cd0f8!important;border:0!important;
+ border-radius:8px!important;box-shadow:none!important;font-size:12px!important;font-weight:750!important
+}
+.dashboard .coi-demo-record .rp-coi-percurso-link span,
+.dashboard .coi-demo-content .rp-coi-history-link span{font-size:16px;font-weight:750}
+.dashboard .coi-demo-record .rp-coi-percurso-link:focus-visible,
+.dashboard .coi-demo-content .rp-coi-history-link:focus-visible{outline:3px solid #47b6ec;outline-offset:2px}
+.dashboard :is(.coi-demo-record,.coi-demo-content){
+ border-color:#454a53!important;background:#1c1e23!important;color:#f3f5f8!important
+}
+@media(max-width:600px){
+ .dashboard .coi-demo-content header.toolbar{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:7px!important}
+ .dashboard .coi-demo-content header.toolbar h2{flex:1 1 190px!important;min-width:0!important;font-size:18px!important;line-height:1.25!important}
+ .dashboard .coi-demo-content .rp-coi-history-link{margin-left:0!important}
+}
+
+/* COI + Administração desktop · revisão baseada nos fluxos testados em 17/10.
+   Resumo panorâmico, abas verdadeiras e CTA de formulários visível. */
+@media (min-width:1280px){
+ .dashboard .v4-wide-workspace .v4-dashboard-tabs,
+ .dashboard .v4-desktop-focus .v4-dashboard-tabs{
+  display:flex!important;gap:5px!important;align-items:center!important;
+  flex-wrap:wrap!important;margin:12px 0 14px!important;padding:5px!important;
+  border-radius:11px!important;background:#20232a!important;
+  border:1px solid #3a424e!important
+ }
+ .dashboard .v4-desktop-focus.dashboard-v4{
+  display:block!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow:visible!important
+ }
+ .dashboard .app-content:has(.v4-desktop-focus){
+  display:block!important;overflow-y:auto!important;overflow-x:hidden!important;
+  padding:18px clamp(18px,1.8vw,32px) 30px!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage{
+  display:block!important;width:100%!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow:visible!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage>.v4-pane[hidden]{
+  display:none!important;visibility:hidden!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage>.v4-pane:not([hidden]){
+  display:block!important;box-sizing:border-box!important;width:100%!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  overflow:visible!important;padding:20px!important;
+  border-radius:14px!important;border:1px solid #424b55!important;background:#191c22!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage>.v4-map-pane:not([hidden]){
+  display:flex!important;flex-direction:column!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage .ops-map-card{max-height:none!important;min-height:420px!important}
+ .dashboard .v4-desktop-focus .v4-stage .ops-map-stage{height:clamp(340px,54vh,600px)!important;min-height:340px!important}
+ .dashboard .v4-desktop-focus .v4-stage .map-container.large{height:100%!important;min-height:340px!important}
+ .dashboard .v4-desktop-focus .v4-team-list,
+ .dashboard .v4-desktop-focus .v4-alerts-list,
+ .dashboard .v4-desktop-focus .v4-insights-list,
+ .dashboard .v4-desktop-focus .v4-history-list{
+  max-height:none!important;overflow:visible!important
+ }
+ .dashboard .v4-desktop-focus .v4-insights-list{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important
+ }
+}
+.dashboard .v4-dashboard-tabs [role="tab"]{
+ min-height:43px!important;padding:9px 16px!important;border:1px solid transparent!important;
+ border-radius:9px!important;font-size:13px!important;font-weight:750!important;
+ color:#c5d0de!important;background:transparent!important
+}
+.dashboard .v4-dashboard-tabs [role="tab"][aria-selected="true"]{
+ background:#303844!important;border-color:#4d5c6c!important;color:#fff!important
+}
+.dashboard .v4-dashboard-tabs [role="tab"]:focus-visible{
+ outline:3px solid #4fb7f0!important;outline-offset:2px!important
+}
+/* Eventos: coluna acompanha os itens reais, sem bloco obrigatório de 295px. */
+@media (min-width:1024px){
+ .dashboard .rp-event-columns{
+  align-items:start!important;align-content:start!important;min-height:0!important;max-height:none!important
+ }
+ .dashboard .rp-event-columns>.rp-event-column{
+  min-height:0!important;height:auto!important;max-height:none!important;
+  overflow:visible!important;align-self:start!important
+ }
+ .dashboard .rp-event-column .rp-event-empty{
+  padding:17px 14px!important;text-align:left!important
+ }
+ .dashboard .rp-treatment-archive:has(.rp-archive-record){align-content:start!important}
+}
+/* COI: informações relacionadas lado a lado, histórico curto abaixo. */
+@media (min-width:1050px){
+ .dashboard .coi-demo-page .rp-coi-desktop-grid{
+  display:grid!important;grid-template-columns:minmax(0,1.07fr) minmax(340px,.93fr)!important;
+  align-items:start!important;column-gap:16px!important;row-gap:14px!important;min-width:0
+ }
+ .dashboard .coi-demo-page .rp-coi-desktop-grid>.coi-demo-inspection-current{
+  grid-column:1!important;grid-row:1!important;min-height:0!important;
+  margin:0!important;align-self:start!important
+ }
+ .dashboard .coi-demo-page .rp-coi-desktop-grid>.coi-demo-record{
+  grid-column:2!important;grid-row:1!important;min-height:0!important;margin:0!important
+ }
+ .dashboard .coi-demo-page .rp-coi-desktop-grid>.coi-demo-content{
+  grid-column:1/-1!important;grid-row:2!important;margin:0!important
+ }
+ .dashboard .coi-demo-page .coi-demo-map,
+ .dashboard .coi-demo-page .rp-coi-route-map{
+  height:clamp(255px,34vh,360px)!important;max-height:360px!important;min-height:255px!important
+ }
+ .dashboard .coi-demo-page .coi-inspection-list{margin-top:12px!important;gap:6px!important}
+ .dashboard .coi-demo-page .coi-demo-inspection-current .rp-inspection-empty{min-height:0!important}
+}
+.dashboard .app-header .rp-header-tools{gap:13px!important}
+.dashboard .app-header .rp-header-popover{margin:0 2px!important}
+.dashboard .app-header .rp-header-popover>summary{
+ min-width:48px!important;min-height:44px!important;padding:9px!important;gap:6px!important
+}
+/* Solicitar vistoria: só o conjunto de campos rola; a ação fica fixa e alcançável.
+   Não muda os critérios do COI nem envia por si só. */
+#dialog[open]:has(#demo-inspection-request){
+ display:flex!important;flex-direction:column!important;box-sizing:border-box!important;
+ width:min(620px,calc(100vw - 24px))!important;max-width:620px!important;
+ height:min(745px,calc(100dvh - 28px))!important;max-height:calc(100dvh - 28px)!important;
+ overflow:hidden!important;padding:18px 19px 0!important;margin:auto!important;gap:0!important;
+ background:#1a1c22!important;border:1px solid #454b55!important;border-radius:15px!important
+}
+#dialog[open]:has(#demo-inspection-request)>h2{flex:none!important;margin:5px 40px 8px 0!important}
+#dialog[open]:has(#demo-inspection-request)>p{flex:none!important;margin:0 0 12px!important}
+#dialog[open]:has(#demo-inspection-request)>.eyebrow{flex:none!important}
+#dialog[open] #demo-inspection-request{
+ flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important;
+ display:flex!important;flex-direction:column!important;gap:0!important;margin:0!important
+}
+#dialog[open] #demo-inspection-request .rp-request-fields{
+ flex:1 1 auto!important;min-height:0!important;display:grid!important;gap:11px!important;
+ overflow-y:auto!important;overscroll-behavior:contain!important;
+ padding:3px 8px 14px 1px!important;scrollbar-width:thin!important
+}
+#dialog[open] #demo-inspection-request .modal-actions{
+ flex:0 0 auto!important;display:flex!important;justify-content:flex-end!important;
+ position:relative!important;bottom:auto!important;margin:0 -19px!important;
+ padding:13px 19px calc(14px + env(safe-area-inset-bottom,0px))!important;
+ background:#242730!important;border-top:1px solid #464f5b!important;
+ box-shadow:0 -7px 17px #0004!important;z-index:2!important
+}
+#dialog[open] #demo-inspection-request button[type="submit"]{
+ min-height:46px!important;min-width:180px!important;font-weight:750!important;
+ background:#e7edf5!important;border:1px solid #e7edf5!important;color:#181a20!important
+}
+@media(max-width:600px){
+ #dialog[open]:has(#demo-inspection-request){
+  padding:14px 14px 0!important;width:calc(100vw - 16px)!important;border-radius:12px!important
+ }
+ #dialog[open] #demo-inspection-request .modal-actions{margin:0 -14px!important;padding:10px 14px!important}
+ #dialog[open] #demo-inspection-request button[type="submit"]{width:100%!important}
+}
+/* Ações destrutivas permanecem disponíveis mediante disclosure + confirmação. */
+.dashboard .rp-data-danger-zone{
+ border:1px solid #404752!important;border-radius:11px!important;background:#1a1c22!important;
+ margin:9px 0!important;color:#d0d7e0!important
+}
+.dashboard .rp-data-danger-zone>summary{
+ cursor:pointer!important;list-style:revert!important;padding:11px 13px!important;
+ min-height:44px!important;display:flex!important;align-items:center!important;
+ justify-content:space-between!important;gap:10px!important;
+ font-size:12px!important;font-weight:700!important;color:#d0d7e0!important
+}
+.dashboard .rp-data-danger-zone>summary span{font-size:11px!important;color:#a2afbd!important;font-weight:450!important}
+.dashboard .rp-data-danger-zone[open]>summary{border-bottom:1px solid #3e4752!important}
+.dashboard .rp-data-danger-zone .settings-data{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:13px!important;padding:14px!important}
+.dashboard .rp-data-danger-zone button[data-action="demo-history-delete-all"]{
+ border:1px solid #8a5360!important;background:#39232b!important;
+ color:#ffdce5!important;border-radius:8px!important;min-height:42px!important;padding:9px 12px!important
+}
+.dashboard .rp-history-toolbar .rp-history-danger{margin:0!important;position:relative}
+.dashboard .rp-history-toolbar .rp-history-danger>summary{min-height:43px!important}
+.dashboard .rp-history-toolbar .rp-history-danger[open]>button{margin:9px!important}
+/* Planejamento desktop: mapa com altura controlada, sem empurrar a agenda. */
+@media(min-width:1024px){
+ .dashboard .map-command-page .map-command-map{
+  height:clamp(280px,40vh,380px)!important;min-height:280px!important;max-height:380px!important
+ }
+ .dashboard .map-command-page .map-command-map .map-container.large{
+  height:100%!important;min-height:0!important;max-height:100%!important
+ }
+ .dashboard .map-command-page .map-command-panel{min-height:0!important}
+}
+
+/* Programação: quatro profissionais legíveis e erro situado no formulário. */
+#dialog[open]:has(.round-wizard){
+ box-sizing:border-box!important;width:min(800px,calc(100vw - 24px))!important;
+ max-width:800px!important;max-height:calc(100dvh - 30px)!important;
+ height:auto!important;overflow:hidden!important;padding:15px 18px!important
+}
+#dialog[open] .round-wizard{
+ display:flex!important;flex-direction:column!important;min-height:0!important;
+ max-height:calc(100dvh - 68px)!important;overflow:hidden!important
+}
+#dialog[open] .round-wizard .wizard-head{flex:none!important}
+#dialog[open] .round-wizard .wizard-body{
+ flex:1 1 auto!important;min-height:0!important;max-height:min(58dvh,550px)!important;
+ overflow-y:auto!important;overscroll-behavior:contain!important;padding:4px 4px 10px!important;
+ scrollbar-width:thin!important
+}
+#dialog[open] .round-wizard .wizard-watchers{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:11px!important;align-items:stretch!important
+}
+#dialog[open] .round-wizard .wizard-watchers button{
+ display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+ justify-content:center!important;gap:5px!important;min-width:0!important;
+ min-height:70px!important;padding:12px 14px!important;
+ border:1px solid #465260!important;border-radius:10px!important;
+ background:#242831!important;color:#f2f5f9!important
+}
+#dialog[open] .round-wizard .wizard-watchers button.selected{
+ border-color:#69bdf1!important;background:#273747!important
+}
+#dialog[open] .round-wizard .wizard-watchers button b{font-size:14px!important;line-height:1.3!important}
+#dialog[open] .round-wizard .wizard-watchers button small{font-size:11px!important;color:#bcc8d5!important}
+#dialog[open] .round-wizard .wizard-feedback:not([hidden]){
+ display:block!important;flex:none!important;margin:7px 0 0!important;
+ padding:10px 12px!important;border:1px solid #c49b4a!important;
+ border-radius:8px!important;background:#393124!important;color:#f8dda7!important;
+ font-size:12px!important;line-height:1.35!important
+}
+#dialog[open] .round-wizard .wizard-nav{
+ flex:0 0 auto!important;position:relative!important;bottom:auto!important;
+ display:flex!important;gap:10px!important;padding:12px 0 9px!important;
+ border-top:1px solid #434c58!important;background:#191d24!important
+}
+#dialog[open] .round-wizard .wizard-nav button{
+ min-height:44px!important;padding:10px 17px!important;font-weight:720!important
+}
+@media(max-width:600px){
+ #dialog[open] .round-wizard .wizard-watchers{grid-template-columns:1fr!important;gap:8px!important}
+ #dialog[open] .round-wizard .wizard-watchers button{min-height:58px!important}
+}
+
+/* Etapa de pontos: fixar o mapa ao seu container. O Leaflet não pode cobrir
+   botões de busca e coordenadas, mesmo com estilos herdados de diálogo. */
+#dialog[open] .round-wizard .wizard-body{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important
+}
+#dialog[open] .round-wizard #wizard-map{
+ display:block!important;position:relative!important;isolation:isolate!important;
+ box-sizing:border-box!important;width:100%!important;height:clamp(235px,37dvh,340px)!important;
+ min-height:235px!important;max-height:340px!important;flex:0 0 auto!important;
+ overflow:hidden!important;border-radius:10px!important;border:1px solid #4c5664!important
+}
+#dialog[open] .round-wizard .wizard-address,
+#dialog[open] .round-wizard .wizard-coordinates{
+ display:flex!important;flex:0 0 auto!important;position:relative!important;z-index:2!important;
+ min-height:44px!important;gap:8px!important;align-items:center!important
+}
+#dialog[open] .round-wizard :is(.wizard-address,.wizard-coordinates) button{
+ flex:none!important;min-height:42px!important;min-width:84px!important;
+ padding:9px 12px!important;background:#2b3440!important;color:#f7f8fa!important;
+ border:1px solid #596575!important;border-radius:9px!important;font-size:12px!important
+}
+#dialog[open] .round-wizard .wizard-address input,
+#dialog[open] .round-wizard .wizard-coordinates input{
+ min-height:42px!important;height:42px!important;font-size:12px!important
+}
+
+/* 17/10 · Vistoriador = mesmas medidas compactas da ronda no mobile.
+   O mapa permanece funcional e todos os elementos ficam no mesmo cockpit. */
+@media (max-width:900px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands{
+  left:50%!important;right:auto!important;transform:translateX(-50%)!important;
+  bottom:85px!important;width:min(318px,calc(100% - 24px))!important;max-width:318px!important;
+  height:auto!important;max-height:min(45dvh,320px)!important;
+  margin:0!important;overflow:hidden!important;border-radius:14px!important;
+  border:1px solid #414a55!important;border-top:1px solid #414a55!important;
+  background:#191c22ee!important;box-shadow:0 9px 25px #0009!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-sheet-heading{
+  min-height:40px!important;padding:5px 11px!important;
+  background:#1b1e24!important;border-color:#363d47!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-sheet-heading strong{
+  font-size:12px!important;line-height:1.25!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-sheet-heading button{
+  min-height:36px!important;font-size:11px!important;padding:6px 3px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-commands-body{
+  padding:9px 11px 10px!important;gap:4px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-step-label{
+  font-size:9px!important;letter-spacing:.05em!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-destination{
+  font-size:13px!important;line-height:1.3!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-instruction{
+  font-size:11px!important;line-height:1.35!important;max-width:100%!important;
+  overflow:hidden!important;display:-webkit-box!important;-webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;white-space:normal!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-distance{
+  font-size:10px!important;line-height:1.3!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit.is-idle .rp-inspection-step-label,
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit.is-idle .rp-inspection-distance,
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit.is-idle .rp-inspection-primary-actions{
+  display:none!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-actions{
+  position:absolute!important;z-index:830!important;left:50%!important;right:auto!important;
+  transform:translateX(-50%)!important;bottom:max(12px,env(safe-area-inset-bottom))!important;
+  width:min(318px,calc(100% - 24px))!important;max-width:318px!important;
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-actions button{
+  height:57px!important;min-height:57px!important;min-width:0!important;max-width:none!important;
+  padding:5px 4px!important;gap:3px!important;border-radius:10px!important;
+  background:#242932ee!important;border:1px solid #45515e!important;
+  box-shadow:0 4px 12px #0007!important;color:#f1f4f8!important;
+  font-size:10px!important;line-height:1.15!important;font-weight:750!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-actions svg{
+  width:19px!important;height:19px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-route-bar{
+  min-height:54px!important;padding:7px 8px 7px 11px!important;
+  border-radius:12px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-controls{
+  top:86px!important;left:16px!important;gap:10px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-panic{
+  width:56px!important;height:56px!important;min-width:56px!important;min-height:56px!important;
+  border-width:3px!important;padding:4px!important;gap:0!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-panic svg{
+  width:22px!important;height:22px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-panic span{
+  font-size:9px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-help{
+  width:43px!important;height:43px!important;min-width:43px!important;min-height:43px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch{
+  top:86px!important;right:15px!important;
+  width:57px!important;height:57px!important;min-width:57px!important;min-height:57px!important;
+  gap:1px!important;padding:6px!important;z-index:850!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch svg{
+  width:21px!important;height:21px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch span{
+  font-size:10px!important
+ }
+}
+
+/* Painel do vigia mantém o mesmo contorno grafite do vistoriador.
+   Vermelho fica reservado ao botão de pânico e aos riscos reais. */
+@media(max-width:900px){
+ .dashboard .ronda-page .patrol-workspace .patrol-actions,
+ .dashboard .ronda-page .patrol-workspace.sheet-collapsed .patrol-actions{
+  border-color:#414a55!important;
+  border-top-color:#414a55!important;
+  border-right-color:#414a55!important;
+  border-bottom-color:#414a55!important;
+  border-left-color:#414a55!important
+ }
+}
