@@ -574,3 +574,30 @@
  #dialog[open] .round-wizard .wizard-watchers{grid-template-columns:1fr!important;gap:8px!important}
  #dialog[open] .round-wizard .wizard-watchers button{min-height:58px!important}
 }
+
+
+/* Etapa de pontos: fixar o mapa ao seu container. O Leaflet não pode cobrir
+   botões de busca e coordenadas, mesmo com estilos herdados de diálogo. */
+#dialog[open] .round-wizard .wizard-body{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important
+}
+#dialog[open] .round-wizard #wizard-map{
+ display:block!important;position:relative!important;isolation:isolate!important;
+ box-sizing:border-box!important;width:100%!important;height:clamp(235px,37dvh,340px)!important;
+ min-height:235px!important;max-height:340px!important;flex:0 0 auto!important;
+ overflow:hidden!important;border-radius:10px!important;border:1px solid #4c5664!important
+}
+#dialog[open] .round-wizard .wizard-address,
+#dialog[open] .round-wizard .wizard-coordinates{
+ display:flex!important;flex:0 0 auto!important;position:relative!important;z-index:2!important;
+ min-height:44px!important;gap:8px!important;align-items:center!important
+}
+#dialog[open] .round-wizard :is(.wizard-address,.wizard-coordinates) button{
+ flex:none!important;min-height:42px!important;min-width:84px!important;
+ padding:9px 12px!important;background:#2b3440!important;color:#f7f8fa!important;
+ border:1px solid #596575!important;border-radius:9px!important;font-size:12px!important
+}
+#dialog[open] .round-wizard .wizard-address input,
+#dialog[open] .round-wizard .wizard-coordinates input{
+ min-height:42px!important;height:42px!important;font-size:12px!important
+}
