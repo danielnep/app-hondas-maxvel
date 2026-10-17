@@ -350,3 +350,175 @@
  .dashboard .coi-demo-content header.toolbar h2{flex:1 1 190px!important;min-width:0!important;font-size:18px!important;line-height:1.25!important}
  .dashboard .coi-demo-content .rp-coi-history-link{margin-left:0!important}
 }
+
+
+/* COI + Administração desktop · revisão baseada nos fluxos testados em 17/10.
+   Resumo panorâmico, abas verdadeiras e CTA de formulários visível. */
+@media (min-width:1280px){
+ .dashboard .v4-wide-workspace .v4-dashboard-tabs,
+ .dashboard .v4-desktop-focus .v4-dashboard-tabs{
+  display:flex!important;gap:5px!important;align-items:center!important;
+  flex-wrap:wrap!important;margin:12px 0 14px!important;padding:5px!important;
+  border-radius:11px!important;background:#20232a!important;
+  border:1px solid #3a424e!important
+ }
+ .dashboard .v4-desktop-focus.dashboard-v4{
+  display:block!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow:visible!important
+ }
+ .dashboard .app-content:has(.v4-desktop-focus){
+  display:block!important;overflow-y:auto!important;overflow-x:hidden!important;
+  padding:18px clamp(18px,1.8vw,32px) 30px!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage{
+  display:block!important;width:100%!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow:visible!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage>.v4-pane[hidden]{
+  display:none!important;visibility:hidden!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage>.v4-pane:not([hidden]){
+  display:block!important;box-sizing:border-box!important;width:100%!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  overflow:visible!important;padding:20px!important;
+  border-radius:14px!important;border:1px solid #424b55!important;background:#191c22!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage>.v4-map-pane:not([hidden]){
+  display:flex!important;flex-direction:column!important
+ }
+ .dashboard .v4-desktop-focus .v4-stage .ops-map-card{max-height:none!important;min-height:420px!important}
+ .dashboard .v4-desktop-focus .v4-stage .ops-map-stage{height:clamp(340px,54vh,600px)!important;min-height:340px!important}
+ .dashboard .v4-desktop-focus .v4-stage .map-container.large{height:100%!important;min-height:340px!important}
+ .dashboard .v4-desktop-focus .v4-team-list,
+ .dashboard .v4-desktop-focus .v4-alerts-list,
+ .dashboard .v4-desktop-focus .v4-insights-list,
+ .dashboard .v4-desktop-focus .v4-history-list{
+  max-height:none!important;overflow:visible!important
+ }
+ .dashboard .v4-desktop-focus .v4-insights-list{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important
+ }
+}
+.dashboard .v4-dashboard-tabs [role="tab"]{
+ min-height:43px!important;padding:9px 16px!important;border:1px solid transparent!important;
+ border-radius:9px!important;font-size:13px!important;font-weight:750!important;
+ color:#c5d0de!important;background:transparent!important
+}
+.dashboard .v4-dashboard-tabs [role="tab"][aria-selected="true"]{
+ background:#303844!important;border-color:#4d5c6c!important;color:#fff!important
+}
+.dashboard .v4-dashboard-tabs [role="tab"]:focus-visible{
+ outline:3px solid #4fb7f0!important;outline-offset:2px!important
+}
+/* Eventos: coluna acompanha os itens reais, sem bloco obrigatório de 295px. */
+@media (min-width:1024px){
+ .dashboard .rp-event-columns{
+  align-items:start!important;align-content:start!important;min-height:0!important;max-height:none!important
+ }
+ .dashboard .rp-event-columns>.rp-event-column{
+  min-height:0!important;height:auto!important;max-height:none!important;
+  overflow:visible!important;align-self:start!important
+ }
+ .dashboard .rp-event-column .rp-event-empty{
+  padding:17px 14px!important;text-align:left!important
+ }
+ .dashboard .rp-treatment-archive:has(.rp-archive-record){align-content:start!important}
+}
+/* COI: informações relacionadas lado a lado, histórico curto abaixo. */
+@media (min-width:1050px){
+ .dashboard .coi-demo-page .rp-coi-desktop-grid{
+  display:grid!important;grid-template-columns:minmax(0,1.07fr) minmax(340px,.93fr)!important;
+  align-items:start!important;column-gap:16px!important;row-gap:14px!important;min-width:0
+ }
+ .dashboard .coi-demo-page .rp-coi-desktop-grid>.coi-demo-inspection-current{
+  grid-column:1!important;grid-row:1!important;min-height:0!important;
+  margin:0!important;align-self:start!important
+ }
+ .dashboard .coi-demo-page .rp-coi-desktop-grid>.coi-demo-record{
+  grid-column:2!important;grid-row:1!important;min-height:0!important;margin:0!important
+ }
+ .dashboard .coi-demo-page .rp-coi-desktop-grid>.coi-demo-content{
+  grid-column:1/-1!important;grid-row:2!important;margin:0!important
+ }
+ .dashboard .coi-demo-page .coi-demo-map,
+ .dashboard .coi-demo-page .rp-coi-route-map{
+  height:clamp(255px,34vh,360px)!important;max-height:360px!important;min-height:255px!important
+ }
+ .dashboard .coi-demo-page .coi-inspection-list{margin-top:12px!important;gap:6px!important}
+ .dashboard .coi-demo-page .coi-demo-inspection-current .rp-inspection-empty{min-height:0!important}
+}
+.dashboard .app-header .rp-header-tools{gap:13px!important}
+.dashboard .app-header .rp-header-popover{margin:0 2px!important}
+.dashboard .app-header .rp-header-popover>summary{
+ min-width:48px!important;min-height:44px!important;padding:9px!important;gap:6px!important
+}
+/* Solicitar vistoria: só o conjunto de campos rola; a ação fica fixa e alcançável.
+   Não muda os critérios do COI nem envia por si só. */
+#dialog.rp-flow-dialog[open]:has(#demo-inspection-request){
+ display:flex!important;flex-direction:column!important;box-sizing:border-box!important;
+ width:min(620px,calc(100vw - 24px))!important;max-width:620px!important;
+ height:min(745px,calc(100dvh - 28px))!important;max-height:calc(100dvh - 28px)!important;
+ overflow:hidden!important;padding:18px 19px 0!important;margin:auto!important;gap:0!important;
+ background:#1a1c22!important;border:1px solid #454b55!important;border-radius:15px!important
+}
+#dialog.rp-flow-dialog[open]:has(#demo-inspection-request)>h2{flex:none!important;margin:5px 40px 8px 0!important}
+#dialog.rp-flow-dialog[open]:has(#demo-inspection-request)>p{flex:none!important;margin:0 0 12px!important}
+#dialog.rp-flow-dialog[open]:has(#demo-inspection-request)>.eyebrow{flex:none!important}
+#dialog.rp-flow-dialog[open] #demo-inspection-request{
+ flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow:hidden!important;
+ display:flex!important;flex-direction:column!important;gap:0!important;margin:0!important
+}
+#dialog.rp-flow-dialog[open] #demo-inspection-request .rp-request-fields{
+ flex:1 1 auto!important;min-height:0!important;display:grid!important;gap:11px!important;
+ overflow-y:auto!important;overscroll-behavior:contain!important;
+ padding:3px 8px 14px 1px!important;scrollbar-width:thin!important
+}
+#dialog.rp-flow-dialog[open] #demo-inspection-request .modal-actions{
+ flex:0 0 auto!important;display:flex!important;justify-content:flex-end!important;
+ position:relative!important;bottom:auto!important;margin:0 -19px!important;
+ padding:13px 19px calc(14px + env(safe-area-inset-bottom,0px))!important;
+ background:#242730!important;border-top:1px solid #464f5b!important;
+ box-shadow:0 -7px 17px #0004!important;z-index:2!important
+}
+#dialog.rp-flow-dialog[open] #demo-inspection-request button[type="submit"]{
+ min-height:46px!important;min-width:180px!important;font-weight:750!important;
+ background:#e7edf5!important;border:1px solid #e7edf5!important;color:#181a20!important
+}
+@media(max-width:600px){
+ #dialog.rp-flow-dialog[open]:has(#demo-inspection-request){
+  padding:14px 14px 0!important;width:calc(100vw - 16px)!important;border-radius:12px!important
+ }
+ #dialog.rp-flow-dialog[open] #demo-inspection-request .modal-actions{margin:0 -14px!important;padding:10px 14px!important}
+ #dialog.rp-flow-dialog[open] #demo-inspection-request button[type="submit"]{width:100%!important}
+}
+/* Ações destrutivas permanecem disponíveis mediante disclosure + confirmação. */
+.dashboard .rp-data-danger-zone{
+ border:1px solid #404752!important;border-radius:11px!important;background:#1a1c22!important;
+ margin:9px 0!important;color:#d0d7e0!important
+}
+.dashboard .rp-data-danger-zone>summary{
+ cursor:pointer!important;list-style:revert!important;padding:11px 13px!important;
+ min-height:44px!important;display:flex!important;align-items:center!important;
+ justify-content:space-between!important;gap:10px!important;
+ font-size:12px!important;font-weight:700!important;color:#d0d7e0!important
+}
+.dashboard .rp-data-danger-zone>summary span{font-size:11px!important;color:#a2afbd!important;font-weight:450!important}
+.dashboard .rp-data-danger-zone[open]>summary{border-bottom:1px solid #3e4752!important}
+.dashboard .rp-data-danger-zone .settings-data{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:13px!important;padding:14px!important}
+.dashboard .rp-data-danger-zone button[data-action="demo-history-delete-all"]{
+ border:1px solid #8a5360!important;background:#39232b!important;
+ color:#ffdce5!important;border-radius:8px!important;min-height:42px!important;padding:9px 12px!important
+}
+.dashboard .rp-history-toolbar .rp-history-danger{margin:0!important;position:relative}
+.dashboard .rp-history-toolbar .rp-history-danger>summary{min-height:43px!important}
+.dashboard .rp-history-toolbar .rp-history-danger[open]>button{margin:9px!important}
+/* Planejamento desktop: mapa com altura controlada, sem empurrar a agenda. */
+@media(min-width:1024px){
+ .dashboard .map-command-page .map-command-map{
+  height:clamp(280px,40vh,380px)!important;min-height:280px!important;max-height:380px!important
+ }
+ .dashboard .map-command-page .map-command-map .map-container.large{
+  height:100%!important;min-height:0!important;max-height:100%!important
+ }
+ .dashboard .map-command-page .map-command-panel{min-height:0!important}
+}
