@@ -24,18 +24,18 @@ const svg=key=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stro
 export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base=null,gpsActive=false,fullTitle='Minhas vistorias'}={}){
  const current=queue[0]||null,coords=pointOf(current),p=pointOf(position),
   distance=coords&&p?Math.round(metersBetween(coords,p)):null;
- const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada':'Aguardando solicitações';
+ const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada':'Aguardando COI';
  const action=current?started(current)?arrived(current)?
   '<button type="button" class="rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-wizard-open"':'data-wizard-open')+'>Abrir checklist '+svg('arrow')+'</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':'data-inspection-arrive')+'>Confirmar chegada '+svg('arrow')+'</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-depart"':'data-inspection-depart')+'>Iniciar deslocamento '+svg('arrow')+'</button>':
-  '<span class="rp-inspection-ready">Aguardando solicitação do COI</span>';
- const first=html(current?.address||current?.site||'Nenhum destino atribuído');
+  '';
+ const first=html(current?.address||current?.site||'Sem destinos atribuídos');
  const destination=coords?coords.lat+','+coords.lng:String(current?.address||current?.site||'');
  const directions=current?'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(destination):'';
  const waze=current?'https://www.waze.com/ul?'+(coords?'ll=':'q=')+encodeURIComponent(destination)+'&navigate=yes':'';
  const count=queue.length;
- return '<div class="patrol-workspace rp-inspection-cockpit" data-inspection-cockpit data-mode="'+mode+'">'+
+ return '<div class="patrol-workspace rp-inspection-cockpit '+(current?'has-destination':'is-idle')+'" data-inspection-cockpit data-mode="'+mode+'">'+
  '<section class="patrol-map-panel rp-inspection-map-panel" aria-label="Mapa operacional de vistorias">'+
   '<div class="patrol-map-canvas rp-inspection-map-canvas">'+
    '<div id="'+html(mapId)+'" class="map-container mini rp-inspector-map" role="application" aria-label="Mapa de ruas e trajeto de vistorias do COI"></div>'+
