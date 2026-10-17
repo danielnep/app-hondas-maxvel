@@ -33,7 +33,7 @@ try{
    localStorage.setItem('horizon-maxvel-tour-v2','seen');
    localStorage.setItem('horizon-maxvel-localizacao-ciencia-v1',JSON.stringify({version:'2026-10-11',accepted:true,at:Date.now()}));
   },{rows:samples.slice(0,total).map((r,i)=>({
-   id:'demo-route-'+i,worker:'Vistoriador demonstrativo',instructions:'Verificar os acessos e registrar a vistoria no local.',
+   id:'demo-route-'+i,worker:'Vistoriador demonstrativo',instructions:'Verificar os acessos, iluminação de emergência, portões, sinalização de segurança e equipamentos do local antes de finalizar a vistoria.',
    routine:false,createdAt:Date.now()+i,completedAt:null,...r
   }))});
   await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'domcontentloaded'});
@@ -60,6 +60,18 @@ try{
    'Os marcadores exibidos devem ser B e 1..N sem contar passagens');
   assert.ok(state.route.length>=total+1,'Percurso tem de ligar base e todos os destinos');
   assert.notEqual(state.route[0],state.route.at(-1),'Vistoria não fecha automaticamente na base');
+
+  // Regressão da PR #71: ações do vistoriador não podem ficar sob o recorte do painel.
+  const action=page.locator('.rp-inspection-main-action');
+  await action.waitFor({state:'visible'});
+  const geometry=await page.locator('.rp-inspection-commands').evaluate(panel=>{
+   const button=panel.querySelector('.rp-inspection-main-action'),panelRect=panel.getBoundingClientRect(),
+    actionRect=button.getBoundingClientRect();
+   return {label:button.textContent.trim(),panelBottom:panelRect.bottom,actionBottom:actionRect.bottom};
+  });
+  assert.ok(geometry.actionBottom <= geometry.panelBottom-2,
+   'Ação de vistoria cortada pelo painel: '+JSON.stringify(geometry));
+
   if(errors.length)throw Error('Erros de navegador: '+errors.join('; '));
   await page.screenshot({path:output+'/trajeto-vistoria-'+total+'-destino'+(total>1?'s':'')+'.png',fullPage:true});
   console.log('Vistoriador '+total+' destino(s): '+JSON.stringify(state));
