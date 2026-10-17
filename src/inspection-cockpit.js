@@ -23,13 +23,13 @@ const svg=key=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stro
 export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base=null,gpsActive=false,fullTitle='Minhas vistorias'}={}){
  const current=queue[0]||null,coords=pointOf(current),p=pointOf(position),
   distance=coords&&p?Math.round(metersBetween(coords,p)):null;
- const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada':'Aguardando solicitações';
+ const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada' :'Aguardando COI';
  const action=current?started(current)?arrived(current)?
   '<button type="button" class="rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-wizard-open"':'data-wizard-open')+'>Abrir checklist '+svg('arrow')+'</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':'data-inspection-arrive')+'>Confirmar chegada '+svg('arrow')+'</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-depart"':'data-inspection-depart')+'>Iniciar deslocamento '+svg('arrow')+'</button>':
-  '<span class="rp-inspection-ready">Aguardando solicitação do COI</span>';
- const first=html(current?.address||current?.site||'Nenhum destino atribuído');
+  '';
+ const first=current?html(current.address||current.site||'Local designado'):'';
  const directions=current?coords?
   'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(coords.lat+','+coords.lng):
   'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(current.address||current.site||''):'';
@@ -52,10 +52,10 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
  '</section>'+
  '<section class="patrol-actions rp-inspection-commands" aria-label="Próximo atendimento">'+
   '<div class="rp-inspection-sheet-heading"><div><span class="rp-inspection-sheet-indicator" aria-hidden="true">'+svg('locate')+'</span><strong>'+html(step)+'</strong></div><button type="button" data-inspection-circuit-open>Mais opções</button></div>'+
-  '<div class="rp-inspection-commands-body"><span class="rp-inspection-step-label">PRÓXIMO DESTINO · <span data-inspection-current-count>'+(count?'1 de '+count:'Nenhum')+'</span></span>'+
+  '<div class="rp-inspection-commands-body"><span class="rp-inspection-step-label">'+(count?'PRÓXIMO DESTINO · ':'SEM VISTORIAS PENDENTES')+'<span data-inspection-current-count>'+(count?'1 de '+count:'')+'</span></span>'+
    '<strong class="rp-inspection-destination" data-inspection-current-title>'+first+'</strong>'+
-   '<p class="rp-inspection-instruction" data-inspection-instructions>'+html(current?.instructions||current?.reason||'O COI enviará os locais que precisam de vistoria.')+'</p>'+
-   '<small class="rp-inspection-distance" data-inspection-distance>'+(distance!==null?'Distância em linha reta: '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m'):'Localização ou destino sem coordenadas')+'</small>'+
+   '<p class="rp-inspection-instruction" data-inspection-instructions>'+html(current?.instructions||current?.reason||'As solicitações do COI aparecerão aqui.')+'</p>'+
+   '<small class="rp-inspection-distance" data-inspection-distance>'+(distance!==null?'Distância em linha reta: '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m') :current?'Destino sem coordenadas':'')+'</small>'+
    '<div class="rp-inspection-primary-actions">'+action+
    (current?'<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(directions)+'" aria-label="Abrir navegação viária para o destino">Navegar ↗</a>':'')+'</div>'+
   '</div>'+
@@ -74,7 +74,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
  '</div>';
 }
 // Controles compartilhados entre o modo demonstrativo e a operação autenticada.
-document.addEventListener('click',event=>{
+if(typeof document!=='undefined')document.addEventListener('click',event=>{
  const control=event.target.closest('[data-inspection-circuit-open],[data-inspection-history-open],[data-inspection-help-open],[data-inspection-modal-close]');
  if(!control)return;
  const cockpit=control.closest('[data-inspection-cockpit]'),scope=cockpit||document;
