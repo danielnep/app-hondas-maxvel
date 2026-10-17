@@ -185,10 +185,21 @@ function installViewportViews(){
   const show=key=>{
    const selected=paneMap.has(key)?key:tabs[0]?.dataset.v4Tab;
    uxDashboardPane[user.role]=selected;
-   const multiple=wideDesktop.matches;
+   // Resumo mostra os painéis paralelos; outras abas mudam o conteúdo de fato.
+   const multiple=wideDesktop.matches&&(user.role!=='admin'||selected==='resumo');
    shell.classList.toggle('v4-wide-workspace',multiple);
-   for(const [id,node] of paneMap){node.hidden=!multiple&&id!==selected;node.id='v4-'+id;}
-   for(const bt of tabs){const active=bt.dataset.v4Tab===selected;bt.setAttribute('aria-selected',String(active));bt.tabIndex=multiple||active?0:-1;}
+   shell.classList.toggle('v4-desktop-focus',wideDesktop.matches&&!multiple);
+   shell.dataset.activePane=selected;
+   for(const [id,node] of paneMap){
+    node.hidden=!multiple&&id!==selected;
+    node.id='v4-'+id;
+    node.setAttribute('aria-hidden',String(node.hidden));
+   }
+   for(const bt of tabs){
+    const active=bt.dataset.v4Tab===selected;
+    bt.setAttribute('aria-selected',String(active));
+    bt.tabIndex=active?0:-1;
+   }
    if(multiple||selected==='mapa')requestAnimationFrame(()=>liveMaps.forEach(m=>m?.invalidate()));
   };
   shell.querySelector('.v4-dashboard-tabs')?.addEventListener('click',event=>{
@@ -867,7 +878,7 @@ function demoHistoryView(){
  const all=demoActivityRows(),maxPage=Math.max(0,Math.ceil(all.length/20)-1);
  demoHistoryPage=Math.min(demoHistoryPage,maxPage);
  const offset=demoHistoryPage*20,rows=all.slice(offset,offset+20),canManage=user?.role==='admin';
- const actions=canManage?'<div class="rp-history-toolbar"><span data-demo-selection-count>'+demoHistorySelection.size+' selecionado(s)</span><div class="rp-history-actions"><button type="button" data-action="demo-history-select-page">Selecionar página</button><button type="button" data-action="demo-history-delete-selected" '+(!demoHistorySelection.size?'disabled':'')+'>Apagar selecionados</button><button type="button" data-action="demo-history-delete-all" '+(!all.length?'disabled':'')+'>Apagar tudo</button></div></div>':'';
+ const actions=canManage?'<div class="rp-history-toolbar"><span data-demo-selection-count>'+demoHistorySelection.size+' selecionado(s)</span><div class="rp-history-actions"><button type="button" data-action="demo-history-select-page">Selecionar página</button><button type="button" data-action="demo-history-delete-selected" '+(!demoHistorySelection.size?'disabled':'')+'>Apagar selecionados</button><details class="rp-data-danger-zone rp-history-danger"><summary>Mais opções</summary><button type="button" data-action="demo-history-delete-all" '+(!all.length?'disabled':'')+'>Apagar tudo</button></details></div></div>':'';
  return pageTitle('Histórico de rondas e vistorias','Registros locais da demonstração. O histórico permanente está na central autenticada.')+
  actions+'<section class="rp-history-list" role="list">'+(rows.map(r=>demoActivityRow(r,canManage)).join('')||'<p class="empty">Nenhum registro neste navegador.</p>')+'</section>'+
  '<div class="rp-history-pagination">'+(offset?btn('Anterior','demo-history-prev','small'):'')+'<span>'+(all.length?offset+1:0)+'–'+Math.min(offset+20,all.length)+' de '+all.length+'</span>'+(offset+20<all.length?btn('Próxima','demo-history-next','small'):'')+'</div>';
@@ -917,8 +928,9 @@ function settings(){
    '<small>'+esc(o.value)+'</small><span>'+esc(o.info)+'</span></span>'+
    '<button type="button" class="hx05-open-button" data-action="open-operational-setting" data-setting="'+o.id+'">Abrir</button></div>').join('')+
   '<p class="hx05-settings-note">As mudanças só serão aplicadas às rondas iniciadas depois de salvar.</p></section>'+
-  '<div class="settings-data"><span>Dados de demonstração armazenados neste navegador</span>'+
-   btn('Apagar registros locais','clear-prompt','small danger')+'</div>';
+  '<details class="rp-data-danger-zone"><summary>Gerenciar dados locais <span>Opções de exclusão</span></summary>'+
+   '<div class="settings-data"><span>Dados de demonstração armazenados neste navegador</span>'+
+   btn('Apagar registros locais','clear-prompt','small danger')+'</div></details>';
 }
 function personalRecords(){const mine=sessionList().filter(s=>s.name===user.name);return pageTitle('Meus registros','Consulte suas rondas, horários e justificativas.',helpButton('reports','histórico'))+`<div class="card">${tablePatrols(mine)}</div>`}
 function legend(){return `<div class="map-legend maxvel-map-legend" aria-label="Legenda operacional do mapa"><span><i class="legend-dot base"></i>Base</span><span><i class="legend-dot"></i>Ponto planejado</span><span><i class="legend-dot done"></i>Concluído</span><span><i class="legend-dot radius"></i>Raio de 25 m</span><span><i class="legend-line planned"></i>Traçado ilustrativo</span><span><i class="legend-line traced"></i>Posição percorrida</span></div>`}
@@ -1470,13 +1482,13 @@ if(act==='profile-menu'){profileDialog();return;}
   if(!['operador','coi','admin'].includes(user?.role))return;
   const clients=DEMO_CLIENTS.map(c=>c.name);
   showDialog('<div class="eyebrow">COI · NOVO CHAMADO</div><h2>Solicitar vistoria</h2><p>Escolha um local já cadastrado ou informe outro endereço. Esta solicitação é demonstrativa e só aparece neste navegador.</p><form id="demo-inspection-request" class="rp-inspection-request">'+
-   '<label>Tipo de vistoria<select name="kind"><option value="demand">Solicitação específica</option><option value="routine">Vistoria de rotina</option></select></label>'+
+   '<div class="rp-request-fields"><label>Tipo de vistoria<select name="kind"><option value="demand">Solicitação específica</option><option value="routine">Vistoria de rotina</option></select></label>'+
    '<label>Vistoriador<select name="worker"><option value="Vistoriador demonstrativo">Vistoriador demonstrativo</option></select></label>'+
    '<label>Local cadastrado<select name="known"><option value="">Outro endereço</option>'+clients.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select></label>'+
    '<label>Ou informe endereço<input type="text" name="address" maxlength="350" placeholder="Rua, número, bairro e cidade"></label>'+
    '<label>Coordenadas do destino (necessárias para o mapa quando o local não está cadastrado)<input name="coords" placeholder="-20.1450, -44.8880"></label>'+
    '<label>Rota do COI · pontos de passagem (opcional)<textarea name="routePoints" rows="3" placeholder="Um ponto por linha: latitude, longitude"></textarea></label>'+
-   '<label>Instruções para a vistoria<textarea name="instructions" required minlength="10" maxlength="1000" placeholder="Informe a finalidade e o que deve ser verificado"></textarea></label>'+
+   '<label>Instruções para a vistoria<textarea name="instructions" required minlength="10" maxlength="1000" placeholder="Informe a finalidade e o que deve ser verificado"></textarea></label></div>'+
    '<div class="modal-actions"><button class="button primary" type="submit">Enviar solicitação</button></div></form>',false);
   return;
  }
