@@ -601,3 +601,96 @@
 #dialog[open] .round-wizard .wizard-coordinates input{
  min-height:42px!important;height:42px!important;font-size:12px!important
 }
+
+
+/* 17/10 · Vistoriador = mesmas medidas compactas da ronda no mobile.
+   O mapa permanece funcional e todos os elementos ficam no mesmo cockpit. */
+@media (max-width:900px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands{
+  left:50%!important;right:auto!important;transform:translateX(-50%)!important;
+  bottom:85px!important;width:min(318px,calc(100% - 24px))!important;max-width:318px!important;
+  height:auto!important;max-height:min(45dvh,320px)!important;
+  margin:0!important;overflow:hidden!important;border-radius:14px!important;
+  border:1px solid #414a55!important;border-top:1px solid #414a55!important;
+  background:#191c22ee!important;box-shadow:0 9px 25px #0009!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-sheet-heading{
+  min-height:40px!important;padding:5px 11px!important;
+  background:#1b1e24!important;border-color:#363d47!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-sheet-heading strong{
+  font-size:12px!important;line-height:1.25!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-sheet-heading button{
+  min-height:36px!important;font-size:11px!important;padding:6px 3px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-commands-body{
+  padding:9px 11px 10px!important;gap:4px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-step-label{
+  font-size:9px!important;letter-spacing:.05em!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-destination{
+  font-size:13px!important;line-height:1.3!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-instruction{
+  font-size:11px!important;line-height:1.35!important;max-width:100%!important;
+  overflow:hidden!important;display:-webkit-box!important;-webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;white-space:normal!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-distance{
+  font-size:10px!important;line-height:1.3!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit.is-idle .rp-inspection-step-label,
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit.is-idle .rp-inspection-distance,
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit.is-idle .rp-inspection-primary-actions{
+  display:none!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-actions{
+  position:absolute!important;z-index:830!important;left:50%!important;right:auto!important;
+  transform:translateX(-50%)!important;bottom:max(12px,env(safe-area-inset-bottom))!important;
+  width:min(318px,calc(100% - 24px))!important;max-width:318px!important;
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-actions button{
+  height:57px!important;min-height:57px!important;min-width:0!important;max-width:none!important;
+  padding:5px 4px!important;gap:3px!important;border-radius:10px!important;
+  background:#242932ee!important;border:1px solid #45515e!important;
+  box-shadow:0 4px 12px #0007!important;color:#f1f4f8!important;
+  font-size:10px!important;line-height:1.15!important;font-weight:750!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-actions svg{
+  width:19px!important;height:19px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-route-bar{
+  min-height:54px!important;padding:7px 8px 7px 11px!important;
+  border-radius:12px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-map-controls{
+  top:86px!important;left:16px!important;gap:10px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-panic{
+  width:56px!important;height:56px!important;min-width:56px!important;min-height:56px!important;
+  border-width:3px!important;padding:4px!important;gap:0!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-panic svg{
+  width:22px!important;height:22px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-panic span{
+  font-size:9px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-help{
+  width:43px!important;height:43px!important;min-width:43px!important;min-height:43px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch{
+  top:86px!important;right:15px!important;
+  width:57px!important;height:57px!important;min-width:57px!important;min-height:57px!important;
+  gap:1px!important;padding:6px!important;z-index:850!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch svg{
+  width:21px!important;height:21px!important
+ }
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch span{
+  font-size:10px!important
+ }
+}
