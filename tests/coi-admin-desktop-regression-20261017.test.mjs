@@ -49,3 +49,11 @@ test('CSS corretivo permanece carregado no último slot da demonstração',()=>{
  assert.ok(index.includes(name));
  assert.ok(index.indexOf(name)>index.indexOf('maxvel-print-qa-20261016.css'));
 });
+
+test('mapa de seleção permanece contido e os botões de endereço e coordenadas não recebem eventos do Leaflet',()=>{
+ assert.match(css,/#dialog\[open\] \.round-wizard #wizard-map\{/);
+ assert.match(css,/position:relative!important;isolation:isolate!important/);
+ assert.match(css,/min-height:235px!important/);
+ assert.match(css,/#dialog\[open\] \.round-wizard \.wizard-coordinates\{/);
+ assert.match(css,/position:relative!important;z-index:2!important/);
+});
