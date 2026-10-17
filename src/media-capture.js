@@ -26,22 +26,59 @@ export function createMediaCapture({notify=()=>{}}={}){
   const p=pending;pending=null;cleanup();p?.resolve(file);
  }
  function nativeCamera(kind){
-  return new Promise((resolve,reject)=>{
+  // Video preserva o capturador do sistema; fotos usam câmera ao vivo,
+  // impedindo que o seletor de galeria seja a ação primária.
+  if(kind==='video')return new Promise((resolve,reject)=>{
    const input=document.createElement('input');
-   input.type='file';input.accept=(kind==='photo'||kind==='selfie')?'image/*':'video/*';input.setAttribute('capture',kind==='selfie'?'user':'environment');
+   input.type='file';input.accept='video/*';input.setAttribute('capture','environment');
    input.style.cssText='position:fixed;opacity:0;width:1px;height:1px;pointer-events:none';
    document.body.append(input);
-   let settled=false;
-   const dismiss=()=>{if(settled)return;settled=true;input.remove();reject(new Error('Captura cancelada.'))};
-   input.addEventListener('change',()=>{
-    if(settled)return;
-    const file=input.files?.[0];settled=true;input.remove();
-    if(file)resolve(file);else reject(new Error('Nenhuma evidência capturada.'));
-   },{once:true});
-   window.addEventListener('focus',()=>setTimeout(()=>{
-    if(input.isConnected&&!settled&&!input.files?.length) dismiss();
-   },1300),{once:true});
-   try{input.click()}catch(e){dismiss()}
+   input.addEventListener('change',()=>{const file=input.files?.[0];input.remove();file?resolve(file):reject(new Error('Nenhum vídeo capturado.'));},{once:true});
+   try{input.click()}catch(error){input.remove();reject(error)}
+  });
+  if(!navigator.mediaDevices?.getUserMedia)return Promise.reject(new Error('Câmera indisponível. Permita câmera e use HTTPS.'));
+  return new Promise(async(resolve,reject)=>{
+   const dialog=document.createElement('dialog');dialog.className='rp-capture-dialog';
+   dialog.setAttribute('aria-label',kind==='selfie'?'Captura de selfie':'Captura de foto');
+   dialog.innerHTML='<div class="rp-capture-head"><strong>'+(kind==='selfie'?'Selfie':'Foto do local')+'</strong><button type="button" data-close aria-label="Fechar câmera">✕</button></div>'+
+    '<div class="rp-capture-viewport"><video playsinline autoplay muted aria-label="Prévia da câmera"></video></div>'+
+    '<p>Capture uma imagem agora. A galeria não é usada nesta etapa.</p>'+
+    '<div class="rp-capture-footer"><button type="button" data-close>Cancelar</button><button type="button" data-shutter disabled>Fotografar</button></div>';
+   let cameraStream=null,settled=false;
+   const video=dialog.querySelector('video'),shutter=dialog.querySelector('[data-shutter]');
+   const finish=(error,file)=>{
+    if(settled)return;settled=true;
+    cameraStream?.getTracks().forEach(track=>track.stop());
+    video.srcObject=null;
+    if(dialog.open)dialog.close();
+    dialog.remove();
+    if(file)resolve(file);else reject(error instanceof Error?error:new Error('Captura cancelada.'));
+   };
+   dialog.addEventListener('close',()=>finish(new Error('Captura cancelada.')),{once:true});
+   dialog.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>finish(new Error('Captura cancelada.'))));
+   shutter.addEventListener('click',async()=>{
+    if(!cameraStream||!video.videoWidth||!video.videoHeight)return;
+    shutter.disabled=true;
+    try{
+     const canvas=document.createElement('canvas'),ratio=Math.min(1,1920/Math.max(video.videoWidth,video.videoHeight));
+     canvas.width=Math.round(video.videoWidth*ratio);canvas.height=Math.round(video.videoHeight*ratio);
+     canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.88));
+     if(!blob?.size)throw Error('Não foi possível fotografar.');
+     if(blob.size>25*1024*1024)throw Error('Foto maior que 25 MB.');
+     finish(null,new File([blob],kind+'-'+Date.now()+'.jpg',{type:'image/jpeg',lastModified:Date.now()}));
+    }catch(error){shutter.disabled=false;finish(error)}
+   });
+   document.body.append(dialog);
+   try{
+    dialog.showModal();
+    cameraStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:kind==='selfie'?'user':'environment'}}});
+    if(settled){cameraStream.getTracks().forEach(track=>track.stop());return;}
+    video.srcObject=cameraStream;await video.play();
+    shutter.disabled=false;
+   }catch(error){
+    finish(new Error(error?.name==='NotAllowedError'?'Acesso à câmera negado. Libere a permissão no navegador.':'Câmera indisponível ou não iniciada.'));
+   }
   });
  }
  function microphone(){
