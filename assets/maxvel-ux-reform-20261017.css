@@ -1,0 +1,204 @@
+/* Rondas Pro | Maxvel · Reforma UI/UX operacional 17/10/2026
+   Ultima camada de composição, sem sobrescrever GPS, dados, rotas ou permissões.
+   Mesmo cockpit para ronda e vistoria. APK e PWA compartilham estes estilos. */
+:root{
+ --rp-ux-bg:#09090b;--rp-ux-panel:#17171b;--rp-ux-raised:#232329;
+ --rp-ux-border:#44444d;--rp-ux-text:#f7f7f8;--rp-ux-muted:#bfc0c9;
+ --rp-ux-red:#ee3152;--rp-ux-focus:#76d8fa;
+ color-scheme:dark;
+}
+:where(.dashboard,#central-root) :is(button,a,input,select,textarea,summary):focus-visible{
+ outline:3px solid var(--rp-ux-focus)!important;outline-offset:2px!important;
+}
+:where(.dashboard,#central-root) :is(button,[role="button"],summary):disabled{
+ cursor:not-allowed;opacity:.48;
+}
+:where(.dashboard,#central-root) :is(input,textarea,select){
+ accent-color:var(--rp-ux-red);max-width:100%;
+}
+:where(.dashboard,#central-root) :is(button,a,summary){
+ -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+/* Campo: base cartográfica livre, próxima ação em folha compacta. */
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit{
+ background:var(--rp-ux-bg)!important;border:0!important;border-radius:0!important;
+ box-shadow:none!important;isolation:isolate;min-width:0!important;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-map-panel{
+ background:#0e0e11!important;border:0!important;border-radius:0!important;max-width:none!important;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-route-bar{
+ background:rgba(20,20,24,.94)!important;border:1px solid #4d505b!important;
+ border-radius:13px!important;box-shadow:0 7px 22px #0008!important;
+ padding:8px 9px 8px 12px!important;min-height:56px!important;
+}
+.rp-inspection-route-bar .patrol-map-heading-copy{min-width:0!important}
+.rp-inspection-route-bar .patrol-map-heading-copy strong{
+ color:var(--rp-ux-text)!important;font-size:13px!important;line-height:1.25!important;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rp-inspection-route-bar .patrol-map-heading-copy small{color:var(--rp-ux-muted)!important;font-size:11px!important}
+.rp-inspection-map-fit{min-height:44px!important;min-width:44px!important}
+.rp-inspection-map-controls{gap:12px!important}
+.rp-inspection-panic{
+ background:linear-gradient(145deg,#f12850,#ad1033)!important;
+ border:4px solid #ff8da5!important;box-shadow:0 0 0 6px #bb224041,0 10px 25px #000a!important;
+}
+.rp-inspection-help{border-color:#78cce2!important;background:#131c21ee!important}
+.rp-inspection-map-actions{width:min(352px,calc(100% - 30px))!important;gap:8px!important}
+.rp-inspection-map-actions button{
+ min-height:68px!important;height:68px!important;border:1px solid #68717e!important;
+ border-radius:12px!important;background:#202027ed!important;color:#fafafa!important;
+ font-size:11px!important;line-height:1.2!important;box-shadow:0 7px 19px #000a!important;
+}
+.rp-inspection-map-actions button span{font-weight:750}
+.rp-inspection-map-actions button:first-child svg{color:#ffd258!important}
+.rp-inspection-map-actions button:nth-child(2) svg{color:#6bd3fa!important}
+.rp-inspection-map-actions button:nth-child(3) svg{color:#f5f5f7!important}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-commands{
+ width:auto!important;max-width:580px!important;max-height:min(220px,29dvh)!important;
+ overflow:auto!important;margin:0 auto!important;border:1px solid #64505b!important;
+ border-top:2px solid #d43e60!important;border-radius:14px!important;
+ background:rgba(20,19,24,.96)!important;box-shadow:0 10px 29px #000a!important;
+ scrollbar-width:thin;scrollbar-color:#68515c transparent;
+}
+.rp-inspection-sheet-heading{
+ min-height:42px!important;padding:7px 12px!important;background:#1b1920!important;
+ border-bottom:1px solid #3e343b!important;
+}
+.rp-inspection-sheet-heading strong{font-size:13px!important}
+.rp-inspection-sheet-heading button{min-height:42px!important;font-size:12px!important}
+.rp-inspection-commands-body{gap:3px!important;padding:9px 12px 11px!important}
+.rp-inspection-step-label{font-size:10px!important}
+.rp-inspection-destination{font-size:14px!important}
+.rp-inspection-instruction{font-size:11px!important;color:#d2c9d0!important}
+.rp-inspection-distance{font-size:10px!important;color:#b4cad0!important}
+.rp-inspection-primary-actions{gap:7px!important;margin-top:5px!important}
+.rp-inspection-main-action,.rp-inspection-navigate{
+ min-height:46px!important;border-radius:10px!important;font-size:12px!important
+}
+.rp-inspection-main-action{background:#b71b43!important;border-color:#df5271!important}
+.rp-inspection-ready{padding:0!important;font-size:11px!important;color:#eba3b5!important}
+.rp-inspection-cockpit .rp-inspection-dialog{border-radius:14px!important}
+.rp-inspection-stop{border-radius:9px!important}
+.rp-inspection-stop-empty{background:transparent!important;border-style:dashed!important}
+/* Hierarquia e densidade da central: superfícies planas e listas, não cards decorativos. */
+#central-root .coi3-heading{gap:10px!important;padding:8px 0 14px!important}
+#central-root .coi3-heading-copy>p{max-width:70ch}
+#central-root :is(.coi3-section,.coi3-secondary,.coi-demo-content){
+ background:#161619!important;border-color:#37373e!important;
+ border-radius:11px!important;box-shadow:none!important;
+}
+#central-root :is(.coi3-stats>div,.coi-demo-metrics>div){
+ background:#19191d!important;border:1px solid #38383f!important;
+ border-radius:9px!important;box-shadow:none!important;
+}
+#central-root :is(.coi3-record,.coi-demo-record){
+ background:#1b1b20!important;border:1px solid #3b3b43!important;
+ border-radius:10px!important;box-shadow:none!important;
+}
+#central-root :is(.coi3-treatment-row,.ops-notification-row,.rp-event-column button){
+ transition:background .14s ease!important;
+}
+#central-root :is(.coi3-treatment-row,.ops-notification-row):focus-within{
+ outline:2px solid var(--rp-ux-focus)!important;outline-offset:-2px;
+}
+#central-root .rp-event-columns{
+ display:grid;grid-auto-flow:column;grid-auto-columns:minmax(280px,1fr);
+ gap:12px;overflow-x:auto;overscroll-behavior-x:contain;
+ scroll-snap-type:x proximity;scrollbar-width:thin;max-width:100%;
+}
+#central-root .rp-event-column{min-width:0;scroll-snap-align:start}
+#central-root .chat-thread{overscroll-behavior-y:contain}
+#central-root .chat-workspace{min-width:0}
+#central-root :is(.chat-conversation,.chat-composer button,.coi3-tabs button,.coi3-notification-tabs button){min-height:44px}
+#central-root .chat-bubble{overflow-wrap:anywhere}
+#central-root .chat-composer{padding-bottom:max(10px,env(safe-area-inset-bottom))}
+#central-root .rp2-role-nav .rp2-nav-item{min-height:43px}
+#central-root .coi3-actions button{border-radius:10px!important}
+#central-root .coi3-tabs,#central-root .coi3-notification-tabs{border-radius:11px!important}
+#central-root .coi3-tabs button,#central-root .coi3-notification-tabs button{border-radius:8px!important}
+#central-root .coi3-empty{padding:22px 10px;line-height:1.5}
+#central-root :is(.coi3-treatment-copy,.coi3-record-title>div){overflow-wrap:anywhere}
+#central-root .ops-inbox-3 .rp-event-columns{padding-bottom:8px}
+#central-root :is(.rp-inspection-dialog,.ops-dispatch-modal,.chat-dialog){max-width:calc(100vw - 24px)}
+@media(max-width:760px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+  .rp-inspection-cockpit .rp-inspection-map-panel{height:calc(100dvh - 78px)!important;min-height:470px!important}
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+  .rp-inspection-commands{
+  left:10px!important;right:10px!important;bottom:89px!important;
+  max-height:min(194px,28dvh)!important;
+ }
+ .rp-inspection-map-actions{bottom:max(9px,env(safe-area-inset-bottom))!important}
+ .rp-inspection-map-actions button{height:65px!important;min-height:65px!important}
+ .rp-inspection-route-bar{top:9px!important;left:9px!important;right:9px!important}
+ .rp-inspection-map-controls{top:87px!important;left:13px!important}
+ #central-root .rp-event-columns{grid-auto-columns:minmax(84vw,320px)}
+ #central-root .chat-workspace{display:flex;flex-direction:column}
+ #central-root .chat-sidebar{max-width:none;width:100%}
+ #central-root .coi3-record-stack,#central-root .coi-demo-list{grid-template-columns:minmax(0,1fr)}
+ #central-root :is(.coi3-heading h1,.page-title h1){font-size:clamp(21px,5vw,28px)}
+}
+@media(max-width:370px){
+ .rp-inspection-route-bar .patrol-map-heading-copy strong{font-size:12px!important}
+ .rp-inspection-map-actions{gap:5px!important}
+ .rp-inspection-map-actions button{font-size:10px!important}
+ .rp-inspection-sheet-heading strong{font-size:12px!important}
+ #central-root .rp-event-columns{grid-auto-columns:88vw}
+}
+@media(max-height:660px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-commands{max-height:31dvh!important}
+ .rp-inspection-instruction{display:none!important}
+ .rp-inspection-map-actions button{height:58px!important;min-height:58px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ :where(.dashboard,#central-root) :is(button,a,summary){transition:none!important;animation:none!important}
+}
+
+
+.rp-inspection-destination:empty,.rp-inspection-distance:empty,.rp-inspection-primary-actions:empty{display:none!important}
+
+/* Sobreposições antigas tinham seletores mais específicos: manter os botões compactos
+   também na demonstração e central autenticada, sem reduzir a área de toque. */
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-map-actions button{
+ min-height:66px!important;height:66px!important;font-size:11px!important;
+ border-radius:12px!important;background:#202027ed!important;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-commands-body{
+ padding:9px 12px 11px!important;gap:3px!important;
+}
+@media(max-width:370px){
+ :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-map-actions button{font-size:10px!important}
+}
+
+/* CORREÇÃO: ação de confirmação sempre acessível, sem prender o rodapé
+   no conteúdo rolável da vistoria. O conteúdo informativo pode rolar. */
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-commands{
+ display:flex!important;flex-direction:column!important;overflow:hidden!important;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-sheet-heading{flex:0 0 auto!important}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-commands .rp-inspection-commands-body{
+ min-height:0!important;flex:1 1 auto!important;overflow-y:auto!important;
+ overscroll-behavior-y:contain;scrollbar-width:thin;
+}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace,#central-root .rp-guard-workspace)
+ .rp-inspection-cockpit .rp-inspection-commands>.rp-inspection-primary-actions{
+ flex:0 0 auto!important;position:relative!important;bottom:auto!important;
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+ padding:8px 12px 10px!important;margin:0!important;
+ border-top:1px solid #49404a;background:#1b1920!important;
+}
+.rp-inspection-commands>.rp-inspection-primary-actions:empty{display:none!important}
+.rp-inspection-commands>.rp-inspection-primary-actions:not(:has(button,a)){display:none!important}
