@@ -12,13 +12,13 @@
  display:flex!important;flex-direction:column!important;width:100%!important;
  min-height:540px!important;height:calc(100dvh - 110px)!important;
  max-height:1000px!important;position:relative!important;margin:0!important;
- background:#111113!important;border:1px solid #51454f!important;border-radius:18px!important;
+ background:#111113!important;border:1px solid #414a56!important;border-radius:18px!important;
  overflow:hidden!important}
 .dashboard .rp-demo-inspector .rp-inspection-map-panel .patrol-map-heading,
 #central-root .rp-inspector-workspace .rp-inspection-map-panel .patrol-map-heading{
  z-index:5!important;min-height:72px!important;flex:none!important;
- border:0!important;border-bottom:1px solid #51454f!important;
- background:#19161b!important;padding:12px 16px!important}
+ border:0!important;border-bottom:1px solid #414a56!important;
+ background:#191c22!important;padding:12px 16px!important}
 .dashboard .rp-demo-inspector .rp-inspection-map-canvas,
 #central-root .rp-inspector-workspace .rp-inspection-map-canvas{
  flex:1 1 auto!important;width:100%!important;height:auto!important;max-height:none!important;
@@ -33,91 +33,91 @@
  position:absolute!important;inset:0!important}
 .dashboard .rp-inspection-map-fit,#central-root .rp-inspection-map-fit{
  width:44px!important;height:44px!important;min-height:44px!important;flex:none!important;
- border-radius:12px!important;border:1px solid #564b53!important;color:#f4eff3!important;
+ border-radius:12px!important;border:1px solid #495461!important;color:#f2f5f9!important;
  font-size:23px!important;font-weight:700!important;background:#2a232b!important}
 .dashboard .rp-inspection-map-hud,#central-root .rp-inspection-map-hud{
  position:absolute!important;z-index:4!important;top:12px!important;left:12px!important;
  right:12px!important;max-width:500px!important;display:flex!important;flex-direction:column!important;
  gap:5px!important;padding:13px 16px!important;color:#fff!important;border-radius:13px!important;
- background:#181519e8!important;border:1px solid #635560!important;
+ background:#181519e8!important;border:1px solid #4b5664!important;
  box-shadow:0 8px 24px #0005!important;pointer-events:none!important}
 .dashboard .rp-inspection-map-hud .rp-inspection-hud-label,
 #central-root .rp-inspection-map-hud .rp-inspection-hud-label{
- color:#f0829b!important;font-weight:800!important;font-size:11px!important;
+ color:#59bdec!important;font-weight:800!important;font-size:11px!important;
  letter-spacing:.06em!important}
 .dashboard .rp-inspection-map-hud strong,#central-root .rp-inspection-map-hud strong{
  font-size:18px!important;line-height:1.32!important;overflow-wrap:anywhere!important}
 .dashboard .rp-inspection-map-hud small,#central-root .rp-inspection-map-hud small{
- font-size:12px!important;color:#d4cbd3!important;line-height:1.4!important}
+ font-size:12px!important;color:#c0cad5!important;line-height:1.4!important}
 .dashboard .rp-inspection-map-panel .patrol-map-footer,
 #central-root .rp-inspection-map-panel .patrol-map-footer{
- z-index:5!important;flex:none!important;background:#181519!important;border-top:1px solid #48404a!important;
+ z-index:5!important;flex:none!important;background:#191c22!important;border-top:1px solid #414954!important;
  display:flex!important;gap:7px!important;flex-wrap:wrap!important;
- min-height:47px!important;padding:10px 15px!important;color:#d4c9d1!important;
+ min-height:47px!important;padding:10px 15px!important;color:#c0cbd6!important;
  font-size:11px!important}
 .dashboard .rp-inspection-cockpit .rp-inspection-commands,
 #central-root .rp-inspection-cockpit .rp-inspection-commands{
  position:absolute!important;z-index:6!important;left:13px!important;right:13px!important;
  bottom:59px!important;width:auto!important;max-width:660px!important;
  max-height:45%!important;overflow-y:auto!important;overflow-x:hidden!important;
- border:1px solid #66525e!important;border-radius:16px!important;background:#211b22f2!important;
+ border:1px solid #414a55!important;border-radius:16px!important;background:#20252cf2!important;
  box-shadow:0 15px 38px #000b!important;backdrop-filter:blur(12px)!important;
  display:grid!important;gap:0!important;padding:0!important;margin:0 auto!important}
 .dashboard .rp-inspection-commands .patrol-action-heading,
 #central-root .rp-inspection-commands .patrol-action-heading{
- padding:12px 15px!important;background:transparent!important;border-bottom:1px solid #4f414c!important;
- color:#f6edf2!important;font-size:13px!important;min-height:auto!important}
+ padding:12px 15px!important;background:transparent!important;border-bottom:1px solid #414a55!important;
+ color:#f1f4f8!important;font-size:13px!important;min-height:auto!important}
 .dashboard .rp-inspection-commands .rp-inspection-commands-body,
 #central-root .rp-inspection-commands .rp-inspection-commands-body{
  padding:13px 15px!important;display:grid!important;gap:11px!important}
 .dashboard .rp-inspection-commands-body p,#central-root .rp-inspection-commands-body p{
- margin:0!important;font-size:13px!important;color:#ddd2db!important;line-height:1.4!important}
+ margin:0!important;font-size:13px!important;color:#cfd8e1!important;line-height:1.4!important}
 .dashboard .rp-inspection-primary-actions,#central-root .rp-inspection-primary-actions{
  display:flex!important;align-items:stretch!important;gap:10px!important;flex-wrap:wrap!important}
 .dashboard .rp-inspection-main-action,#central-root .rp-inspection-main-action{
  flex:1 1 240px!important;min-height:49px!important;width:auto!important;
- border:1px solid #ed4767!important;border-radius:11px!important;background:#a9193c!important;
+ border:1px solid #e7edf5!important;border-radius:11px!important;background:#e7edf5!important;
  padding:10px 15px!important;font-size:14px!important;font-weight:750!important;
- color:white!important;box-shadow:none!important}
+ color:#151a20!important;box-shadow:none!important}
 .dashboard .rp-inspection-navigate,#central-root .rp-inspection-navigate{
  flex:1 1 140px!important;display:flex!important;align-items:center!important;justify-content:center!important;
  min-height:48px!important;text-align:center!important;text-decoration:none!important;
- font-size:13px!important;font-weight:700!important;border:1px solid #665760!important;
- border-radius:11px!important;background:#332932!important;color:#f4e9f0!important;
+ font-size:13px!important;font-weight:700!important;border:1px solid #485361!important;
+ border-radius:11px!important;background:#242a32!important;color:#dce4ed!important;
  padding:9px 12px!important}
 .dashboard .rp-inspection-ready,#central-root .rp-inspection-ready{
- font-weight:700!important;color:#f3a8b8!important;padding:9px 0!important;line-height:1.4!important}
+ font-weight:700!important;color:#8fc9e5!important;padding:9px 0!important;line-height:1.4!important}
 .dashboard .rp-inspection-upcoming,#central-root .rp-inspection-upcoming{
- border-top:1px solid #504550!important;margin:0!important;padding:0!important}
+ border-top:1px solid #48535e!important;margin:0!important;padding:0!important}
 .dashboard .rp-inspection-upcoming summary,#central-root .rp-inspection-upcoming summary{
  display:flex!important;justify-content:space-between!important;align-items:center!important;
  gap:9px!important;cursor:pointer!important;min-height:46px!important;padding:12px 15px!important;
- color:#f3eaf0!important;font-size:13px!important;font-weight:650!important}
+ color:#f0f4f8!important;font-size:13px!important;font-weight:650!important}
 .dashboard .rp-inspection-upcoming ol,#central-root .rp-inspection-upcoming ol{
  list-style:none!important;margin:0!important;padding:3px 13px 12px!important;
  display:grid!important;gap:8px!important}
 .dashboard .rp-inspection-stop,#central-root .rp-inspection-stop{
  display:flex!important;align-items:center!important;gap:11px!important;
- border:1px solid #4f4550!important;border-radius:10px!important;
- background:#2a252c!important;padding:11px!important;min-width:0!important}
+ border:1px solid #48535e!important;border-radius:10px!important;
+ background:#242b34!important;padding:11px!important;min-width:0!important}
 .dashboard .rp-inspection-stop.is-next,#central-root .rp-inspection-stop.is-next{
- border-color:#b3445a!important;background:#33252d!important}
+ border-color:#55bceb!important;background:#25333e!important}
 .dashboard .rp-stop-order,#central-root .rp-stop-order{
  display:grid!important;place-items:center!important;flex:none!important;width:29px!important;height:29px!important;
- border-radius:9px!important;background:#493640!important;color:white!important;font-weight:800!important}
+ border-radius:9px!important;background:#2b3d4d!important;color:white!important;font-weight:800!important}
 .dashboard .rp-inspection-stop>div,#central-root .rp-inspection-stop>div{
  min-width:0!important;flex:1 1 auto!important;display:grid!important;gap:3px!important}
 .dashboard .rp-inspection-stop strong,#central-root .rp-inspection-stop strong{
  font-size:13px!important;overflow-wrap:anywhere!important;line-height:1.3!important}
 .dashboard .rp-inspection-stop small,#central-root .rp-inspection-stop small{
- color:#c6bdc5!important;font-size:11px!important;line-height:1.4!important;overflow-wrap:anywhere!important}
+ color:#b8c6d2!important;font-size:11px!important;line-height:1.4!important;overflow-wrap:anywhere!important}
 .dashboard .rp-stop-next,#central-root .rp-stop-next{
- flex:none!important;color:#f39aad!important;font-size:10px!important;font-weight:800!important}
+ flex:none!important;color:#79c5ea!important;font-size:10px!important;font-weight:800!important}
 .dashboard .rp-inspection-upcoming>small,#central-root .rp-inspection-upcoming>small{
  display:block!important;padding:0 14px 12px!important;color:#c4b9c2!important;font-size:11px!important}
 .dashboard .rp-inspection-visit-form,#central-root .rp-inspection-visit-form{
- margin:18px 0!important;padding:18px!important;background:#1b171c!important;
- border:1px solid #514751!important;border-radius:15px!important}
+ margin:18px 0!important;padding:18px!important;background:#1a1e25!important;
+ border:1px solid #444e5b!important;border-radius:15px!important}
 @media(max-width:700px){
  .dashboard .rp-demo-inspector .rp-inspection-cockpit,
  #central-root .rp-inspector-workspace .rp-inspection-cockpit{border-radius:0!important;margin:0 -12px!important;width:calc(100% + 24px)!important}
