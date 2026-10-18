@@ -17,13 +17,13 @@ A identidade Maxvel e as regras antigas de GPS (raio 25 m, permanência 30 s, se
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com logo original do Grupo Maxvel, fundo preto, superfícies cinza muito escuro e detalhes celeste/violeta, supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
-## Implantação do Rondas Pro no Railway
+## Publicação atual e preparação para Railway
 
-Aplicação preparada para usar a branch `main` deste repositório, incluindo as correções integradas da PR #30. Nome do projeto: **App Rondas Pro**. Nome do serviço: `rondas-pro`. A criação do serviço e a publicação precisam ser confirmadas no Railway; esta preparação não significa que já exista uma implantação ativa.
+A demonstração pública usa **GitHub Pages**. Em 18/10/2026, a fonte configurada e efetivamente publicada era a branch `feat/ronda-pro-glass-ui-20261017`, no commit `45f50c8`, pelo workflow dinâmico **pages build and deployment** (run `39099995891`). A publicação não acompanha a `main` automaticamente enquanto essa configuração permanecer apontada para a branch de revisão.
 
-Configuração do serviço: runtime **Node.js 24**, comando de início `npm start`, healthcheck `/health` e domínio público HTTPS gerado pelo Railway. O ambiente usa a `PORT` definida pela plataforma e não requer chave de API para a cartografia OpenStreetMap.
+O Railway está apenas preparado, não implantado: não há projeto ou serviço `App Rondas Pro` / `rondas-pro` confirmado na conta Railway conectada. A configuração prevista continua sendo runtime **Node.js 24**, comando `npm start`, healthcheck `/health` e domínio HTTPS. Criar o serviço ou trocar a fonte da publicação exige autorização específica.
 
-Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pelo Railway, publica somente os arquivos da interface e oferece `/health`. Esta hospedagem mantém a versão de avaliação; o servidor HTTP não implementa autenticação, banco nem sincronização de rondas entre aparelhos. Os registros locais continuam vinculados ao domínio de cada navegador; mudar de domínio não transfere esse armazenamento.
+Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pela plataforma, publica somente os arquivos da interface e oferece `/health`. A versão de avaliação não implementa autenticação, banco nem sincronização de rondas entre aparelhos. Os registros locais continuam vinculados ao domínio de cada navegador; mudar de domínio não transfere esse armazenamento.
 
 ## Refinamento visual · 13/10/2026
 
