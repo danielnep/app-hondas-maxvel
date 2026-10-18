@@ -1,3 +1,4 @@
+import {decorateTheme} from './theme-shell.js';
 import {createInternalChatUI} from './internal-chat-ui.js';
 import {createChatCalls} from './internal-chat-calls.js';
 import {createActivityHistoryUI} from './activity-history-ui.js';
@@ -20,6 +21,9 @@ const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'
 const id=x=>escape(x);
 const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término',inspection:'Vistoria de qualidade',patrol_interrupted:'Ronda interrompida',patrol_incomplete:'Ronda incompleta'};
 let composeKind='message';
+const eventResponseDrafts=new Map();
+function retainEventDraft(){const form=document.querySelector('#send-message[data-event-id]');if(form)eventResponseDrafts.set(form.dataset.eventId,{body:form.querySelector('textarea')?.value||'',audience:form.querySelector('[name=audience]')?.value});}
+document.addEventListener('input',event=>{if(event.target.closest('#send-message'))retainEventDraft();});
 const coi=createCoiMonitor();
 let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
 let inspectorPosition=null,inspectorWatch=null,inspectorSignature='',inspectorBase=null,inspectorPresenceAt=0;
@@ -242,7 +246,7 @@ async function syncOperational({remote=false}={}){
    if(selected?.event?.id!==key)return;
    selected={event:result.event};eventHistory=result.treatments;
    // Atualizar os avisos sem apagar respostas ou conclusões em edição.
-   const busy=isPending(result.event)&&(document.querySelector('.conclusion-overlay')||Array.from(document.querySelectorAll('#send-message textarea')).some(el=>el.value.trim()));
+   const busy=isPending(result.event)&&(document.activeElement?.closest('#send-message')||document.querySelector('.conclusion-overlay')||Array.from(document.querySelectorAll('#send-message textarea')).some(el=>el.value.trim()));
    if(!busy){if(!isPending(result.event))document.querySelector('.conclusion-overlay')?.remove();render();}
    else{
     void loadMessages(key);
@@ -270,6 +274,7 @@ function treatmentActions(e){
  return '<section class="surface no-print" data-treatment-panel><h2>Tratativa operacional</h2><p>Responsável pela providência: <strong>'+escape(active?account.name:eventHistory[0]?.concluded_by||e.treatment_owner||'Aguardando atendimento')+'</strong></p>'+absence+'<p data-live-treatment-state role="status"></p>'+actions+'</section><section class="surface"><h2>Histórico de tratativas</h2>'+(history?'<ol class="rp-treatment-history">'+history+'</ol>':'<p>Nenhuma tratativa registrada.</p>')+'</section>';
 }
 function loginView(error=''){
+ decorateTheme('');
  roleTag.textContent='';exit.hidden=true;
  root.innerHTML='<form id="central-login" class="login"><h1>Central operacional</h1><p>Área com autenticação própria para a operação real. O perfil de demonstração do site não libera acesso a estes registros.</p>'+
   (error?'<p class="flag">'+escape(error)+'</p>':'')+
@@ -315,7 +320,7 @@ async function load(){
   if(selected?.event&&review()){const detail=await api('/events/'+selected.event.id);selected={event:detail.event};eventHistory=detail.treatments;}
   if(page==='treatments'&&review())await readTreatmentRows();
   render();ops.present();ops.connectLive(token);
- }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
+ }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;eventResponseDrafts.clear();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
 }
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
@@ -591,7 +596,7 @@ function eventView(e){
   '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
  (!isPending(e)||account.role==='cliente'||review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'':'<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form>')+'</section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
- (!isPending(e)||account.role==='cliente'?'<p class="muted">Consulta do registro. Use o Chat interno para conversar com a equipe.</p>':review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'<p class="muted">Assuma a tratativa disponível para registrar respostas. Concluídas ficam somente para consulta.</p>':'<form id="send-message" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
+ (!isPending(e)||account.role==='cliente'?'<p class="muted">Consulta do registro. Use o Chat interno para conversar com a equipe.</p>':review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'<p class="muted">Assuma a tratativa disponível para registrar respostas. Concluídas ficam somente para consulta.</p>':'<form id="send-message" data-event-id="'+escape(e.id)+'" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
  (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · vigia pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
  '<button class="primary">Enviar resposta</button></div></form>')+'</section>'+
  '<details class="details-toggle"><summary>Dados técnicos completos</summary><div class="surface"><div class="detail-grid">'+
@@ -725,6 +730,7 @@ function inspectionView(){
 }
 
 function render(){
+ retainEventDraft();
  for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
  routeBoard.resetMaps();resetOperationalMap();coi.reset();
  if(!account){stopInspectorGps();guardStopGps();torch.stop();loginView();return}
@@ -738,6 +744,11 @@ function render(){
    account.role==='vistoriador'?(page==='history'?ownHistory():page==='send'?sendView():inspectionView()):
    page==='dashboard'?dashboardView():page==='monitor'?monitorView():page==='events'?eventsView():page==='team'?teamView():page==='alerts'?alertView():page==='export'?exportView():dashboardView();
  if(selected?.event)content='<dialog id="central-event-dialog" class="rp-record-dialog"><button type="button" data-close-event>Fechar ✕</button>'+content+'</dialog>';
+ const fieldHome=account.role==='ronda'?'dashboard':'inspections';
+ if(['ronda','vistoriador'].includes(account.role)&&page!==fieldHome){
+  const backdrop=account.role==='ronda'?ownDashboard():inspectionView();
+  content=backdrop+(selected?.event?content:'<section class="rp-field-page-overlay" aria-label="Área de trabalho"><button type="button" class="rp-page-back" data-page="'+fieldHome+'">← Voltar ao mapa</button>'+content+'</section>');
+ }
  const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
  if(inspectionMap){inspectionMap.destroy();inspectionMap=null;}if(guardMap){guardMap.destroy();guardMap=null;}
  root.innerHTML='<button type="button" class="rp-central-menu-button" data-central-menu aria-expanded="false" aria-controls="central-navigation">☰ Menu '+pendingDot('total',ops.summary().total)+'</button><div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+
@@ -749,6 +760,9 @@ function render(){
  const headerActions=document.querySelector('.top-actions');
  if(headerActions){headerActions.querySelector('[data-operational-header]')?.remove();const holder=document.createElement('div');holder.dataset.operationalHeader='';holder.className='rp-header-tools';holder.innerHTML='<div class="ops-bell-bar">'+ops.badge()+'</div><div data-chat-badge>'+chat.badge()+'</div>';headerActions.prepend(holder);}
  const eventDialog=document.querySelector('#central-event-dialog');if(eventDialog){eventDialog.addEventListener('cancel',async e=>{e.preventDefault();try{await releaseTreatment();selected=null;page=detailOrigin;render()}catch(error){flash(error.message)}});eventDialog.showModal();}
+ const responseForm=document.querySelector('#send-message[data-event-id]'),draft=responseForm&&eventResponseDrafts.get(responseForm.dataset.eventId);
+ if(draft){responseForm.querySelector('textarea').value=draft.body;if(draft.audience&&responseForm.querySelector('[name=audience]'))responseForm.querySelector('[name=audience]').value=draft.audience;}
+ decorateTheme(account.role,account.name);
  updatePendingIndicators();
  if(page==='activity-history')activity.mountFilters();
  if(page==='chat')requestAnimationFrame(()=>void chat.mount());
@@ -757,7 +771,7 @@ function render(){
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(()=>coi.mount());
- if(account.role==='ronda'&&page==='dashboard')requestAnimationFrame(()=>{
+ if(account.role==='ronda'&&document.querySelector('#guard-real-map'))requestAnimationFrame(()=>{
    const host=document.querySelector('#guard-real-map'),planned=guardPlannedRoute();if(!host||!planned)return;
    const route=buildGuardRoute(planned,guardRound?.base||guardFix);
    if(route){guardMap=new PatrolMap(host,{route,session:guardRound?{mode:'real',index:guardRound.index,checkpoints:route.points.map((_,i)=>({completedAt:guardRound.checkpoints.some(c=>c.index===i)?Date.now():null}))}:null,
@@ -767,7 +781,7 @@ function render(){
    inspectorWizardAutoId=inspectorDraft.id;
    requestAnimationFrame(()=>document.querySelector('#rp-inspection-wizard-dialog')?.showModal());
   }
-  if(account.role==='vistoriador'&&page==='inspections')requestAnimationFrame(()=>{
+  if(account.role==='vistoriador'&&document.querySelector('#inspection-map'))requestAnimationFrame(()=>{
   const host=document.querySelector('#inspection-map'),item=ops.activeInspection();
   if(host){
     const ordered=inspectionQueueNow();
@@ -1078,7 +1092,7 @@ document.addEventListener('submit',async e=>{
    flash(attachmentFailure||(kind==='alert'?'Alerta registrado no servidor. Confira a entrega nas configurações da central.':kind==='incident'?'Ocorrência registrada na central.':attachments.length?'Mensagem e '+uploads+' anexo(s) enviados.':'Mensagem registrada na central.'));
    return;
   }
-  if(form.id==='send-message'){await api('/events/'+selected.event.id+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general',claimSession}});form.reset();await loadMessages(selected.event.id);return;}
+  if(form.id==='send-message'){const responseEventId=selected.event.id;await api('/events/'+responseEventId+'/messages',{method:'POST',data:{body:d.body,audience:d.audience||'general',claimSession}});eventResponseDrafts.delete(responseEventId);form.reset();await loadMessages(selected.event.id);return;}
   if(form.id==='upload-evidence'){
    const file=form.querySelector('[name=file]').files[0];if(!file)throw new Error('Selecione uma mídia');
    const at=file.lastModified||Date.now();
@@ -1101,7 +1115,7 @@ document.addEventListener('change',e=>{
  if(field){occurrenceFilters[field.dataset.occFilter]=field.value;render();return;}
  routeBoard.change(e.target);
 });
-exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
+exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;eventResponseDrafts.clear();sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
 load();
 
 setInterval(guardTick,1000);

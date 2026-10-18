@@ -11,8 +11,8 @@ const css=readStyles('mobile-critical-20261016');
 const index=read('index.html');
 const sw=read('sw.js');
 
-test('campo abre conversa diretamente e notificações permitem leitura',()=>{
- assert.match(app,/let demoChatScreen='thread'/);
+test('campo começa pela lista de conversas e notificações permitem leitura',()=>{
+ assert.match(app,/let demoChatScreen='list'/);
  assert.match(app,/field-chat-contact-row[^\n]+data-action="demo-chat-open"/);
  assert.match(app,/field-chat-thread/);
  assert.match(app,/field-chat-compose/);
@@ -49,9 +49,9 @@ test('janelas do vigia usam altura por conteúdo e retorno único',()=>{
  assert.match(css,/\.checkpoint-curtain\s*\.checkpoint-curtain-panel/);
 });
 test('estilos críticos carregam por último e entram no PWA',()=>{
- assert.ok(index.includes('mobile-critical.css?v=49'));
- assert.match(index,/rondas-pro-updated-v49/);
- assert.match(sw,/rondas-pro-interface-v49/);
+ assert.ok(index.includes('mobile-critical.css?v=50'));
+ assert.match(index,/rondas-pro-updated-v50/);
+ assert.match(sw,/rondas-pro-interface-v50/);
  assert.ok(sw.includes('./assets/mobile-critical.css'));
  const before=index.indexOf('operational.css');
  const after=index.indexOf('mobile-critical.css');
@@ -63,7 +63,7 @@ test('marca Grupo Maxvel permanece visível no cabeçalho mobile',()=>{
  assert.match(style,/\.dashboard \.app-header \.brand \.brand-partner\{[^}]*display:flex!important/);
  assert.match(style,/\.dashboard \.app-header \.brand \.maxvel-real-logo\{[^}]*display:block!important/);
  assert.doesNotMatch(style,/\.dashboard \.app-header \.brand \.brand-partner\{display:none!important/);
- assert.ok(index.includes('field.css?v=49'));
+ assert.ok(index.includes('field.css?v=50'));
 });
 
 test('vistorias têm mapa independente, fotos múltiplas e termos profissionais',()=>{

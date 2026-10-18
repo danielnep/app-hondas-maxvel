@@ -1,3 +1,4 @@
+import {decorateTheme} from './theme-shell.js';
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
 import {createInspectionRouteMap} from './inspection-route-map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf} from './inspection-queue.js';
@@ -67,7 +68,7 @@ const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
 const helpButton=(topic,label)=>`<button type="button" class="context-help" data-action="feature-help" data-topic="${topic}" aria-label="O que é ${label}?" title="Entenda: ${label}">?</button>`;
 const operationalLink='<a class="button small" href="/central.html">Central autenticada</a>';
-const brand=()=>'<div class="brand maxvel-only-brand" aria-label="Grupo Maxvel"><span class="brand-product"><span class="ronda-pro-wordmark">Rondas <b>Pro</b></span></span><span class="brand-divider" aria-hidden="true"></span><span class="brand-partner"><span class="brand-group">GRUPO</span><img class="maxvel-real-logo" src="./assets/maxvel-logo.webp" width="585" height="183" alt="Maxvel"></span></div>';
+const brand=()=>'<div class="brand maxvel-only-brand" aria-label="Grupo Maxvel"><span class="brand-product"><span class="ronda-pro-wordmark">Ronda <b>Pro</b></span></span><span class="brand-divider" aria-hidden="true"></span><span class="brand-partner"><span class="brand-group">GRUPO</span><img class="maxvel-real-logo" src="./assets/maxvel-logo.webp" width="585" height="183" alt="Maxvel"></span></div>';
 const persisted=loadState();
 let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
 let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule();
@@ -438,7 +439,7 @@ function render(){demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!
  const dash=document.querySelector('.dashboard');
  // Lanterna aparece somente na área operacional, nunca em histórico ou chat.
  if(dash)dash.dataset.torchRole=(user?.role==='ronda'&&view==='minha-ronda')||(user?.role==='vistoriador'&&view==='vistoriador')?user.role:'';
- torch.decorate();
+ torch.decorate();decorateTheme(user?.role);
  // Ajuda da cartografia pertence ao nível do cockpit: atrás do painel o ícone
  // fica visível mas não recebe clique, mesmo com z-index elevado no filho.
  if(window.innerWidth<=900&&workspace){
@@ -493,8 +494,8 @@ function attachMaps(){
     const history=sessionList().filter(x=>x.name===w.name).slice(0,5);
     history.forEach((item,index)=>registerMap('admin-route-mini-'+index,item.route,item,item.lastFix??item.route.base,true));
    }
-  if(view==='minha-ronda'){const selectedRoute=session?.route??routeForWatcher(selectedWatcherId);registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
-  if(view==='vistoriador'){
+  if(document.getElementById('mobile-map')){const selectedRoute=session?.route??routeForWatcher(selectedWatcherId);registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
+  if(document.getElementById('demo-inspection-map')){
    const host=document.querySelector('#demo-inspection-map');
    if(host){
     const tasks=demoInspectionQueue(),route=inspectionRoute(tasks,DEMO_ROUTE.base);
@@ -585,8 +586,15 @@ function featureHelp(topic){
 }
 
 function pageTitle(title,sub,extra=''){return `<div class="page-title"><div><div class="eyebrow">RONDAS PRO · ${esc(roleName[user.role])}</div><h1>${title}</h1><p>${sub}</p></div>${extra}</div>`}
+function fieldViewContent(){
+ const content=viewContent();
+ if(!['ronda','vistoriador'].includes(user?.role)||view===(user.role==='ronda'?'minha-ronda':'vistoriador'))return content;
+ const back=user.role==='ronda'?'minha-ronda':'vistoriador';
+ const backdrop=user.role==='ronda'?phoneContent():demoInspectorView();
+ return backdrop+'<section class="rp-field-page-overlay" aria-label="Área de trabalho"><button type="button" class="rp-page-back" data-view="'+back+'">← Voltar ao mapa</button>'+content+'</section>';
+}
 function appShell(){const entries=allNav[user.role];let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
- return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Demo sem login. Na implantação, o administrador cadastra os profissionais e seus logins/senhas individuais.</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><a class="foot-link" href="/central.html">Central operacional segura</a><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker desktop-only"):""}${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${viewContent()}</main><footer class="footer-app">Ambiente de avaliação · dados locais · Grupo Maxvel</footer></div></div></div>`}
+ return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Demo sem login. Na implantação, o administrador cadastra os profissionais e seus logins/senhas individuais.</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><a class="foot-link" href="/central.html">Central operacional segura</a><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker desktop-only"):""}${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ambiente de avaliação · dados locais · Grupo Maxvel</footer></div></div></div>`}
 function myPatrolHistory(){
  const name=user?.name||'',mine=sessionList().filter(x=>x.name===name),events=ops.allEvents();
  const item=x=>{
@@ -853,19 +861,20 @@ function openDemoChatOverlay(list=false){
  let overlay=document.querySelector('#rp-demo-chat-overlay');
  if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';
   document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
- overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens · demonstração local</strong><button type="button" data-action="demo-chat-overlay-close">✕</button></div>'+demoChatView();
+ overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+demoChatView();
  if(!overlay.open)overlay.showModal();
 }
-let demoChatScreen='thread';
-function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows:[]}catch{return []}}
+let demoChatScreen='list',demoChatTarget='COI';
+function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows.filter(m=>(m.target||'COI')===demoChatTarget):[]}catch{return []}}
 function demoChatView(){
  const rows=demoChatRows(),mine=user?.name||'Vigia',last=rows.at(-1),thread=demoChatScreen==='thread';
  const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':(allNav[user?.role]||[['minha-ronda']])[0][0];
  const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'" aria-label="Voltar à área de trabalho">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Comunicação operacional</small></div></header>';
- const list='<section class="field-chat-list" aria-label="Conversas"><div class="field-chat-list-label">CONVERSAS</div><button type="button" class="field-chat-contact-row" data-action="demo-chat-open"><span class="field-chat-avatar">C</span><span class="field-chat-contact-copy"><strong>COI · Central de Operações</strong><small>'+(last?esc(last.body):'Toque para iniciar uma conversa')+'</small></span><span class="field-chat-contact-time">'+(last?time(last.at):'')+'</span></button><div class="field-chat-local-note">Demonstração local: mensagens deste aparelho. Para conversas reais entre equipes, use a central autenticada.</div><a class="field-chat-auth-link" href="/central.html#chat">Abrir mensagens da central autenticada ↗</a></section>';
+ const list='<section class="field-chat-list" aria-label="Conversas"><div class="field-chat-list-label">CONVERSAS</div><button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="COI"><span class="field-chat-avatar">C</span><span class="field-chat-contact-copy"><strong>COI · Central de Operações</strong><small>'+(last?esc(last.body):'Toque para iniciar uma conversa')+'</small></span><span class="field-chat-contact-time">'+(last?time(last.at):'')+'</span></button><div class="field-chat-local-note">Demonstração local: mensagens deste aparelho. Para conversas reais entre equipes, use a central autenticada.</div><a class="field-chat-auth-link" href="/central.html#chat">Abrir mensagens da central autenticada ↗</a></section>';
+ const contacts='<section class="field-chat-list"><div class="field-chat-list-label">ESCOLHA O DESTINATÁRIO</div>'+['COI',user?.role==='ronda'?'Vistoriador':'Vigia'].map(name=>'<button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="'+name+'"><span class="field-chat-avatar">'+name[0]+'</span><strong>'+name+'</strong></button>').join('')+'</section>';
  const messages=rows.map(m=>'<article class="field-chat-bubble '+(m.author===mine?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+time(m.at)+(m.author===mine?' · Salva neste aparelho':'')+'</small></article>').join('');
- const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list" aria-label="Voltar para conversas">'+ic('arrowleft')+'</button><span class="field-chat-avatar">C</span><div><strong>COI · Central de Operações</strong><small>Chat local de demonstração</small></div></header><div class="field-chat-thread" role="log" aria-label="Mensagens da conversa com o COI">'+(messages||'<div class="field-chat-empty"><strong>Conversa iniciada</strong><span>Envie uma mensagem para registrar a demonstração.</span></div>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Escrever mensagem</label><input id="demo-chat-body" name="body" required maxlength="2000" placeholder="Mensagem" autocomplete="off"><button type="submit" class="button primary" aria-label="Enviar mensagem">Enviar</button></form></section>';
- return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(thread?conversation:list)+'</div></section>';
+ const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list" aria-label="Voltar para conversas">'+ic('arrowleft')+'</button><span class="field-chat-avatar">C</span><div><strong>'+esc(demoChatTarget==='COI'?'COI · Central de Operações':demoChatTarget)+'</strong><small>Chat local de demonstração</small></div></header><div class="field-chat-thread" role="log" aria-label="Mensagens da conversa com o COI">'+(messages||'<div class="field-chat-empty"><strong>Conversa iniciada</strong><span>Envie uma mensagem para registrar a demonstração.</span></div>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Escrever mensagem</label><input id="demo-chat-body" name="body" required maxlength="2000" placeholder="Mensagem" autocomplete="off"><button type="submit" class="button primary" aria-label="Enviar mensagem">Enviar</button></form></section>';
+ return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(demoChatScreen==='contacts'?contacts:thread?conversation:list+'<button type="button" class="button primary" data-action="demo-chat-contacts">Iniciar conversa</button>')+'</div></section>';
 }
 let demoHistoryPage=0;
 function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,selectionKey:'round:'+r.id,type:'round',at:r.startedAt,name:r.name,site:r.route?.name,status:r.status})),...demoInspectionRecords().map((r,i)=>({id:String(i),selectionKey:'inspection:'+i,type:'inspection',at:r.at,name:'Vistoria',site:r.address||DEMO_WATCHERS[0].unit,status:'Enviada'}))].sort((a,b)=>b.at-a.at);}
@@ -1233,7 +1242,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  const act=el.dataset.action;
  if(act==='demo-wizard-open'){const d=document.querySelector('#rp-demo-wizard-dialog');if(d&&!d.open)d.showModal();return;}
  if(act==='demo-wizard-close'){document.querySelector('#rp-demo-wizard-dialog')?.close();return;}
- if(act==='demo-chat-overlay'){openDemoChatOverlay(false);return;}
+ if(act==='demo-chat-overlay'){openDemoChatOverlay(true);return;}
  if(act==='demo-chat-overlay-more'){openDemoChatOverlay(true);return;}
  if(act==='demo-chat-overlay-close'){document.querySelector('#rp-demo-chat-overlay')?.close();return;}
  if(act==='demo-inspection-fit'){demoInspectorMap?.fit();return;}
@@ -1249,7 +1258,8 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());
   notify('Chegada registrada na simulação. Preencha a vistoria.');return;
  }
- if(act==='demo-chat-open'){demoChatScreen='thread';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
+ if(act==='demo-chat-contacts'){demoChatScreen='contacts';let overlay=document.querySelector('#rp-demo-chat-overlay');if(overlay){const old=overlay.querySelector('.field-chat-screen');if(old)old.outerHTML=demoChatView();}else render();return;}
+ if(act==='demo-chat-open'){demoChatTarget=el.dataset.contact||'COI';demoChatScreen='thread';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
  if(act==='demo-chat-list'){demoChatScreen='list';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(true);else render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
  if(act==='demo-coi-tab'){if(['rondas','vistorias'].includes(el.dataset.tab)){demoCoiTab=el.dataset.tab;render();}return;}
@@ -1569,7 +1579,7 @@ document.addEventListener('click',async e=>{
  if(!button||!presentation||user?.role!=='vistoriador')return;
  try{
   if(button.hasAttribute('data-field-tool-torch'))await torch.toggle();
-  else if(button.hasAttribute('data-field-tool-chat'))openDemoChatOverlay(false);
+  else if(button.hasAttribute('data-field-tool-chat'))openDemoChatOverlay(true);
   else if(button.hasAttribute('data-field-tool-incident'))incidentDialog();
   else if(button.hasAttribute('data-field-tool-alert'))alertDialog();
   else if(button.hasAttribute('data-field-tool-panic'))showDialog('<h2>Pânico · demonstração</h2><p>O acionamento real fica na Central autenticada. Esta tela não envia alarmes.</p><a class="button primary" href="/central.html">Abrir operação real</a>');
@@ -1592,7 +1602,7 @@ document.addEventListener('change',e=>{
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
 document.addEventListener('submit',e=>{
- if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,at:Date.now()});localStorage.setItem('rondas-pro-demo-chat',JSON.stringify(rows));if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
+ if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,target:demoChatTarget,at:Date.now()});const others=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]').filter(m=>(m.target||'COI')!==demoChatTarget);localStorage.setItem('rondas-pro-demo-chat',JSON.stringify([...others,...rows]));if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
  if(e.target.id==='demo-inspection-form'){
   e.preventDefault();if(user?.role!=='vistoriador')return;
   const f=new FormData(e.target),pending=demoPendingInspection();
@@ -1689,7 +1699,7 @@ const ops=createOperationsUpgrade({
  get:()=>({user,view,session,sessions,programs,operationalSettings,mode,locationFix,
   selectedRoute:session?.route??routeForWatcher(selectedWatcherId)}),
  render,save,persist,notify,showDialog,incidentDialog,alertDialog,
- openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('/central.html#chat');return;}view='chat-interno';render();},
+ openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('/central.html#chat');return;}openDemoChatOverlay(true);},
  closeDialog:()=>modal.close(),
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });

@@ -118,7 +118,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  }
  function badge(){
   const latest=notifications.filter(n=>n.kind!=='message'&&n.event_kind!=='message').slice(0,5),extra=Math.max(0,unreadTotal-latest.filter(n=>!n.read_at).length);
-  return '<details class="rp-header-popover"><summary class="rp-blue-button '+(unreadTotal?'has-unread':'')+'" aria-label="Eventos: '+unreadTotal+' não lidos"><span aria-hidden="true">🔔</span><span>Eventos</span>'+(unreadTotal?'<b class="rp-unread-count">'+unreadTotal+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.length?cards(latest):'<p class="empty">Nenhum evento recebido.</p>')+(notificationTotal>5?'<button type="button" data-ops-page="notifications">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details>';
+  return '<details class="rp-header-popover"><summary class="rp-blue-button '+(unreadTotal?'has-unread':'')+'" aria-label="Eventos: '+unreadTotal+' não lidos"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span>Eventos</span>'+(unreadTotal?'<b class="rp-unread-count">'+unreadTotal+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos</strong>'+(latest.length?cards(latest):'<p class="empty">Nenhum evento recebido.</p>')+(notificationTotal>5?'<button type="button" data-ops-page="notifications">Ver mais'+(extra?'<b class="rp-unread-count">'+extra+'</b>':'')+'</button>':'')+'</div></details>';
  }
 
  function cards(list){

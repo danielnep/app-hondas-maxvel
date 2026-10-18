@@ -1,3 +1,6 @@
+@layer rp-layout, rp-structure;
+
+@layer rp-structure {
 /* Canonical stylesheet. Edit here; no legacy generator. */
 
 /* SECTION: maxvel-atelier-20261016 */
@@ -1610,4 +1613,6 @@ body:has(#central-root) > header.top .rp-popover-list{
   border-bottom-color:#414a55!important;
   border-left-color:#414a55!important
  }
+}
+
 }

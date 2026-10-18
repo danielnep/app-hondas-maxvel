@@ -1,3 +1,6 @@
+@layer rp-layout, rp-structure;
+
+@layer rp-structure {
 /* Canonical stylesheet. Edit here; no legacy generator. */
 
 /* SECTION: maxvel-premium-system-20261014 */
@@ -1647,4 +1650,6 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
  body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-evidence-title{font-size:12px!important}
  body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-evidence-title small{font-size:9px!important}
  body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-view-grid{margin:4px 0!important}
+}
+
 }

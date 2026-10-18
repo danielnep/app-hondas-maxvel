@@ -1,3 +1,6 @@
+@layer rp-layout, rp-structure;
+
+@layer rp-structure {
 /* Canonical stylesheet. Edit here; no legacy generator. */
 
 /* SECTION: mobile-critical-20261016 */
@@ -308,4 +311,6 @@ body .checkpoint-curtain .checkpoint-stopwatch[hidden]{display:none!important}
  }
  .dashboard:has(.field-chat-screen) .ops-panic-symbol{width:19px!important;height:19px!important;font-size:17px!important}
  .dashboard:has(.field-chat-screen) .ops-panic strong{font-size:9px!important;line-height:1!important}
+}
+
 }

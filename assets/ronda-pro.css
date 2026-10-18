@@ -1,5 +1,7 @@
-/* Canonical stylesheet. Edit here; no legacy generator. */
+@layer rp-layout, rp-structure;
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');
+@layer rp-structure {
+/* Canonical stylesheet. Edit here; no legacy generator. */
 
 /* SECTION: checkpoint-curtain */
 .checkpoint-curtain{align-items:flex-end;color:#f7fbff;font-family:inherit}
@@ -4771,4 +4773,6 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
 .checkpoint-curtain .checkpoint-utility-row [data-curtain-torch].is-lit svg{color:#ffda81}
 .checkpoint-curtain .checkpoint-utility-row [data-curtain-torch]:disabled{
   opacity:.68;cursor:progress;
+}
+
 }

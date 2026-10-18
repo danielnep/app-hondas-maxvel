@@ -1,0 +1,1531 @@
+@layer rp-layout {
+  /* Ronda Pro · Canonical visual system. Structure retains its own cascade layer.
+   Red glow alpha .46 -> .529 and .20 -> .23: +15% intensity; hue stays pure red.
+   rp-layout owns intentional field geometry; other rules own visual treatment. */
+  :root {
+    --rp-red: #ff1722 !important;
+    --rp-red-rgb: 255,23,34 !important;
+    --rp-neon: 0 0 3px rgba(var(--rp-red-rgb),.529),0 0 12px rgba(var(--rp-red-rgb),.23) !important;
+    --rp-blue: #53bcff !important;
+    --rp-ink: #eff6fc !important;
+    --rp-soft: #c2d2df !important;
+    --rp-rule: #9ab4c32b !important;
+    --rp-glass: rgba(27,37,46,.67) !important;
+    --rp-deep: #151c23 !important;
+    --rp-radius: 12px !important;
+    color-scheme: dark !important
+  }
+  body.rp-theme {
+    margin: 0 !important;
+    background: radial-gradient(ellipse at 85% 0%,#33404a 0,transparent 52%),radial-gradient(ellipse at 8% 95%,#30252a 0,transparent 45%),#171e25 !important;
+    color: var(--rp-ink) !important;
+    font-family: Inter,"Segoe UI",Arial,sans-serif !important
+  }
+  .rp-theme :is(button,input,textarea,select) {
+    font-family: inherit !important
+  }
+  .rp-theme :is(h1,h2,h3,h4) {
+    font-family: inherit !important;
+    color: var(--rp-ink) !important;
+    letter-spacing: -.025em !important
+  }
+  .rp-theme h1 {
+    font-size: clamp(25px,2.5vw,36px) !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important
+  }
+  .rp-theme h2 {
+    font-size: 19px !important
+  }
+  .rp-theme :is(p,small,.muted) {
+    color: var(--rp-soft) !important
+  }
+  .rp-theme :is(.eyebrow,.rp2-nav-eyebrow,.side-caption) {
+    color: var(--rp-blue) !important;
+    font-size: 10px !important;
+    letter-spacing: 1.5px !important;
+    font-weight: 650 !important
+  }
+  .rp-theme a {
+    color: inherit !important
+  }
+  .rp-theme :is(button,a,input,textarea,select,summary):focus-visible {
+    outline: 2px solid var(--rp-blue) !important;
+    outline-offset: 4px !important
+  }
+  .rp-theme :is(button,.button) {
+    border: 1px solid #a1bed13d !important;
+    background: #ffffff08 !important;
+    color: var(--rp-ink) !important;
+    border-radius: 7px !important;
+    min-height: 40px !important;
+    padding: 9px 15px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important
+  }
+  .rp-theme :is(button,.button):hover {
+    background: #ffffff12 !important;
+    border-color: #a1bed17a !important
+  }
+  .rp-theme :is(button,.button):disabled {
+    opacity: .5 !important;
+    cursor: not-allowed !important
+  }
+  .rp-theme :is(button.primary,.button.primary,.rp-inspection-main-action) {
+    background: linear-gradient(110deg,#075b99bb,#1478a4bb) !important;
+    border-color: #4dbaffad !important;
+    color: #f4fbff !important;
+    box-shadow: inset 0 0 13px #53bcff13 !important
+  }
+  .rp-theme :is(input,textarea,select) {
+    border: 1px solid #abc4d149 !important;
+    border-radius: 7px !important;
+    background: #101d2599 !important;
+    color: var(--rp-ink) !important;
+    min-height: 42px !important;
+    padding: 10px 12px !important
+  }
+  .rp-theme option {
+    background: #202d37 !important
+  }
+  .rp-theme :is(dialog,.rp-record-dialog,.conclusion-dialog,.login,.rp-popover-list) {
+    background: rgba(25,35,44,.86) !important;
+    color: var(--rp-ink) !important;
+    border: 1px solid #899fad55 !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(20px) saturate(.8) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(.8) !important;
+    box-shadow: 0 15px 65px #0005 !important
+  }
+  .rp-theme dialog::backdrop {
+    background: #0d141b44 !important;
+    backdrop-filter: blur(2px) !important
+  }
+  .rp-theme .login {
+    border-top: 2px solid var(--rp-red) !important;
+    box-shadow: 0 -2px 12px #ff17222b,0 18px 65px #0003 !important
+  }
+  .rp-theme .conclusion-frost {
+    background: #0b141b77 !important;
+    backdrop-filter: blur(8px) !important
+  }
+  /* Desktop is a continuous workspace. Functional boundaries use rules, not tiles. */
+  .rp-theme :is(.dashboard,.app-shell,.shell-main,.app-content,.entry-screen,.workspace,.content,#app) {
+    background: transparent !important
+  }
+  .rp-theme :is(.top,.app-header) {
+    background: rgba(21,30,38,.8) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 0 !important;
+    border-bottom: 1px solid #ff172256 !important;
+    box-shadow: 0 1px 7px #ff172218 !important;
+    color: var(--rp-ink) !important
+  }
+  .rp-theme :is(.sidebar,.side) {
+    background: rgba(24,34,43,.67) !important;
+    backdrop-filter: blur(18px) !important;
+    border: 0 !important;
+    border-right: 1px solid #ff17225f !important;
+    border-radius: 0 !important;
+    box-shadow: 2px 0 9px #ff17221f !important
+  }
+  .rp-theme :is(.side-link,.rp2-nav-item) {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    text-align: left !important;
+    box-shadow: none !important;
+    min-height: 47px !important;
+    gap: 13px !important;
+    font-weight: 500 !important;
+    color: #d9e6ee !important
+  }
+  .rp-theme :is(.side-link.active,.rp2-nav-item.active) {
+    border: 0 !important;
+    border-left: 3px solid var(--rp-red) !important;
+    background: linear-gradient(90deg,#ff172222,transparent) !important;
+    box-shadow: inset 0 1px #ff17223b,inset 0 -1px #ff17223b !important;
+    color: #fff !important
+  }
+  .rp-theme :is(.side-link,.rp2-nav-item) svg {
+    color: #e4edf4 !important
+  }
+  .rp-theme :is(.surface,.card,.ops-card,.ops-map-card,.report-card,.schedule-workspace,.metric,.kpi,.v4-summary-metric,.v4-summary-callout,.v4-pane,.coi-demo-record,.rp-recent-activity,.coi3-surface,.coi3-kpis,.rp-coi-request-strip,.rp-event-column,.rp-event-card,.chat-conversation,.rp2-first-guide,.first-access-guide,.coi3-live-status,.coi3-site-label) {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important
+  }
+  .rp-theme :is(.surface,.schedule-workspace,.rp-recent-activity,.coi-demo-content,.coi3-section) {
+    border-top: 1px solid var(--rp-rule) !important;
+    padding: 20px 0 !important;
+    margin-top: 14px !important
+  }
+  .rp-theme :is(.metric,.v4-summary-metric,.kpi) {
+    border-right: 1px solid var(--rp-rule) !important;
+    padding: 10px 22px !important;
+    min-height: 80px !important
+  }
+  .rp-theme :is(.metric,.v4-summary-metric,.kpi):last-child {
+    border-right: 0 !important
+  }
+  .rp-theme :is(.metric strong,.v4-summary-metric strong) {
+    font-size: 31px !important;
+    font-weight: 600 !important
+  }
+  .rp-theme :is(.cards,.grid-kpis,.v4-summary-metrics,.coi3-kpis) {
+    border-bottom: 1px solid var(--rp-rule) !important;
+    border-top: 1px solid var(--rp-rule) !important;
+    gap: 0 !important;
+    background: none !important;
+    border-radius: 0 !important
+  }
+  .rp-theme :is(.metric.urgent,.coi3-kpi.is-attention) {
+    background: linear-gradient(90deg,#ff172214,transparent) !important;
+    color: #ff8c92 !important
+  }
+  .rp-theme :is(.rp2-contextbar,.v4-dashboard-heading,.toolbar) {
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important
+  }
+  .rp-theme .rp2-contextbar {
+    border-bottom: 1px solid var(--rp-rule) !important;
+    padding-bottom: 18px !important;
+    margin-bottom: 20px !important
+  }
+  .rp-theme :is(.list-item,.team-row,.chat-conversation,.rp-event-card,.rp-recent-row) {
+    border: 0 !important;
+    border-bottom: 1px solid var(--rp-rule) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important
+  }
+  .rp-theme :is(.rp-event-columns,.coi3-columns) {
+    gap: 22px !important
+  }
+  .rp-theme .rp-event-column {
+    border-top: 2px solid #ff17226b !important;
+    padding: 14px 0 !important
+  }
+  .rp-theme .rp-event-card {
+    padding: 17px 0 !important
+  }
+  .rp-theme :is(.rp-event-empty,.empty) {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: var(--rp-soft) !important
+  }
+  .rp-theme :is(.pill,.tag,.coi3-site-label,.v4-local-notice) {
+    background: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: var(--rp-soft) !important
+  }
+  .rp-theme :is(.rp-coi-request-strip,.coi-demo-request-strip) {
+    border-left: 2px solid var(--rp-red) !important;
+    padding: 12px 18px !important;
+    background: linear-gradient(90deg,#ff172211,transparent) !important;
+    border-radius: 0 !important
+  }
+  .rp-theme :is(.chat-layout,.chat-page) {
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important
+  }
+  .rp-theme .chat-sidebar {
+    background: #18242d66 !important;
+    border: 0 !important;
+    border-right: 1px solid var(--rp-rule) !important;
+    border-radius: 0 !important
+  }
+  .rp-theme .chat-bubble {
+    background: #243a4780 !important;
+    border: 1px solid #a1bed126 !important;
+    border-radius: 12px 12px 12px 2px !important
+  }
+  .rp-theme .chat-bubble.is-mine {
+    background: #14639570 !important;
+    border-radius: 12px 12px 2px 12px !important
+  }
+  .rp-theme :is(.chat-avatar,.field-chat-avatar,.avatar) {
+    border: 1px solid var(--rp-blue) !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #f4faff !important
+  }
+  .rp-theme .rp-header-tools {
+    gap: 15px !important
+  }
+  .rp-theme .rp-blue-button {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #f3f8fc !important
+  }
+  .rp-theme :is(.top,.app-header) :is(button,summary) {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important
+  }
+  .rp-theme :is(.top,.app-header) svg {
+    width: 25px !important;
+    height: 25px !important
+  }
+  .rp-theme .rp-popover-list {
+    border-left: 1px solid var(--rp-red) !important;
+    border-right: 1px solid var(--rp-red) !important;
+    box-shadow: var(--rp-neon) !important
+  }
+  .rp-theme :is(.rp-popover-list,.side,.sidebar) {
+    position: relative !important
+  }
+  .rp-theme .rp-popover-list {
+    position: absolute !important
+  }
+  .rp-theme :is(.sidebar,.side)::after {
+    content: '' !important;
+    position: absolute !important;
+    right: -1px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 1px !important;
+    background: linear-gradient(transparent,#ff1722,#ff4b31,#ff1722,transparent) !important;
+    background-size: 100% 250% !important;
+    animation: rp-neon-vertical 7s linear infinite !important;
+    box-shadow: var(--rp-neon) !important;
+    pointer-events: none !important
+  }
+  @keyframes rp-neon-vertical {
+    to {
+      background-position: 0 250%
+    }
+  }
+  @keyframes rp-neon-horizontal {
+    to {
+      background-position: 250% 0
+    }
+  }
+  /* Field retains the real map. No dark tint over cartography. */
+  .rp-theme .maxvel-osm-dark-adapted,.rp-theme .leaflet-tile-pane {
+    filter: none !important
+  }
+  .rp-theme .fallback-svg {
+    background: #e7ece6 !important
+  }
+  .rp-theme .fallback-svg>rect:first-of-type {
+    fill: #e7ece6 !important
+  }
+  .rp-theme .fallback-svg text {
+    fill: #485a66 !important
+  }
+  .rp-theme .fallback-svg pattern path {
+    stroke: #d3dbd6 !important
+  }
+  .rp-theme .fallback-svg pattern rect {
+    fill: #e7ece6 !important
+  }
+  .rp-theme .fallback-svg line {
+    stroke: #c6ceca !important
+  }
+  .rp-theme .fallback-svg .street {
+    stroke: white !important
+  }
+  .rp-theme .rp-field-controls,.rp-theme .patrol-actions,.rp-theme .rp-inspection-commands {
+    background: rgba(27,37,46,.59) !important;
+    backdrop-filter: blur(18px) saturate(.85) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(.85) !important;
+    border: 1px solid #a1bed13f !important;
+    border-top: 2px solid var(--rp-red) !important;
+    border-radius: 13px !important;
+    box-shadow: 0 -2px 9px #ff17223b,0 10px 28px #14232d2b !important
+  }
+  .rp-theme .rp-field-controls:before {
+    content: '' !important;
+    position: absolute !important;
+    top: -2px !important;
+    left: 10px !important;
+    right: 10px !important;
+    height: 2px !important;
+    background: linear-gradient(90deg,#d0141b33,#ff1722,#ff4930,#ff1722,#d0141b33) !important;
+    background-size: 250% 100% !important;
+    animation: rp-neon-horizontal 5s linear infinite !important;
+    box-shadow: var(--rp-neon) !important;
+    pointer-events: none !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-actions,.rp-inspection-commands) {
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important
+  }
+  .rp-theme :is(.rp-inspection-torch,.ux06-map-help,.rp-inspection-help,.rp-field-help) {
+    background: rgba(27,37,46,.43) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid #ffffff66 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 4px 16px #13202c22 !important;
+    color: #fff !important
+  }
+  .rp-theme :is(.patrol-map-heading,.rp-inspection-route-bar) {
+    background: rgba(27,37,46,.65) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid #a1bed13f !important;
+    border-left: 3px solid var(--rp-red) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 0 6px #ff172230 !important;
+    color: #fff !important
+  }
+  .rp-theme :is(.patrol-map-heading-copy strong,.patrol-map-heading-copy small) {
+    color: #f0f6fc !important
+  }
+  .rp-theme :is(.rp-compact-actions,.rp-inspection-map-actions,.ops-field-buttons) {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important
+  }
+  .rp-theme :is(.rp-compact-actions,.rp-inspection-map-actions,.ops-field-buttons)>button {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    font-size: 10px !important;
+    min-height: 46px !important;
+    color: #f3f8fb !important
+  }
+  .rp-theme :is(.rp-compact-actions,.rp-inspection-map-actions,.ops-field-buttons)>button+button {
+    border-left: 1px solid #a1bed13f !important
+  }
+  .rp-theme .rp-field-controls button svg {
+    width: 22px !important;
+    height: 22px !important
+  }
+  .rp-theme :is(.patrol-action-heading,.rp-inspection-sheet-heading) {
+    border-bottom: 0 !important;
+    background: transparent !important
+  }
+  .rp-theme :is(.patrol-step-tag,.rp-inspection-step-label) {
+    font-size: 9px !important;
+    color: var(--rp-soft) !important;
+    letter-spacing: 1px !important
+  }
+  .rp-theme :is(.patrol-primary-title,.rp-inspection-destination) {
+    font-size: 21px !important;
+    color: #fff !important
+  }
+  .rp-theme .rp-field-chat-overlay {
+    background: rgba(25,35,44,.72) !important;
+    border: 1px solid var(--rp-red) !important;
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+    box-shadow: var(--rp-neon) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important
+  }
+  .rp-theme .field-chat-surface {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important
+  }
+  .rp-theme :is(.field-chat-compose,.chat-compose) {
+    border: 1px solid #d7e5ed88 !important;
+    border-radius: 28px !important;
+    background: transparent !important
+  }
+  .rp-theme :is(.field-chat-compose button[type=submit],.chat-compose button[type=submit]) {
+    background: #108bc8 !important;
+    border: 1px solid #53bcff !important;
+    border-radius: 25px !important;
+    color: #fff !important
+  }
+  .rp-theme .rp-chat-grip {
+    display: grid !important;
+    place-items: center !important;
+    min-height: 64px !important;
+    touch-action: none !important;
+    border: 0 !important;
+    background: transparent !important;
+    width: 100% !important;
+    padding: 10px 0 max(15px,env(safe-area-inset-bottom)) !important;
+    color: #fff !important
+  }
+  .rp-theme .rp-chat-grip svg {
+    width: 27px !important;
+    height: 27px !important
+  }
+  .rp-theme .rp-field-chat-overlay-head {
+    background: none !important;
+    border: 0 !important;
+    touch-action: none !important
+  }
+  .rp-theme .field-chat-empty {
+    color: var(--rp-blue) !important
+  }
+  .rp-theme .field-chat-empty:before {
+    content: '▤' !important;
+    display: block !important;
+    font-size: 32px !important;
+    color: var(--rp-blue) !important
+  }
+  .rp-theme :is(.rp-field-chat-overlay-head,.field-chat-topbar) {
+    flex-shrink: 0 !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-page {
+    min-height: 0 !important;
+    flex: 1 !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-main {
+    min-height: 0 !important
+  }
+  .rp-theme .rp-gesture-edge {
+    position: fixed !important;
+    z-index: 4900 !important;
+    top: 36% !important;
+    height: 22% !important;
+    width: 48px !important;
+    touch-action: none !important;
+    display: grid !important;
+    place-items: center !important
+  }
+  .rp-theme .rp-gesture-edge.left {
+    left: 22px !important
+  }
+  .rp-theme .rp-gesture-edge.right {
+    right: 22px !important
+  }
+  .rp-theme .rp-gesture-edge:after {
+    content: '' !important;
+    height: 42px !important;
+    width: 3px !important;
+    border-radius: 4px !important;
+    background: #263b4e66 !important;
+    box-shadow: 0 0 0 1px #ffffff55 !important
+  }
+  .rp-theme .rp-drawer-handle {
+    min-height: 44px !important;
+    touch-action: none !important;
+    border: 0 !important;
+    background: none !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: 8px 18px !important;
+    color: #fff !important
+  }
+  .rp-theme .rp-drawer-handle svg {
+    width: 24px !important;
+    height: 24px !important
+  }
+  /* Explicit layout ownership, ahead of the structural layer for !important rules. */
+  .rp-theme[data-rp-field=true] :is(.app-header,.top) {
+    position: fixed!important;
+    inset: 0 0 auto!important;
+    height: calc(68px + env(safe-area-inset-top,0px))!important;
+    padding: env(safe-area-inset-top,0px) 18px 0!important;
+    z-index: 5000!important;
+    display: flex!important;
+    align-items: center!important;
+    background: rgba(23,32,41,.7)!important
+  }
+  .rp-theme[data-rp-field=true] :is(.app-content,#conteudo,.content) {
+    padding: 0!important;
+    margin: 0!important
+  }
+  .rp-theme[data-rp-field=true] :is(.rp2-contextbar,.page-title,.footer-app,.patrol-statusline,.patrol-map-footer,.rp-inspection-status-readout) {
+    display: none!important
+  }
+  .rp-theme[data-rp-field=true] :is(.patrol-workspace,.rp-inspection-cockpit) {
+    position: fixed!important;
+    inset: 0!important;
+    width: 100%!important;
+    height: 100dvh!important;
+    margin: 0!important;
+    padding: 0!important;
+    background: none!important;
+    display: block!important
+  }
+  .rp-theme[data-rp-field=true] :is(.patrol-map-panel,.rp-inspection-map-panel,.patrol-map-canvas,.rp-inspection-map-canvas,.map-container.mini,.rp-inspector-map) {
+    position: absolute!important;
+    inset: 0!important;
+    width: 100%!important;
+    max-width: none!important;
+    height: 100%!important;
+    min-height: 100%!important;
+    max-height: none!important;
+    margin: 0!important;
+    border: 0!important;
+    border-radius: 0!important;
+    background: #e7ece6!important;
+    overflow: hidden!important
+  }
+  .rp-theme[data-rp-field=true] .rp-field-controls {
+    position: fixed!important;
+    bottom: max(28px,calc(env(safe-area-inset-bottom,0px) + 16px))!important;
+    left: 50%!important;
+    transform: translateX(-50%)!important;
+    width: min(72%,360px)!important;
+    max-height: 48dvh!important;
+    overflow: auto!important;
+    z-index: 4200!important;
+    padding: 13px 13px 10px!important
+  }
+  .rp-theme[data-rp-field=true] .rp-field-controls :is(.patrol-actions,.rp-inspection-commands) {
+    position: static!important;
+    inset: auto!important;
+    transform: none!important;
+    width: 100%!important;
+    max-width: none!important;
+    height: auto!important;
+    max-height: none!important;
+    padding: 0!important;
+    margin: 0!important;
+    overflow: visible!important;
+    display: block!important;
+    background: none!important;
+    border: 0!important;
+    box-shadow: none!important
+  }
+  .rp-theme[data-rp-field=true] .rp-field-controls :is(.rp-compact-actions,.rp-inspection-map-actions,.ops-field-buttons) {
+    position: static!important;
+    inset: auto!important;
+    transform: none!important;
+    width: 100%!important;
+    margin: 12px 0 0!important;
+    padding: 0!important;
+    height: auto!important;
+    background: none!important;
+    display: flex!important;
+    gap: 0!important;
+    box-shadow: none!important;
+    border: 0!important
+  }
+  .rp-theme[data-rp-field=true] .rp-field-controls :is(.rp-compact-actions,.rp-inspection-map-actions,.ops-field-buttons)>button {
+    position: static!important;
+    flex: 1!important;
+    width: auto!important;
+    background: none!important;
+    border-radius: 0!important;
+    box-shadow: none!important;
+    min-height: 45px!important;
+    padding: 0 5px!important;
+    color: #fff!important
+  }
+  .rp-theme[data-rp-field=true] :is(.patrol-map-heading,.rp-inspection-route-bar) {
+    position: fixed!important;
+    top: calc(83px + env(safe-area-inset-top,0px))!important;
+    left: 18px!important;
+    right: 18px!important;
+    width: auto!important;
+    height: 45px!important;
+    min-height: 45px!important;
+    z-index: 3000!important;
+    margin: 0!important;
+    padding: 8px 12px!important
+  }
+  .rp-theme[data-rp-field=true] .patrol-map-heading-copy small {
+    display: none!important
+  }
+  .rp-theme[data-rp-field=true] .patrol-map-heading-copy strong {
+    font-size: 12px!important
+  }
+  .rp-theme[data-rp-field=true] :is(.ops-panic,.rp-inspection-panic) {
+    position: fixed!important;
+    top: 159px!important;
+    left: 20px!important;
+    right: auto!important;
+    bottom: auto!important;
+    width: 64px!important;
+    height: 64px!important;
+    border-radius: 50%!important;
+    z-index: 4300!important
+  }
+  .rp-theme[data-rp-field=true] :is(.ux06-map-help,.rp-inspection-help,.rp-field-help) {
+    position: fixed!important;
+    top: 235px!important;
+    left: 31px!important;
+    right: auto!important;
+    bottom: auto!important;
+    width: 42px!important;
+    height: 42px!important;
+    border-radius: 50%!important;
+    z-index: 4300!important
+  }
+  .rp-theme[data-rp-field=true] .rp-inspection-torch {
+    position: fixed!important;
+    top: 159px!important;
+    right: 20px!important;
+    bottom: auto!important;
+    width: 66px!important;
+    height: 66px!important;
+    border-radius: 50%!important;
+    z-index: 4300!important
+  }
+  .rp-theme .rp-field-chat-overlay {
+    position: fixed!important;
+    inset: 0 5%!important;
+    margin: 0!important;
+    width: 90%!important;
+    max-width: none!important;
+    height: 100dvh!important;
+    max-height: 100dvh!important;
+    padding: max(18px,env(safe-area-inset-top,0px)) 0 0!important;
+    border-radius: 0!important;
+    overflow: hidden!important
+  }
+  .rp-theme .rp-field-chat-overlay[open] {
+    display: flex!important;
+    flex-direction: column!important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-screen {
+    height: 100%!important;
+    width: 100%!important;
+    border: 0!important;
+    display: flex!important;
+    flex-direction: column!important;
+    padding: 0!important;
+    min-height: 0!important;
+    background: transparent!important;
+    box-shadow: none!important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-surface {
+    flex: 1!important;
+    min-height: 0!important;
+    overflow: auto!important;
+    padding: 0 16px!important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-conversation {
+    height: 100%!important;
+    display: flex!important;
+    flex-direction: column!important;
+    min-height: 0!important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-thread {
+    flex: 1!important;
+    min-height: 0!important;
+    overflow: auto!important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-compose {
+    flex-shrink: 0!important;
+    margin: 10px 0!important;
+    position: static!important
+  }
+  .rp-theme .rp-field-chat-overlay-head {
+    padding: 8px 20px!important
+  }
+  .rp-theme .rp-field-chat-overlay-head>button {
+    display: none!important
+  }
+  @media(min-width:1000px) {
+    .rp-theme .workspace {
+      grid-template-columns: 220px minmax(0,1fr) !important;
+      gap: 28px !important
+    }
+    .rp-theme .app-shell {
+      grid-template-columns: 220px minmax(0,1fr) !important
+    }
+    .rp-theme main#conteudo {
+      max-width: none !important;
+      padding: 25px 32px 40px !important
+    }
+    .rp-theme .side {
+      padding: 14px 14px 20px 0 !important;
+      align-self: stretch !important
+    }
+    .rp-theme .content {
+      padding: 0 !important
+    }
+    .rp-theme .rp2-nav-secondary {
+      margin-top: 22px !important
+    }
+    .rp-theme .rp2-nav-secondary summary {
+      font-size: 10px !important;
+      letter-spacing: 1.3px !important;
+      text-transform: uppercase !important
+    }
+    .rp-theme .rp2-context-copy strong {
+      font-size: 17px !important
+    }
+    .rp-theme .rp2-context-copy small {
+      display: block !important;
+      margin-top: 4px !important
+    }
+    .rp-theme .rp2-first-guide {
+      border-left: 2px solid #53bcff88 !important;
+      background: #53bcff08 !important;
+      padding: 14px 18px !important
+    }
+    .rp-theme .top {
+      padding-left: 32px !important;
+      padding-right: 32px !important;
+      height: 76px !important
+    }
+  }
+  @media(max-width:900px) {
+    .rp-theme .rp2-workspace {
+      display: block !important
+    }
+    .rp-theme .side.rp2-role-nav {
+      background: rgba(25,35,44,.8) !important;
+      backdrop-filter: blur(20px) !important;
+      border-right: 1px solid var(--rp-red) !important
+    }
+    .rp-theme .rp-compact-actions {
+      gap: 0 !important
+    }
+    .rp-theme .rp-inspection-instruction {
+      font-size: 11px !important
+    }
+    .rp-theme[data-rp-field=true] .app-header .brand-title {
+      font-size: 17px !important
+    }
+    .rp-theme .cards {
+      grid-template-columns: repeat(2,minmax(0,1fr)) !important
+    }
+    .rp-theme .metric {
+      padding: 12px !important
+    }
+    .rp-theme .rp-event-columns {
+      gap: 14px !important
+    }
+  }
+  @media(prefers-reduced-motion:reduce) {
+  }
+  @media print {
+    body.rp-theme {
+      background: #fff !important;
+      color: #111 !important
+    }
+    .rp-theme :is(.rp-gesture-edge,.rp-chat-grip) {
+      display: none !important
+    }
+    .rp-theme :is(.surface,.content,.chat-bubble,.chat-bubble.is-mine) {
+      background: #fff !important;
+      color: #111 !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important
+    }
+    .rp-theme :is(h1,h2,h3,p,small) {
+      color: #111 !important
+    }
+  }
+  .rp-theme .patrol-communication-bar {
+    border: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 10px 0 0 !important
+  }
+  .rp-theme .patrol-communication-actions {
+    display: flex !important;
+    gap: 0 !important;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important
+  }
+  .rp-theme .patrol-communication-actions>button {
+    flex: 1 !important;
+    border: 0 !important;
+    background: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-height: 46px !important;
+    padding: 0 5px !important;
+    font-size: 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+    color: #fff !important
+  }
+  .rp-theme .patrol-communication-actions>button+button {
+    border-left: 1px solid #ffffff33 !important
+  }
+  .rp-theme .patrol-communication-note {
+    display: none !important
+  }
+  .rp-theme .patrol-communication-actions [data-ops=central-alert] svg {
+    color: #facc15 !important
+  }
+  .rp-theme .patrol-communication-actions [data-ops=incident-quick] svg {
+    color: var(--rp-blue) !important
+  }
+  .rp-theme[data-rp-field=true] .patrol-communication-bar {
+    position: static!important;
+    inset: auto!important;
+    transform: none!important;
+    margin: 10px 0 0!important;
+    padding: 0!important;
+    width: 100%!important;
+    max-width: none!important;
+    background: none!important;
+    border: 0!important;
+    box-shadow: none!important
+  }
+  .rp-theme[data-rp-field=true] .patrol-communication-actions {
+    display: flex!important;
+    gap: 0!important
+  }
+  .rp-theme[data-rp-field=true] .patrol-communication-actions>button {
+    flex: 1!important;
+    min-width: 0!important;
+    min-height: 46px!important;
+    height: auto!important;
+    padding: 0 5px!important;
+    border: 0!important;
+    border-radius: 0!important;
+    background: none!important;
+    box-shadow: none!important;
+    color: #fff!important
+  }
+  .rp-theme[data-rp-field=true] .patrol-communication-actions>button+button {
+    border-left: 1px solid #ffffff33!important
+  }
+  .rp-theme[data-rp-field=true] .rp-inspection-map-hud {
+    position: static!important;
+    background: none!important;
+    border: 0!important;
+    box-shadow: none!important;
+    padding: 0 0 9px!important
+  }
+  .rp-theme #dialog.rp-side-drawer[open] {
+    position: fixed!important;
+    inset: 0 auto 0 0!important;
+    width: 84vw!important;
+    max-width: 430px!important;
+    max-height: 100dvh!important;
+    height: 100dvh!important;
+    margin: 0!important;
+    padding: 24px 18px!important;
+    border: 0!important;
+    border-right: 1px solid var(--rp-red)!important;
+    border-radius: 0 14px 14px 0!important;
+    box-shadow: var(--rp-neon)!important;
+    overflow: auto!important
+  }
+  .rp-theme .rp-notification-popover[open]>.rp-popover-list {
+    background: rgba(25,35,44,.75) !important;
+    backdrop-filter: blur(20px) saturate(.8) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(.8) !important;
+    border: 0 !important;
+    border-left: 1px solid var(--rp-red) !important;
+    box-shadow: var(--rp-neon) !important;
+    color: var(--rp-ink) !important;
+    position: fixed!important;
+    inset: 0 0 0 auto!important;
+    width: min(84vw,430px)!important;
+    height: 100dvh!important;
+    max-height: 100dvh!important;
+    border-radius: 14px 0 0 14px!important;
+    padding: 20px 18px!important;
+    z-index: 5500!important;
+    overflow: auto!important;
+    touch-action: pan-y!important
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header>.brand {
+      position: absolute!important;
+      left: 50%!important;
+      top: 50%!important;
+      transform: translate(-50%,-50%)!important;
+      width: 165px!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header .header-actions {
+      margin-left: auto!important;
+      gap: 13px!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header .user-profile-button {
+      position: fixed!important;
+      left: 64px!important;
+      top: 16px!important;
+      background: transparent!important;
+      border: 0!important;
+      width: 36px!important;
+      padding: 0!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header .user-profile-button>.avatar {
+      display: grid!important;
+      place-items: center!important;
+      width: 35px!important;
+      height: 35px!important;
+      border: 1px solid var(--rp-blue)!important;
+      background: transparent!important;
+      border-radius: 50%!important;
+      font-size: 19px!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header .user-profile-button>span:not(.avatar),.rp-theme[data-rp-field=true] .app-header .user-profile-button>svg {
+      display: none!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header .app-menu-button {
+      width: 35px!important;
+      border: 0!important;
+      background: none!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header :is(.rp-blue-button,.help-toggle) {
+      background: none!important;
+      border: 0!important;
+      box-shadow: none!important;
+      width: 34px!important;
+      padding: 0!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header .rp-header-tools {
+      gap: 13px!important;
+      flex-direction: row-reverse!important
+    }
+  }
+  @media (max-width:900px) {
+    .rp-theme[data-rp-field=true] .app-header .rp-blue-button>span {
+      display: none!important
+    }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .rp-theme *,.rp-theme *:before,.rp-theme *:after {
+      animation: none!important;
+      transition: none!important;
+      scroll-behavior: auto!important
+    }
+  }
+  .rp-theme :is(.coi3-stats,.coi3-stats>div,.coi3-secondary,.coi3-alert,.coi3-onair,.coi3-site,.ops-notification-row,.rp-event-columns) {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important
+  }
+  .rp-theme .coi3-stats {
+    border-top: 1px solid var(--rp-rule) !important;
+    border-bottom: 1px solid var(--rp-rule) !important;
+    gap: 0 !important
+  }
+  .rp-theme .coi3-stats>div {
+    border-right: 1px solid var(--rp-rule) !important;
+    padding: 16px 20px !important
+  }
+  .rp-theme .coi3-secondary {
+    border-top: 1px solid var(--rp-rule) !important;
+    padding: 20px 0 !important;
+    margin-top: 20px !important
+  }
+  .rp-theme :is(.coi3-alert,.ops-notification-row) {
+    border-bottom: 1px solid var(--rp-rule) !important;
+    padding: 17px 8px !important
+  }
+  .rp-theme .coi3-alert.is-panic {
+    border-left: 2px solid var(--rp-red) !important;
+    padding-left: 14px !important
+  }
+  .rp-theme .rp-event-columns {
+    align-items: start !important;
+    min-height: 0 !important
+  }
+  .rp-theme .rp-event-column {
+    border-top: 2px solid #ff172278 !important;
+    min-height: 0 !important
+  }
+  .rp-theme .rp-event-column>header {
+    background: transparent !important;
+    border-bottom: 1px solid var(--rp-rule) !important
+  }
+  .rp-theme .ops-notification-row>span:first-child {
+    background: none !important;
+    border: 0 !important;
+    border-radius: 0 !important
+  }
+  .rp-theme .rp2-workspace {
+    align-items: start !important
+  }
+  .rp-theme .side.rp2-role-nav {
+    margin-top: 0 !important;
+    align-self: start !important;
+    top: 96px !important
+  }
+  .rp-theme[data-rp-field=true] .app-header>.user-profile-button {
+    position: absolute !important;
+    left: 64px !important;
+    top: 16px !important;
+    width: 35px !important;
+    min-width: 35px !important;
+    height: 35px !important;
+    min-height: 35px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+    border: 0 !important
+  }
+  .rp-theme[data-rp-field=true] .app-header .app-menu-button {
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 35px !important;
+    min-width: 35px !important;
+    flex-shrink: 0 !important
+  }
+  .rp-theme[data-rp-field=true] .app-header .app-menu-button svg {
+    width: 25px !important;
+    min-width: 25px !important;
+    height: 25px !important;
+    flex-shrink: 0 !important
+  }
+  .rp-theme[data-rp-field=true] :is(.field-torch-fab,.rp-inspection-torch) {
+    position: fixed !important;
+    top: 159px !important;
+    right: 20px !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: 66px !important;
+    height: 66px !important;
+    border-radius: 50% !important;
+    background: rgba(27,37,46,.52) !important;
+    border: 1px solid #ffffff66 !important;
+    backdrop-filter: blur(16px) !important;
+    color: #fff !important;
+    z-index: 4300 !important;
+    box-shadow: 0 4px 16px #13202c22 !important
+  }
+  .rp-theme[data-rp-field=true] :is(.ops-panic,.rp-inspection-panic) {
+    background: linear-gradient(140deg,#ff2432,#d40c20) !important;
+    border: 1px solid #ffadb4 !important;
+    box-shadow: 0 0 14px #ff172259 !important;
+    color: #fff !important;
+    padding: 6px !important
+  }
+  .rp-theme[data-rp-field=true] :is(.ux06-map-help,.rp-inspection-help) {
+    background: rgba(27,37,46,.52) !important;
+    border: 1px solid #ffffff66 !important;
+    backdrop-filter: blur(16px) !important;
+    color: #53bcff !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-action-heading,.rp-inspection-sheet-heading) {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 0 0 10px !important;
+    min-height: 24px !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-action-heading strong,.rp-inspection-sheet-heading strong) {
+    font-size: 10px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important
+  }
+  .rp-theme .rp-field-controls .patrol-stage-index {
+    font-size: 7px !important;
+    letter-spacing: .25px !important;
+    white-space: nowrap !important;
+    margin-left: auto !important;
+    margin: 0 !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-sheet-toggle,[data-inspection-circuit-open]) {
+    min-width: 26px !important;
+    min-height: 26px !important;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    background: transparent !important;
+    border: 0 !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-sheet-toggle,[data-inspection-circuit-open]):after {
+    content: "⋯" !important;
+    font-size: 22px !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-action-body,.patrol-primary-flow,.rp-inspection-commands-body) {
+    padding: 0 !important;
+    gap: 8px !important
+  }
+  .rp-theme .rp-field-controls :is(.rp-inspection-destination,.patrol-stage-intro h2) {
+    font-size: 21px !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow: visible !important;
+    margin: 0 0 6px !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-stage-intro p,.rp-inspection-instruction) {
+    font-size: 11px !important;
+    line-height: 1.4 !important
+  }
+  .rp-theme .rp-field-controls .patrol-communication-actions {
+    width: 100% !important;
+    max-width: none !important
+  }
+  .rp-theme .rp-field-controls .patrol-communication-actions>button {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    font-size: 10px !important;
+    line-height: 1.3 !important
+  }
+  .rp-theme[data-rp-field=true] .patrol-map-heading>button {
+    padding: 0 !important;
+    width: 31px !important;
+    min-width: 31px !important;
+    height: 31px !important;
+    min-height: 31px !important;
+    display: grid !important;
+    place-items: center !important;
+    background: transparent !important;
+    border: 0 !important
+  }
+  .rp-theme[data-rp-field=true] .patrol-map-heading>button svg {
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 22px !important
+  }
+  .rp-theme[data-rp-field=true] :is(.rp-inspection-help,.ux06-map-help,.field-torch-fab,.rp-inspection-torch) {
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: column !important;
+    gap: 4px !important
+  }
+  .rp-theme[data-rp-field=true] :is(.rp-inspection-help,.ux06-map-help,.field-torch-fab,.rp-inspection-torch) svg {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important
+  }
+  .rp-theme .rp-field-controls :is(.patrol-communication-bar,.patrol-communication-actions,.patrol-communication-actions>button,.patrol-communication-actions>button span) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important
+  }
+  .rp-theme .rp-field-controls :is(.button.primary,button.primary,.rp-inspection-main-action) {
+    border-radius: 24px !important
+  }
+  .rp-theme #dialog.rp-side-drawer>.dialog-close {
+    display: none !important
+  }
+  .rp-theme .field-chat-contact-row {
+    background: transparent !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--rp-rule) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important
+  }
+  .rp-theme .field-chat-surface>.button.primary {
+    flex: 0 0 auto !important;
+    align-self: stretch !important;
+    min-height: 48px !important;
+    max-height: 54px !important;
+    width: 100% !important;
+    margin-top: 15px !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-workspace {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-composer {
+    background: #17212b55 !important;
+    border: 1px solid #d7e5ed66 !important;
+    border-radius: 22px !important;
+    margin: 10px !important;
+    padding: 10px !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-composer textarea {
+    background: transparent !important;
+    border: 0 !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 8px !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-compose-tools {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    align-items: center !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-compose-tools button:not([type=submit]),
+  .rp-theme .rp-field-chat-overlay .chat-attach {
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    padding: 6px !important;
+    display: grid !important;
+    place-items: center !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-attach {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    overflow: hidden !important;
+    min-height: 36px !important;
+    padding: 6px !important;
+    background: transparent !important;
+    border: 0 !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-attach input {
+    position: absolute !important;
+    inset: 0 !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    width: 100% !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-compose-tools button[type=submit] {
+    margin-left: auto !important;
+    background: #087cbd !important;
+    border: 1px solid var(--rp-blue) !important;
+    border-radius: 20px !important
+  }
+  .rp-theme .rp-field-chat-overlay .chat-sidebar {
+    background: transparent !important
+  }
+  .rp-theme .ux-access-menu>button:not(.rp-drawer-handle) {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 15px 12px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    min-height: 51px !important;
+    text-align: left !important
+  }
+  .rp-theme .ux-access-menu>button.rp-menu-selected {
+    border-left: 3px solid var(--rp-red) !important;
+    background: linear-gradient(90deg,#ff17222e,transparent) !important;
+    box-shadow: inset 0 1px #ff172244,inset 0 -1px #ff172244 !important
+  }
+  .rp-theme .rp-field-chat-overlay :is(.field-chat-thread,.field-chat-threadbar,.field-chat-topbar,.chat-thread,.chat-thread-heading,.chat-main,.field-chat-conversation) {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important
+  }
+  .rp-theme .rp-field-chat-overlay .rp-field-chat-overlay-head {
+    height: 22px !important;
+    min-height: 22px !important;
+    padding: 0 !important
+  }
+  .rp-theme .rp-field-chat-overlay .rp-field-chat-overlay-head strong {
+    display: none !important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-topbar {
+    padding: 15px 20px !important;
+    height: auto !important;
+    min-height: 78px !important;
+    border: 0 !important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-topbar .field-chat-back {
+    display: none !important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-compose input {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+    flex: 1 !important;
+    padding: 10px !important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-threadbar button {
+    border: 0 !important;
+    background: none !important;
+    min-width: 34px !important;
+    width: 34px !important;
+    padding: 0 !important
+  }
+  .rp-theme .rp-field-records {
+    margin: 12px 0 0 !important;
+    border-top: 1px solid var(--rp-rule) !important;
+    padding: 10px 0 0 !important
+  }
+  .rp-theme .rp-field-records summary {
+    font-size: 10px !important;
+    color: var(--rp-soft) !important
+  }
+  .rp-theme .rp-field-page-overlay {
+    position: fixed !important;
+    inset: 83px 5% 22px !important;
+    z-index: 4600 !important;
+    overflow: auto !important;
+    background: rgba(25,35,44,.78) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid #ff17229c !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
+    box-shadow: var(--rp-neon) !important;
+    overscroll-behavior: contain !important
+  }
+  .rp-theme[data-rp-field=true] #central-panic {
+    display: none !important
+  }
+  .rp-theme[data-rp-field=true] .rp-field-quicktools {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    margin: 12px 0 0 !important;
+    border: 0 !important;
+    background: transparent !important
+  }
+  .rp-theme .rp-field-quicktools>button {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 0 5px !important;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    min-height: 46px !important
+  }
+  .rp-theme .rp-field-quicktools>button+button {
+    border-left: 1px solid #ffffff33 !important
+  }
+  .rp-theme .rp-field-quicktools svg {
+    width: 22px !important;
+    height: 22px !important
+  }
+  .rp-theme .rp-field-quicktools [data-field-tool-alert] svg {
+    color: #facc15 !important
+  }
+  .rp-theme .rp-field-quicktools [data-field-tool-incident] svg {
+    color: var(--rp-blue) !important
+  }
+  .rp-theme .rp-field-quicktools [data-field-tool-chat] svg {
+    color: #fff !important
+  }
+  .rp-theme .rp-field-controls [hidden] {
+    display: none !important
+  }
+  .rp-theme .rp-field-controls [data-rp-guard-options] {
+    min-width: 28px !important;
+    min-height: 26px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    font-size: 22px !important;
+    margin-left: auto !important
+  }
+  .rp-theme .rp-field-controls .rp-inspection-map-hud strong {
+    font-size: 19px !important
+  }
+  .rp-theme .rp-field-controls .rp-inspection-map-hud small {
+    font-size: 11px !important
+  }
+  .rp-theme .rp-field-controls .rp-inspection-commands-body {
+    font-size: 11px !important;
+    line-height: 1.4 !important
+  }
+  .rp-theme[data-rp-field=true] .top>.brand {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%,-50%) !important;
+    width: 166px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important
+  }
+  .rp-theme[data-rp-field=true] .top>.brand small {
+    display: none !important
+  }
+  .rp-theme[data-rp-field=true] .top>.brand b {
+    font-size: 16px !important
+  }
+  .rp-theme[data-rp-field=true] .top>.brand img {
+    width: 28px !important;
+    height: 28px !important
+  }
+  .rp-theme[data-rp-field=true] .top :is(#current-role,.top-actions>a,#exit) {
+    display: none !important
+  }
+  .rp-theme[data-rp-field=true] .top .top-actions {
+    margin-left: auto !important
+  }
+  .rp-theme[data-rp-field=true] .top [data-central-menu] {
+    position: absolute !important;
+    left: 18px !important;
+    top: 13px !important;
+    width: 35px !important;
+    min-width: 35px !important;
+    height: 42px !important;
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    background: none !important;
+    border: 0 !important
+  }
+  .rp-theme[data-rp-field=true] .top .rp-field-profile {
+    position: absolute !important;
+    left: 64px !important;
+    top: 16px !important;
+    width: 35px !important;
+    min-width: 35px !important;
+    height: 35px !important;
+    min-height: 35px !important;
+    padding: 0 !important;
+    border: 1px solid var(--rp-blue) !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    font-size: 19px !important
+  }
+  .rp-theme[data-rp-field=true] .top .rp-header-tools {
+    gap: 13px !important;
+    flex-direction: row-reverse !important
+  }
+  .rp-theme[data-rp-field=true] .top .rp-blue-button>span {
+    display: none !important
+  }
+  .rp-theme[data-rp-field=true] .top .rp-blue-button {
+    padding: 0 !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    min-height: 42px !important;
+    display: grid !important;
+    place-items: center !important
+  }
+  .rp-drag-active,.rp-drag-active * {
+    user-select: none !important;
+    -webkit-user-select: none !important
+  }
+  .rp-theme .rp-gesture-edge {
+    user-select: none !important;
+    -webkit-user-select: none !important
+  }
+  .rp-theme[data-rp-field=true] :is(.header-actions,.top-actions,.rp-header-tools,.rp-header-popover,.ops-bell-bar,[data-chat-badge]) {
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    perspective: none !important;
+    contain: none !important;
+    will-change: auto !important
+  }
+  .rp-theme .rp-notification-popover[open]>.rp-popover-list {
+    transform: none !important;
+    margin: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: auto !important
+  }
+}

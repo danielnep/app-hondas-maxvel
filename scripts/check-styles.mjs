@@ -4,7 +4,7 @@ import {readFileSync,writeFileSync,readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=fileURLToPath(new URL('../',import.meta.url));
-const files=['ronda-pro.css','central.css','operational.css','mobile-critical.css','field.css'];
+const files=['ronda-pro.css','central.css','operational.css','mobile-critical.css','field.css','theme.css'];
 const clean=process.argv.includes('--clean'),report=[];
 // Later identical values are safe even where a browser needs a fallback.
 // Different values are pruned only for longhands with baseline literal syntax.
@@ -55,7 +55,7 @@ for(const {file,source,ast} of sheets){
  report.push({file,bytesBefore:Buffer.byteLength(source),bytesAfter:Buffer.byteLength(readFileSync(path.join(root,'assets',file),'utf8')),redundantDeclarations:removed,emptyRules:empty,remainingDifferentValues:conflicts.length,examples:conflicts.slice(-8)});
 }
 for(const file of readdirSync(path.join(root,'assets')).filter(x=>x.endsWith('.css')))if(!files.includes(file))throw Error('Untracked CSS layer: '+file);
-const expected={index:['ronda-pro','operational','mobile-critical','field'],central:['central','operational','field']};
+const expected={index:['ronda-pro','operational','mobile-critical','field','theme'],central:['central','operational','field','theme']};
 for(const [page,names] of Object.entries(expected)){
  const html=readFileSync(path.join(root,page+'.html'),'utf8');
  const links=[...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^\"]+)"[^>]*>/g)].map(m=>m[1]).filter(x=>!x.startsWith('https://'));
