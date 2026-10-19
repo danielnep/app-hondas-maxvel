@@ -33,9 +33,9 @@ test('abreviações preservam a descrição acessível e não interceptam açõe
 
 test('as duas interfaces carregam a camada e a PWA atualiza seus arquivos',()=>{
  const app=read('../index.html'),central=read('../central.html'),sw=read('../sw.js');
- assert.match(app,/soft-polish\.js/);
- assert.match(central,/central\.css/);
- assert.match(central,/soft-polish\.js/);
+ assert.match(read('../src/bootstrap.js'),/soft-polish\.js/);
+ assert.match(read('../src/bootstrap.js'),/central\.css/);
+ assert.match(read('../src/bootstrap.js'),/central\.js/);
  assert.match(readStyles('application'),/rp-soft-view-in/);
  assert.match(sw,/const CACHE='rondas-pro-interface-v[0-9]+';/);
  assert.match(sw,/central\.css/);
@@ -56,5 +56,5 @@ test('V3 mantém feedback visual e o novo cockpit respeita movimento reduzido',(
  }
  const app=read('../index.html'),central=read('../central.html');
  assert.match(app,/ronda-pro\.css\?v=50/);
- assert.match(central,/central\.css\?v=50/);
+ assert.match(read('../src/bootstrap.js'),/central\.css\?v=51/);
 });

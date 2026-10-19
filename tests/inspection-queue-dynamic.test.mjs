@@ -56,13 +56,13 @@ test('acesso real, demonstração e cache carregam o mesmo cockpit',()=>{
  const file=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
  const app=file('src/app.js'),central=file('src/central.js');
  const map=file('src/map.js'),server=file('server/ops-center.js');
- const html=file('index.html'),auth=file('central.html'),worker=file('sw.js');
+ const html=file('index.html'),auth=file('src/bootstrap.js'),worker=file('sw.js');
  for(const s of [app,central])assert.match(s,/inspectionCockpit/);
  assert.match(map,/this\.route\.inspectionMode/);
  assert.match(central,/refreshInspectorStops/);
  assert.match(server,/kind==='vistoria'&&w\.status==='Em vistoria'/);
  assert.match(server,/inspection\.arrive/);
  assert.match(html,/field\.css/);
- assert.match(auth,/field\.css/);
+ assert.match(auth,/central\.css/);
  assert.match(worker,/src\/inspection-queue\.js/);
 });

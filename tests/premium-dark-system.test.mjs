@@ -8,7 +8,7 @@ const web=read('index.html'),central=read('central.html'),sw=read('sw.js');
 const old=readStyles('rondas-pro-flow-20261014');
 test('Premium Dark aplicado às duas entradas do sistema e atualizado na PWA',()=>{
  assert.match(web,/operational\.css\?v=50/);
- assert.match(central,/operational\.css\?v=50/);
+ assert.match(read('src/bootstrap.js'),/central\.css\?v=51/);
  assert.match(sw,/operational\.css/);
  assert.match(sw,/rondas-pro-interface-v\d+/);
 });

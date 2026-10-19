@@ -31,7 +31,7 @@ test('câmera da demonstração e captura da operação usam mediaDevices',()=>{
   assert.match(text,/getTracks\(\)\.forEach/);
  }
  const index=read('index.html'),sw=read('sw.js');
- assert.match(index,/src\/inspection-demo-camera\.js/);
+ assert.match(read('src/bootstrap.js'),/inspection-demo-camera\.js/);
  assert.match(sw,/src\/inspection-demo-camera\.js/);
 });
 test('visor de vistorias fornece Google Maps e Waze sob a ação de deslocamento',async()=>{
@@ -57,5 +57,5 @@ test('tela não mantém força de 100dvh nas janelas e evita vermelho em ação 
  assert.match(css,/\.rp-inspection-directions/);
  const index=read('index.html'),central=read('central.html');
  assert.match(index,/field\.css\?v=50/);
- assert.match(central,/field\.css\?v=50/);
+ assert.match(read('src/bootstrap.js'),/central\.css\?v=51/);
 });

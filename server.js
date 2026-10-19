@@ -44,6 +44,12 @@ export function createAppServer() {
       response.writeHead(status, {'Content-Type': type, 'Content-Length': Buffer.byteLength(body)});
       response.end(request.method === 'HEAD' ? undefined : body);
     };
+    if (request.url?.split('?')[0] === '/api/runtime') {
+      const configured=Boolean(process.env.RONDA_PRO_DB_PATH && process.env.RONDA_PRO_MASTER_EMAIL &&
+        process.env.RONDA_PRO_MASTER_PASSWORD?.length>=12);
+      send(200,JSON.stringify({operational:configured}),'application/json; charset=utf-8');
+      return;
+    }
     if (request.url?.startsWith('/api/')) {await operationalApi(request,response);return;}
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.setHeader('Allow', 'GET, HEAD');

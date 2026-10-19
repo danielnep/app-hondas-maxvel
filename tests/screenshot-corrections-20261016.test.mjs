@@ -33,9 +33,9 @@ test('operação real não inventa uma base que o COI não configurou',()=>{
 });
 test('CSS corretivo ocupa a última camada em ambos os acessos',()=>{
  const asset='assets/field.css';
- assert.ok(index.includes(asset)&&central.includes(asset));
+ assert.ok(index.includes(asset)&&readFileSync(new URL('../src/bootstrap.js',import.meta.url),'utf8').includes('central.css'));
  assert.ok(index.indexOf(asset)>index.indexOf('operational.css'));
- assert.ok(central.indexOf(asset)>central.indexOf('operational.css'));
+ assert.ok(index.indexOf(asset)>index.indexOf('operational.css'));
  assert.match(css,/\.v4-alerts-list>\.event-item[\s\S]*?max-height:none!important/);
  assert.match(css,/\.rp-history-list \.rp-history-entry[\s\S]*?border:1px solid/);
 });

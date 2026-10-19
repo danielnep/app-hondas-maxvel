@@ -29,7 +29,7 @@ test('Pânico e fluxo map-first preservados',()=>{
 test('Revisão e cache carregados no app e central',()=>{
  assert.match(index,/ronda-pro\.css\?v=\d+/);
  assert.ok(index.includes('operational.css?v=50'));
- assert.ok(central.includes('central.css?v=50'));
- assert.ok(central.includes('operational.css?v=50'));
+ assert.ok(read('src/bootstrap.js').includes('central.css?v=51'));
+ assert.ok(index.includes('operational.css?v=50'));
  assert.match(sw,/rondas-pro-interface-v\d+/);
 });

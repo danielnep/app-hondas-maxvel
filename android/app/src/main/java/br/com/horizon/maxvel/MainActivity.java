@@ -25,13 +25,17 @@ import android.webkit.WebViewClient;
 import androidx.webkit.WebViewAssetLoader;
 import org.json.JSONObject;
 
-/** Central operacional autenticada de campo com acesso nativo controlado.
+/** Ronda Pro: entrada unica com acesso nativo controlado.
  * Tracking começa a partir de uma ação visível durante a ronda, não ao instalar/abrir o app.
  */
 public class MainActivity extends Activity {
     private static final String TRUSTED_HOST="appassets.androidplatform.net";
-    private static final String REAL_APP_HOST="ronda-pro-production.up.railway.app";
-    private static final String APP_URL="https://"+REAL_APP_HOST+"/central.html";
+    private static final String LOCAL_URL="https://appassets.androidplatform.net/assets/site/index.html";
+    private static final String OPERATIONAL_URL=BuildConfig.RONDA_PRO_BASE_URL;
+    private static final String APP_URL=OPERATIONAL_URL.isEmpty()?LOCAL_URL:
+            (OPERATIONAL_URL.endsWith("/")?OPERATIONAL_URL:OPERATIONAL_URL+"/");
+    private static final String REAL_APP_HOST=OPERATIONAL_URL.isEmpty()?"":
+            Uri.parse(OPERATIONAL_URL).getHost();
     private static final int LOCATION_REQUEST=88;
     private static final int MEDIA_PICKER_REQUEST=101;
     private static final int CAMERA_PERMISSION_REQUEST=102;
@@ -51,7 +55,7 @@ public class MainActivity extends Activity {
 
     private boolean trustedAppOrigin(Uri uri){
         return uri!=null&&"https".equalsIgnoreCase(uri.getScheme())&&
-            (TRUSTED_HOST.equalsIgnoreCase(uri.getHost())||REAL_APP_HOST.equalsIgnoreCase(uri.getHost()));
+            (TRUSTED_HOST.equalsIgnoreCase(uri.getHost())||(!REAL_APP_HOST.isEmpty()&&REAL_APP_HOST.equalsIgnoreCase(uri.getHost())));
     }
 
     @Override public void onCreate(Bundle state){super.onCreate(state);

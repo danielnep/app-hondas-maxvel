@@ -21,8 +21,9 @@ export function createInstallManager(){
  const decorate=()=>{
   const inMobileDashboard=window.matchMedia?.('(max-width:900px)')?.matches&&!!document.querySelector('.dashboard');
   const host=inMobileDashboard
-   ?document.querySelector('.ux-access-menu')
+   ?document.querySelector('.side-bottom, .ux-access-menu, .profile-modal')
    :document.querySelector('.nav-actions, .header-actions');
+  if(window.matchMedia?.('(max-width:900px)')?.matches&&!inMobileDashboard)return;
   if(!host||host.querySelector('[data-install-app]')||installed)return;
   const button=document.createElement('button');
   button.type='button';button.className='button small install-app-btn';

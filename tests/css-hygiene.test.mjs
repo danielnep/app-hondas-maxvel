@@ -20,7 +20,7 @@ test('botão enviar do chat termina antes do hover e dos demais componentes',()=
  }
 });
 test('web demo e central compartilham camadas na mesma ordem, cache só inclui CSS existente',()=>{
- const expected={index:['ronda-pro','operational','mobile-critical','field','theme'],central:['central','operational','field','theme']};
+ const expected={index:['ronda-pro','operational','mobile-critical','field','theme']};
  for(const [page,order] of Object.entries(expected)){
   const links=[...read(page+'.html').matchAll(/href="\.\/assets\/([^"?]+)\.css\?v=(\d+)"/g)];
   assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]==='50'));

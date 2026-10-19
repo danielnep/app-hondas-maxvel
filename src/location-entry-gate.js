@@ -2,7 +2,7 @@
  * A permissão já concedida é verificada em silêncio.
  * O navegador nunca recebe uma solicitação nova sem uma ação explícita da pessoa.
  */
-export function createLocationEntryGate({onGranted=()=>{},onUnavailable=()=>{}}={}){
+export function createLocationEntryGate({onGranted=()=>{},onUnavailable=()=>{},onMessage=()=>{}}={}){
  let active=false,granted=false,root=null,busy=false,checking=false,sequence=0;
  const fixOf=position=>({lat:position.coords.latitude,lng:position.coords.longitude,
   accuracy:position.coords.accuracy,at:position.timestamp||Date.now()});
@@ -22,10 +22,11 @@ export function createLocationEntryGate({onGranted=()=>{},onUnavailable=()=>{}}=
     '<button type="button" class="location-entry-grant">Ativar localização</button>'+
     '<div class="location-entry-emergency" aria-label="Comunicação de emergência sem GPS">'+
     '<button type="button" class="location-entry-panic" data-ops="panic-confirm">🚨 Pânico · sem GPS</button>'+
-    '<a class="location-entry-contact" href="/central.html#message">Mensagens à central ↗</a></div>'+
+    '<button type=\"button\" class=\"location-entry-contact\" data-gate-message>Mensagens à central ↗</button></div>'+
     '<small>Se estiver bloqueada, libere a permissão nas configurações do navegador. O GPS pode precisar de alguns segundos para obter sinal.</small></div>';
   document.body.append(root);
   root.querySelector('.location-entry-grant').addEventListener('click',request);
+  root.querySelector('[data-gate-message]').addEventListener('click',()=>{close();onMessage();});
  }
  async function open({demo=false}={}){
   if(granted)return;

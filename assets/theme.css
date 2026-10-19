@@ -1530,3 +1530,27 @@
     left: auto !important
   }
 }
+
+/* May QA 2026-10-19: interaction polish, approved colors unchanged */
+@media (max-width:900px) {
+ .rp-theme .install-app-btn {display:block;max-width:100%;margin-top:8px}
+ .rp-theme .app-header .install-app-btn,.rp-theme .top .install-app-btn {display:none!important}
+ .rp-theme .rp-field-wizard label:has(>input[type=checkbox]) {display:flex;align-items:center;gap:12px}
+ .rp-theme .rp-field-wizard input[type=checkbox] {flex:0 0 22px;width:22px;height:22px;margin:0}
+}
+.rp-theme :is(button,[role=button],a):focus-visible{outline:2px solid var(--rp-blue,#53bcff);outline-offset:3px}
+.rp-theme :is(button,[role=button]){-webkit-tap-highlight-color:transparent}
+.rp-theme :is(button,[role=button]):not(:disabled):active{filter:brightness(1.08)}
+@media (prefers-reduced-motion:reduce) {
+ .rp-theme :is(button,[role=button],dialog,[role=dialog]) {animation:none!important;transition-duration:.01ms!important}
+}
+
+/* Confirmation must never split into a standalone checkbox and a distant caption. */
+.rp-theme .rp-field-wizard-stage > label:has(> input[name="confirmation"]) {
+ flex-direction:row!important; align-items:flex-start!important; gap:11px!important;
+ line-height:1.45!important; font-size:13px!important; margin:6px 0 0!important;
+}
+.rp-theme .rp-field-wizard-stage > label > input[name="confirmation"] {
+ margin:0!important;flex:0 0 22px!important;width:22px!important;min-width:22px!important;
+ height:22px!important; accent-color:var(--rp-blue,#53bcff);
+}

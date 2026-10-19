@@ -9,7 +9,15 @@ android {
         targetSdk 35
         versionCode 1
         versionName '1.0.0'
+        // URL HTTPS do servidor operacional, fornecida no build, nunca embutida.
+        // Sem servidor, o APK abre apenas a interface local de contingencia.
+        def operationalUrl = (System.getenv('RONDA_PRO_BASE_URL') ?: '').trim()
+        if (operationalUrl && !operationalUrl.matches('https://[A-Za-z0-9.-]+(:[0-9]+)?/?')) {
+            throw new GradleException('RONDA_PRO_BASE_URL deve ser uma origem HTTPS valida')
+        }
+        buildConfigField 'String', 'RONDA_PRO_BASE_URL', '"' + operationalUrl.replace('"', '') + '"'
     }
+    buildFeatures { buildConfig true }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

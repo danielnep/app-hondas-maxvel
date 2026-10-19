@@ -276,7 +276,7 @@ function treatmentActions(e){
 function loginView(error=''){
  decorateTheme('');
  roleTag.textContent='';exit.hidden=true;
- root.innerHTML='<form id="central-login" class="login"><h1>Central operacional</h1><p>Área com autenticação própria para a operação real. O perfil de demonstração do site não libera acesso a estes registros.</p>'+
+ root.innerHTML='<form id="central-login" class="login"><h1>Acessar Ronda Pro</h1><p>Use sua conta para acessar os registros da operação e suas funcionalidades conforme seu perfil.</p>'+
   (error?'<p class="flag">'+escape(error)+'</p>':'')+
   '<label>E-mail<input type="email" name="email" autocomplete="username" required></label>'+
   '<label>Senha<input type="password" name="password" autocomplete="current-password" required minlength="12"></label>'+

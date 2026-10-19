@@ -55,12 +55,14 @@ for(const {file,source,ast} of sheets){
  report.push({file,bytesBefore:Buffer.byteLength(source),bytesAfter:Buffer.byteLength(readFileSync(path.join(root,'assets',file),'utf8')),redundantDeclarations:removed,emptyRules:empty,remainingDifferentValues:conflicts.length,examples:conflicts.slice(-8)});
 }
 for(const file of readdirSync(path.join(root,'assets')).filter(x=>x.endsWith('.css')))if(!files.includes(file))throw Error('Untracked CSS layer: '+file);
-const expected={index:['ronda-pro','operational','mobile-critical','field','theme'],central:['central','operational','field','theme']};
+const expected={index:['ronda-pro','operational','mobile-critical','field','theme']};
 for(const [page,names] of Object.entries(expected)){
  const html=readFileSync(path.join(root,page+'.html'),'utf8');
  const links=[...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^\"]+)"[^>]*>/g)].map(m=>m[1]).filter(x=>!x.startsWith('https://'));
  if(JSON.stringify(links.map(x=>path.basename(x).split('?')[0]))!==JSON.stringify(names.map(x=>x+'.css')))throw Error('CSS order mismatch in '+page);
 }
+const boot=readFileSync(path.join(root,'src/bootstrap.js'),'utf8');
+if(!boot.includes('./assets/central.css?v=51'))throw Error('Operational CSS absent from unified bootstrap');
 const sw=readFileSync(path.join(root,'sw.js'),'utf8');
 for(const file of files)if(!sw.includes('./assets/'+file))throw Error('CSS absent from offline cache: '+file);
 for(const link of sw.matchAll(/'([^']+\.css)'/g))if(!files.some(f=>link[1]==='./assets/'+f))throw Error('Obsolete cache reference: '+link[1]);
