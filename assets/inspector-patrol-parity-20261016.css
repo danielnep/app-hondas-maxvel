@@ -272,6 +272,18 @@
  max-height:calc(100dvh - 24px)!important;border-radius:15px!important;
  background:#191b20!important;border-color:#414852!important
 }
+/* A conversa abre pelo topo em uma única superfície e mantém todas as ações alcançáveis. */
+.rp-demo-chat-sheet>.field-chat-screen{
+ width:100%!important;max-width:none!important;height:calc(100% - 53px)!important;
+ min-height:0!important;display:flex!important;flex-direction:column!important;margin:0!important;
+}
+.rp-demo-chat-sheet .field-chat-surface{flex:1 1 auto!important;min-height:0!important;}
+@keyframes rp-chat-slide-down{
+ from{transform:translateY(-24px);opacity:.92}
+ to{transform:translateY(0);opacity:1}
+}
+.rp-demo-chat-sheet[open]{animation:rp-chat-slide-down .24s ease-out both;}
+@media(prefers-reduced-motion:reduce){.rp-demo-chat-sheet[open]{animation:none;}}
 .rp-field-chat-overlay-head,.rp-field-chat-overlay .field-chat-threadbar,
 .rp-field-chat-overlay .field-chat-compose{background:#202329!important;border-color:#3b4451!important}
 .rp-field-chat-overlay .field-chat-compose{
@@ -299,7 +311,7 @@
 @media(max-width:600px){
  .rp-field-wizard-dialog,.rp-field-wizard-dialog[open]{width:calc(100vw - 18px)!important;height:auto!important;max-height:calc(100dvh - 24px)!important;border-radius:14px!important}
  .rp-field-wizard-dialog>form{height:auto!important;max-height:calc(100dvh - 28px)!important}
- .rp-field-chat-overlay,.rp-field-chat-overlay[open]{width:calc(100vw - 18px)!important;height:min(80dvh,680px)!important;max-height:calc(100dvh - 20px)!important;border-radius:14px!important}
+ .rp-field-chat-overlay,.rp-field-chat-overlay[open]{width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important;inset:0!important}
  .rp-field-wizard-stage{padding:8px 12px 12px!important}
  .rp-inspection-capture-actions{gap:7px}
  .rp-field-wizard-stage .rp-inspection-capture-actions .rp-capture-button{padding:9px!important;min-height:66px!important}
