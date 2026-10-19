@@ -11,8 +11,11 @@ const metadata=load('../package.json');
 
 test('as folhas de estilo de cada visão são carregadas sem repetição',()=>{
  const sheets=[...html.matchAll(/rel="stylesheet" href="([^"]+)"/g)].map(x=>x[1].split('?')[0]).filter(x=>x.startsWith('./'));
- const essential=['./assets/ronda-pro.css','./assets/demo-roles.css','./assets/field-entry-v2.css','./assets/evidence-direct.css'];
- for(const path of essential)assert.ok(sheets.includes(path),'Estilo essencial ausente: '+path);
+ const essential=['./assets/ronda-pro.css'];
+ for(const path of essential)assert.ok(sheets.includes(path),'Folha ativa ausente: '+path);
+ const bundled=load('../assets/ronda-pro.css');
+ for(const name of ['demo-roles.css','field-entry-v2.css','evidence-direct.css'])
+  assert.ok(bundled.includes('/* ORIGINAL: assets/'+name+' */'),'CSS consolidado perdeu '+name);
  assert.equal(new Set(sheets).size,sheets.length,'Nenhuma folha pode ser carregada duas vezes');
  for(const path of sheets)assert.ok(existsSync(new URL('../'+path.slice(2),import.meta.url)),'Arquivo CSS inexistente: '+path);
 });
