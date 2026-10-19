@@ -32,6 +32,14 @@ try {
       await page.locator('.location-entry-grant').click();
       await page.locator('.location-entry-gate').waitFor({state:'detached'});
     }
+    if(width<=900){
+      await page.locator('.dashboard [data-action="open-mobile-menu"]').click();
+      const access=page.locator('#dialog[open] .ux-access-menu');
+      await access.waitFor();
+      await access.locator('[data-view]').first().click();
+      assert.equal(await page.locator('#dialog[open] .ux-access-menu').count(),0,
+        'Menu mobile deve fechar após escolher a rota');
+    }
     const menu=page.locator('.dashboard .rp-message-trigger');
     assert.equal(await menu.count(),1,'Mensagens deve ser ação direta, não popover aninhado');
     await menu.click({timeout:7000});
