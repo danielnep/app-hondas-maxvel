@@ -19,8 +19,7 @@
         {
           "action": "click",
           "target": {
-            "role": "button",
-            "name": "Mais opções⋯"
+            "css": ".patrol-sheet-toggle"
           }
         },
         {
