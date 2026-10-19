@@ -1,16 +1,16 @@
 @layer rp-layout {
   /* Ronda Pro · Canonical visual system. Structure retains its own cascade layer.
-   Red glow alpha .46 -> .529 and .20 -> .23: +15% intensity; hue stays pure red.
+   Normal field surfaces are neutral graphite. Strong red stays reserved for panic and danger.
    rp-layout owns intentional field geometry; other rules own visual treatment. */
   :root {
     --rp-red: #ff1722 !important;
     --rp-red-rgb: 255,23,34 !important;
-    --rp-neon: 0 0 3px rgba(var(--rp-red-rgb),.529),0 0 12px rgba(var(--rp-red-rgb),.23) !important;
+    --rp-neon: 0 0 3px rgba(var(--rp-red-rgb),.20),0 0 10px rgba(var(--rp-red-rgb),.08) !important;
     --rp-blue: #53bcff !important;
     --rp-ink: #eff6fc !important;
     --rp-soft: #c2d2df !important;
     --rp-rule: #9ab4c32b !important;
-    --rp-glass: rgba(27,37,46,.67) !important;
+    --rp-glass: rgba(27,37,46,.86) !important;
     --rp-deep: #151c23 !important;
     --rp-radius: 12px !important;
     color-scheme: dark !important
@@ -118,17 +118,17 @@
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border: 0 !important;
-    border-bottom: 1px solid #ff172256 !important;
-    box-shadow: 0 1px 7px #ff172218 !important;
+    border-bottom: 1px solid #5968748a !important;
+    box-shadow: none !important;
     color: var(--rp-ink) !important
   }
   .rp-theme :is(.sidebar,.side) {
     background: rgba(24,34,43,.67) !important;
     backdrop-filter: blur(18px) !important;
     border: 0 !important;
-    border-right: 1px solid #ff17225f !important;
+    border-right: 1px solid #59687488 !important;
     border-radius: 0 !important;
-    box-shadow: 2px 0 9px #ff17221f !important
+    box-shadow: none !important
   }
   .rp-theme :is(.side-link,.rp2-nav-item) {
     border: 0 !important;
@@ -336,16 +336,17 @@
     stroke: white !important
   }
   .rp-theme .rp-field-controls,.rp-theme .patrol-actions,.rp-theme .rp-inspection-commands {
-    background: rgba(27,37,46,.59) !important;
+    background: rgba(27,37,46,.87) !important;
     backdrop-filter: blur(18px) saturate(.85) !important;
     -webkit-backdrop-filter: blur(18px) saturate(.85) !important;
     border: 1px solid #a1bed13f !important;
-    border-top: 2px solid var(--rp-red) !important;
+    border-top: 1px solid #566671 !important;
     border-radius: 13px !important;
-    box-shadow: 0 -2px 9px #ff17223b,0 10px 28px #14232d2b !important
+    box-shadow: 0 10px 28px #0b141c68 !important
   }
   .rp-theme .rp-field-controls:before {
-    content: '' !important;
+    content: none !important;
+    display: none !important;
     position: absolute !important;
     top: -2px !important;
     left: 10px !important;
@@ -373,10 +374,10 @@
     color: #fff !important
   }
   .rp-theme :is(.patrol-map-heading,.rp-inspection-route-bar) {
-    background: rgba(27,37,46,.65) !important;
+    background: rgba(27,37,46,.88) !important;
     backdrop-filter: blur(16px) !important;
     border: 1px solid #a1bed13f !important;
-    border-left: 3px solid var(--rp-red) !important;
+    border-left: 2px solid #5b7180 !important;
     border-radius: 12px !important;
     box-shadow: 0 0 6px #ff172230 !important;
     color: #fff !important
