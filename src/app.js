@@ -1229,7 +1229,10 @@ setInterval(()=>{if(session?.status==='active')save()},10000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&session?.status==='active'){if(!window.AndroidTracking){session.insideSince=null;const p=currentCheckpoint(session);if(p)session.checkpoints[session.index].dwellMs=0;}movement=null;save();}else if(screen!=='landing'&&session?.status==='active'){syncNativeHistory();render()}});
 window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status==='active'&&mode==='real')syncNativeHistory()});
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
- const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
+ const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';// A rota escolhida pelo menu mobile precisa fechar o diálogo que bloqueia
+ // os cliques na área de trabalho; mudar a rota sem fechar mantém o backdrop.
+ if(el.closest('.ux-access-menu')&&modal.open)modal.close();
+ view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
  if(act==='demo-wizard-open'){const d=document.querySelector('#rp-demo-wizard-dialog');if(d&&!d.open)d.showModal();return;}
  if(act==='demo-wizard-close'){document.querySelector('#rp-demo-wizard-dialog')?.close();return;}
