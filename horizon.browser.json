@@ -1,0 +1,206 @@
+{
+  "profile": "interactive-flows-v1",
+  "flows": [
+    {
+      "name": "vigia-arrasto-corpo",
+      "viewport": "mobile",
+      "path": "/",
+      "ready": {
+        "role": "button",
+        "name": "Iniciar ronda"
+      },
+      "steps": [
+        {
+          "action": "expect_visible",
+          "target": {
+            "css": ".patrol-action-heading"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Mais opções⋯"
+          }
+        },
+        {
+          "action": "expect_class",
+          "target": {
+            "css": ".patrol-workspace"
+          },
+          "class": "sheet-collapsed",
+          "present": false
+        },
+        {
+          "action": "drag",
+          "target": {
+            "css": ".patrol-action-heading"
+          },
+          "dx": 0,
+          "dy": 270
+        },
+        {
+          "action": "expect_class",
+          "target": {
+            "css": ".patrol-workspace"
+          },
+          "class": "sheet-collapsed"
+        }
+      ]
+    },
+    {
+      "name": "vigia-mensagens",
+      "viewport": "mobile",
+      "path": "/",
+      "ready": {
+        "role": "button",
+        "name": "Iniciar ronda"
+      },
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Enviar mensagem"
+          }
+        },
+        {
+          "action": "expect_visible",
+          "target": {
+            "css": ".rp-field-chat-overlay"
+          },
+          "capture": true
+        }
+      ]
+    },
+    {
+      "name": "vistoriador-mensagens",
+      "viewport": "mobile",
+      "path": "/",
+      "ready": {
+        "role": "button",
+        "name": "Iniciar ronda"
+      },
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Abrir perfil e opções"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Trocar área"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Vistoriador"
+          }
+        },
+        {
+          "action": "expect_visible",
+          "target": {
+            "css": ".rp-field-wizard-dialog"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "css": "[data-action='demo-wizard-close']"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Enviar mensagem"
+          }
+        },
+        {
+          "action": "expect_visible",
+          "target": {
+            "css": ".rp-field-chat-overlay"
+          },
+          "capture": true
+        }
+      ]
+    },
+    {
+      "name": "desktop-area",
+      "viewport": "desktop",
+      "path": "/",
+      "ready": {
+        "role": "button",
+        "name": "Abrir perfil e opções"
+      },
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Abrir perfil e opções"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Trocar área"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Administração"
+          }
+        },
+        {
+          "action": "expect_visible",
+          "target": {
+            "css": ".demo-role-view"
+          },
+          "capture": true
+        }
+      ]
+    },
+    {
+      "name": "desktop-central-nao-autenticada",
+      "viewport": "desktop",
+      "path": "/central.html",
+      "ready": {
+        "role": "link",
+        "name": "Aplicativo"
+      },
+      "steps": [
+        {
+          "action": "expect_visible",
+          "target": {
+            "role": "link",
+            "name": "Aplicativo"
+          }
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Aplicativo"
+          }
+        },
+        {
+          "action": "expect_visible",
+          "target": {
+            "role": "button",
+            "name": "Abrir perfil e opções"
+          }
+        }
+      ]
+    }
+  ]
+}
