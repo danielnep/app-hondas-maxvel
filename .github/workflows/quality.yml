@@ -21,10 +21,6 @@ jobs:
         run: npm test
       - name: Abertura real em Chromium
         run: bash scripts/browser-smoke.sh
-      - name: Contrato mobile de mensagens no navegador real
-        run: |
-          npm install --no-save --no-package-lock playwright-core@1.56.1
-          CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/mobile-messages-smoke.mjs
       - name: Capturas da interface
         if: always()
         uses: actions/upload-artifact@v4
@@ -32,3 +28,15 @@ jobs:
           name: maxvel-browser-captures
           path: artifacts/
           if-no-files-found: ignore
+
+  mobile-messages-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - name: Preparar controlador Chromium
+        run: npm install --no-save --no-package-lock playwright-core@1.56.1
+      - name: Testar abertura, envio e fechamento do painel mobile
+        run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/mobile-messages-smoke.mjs
