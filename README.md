@@ -1,3 +1,17 @@
+# Ronda Pro · Grupo Maxvel
+
+## Estado vigente · 19/10/2026
+
+O aplicativo tem uma entrada única em index.html. Quando há Node + SQLite configurados, abre a operação autenticada na mesma interface, com perfis Vigia, Vistoriador, COI, Administração e Cliente. O endereço antigo central.html apenas redireciona para a entrada única: a antiga Central Autenticada separada deixou de existir.
+
+O GitHub Pages oferece somente prévia local. Para sincronização entre aparelhos, é necessário implantar o backend Node com RONDA_PRO_DB_PATH em armazenamento persistente e credenciais seguras por variáveis de ambiente. No Android, o build recebe a origem HTTPS por RONDA_PRO_BASE_URL; sem ela, usa o pacote local como contingência. APK e GPS físico ainda não foram homologados nesta branch.
+
+**Contrato vigente e prints:** [Unificação e auditoria de 19/10](docs/UNIFICACAO-RONDA-PRO-20261019.md). Os registros abaixo são históricos e não substituem as decisões atuais.
+
+---
+
+## Histórico anterior
+
 ## CSS atual · higienização de 17/10/2026
 
 Cinco fontes canônicas, editadas diretamente. `index.html`: `ronda-pro.css` → `operational.css` → `mobile-critical.css` → `field.css`. `central.html`: `central.css` → `operational.css` → `field.css`. A ordem preserva os contratos de cada acesso. Nenhuma folha depende de um CSS legado ou de um gerador que reconstrói temas antigos.

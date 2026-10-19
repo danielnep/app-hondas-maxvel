@@ -34,7 +34,7 @@ dependencies {
 // A web view e o repositório usam a MESMA fonte: sem duplicar arquivos manualmente.
 tasks.register('syncWebAssets', Copy) {
     from(rootProject.projectDir.parentFile) {
-        include 'index.html', 'src/**', 'assets/**'
+        include 'index.html', 'central.html', 'manifest.webmanifest', 'sw.js', 'src/**', 'assets/**'
     }
     into "$buildDir/generated/web-assets/site"
 }

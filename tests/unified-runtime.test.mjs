@@ -20,6 +20,7 @@ test('Android recebe backend HTTPS por configuracao do build',()=>{
  assert.doesNotMatch(java,/ronda-pro-production\.up\.railway\.app/);
  assert.match(java,/BuildConfig\.RONDA_PRO_BASE_URL/);
  assert.match(java,/appassets\.androidplatform\.net/);
+ assert.match(file('android/app/build.gradle'),/manifest\.webmanifest/);
 });
 test('runtime protege login e usa SQLite persistente quando configurado',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'ronda-qa-'));
