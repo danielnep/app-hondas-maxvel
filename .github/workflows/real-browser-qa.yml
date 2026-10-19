@@ -1,0 +1,47 @@
+name: Ronda Pro | Auditoria real de fluxos no Chromium
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'horizon.browser.json'
+      - '.github/workflows/real-browser-qa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit-real-flows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Obter somente o código Ronda Pro em avaliação
+        uses: actions/checkout@v4
+        with:
+          path: ronda
+          persist-credentials: false
+      - name: Obter o executor de navegador Horizon
+        uses: actions/checkout@v4
+        with:
+          repository: danielnep/May-Maestro-Executor
+          ref: main
+          path: executor
+          persist-credentials: false
+      - name: Preparar Python e Chromium isolado
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Construir navegador sem acesso a credenciais do runner
+        run: docker build -t horizon-web-proof:1.58.2 executor/synthetic_visual
+      - name: Testar Vigia, Vistoriador, desktop e central conforme horizon.browser.json
+        env:
+          PYTHONPATH: executor
+        run: python -m horizon_core.web_checks --root ronda --check browser-playwright --evidence browser-evidence
+      - name: Arquivar somente prints e relatório desta execução
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ronda-pro-real-browser-qa
+          path: browser-evidence/
+          retention-days: 3
+          if-no-files-found: warn
