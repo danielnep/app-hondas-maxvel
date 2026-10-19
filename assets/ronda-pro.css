@@ -6480,7 +6480,8 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
   display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:5px!important;min-width:0;
  }
  .dashboard .app-header .rp-header-popover{flex:none;min-width:0}
- .dashboard .app-header .rp-header-popover>summary{
+ .dashboard .app-header .rp-header-popover>summary,
+ .dashboard .app-header .rp-message-trigger{
   display:flex!important;align-items:center!important;justify-content:center!important;
   list-style:none!important;position:relative;width:40px!important;height:42px!important;
   min-height:42px!important;min-width:40px!important;padding:5px!important;gap:0!important;
@@ -6488,8 +6489,10 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
  }
  .dashboard .app-header .rp-header-popover>summary::marker{content:""}
  .dashboard .app-header .rp-header-popover>summary::-webkit-details-marker{display:none!important}
- .dashboard .app-header .rp-header-popover>summary .icon-svg{width:22px!important;height:22px!important;flex:none!important}
- .dashboard .app-header .rp-header-popover>summary>span{display:none!important}
+ .dashboard .app-header .rp-header-popover>summary .icon-svg,
+ .dashboard .app-header .rp-message-trigger .icon-svg{width:22px!important;height:22px!important;flex:none!important}
+ .dashboard .app-header .rp-header-popover>summary>span,
+ .dashboard .app-header .rp-message-trigger>span{display:none!important}
  .dashboard .app-header .rp-header-popover>summary .rp-unread-count{
   position:absolute;top:-5px;right:-4px;font-size:10px!important;
  }
