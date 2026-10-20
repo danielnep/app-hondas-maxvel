@@ -1528,4 +1528,256 @@
     bottom: 0 !important;
     left: auto !important
   }
+  /* Responsive geometry of the approved Glass UI; no palette, type or field-screen replacements. */
+  @media (max-width: 1199px) and (min-width: 901px) {
+    body.rp-theme[data-rp-field="false"] :is(#central-root .ops-monitor-columns,#central-root .coi3-columns) {
+      grid-template-columns: minmax(0,1fr) !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(#central-root .content,.dashboard .app-content) {
+      min-width: 0 !important;
+    }
+  }
+  @media (max-width: 900px) {
+    body.rp-theme[data-rp-field="false"] :is(.dashboard .app-shell,#central-root .rp2-workspace) {
+      display: block !important;
+      min-width: 0 !important;
+      width: 100% !important;
+    }
+    body.rp-theme[data-rp-field="false"] .dashboard .sidebar {
+      display: none !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.dashboard .shell-main,.dashboard .app-content,#central-root .content,#central-root .stack) {
+      box-sizing: border-box !important;
+      min-width: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    body.rp-theme[data-rp-field="false"] .dashboard .app-content:not(.ronda-page) {
+      padding: 18px clamp(12px,3.8vw,26px) calc(35px + env(safe-area-inset-bottom,0px)) !important;
+      overflow: visible !important;
+    }
+    body.rp-theme[data-rp-field="false"] main#conteudo {
+      box-sizing: border-box !important;
+      min-width: 0 !important;
+      width: 100% !important;
+      padding: 16px clamp(12px,3.8vw,26px) calc(35px + env(safe-area-inset-bottom,0px)) !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.page-title,.toolbar,.v4-dashboard-heading,.schedule-heading,.report-heading,#central-root .rp2-contextbar) {
+      min-width: 0 !important;
+      max-width: 100% !important;
+      flex-wrap: wrap !important;
+      gap: 10px !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.page-title>*,.toolbar>*,.v4-dashboard-heading>*,.schedule-heading>*,#central-root .rp2-context-copy) {
+      min-width: 0 !important;
+      overflow-wrap: anywhere !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.cards,.grid-kpis,.v4-summary-metrics,.ops-metrics,#central-root .ops-monitor-kpis,#central-root .coi3-stats,#central-root .coi3-kpis) {
+      display: grid !important;
+      grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+      grid-auto-flow: row !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.metric,.kpi,.v4-summary-metric,.ops-metric,#central-root .ops-monitor-kpi,#central-root .coi3-stats>div) {
+      min-width: 0 !important;
+      overflow-wrap: anywhere !important;
+      padding-inline: clamp(8px,3vw,16px) !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.v4-dashboard-tabs,.ux-ronda-tabs,.ux-report-tabs,.rp-treatment-tabs,#central-root .rp-treatment-tabs) {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 4px !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      overscroll-behavior-x: contain !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: thin !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.v4-dashboard-tabs,.ux-ronda-tabs,.ux-report-tabs,.rp-treatment-tabs,#central-root .rp-treatment-tabs)>button {
+      flex: 0 0 auto !important;
+      min-height: 44px !important;
+      white-space: nowrap !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.rp-event-columns,.coi3-columns,#central-root .ops-monitor-columns,#central-root .route-line,.dashboard .v4-desktop-focus .v4-stage) {
+      display: grid !important;
+      grid-template-columns: minmax(0,1fr) !important;
+      grid-auto-columns: auto !important;
+      grid-auto-flow: row !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      overflow: visible !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.grid,.detail-grid,#central-root .ops-dispatch-form,#central-root .route-editor,#central-root .ops-worker-list) {
+      grid-template-columns: minmax(0,1fr) !important;
+      min-width: 0 !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.surface,.v4-pane,.ops-card,.schedule-workspace,.report-page,.operations-page,.coi3-section,#central-root .rp2-contextbar) {
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.table-wrap,.table-scroll,.data-table-wrap,.report-table-wrap,#central-root .table-wrap,#central-root .table-scroll) {
+      box-sizing: border-box !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      overflow-x: auto !important;
+      overscroll-behavior-inline: contain !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.list-item,.team-row,.ops-agenda-row,#central-root .ops-dispatch-line,#central-root .coi3-treatment-row) {
+      min-width: 0 !important;
+      max-width: 100% !important;
+      overflow-wrap: anywhere !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .list-item {
+      flex-wrap: wrap !important;
+      align-items: flex-start !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .list-item>span:last-child {
+      max-width: 100% !important;
+      flex-shrink: 1 !important;
+      text-align: left !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .coi3-treatment-row {
+      display: grid !important;
+      grid-template-columns: auto minmax(0,1fr) !important;
+      align-items: start !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .coi3-treatment-badge {
+      grid-column: 2 !important;
+      justify-self: start !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root :is(.chat-workspace,.chat-layout) {
+      display: grid !important;
+      grid-template-columns: minmax(0,1fr) !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root :is(.chat-sidebar,.chat-main,.chat-thread) {
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .chat-sidebar {
+      max-height: min(32dvh,260px) !important;
+      overflow-y: auto !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .ops-live-map {
+      height: clamp(250px,40dvh,390px) !important;
+      min-width: 0 !important;
+    }
+    /* Authenticated COI/Admin navigation: a usable drawer rather than overflowing tabs. */
+    body.rp-theme[data-rp-field="false"] #central-root .rp-central-menu-button {
+      position: relative !important;
+      z-index: 10 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      min-height: 44px !important;
+      margin: 0 0 12px !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .side.rp2-role-nav {
+      position: fixed !important;
+      inset: 0 auto 0 0 !important;
+      top: 0 !important;
+      box-sizing: border-box !important;
+      width: min(86vw,340px) !important;
+      height: 100dvh !important;
+      max-height: 100dvh !important;
+      margin: 0 !important;
+      padding: calc(16px + env(safe-area-inset-top,0px)) 15px calc(24px + env(safe-area-inset-bottom,0px)) !important;
+      display: block !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      z-index: 101 !important;
+      transform: translateX(-104%) !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      transition: transform .22s ease,visibility .22s ease !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .side.rp2-role-nav.is-open {
+      transform: translateX(0) !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root:has(.rp2-role-nav.is-open)::before {
+      content: "" !important;
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 100 !important;
+      background: rgba(8,14,20,.55) !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .rp2-nav-dismiss {
+      display: flex !important;
+      width: 100% !important;
+      min-height: 46px !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      margin-bottom: 15px !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .rp2-nav-primary,
+    body.rp-theme[data-rp-field="false"] #central-root .rp2-nav-secondary-items {
+      display: grid !important;
+      grid-template-columns: minmax(0,1fr) !important;
+      gap: 2px !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .rp2-role-nav .rp2-nav-item {
+      width: 100% !important;
+      min-height: 48px !important;
+      white-space: normal !important;
+      text-align: left !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .rp2-contextbar {
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: space-between !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .rp2-context-refresh {
+      min-height: 44px !important;
+      flex-shrink: 0 !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root :is(.rp-coi-request-strip,.route-titlebar,.ops-dispatch-modal-header,.ops-dispatch-actions) {
+      flex-wrap: wrap !important;
+      gap: 10px !important;
+    }
+  }
+  @media (max-width: 520px) {
+    body.rp-theme[data-rp-field="false"] .dashboard .app-header {
+      gap: 6px !important;
+      padding-inline: max(10px,env(safe-area-inset-left,0px)) !important;
+    }
+    body.rp-theme[data-rp-field="false"] .dashboard .app-header .brand {
+      min-width: 0 !important;
+      max-width: 37vw !important;
+    }
+    body.rp-theme[data-rp-field="false"] .dashboard .app-header .header-actions {
+      min-width: 0 !important;
+      gap: 4px !important;
+    }
+    body.rp-theme[data-rp-field="false"] .dashboard .app-header .user-profile-button>span:not(.avatar) {
+      display: none !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .rp2-contextbar {
+      gap: 8px !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root :is(.ops-dispatch-actions button,.rp-coi-request-strip button) {
+      min-height: 44px !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(.metric strong,.v4-summary-metric strong,.ops-metric strong,#central-root .ops-monitor-kpi strong) {
+      font-size: clamp(22px,7vw,30px) !important;
+    }
+    body.rp-theme[data-rp-field="false"] #central-root .login {
+      width: 100% !important;
+      max-width: 440px !important;
+      margin: 20px auto !important;
+      padding: clamp(16px,5vw,25px) !important;
+    }
+    body.rp-theme[data-rp-field="false"] :is(input,textarea,select) {
+      font-size: 16px !important;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) and (max-width: 900px) {
+    body.rp-theme[data-rp-field="false"] #central-root .side.rp2-role-nav {
+      transition: none !important;
+    }
+  }
+
 }
