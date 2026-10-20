@@ -33,7 +33,7 @@ test('operação real não inventa uma base que o COI não configurou',()=>{
 test('CSS corretivo ocupa a última camada em ambos os acessos',()=>{
  const asset='assets/maxvel-print-qa-20261016.css';
  const consolidated=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
- assert.match(index,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(index,/assets\/ronda-pro\.css\?v=20/);
  assert.ok(consolidated.includes('/* ORIGINAL: '+asset+' */'));
  assert.ok(consolidated.indexOf(asset)>consolidated.indexOf('maxvel-field-refinement-20261016.css'));
  assert.ok(central.includes(asset));
