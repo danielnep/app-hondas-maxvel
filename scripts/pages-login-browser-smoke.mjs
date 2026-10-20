@@ -76,7 +76,7 @@ try{
       await form.locator('[name="reason"]').fill(reason);
       if(points)await form.locator('[name="points"]').fill(points);
       await form.locator('button[type="submit"]').click();
-      await form.waitFor({state:'detached',timeout:12000});
+      await form.waitFor({state:'hidden',timeout:12000});
      };
      await create('ronda','Ronda externa ponto A','Revisão de acesso e iluminação perimetral','Portaria;-20.14020;-44.88366\nEstacionamento;-20.14052;-44.88338');
      await page.locator('#inspector-latest-round-map .map-fallback, #inspector-latest-round-map .leaflet-container').first().waitFor({timeout:12000});
@@ -86,7 +86,7 @@ try{
      const finishForm=page.locator('#dialog #inspector-finish-round-form');
      await finishForm.locator('[name="note"]').fill('Ronda concluída sem anormalidades nos acessos.');
      await finishForm.locator('button[type="submit"]').click();
-     await finishForm.waitFor({state:'detached',timeout:12000});
+     await finishForm.waitFor({state:'hidden',timeout:12000});
      await create('inspection','Vistoria de acesso lateral','Inspecionar acesso lateral e condições da porta.');
      if(!await page.locator('.rp-inspector-records').getByText('Vistoria de acesso lateral').count())throw Error('Vistoria recém-criada não aparece nas últimas vistorias');
      await page.locator('[data-action="inspector-history-all"]').first().click();
