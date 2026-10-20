@@ -1681,6 +1681,11 @@
     border-radius: 0 !important;
     overflow: hidden !important;
   }
+  /* Avoid ghost cards and bright map roads bleeding through the open
+     notification drawer while keeping its Glass borders, glow and motion. */
+  body.rp-theme[data-rp-field="true"] .rp-notification-popover[open] > .rp-popover-list {
+    background: #19232c !important;
+  }
   /* Same control position and form as the left menu's close action: in the top
      toolbar of the drawer, never dangling at the middle of its outer edge. */
   body.rp-theme[data-rp-field="true"] .rp-notification-popover[open] > .rp-drawer-handle {
