@@ -88,7 +88,7 @@
   .rp-theme option {
     background: #202d37 !important
   }
-  .rp-theme :is(dialog,.rp-record-dialog,.conclusion-dialog,.login,.rp-popover-list) {
+  .rp-theme :is(dialog,.rp-record-dialog,.conclusion-dialog,.login:not(#live-login-form),.rp-popover-list) {
     background: rgba(25,35,44,.86) !important;
     color: var(--rp-ink) !important;
     border: 1px solid #899fad55 !important;
@@ -101,7 +101,7 @@
     background: #0d141b44 !important;
     backdrop-filter: blur(2px) !important
   }
-  .rp-theme .login {
+  .rp-theme .login:not(#live-login-form) {
     border-top: 2px solid var(--rp-red) !important;
     box-shadow: 0 -2px 12px #ff17222b,0 18px 65px #0003 !important
   }
