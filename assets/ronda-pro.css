@@ -4824,3 +4824,9 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
 }
 
 }
+
+
+/* Railway temporary open-access evaluation: keep existing Glass UI content beneath the role switch. */
+.dashboard.railway-open-access{display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+.dashboard.railway-open-access>.simulation-rolebar{position:relative!important;z-index:200!important;flex:0 0 auto!important}
+.dashboard.railway-open-access>.app-shell{flex:1 1 auto!important;min-height:0!important;height:auto!important;position:relative!important;z-index:1!important}
