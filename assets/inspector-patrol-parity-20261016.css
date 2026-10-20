@@ -328,6 +328,10 @@
 }
 .rp-inspection-torch svg{height:23px;width:23px;color:#62c0f0}
 .rp-inspection-torch span{font-size:11px;font-weight:700}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch.is-lit{
+ background:#44361fdc!important;border-color:#ffd36a!important;color:#ffe6ab!important
+}
+.rp-inspection-torch.is-lit svg{color:#ffd36a!important}
 @media(max-width:600px){
  :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch{
   right:14px!important;top:86px!important;width:62px!important;height:62px!important;min-height:62px!important
