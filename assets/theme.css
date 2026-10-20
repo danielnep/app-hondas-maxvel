@@ -258,8 +258,11 @@
     box-shadow: none !important;
     color: #f4faff !important
   }
-  .rp-theme .rp-header-tools {
+  .rp-theme[data-rp-field=true] .rp-header-tools {
     gap: 15px !important
+  }
+  .rp-theme:not([data-rp-field=true]) .rp-header-tools {
+    gap: 7px !important
   }
   .rp-theme .rp-blue-button {
     background: transparent !important;
@@ -275,6 +278,19 @@
   .rp-theme :is(.top,.app-header) svg {
     width: 25px !important;
     height: 25px !important
+  }
+  /* Header-only geometry: management controls stay compact, field HUD is unchanged. */
+  /* Icon-button padding must not inherit the 15px global control padding: at 36px wide it leaves only 6px for the menu and squeezes the avatar into an oval. */
+  .rp-theme:not([data-rp-field=true]) .app-header :is(.app-menu-button,.rp-blue-button,.user-profile-button) {
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important
+  }
+  .rp-theme:not([data-rp-field=true]) .app-header :is(.app-menu-button,.rp-blue-button,.rp-header-popover>summary,.user-profile-button) .icon-svg {
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important
   }
   .rp-theme .rp-popover-list {
     border-left: 1px solid var(--rp-red) !important;
