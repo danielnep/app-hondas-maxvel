@@ -464,7 +464,7 @@ function startDemoInspectorGps(){
   if(demoInspectorMap)demoInspectorMap.update({position:p});
  },()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
 }
-function render(){if(!user){if(isRailwayOpenAccess()){beginSimulation('Vigia',false,'ronda');openAreaPicker();return;}root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!(isPagesTestMode()&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+function render(){if(!user){if(isRailwayOpenAccess()){beginSimulation('Vigia',false,'ronda');openAreaPicker();return;}root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!((isPagesTestMode()||isRailwayOpenAccess())&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(false&&presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
