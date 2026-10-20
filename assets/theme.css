@@ -435,7 +435,7 @@
     color: #fff !important
   }
   .rp-theme .rp-field-chat-overlay {
-    background: rgba(25,35,44,.72) !important;
+    background: rgba(25,35,44,.97) !important;
     border: 1px solid var(--rp-red) !important;
     border-top: 0 !important;
     border-bottom: 0 !important;
@@ -465,12 +465,12 @@
   .rp-theme .rp-chat-grip {
     display: grid !important;
     place-items: center !important;
-    min-height: 64px !important;
+    min-height: 44px !important;
     touch-action: none !important;
     border: 0 !important;
     background: transparent !important;
     width: 100% !important;
-    padding: 10px 0 max(15px,env(safe-area-inset-bottom)) !important;
+    padding: 6px 0 max(7px,env(safe-area-inset-bottom)) !important;
     color: #fff !important
   }
   .rp-theme .rp-chat-grip svg {
@@ -686,14 +686,14 @@
   }
   .rp-theme .rp-field-chat-overlay {
     position: fixed!important;
-    inset: 0 5%!important;
+    inset: calc(68px + env(safe-area-inset-top,0px)) 5% 0!important;
     margin: 0!important;
     width: 90%!important;
     max-width: none!important;
-    height: 100dvh!important;
-    max-height: 100dvh!important;
-    padding: max(18px,env(safe-area-inset-top,0px)) 0 0!important;
-    border-radius: 0!important;
+    height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
+    max-height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
+    padding: 12px 0 calc(8px + env(safe-area-inset-bottom,0px))!important;
+    border-radius: 15px 15px 0 0!important;
     overflow: hidden!important
   }
   .rp-theme .rp-field-chat-overlay[open] {
@@ -926,7 +926,7 @@
     overflow: auto!important
   }
   .rp-theme .rp-notification-popover[open]>.rp-popover-list {
-    background: rgba(25,35,44,.75) !important;
+    background: rgba(25,35,44,.97) !important;
     backdrop-filter: blur(20px) saturate(.8) !important;
     -webkit-backdrop-filter: blur(20px) saturate(.8) !important;
     border: 0 !important;
