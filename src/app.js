@@ -1,4 +1,5 @@
 import {decorateTheme} from './theme-shell.js';
+import {liveRequest,liveSession,loginHtml} from './live-client.js';
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
 import {createInspectionRouteMap} from './inspection-route-map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf} from './inspection-queue.js';
@@ -67,11 +68,11 @@ const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2
 const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
 const helpButton=(topic,label)=>`<button type="button" class="context-help" data-action="feature-help" data-topic="${topic}" aria-label="O que é ${label}?" title="Entenda: ${label}">?</button>`;
-const operationalLink='<a class="button small" href="/central.html">Central autenticada</a>';
+const operationalLink='';
 const brand=()=>'<div class="brand maxvel-only-brand" aria-label="Grupo Maxvel"><span class="brand-product"><span class="ronda-pro-wordmark">Ronda <b>Pro</b></span></span><span class="brand-divider" aria-hidden="true"></span><span class="brand-partner"><span class="brand-group">GRUPO</span><img class="maxvel-real-logo" src="./assets/maxvel-logo.webp" width="585" height="183" alt="Maxvel"></span></div>';
 const persisted=loadState();
-let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
-let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule();
+let sessions=[];
+let programs=[];
 let operationalSettings={
  verificationMode:['gps','qr','gps+qr'].includes(persisted?.operationalSettings?.verificationMode)?persisted.operationalSettings.verificationMode:'gps',
  dwellSeconds:Math.max(5,Math.min(120,Number(persisted?.operationalSettings?.dwellSeconds)||30)),
@@ -88,7 +89,28 @@ const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
-function persist(){const ok=saveState({sessions,programs,selectedWatcherId,operationalSettings,activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:session?.status==='active'&&mode==='real'?user:null});if(!ok)notify('Não foi possível gravar no navegador. Confira o espaço disponível.');}
+let liveUsers=[],syncTimer=null;
+const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
+function persist(){
+ saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
+ if(user?.id){clearTimeout(syncTimer);syncTimer=setTimeout(()=>liveRequest('/app-state',{method:'PUT',data:liveData()}).catch(()=>notify('Nao foi possivel sincronizar agora.')),700);}
+}
+async function refreshLiveUsers(){if(user?.role==='admin')liveUsers=(await liveRequest('/users')).users||[];}
+async function restoreLiveAccount(){
+ const a=(await liveRequest('/me')).user;
+ user={id:a.id,name:a.name,email:a.email,username:a.username||'',role:a.role==='master'?'admin':a.role};
+ const saved=(await liveRequest('/app-state')).state;
+ sessions=Array.isArray(saved?.sessions)?saved.sessions:[];
+ programs=Array.isArray(saved?.programs)?saved.programs:[];
+ selectedWatcherId=saved?.selectedWatcherId||selectedWatcherId;
+ operationalSettings={...operationalSettings,...saved?.operationalSettings};
+ screen='dashboard';presentation=false;mode='real';session=null;
+ view=user.role==='ronda'?'minha-ronda':user.role==='vistoriador'?'vistoriador':'overview';
+ await refreshLiveUsers();render();
+}
+function liveLogout(){
+ liveSession.token='';user=null;session=null;sessions=[];programs=[];liveUsers=[];screen='landing';presentation=false;mode='real';render();
+}
 function save(){if(session){const idx=sessions.findIndex(s=>s.id===session.id);if(idx>=0)sessions[idx]=session;else sessions.unshift(session);}persist();void ops.autoReport()}
 function notify(message){toast.textContent=message;toast.classList.add('toast-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('toast-visible'),4900)}
 const ux06RoleTips={
@@ -422,8 +444,8 @@ function startDemoInspectorGps(){
   if(demoInspectorMap)demoInspectorMap.update({position:p});
  },()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
 }
-function render(){demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
- if(presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
+function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+ if(false&&presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
  }
@@ -594,7 +616,7 @@ function fieldViewContent(){
  return backdrop+'<section class="rp-field-page-overlay" aria-label="Área de trabalho"><button type="button" class="rp-page-back" data-view="'+back+'">← Voltar ao mapa</button>'+content+'</section>';
 }
 function appShell(){const entries=allNav[user.role];let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
- return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Demo sem login. Na implantação, o administrador cadastra os profissionais e seus logins/senhas individuais.</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><a class="foot-link" href="/central.html">Central operacional segura</a><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker desktop-only"):""}${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ambiente de avaliação · dados locais · Grupo Maxvel</footer></div></div></div>`}
+ return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Acesso individual autenticado · Grupo Maxvel</span><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ronda Pro · Grupo Maxvel</footer></div></div></div>`}
 function myPatrolHistory(){
  const name=user?.name||'',mine=sessionList().filter(x=>x.name===name),events=ops.allEvents();
  const item=x=>{
@@ -1378,8 +1400,7 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
  }
 if(act==='profile-menu'){profileDialog();return;}
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'&&presentation){tour.close();locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'){stopLocation();locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
+ if(act==='logout'){stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
  if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
@@ -1601,7 +1622,20 @@ document.addEventListener('change',e=>{
 });
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
-document.addEventListener('submit',e=>{
+document.addEventListener('submit',async e=>{
+ if(e.target.id==='live-login-form'){
+  e.preventDefault();const f=new FormData(e.target);e.target.querySelector('button').disabled=true;
+  try{const r=await liveRequest('/login',{method:'POST',data:{email:String(f.get('identifier')||'').trim(),password:String(f.get('password')||'')}});
+   liveSession.token=r.token;await restoreLiveAccount();
+  }catch(error){liveSession.token='';root.innerHTML=loginHtml(brand(),error.message);}
+  return;
+ }
+ if(e.target.id==='live-create-user-form'){
+  e.preventDefault();if(user?.role!=='admin')return;
+  try{await liveRequest('/users',{method:'POST',data:Object.fromEntries(new FormData(e.target))});await refreshLiveUsers();modal.close();render();notify('Profissional cadastrado no banco de dados.');}
+  catch(error){notify(error.message);}
+  return;
+ }
  if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,target:demoChatTarget,at:Date.now()});const others=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]').filter(m=>(m.target||'COI')!==demoChatTarget);localStorage.setItem('rondas-pro-demo-chat',JSON.stringify([...others,...rows]));if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
  if(e.target.id==='demo-inspection-form'){
   e.preventDefault();if(user?.role!=='vistoriador')return;
@@ -1712,5 +1746,5 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
-beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');
+(async()=>{try{if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
