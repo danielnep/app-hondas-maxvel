@@ -3748,8 +3748,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
     box-shadow:inset 0 1px 0 #ffffff24,0 8px 18px #020c1699!important;
     -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
     transform-origin:center bottom;
-    animation:rp-dock-reveal .55s cubic-bezier(.18,.84,.24,1.2) both,
-              rp-dock-idle 3.6s ease-in-out 1.1s infinite;
+    animation:rp-dock-reveal .55s cubic-bezier(.18,.84,.24,1.2) both;
     transition:transform .25s cubic-bezier(.2,.85,.25,1.22),box-shadow .25s ease,
                background .25s ease,border-color .25s ease!important;
   }
@@ -3801,10 +3800,6 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
   from{opacity:0;transform:translateY(22px) scale(.78)}
   70%{opacity:1;transform:translateY(-3px) scale(1.045)}
   to{opacity:1;transform:translateY(0) scale(1)}
-}
-@keyframes rp-dock-idle{
-  0%,100%{filter:brightness(1);transform:translateY(0)}
-  50%{filter:brightness(1.07);transform:translateY(-2px)}
 }
 @keyframes rp-panic-breathe{
   0%,100%{box-shadow:0 0 0 4px #c3294b22,0 0 20px #c3294b44}
@@ -8030,6 +8025,10 @@ body:has(#central-root) > header.top .rp-popover-list{
 }
 .rp-inspection-torch svg{height:23px;width:23px;color:#62c0f0}
 .rp-inspection-torch span{font-size:11px;font-weight:700}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch.is-lit{
+ background:#44361fdc!important;border-color:#ffd36a!important;color:#ffe6ab!important
+}
+.rp-inspection-torch.is-lit svg{color:#ffd36a!important}
 @media(max-width:600px){
  :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch{
   right:14px!important;top:86px!important;width:62px!important;height:62px!important;min-height:62px!important
