@@ -56,6 +56,16 @@ try{
    await page.locator('#rp-field-chat-overlay[open]').waitFor({timeout:12000});
    verify(!(await notif.evaluate(n=>n.open)),prefix+' notifications stayed open over chat');
    await page.locator('#rp-field-chat-overlay .rp-chat-grip').waitFor({state:'visible',timeout:5000});
+   await page.waitForTimeout(470);
+   const sheetStyle=await page.locator('#rp-field-chat-overlay').evaluate(node=>({
+    opacity:Number(getComputedStyle(node).opacity),
+    box:node.getBoundingClientRect().toJSON(),
+    background:getComputedStyle(node).backgroundColor,
+    title:node.querySelector('h1,h2')?.textContent||''
+   }));
+   verify(sheetStyle.opacity>.95,prefix+' chat not visible after entrance animation: '+JSON.stringify(sheetStyle));
+   verify(sheetStyle.box.y>=60,prefix+' chat overlaps fixed toolbar: '+JSON.stringify(sheetStyle));
+   verify(sheetStyle.title.trim().length>0,prefix+' chat has no readable heading');
    await page.screenshot({path:evidence+'/'+prefix+'-chat-top.png',fullPage:false});
    await page.locator('#rp-field-chat-overlay .rp-chat-grip').click();
    await page.locator('#rp-field-chat-overlay[open]').waitFor({state:'detached',timeout:5000});
