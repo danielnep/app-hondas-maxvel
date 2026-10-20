@@ -46,6 +46,8 @@ try{
    console.log('FIELD_GEOMETRY',prefix,JSON.stringify(layout));
    // No tutorial may be drawn underneath the map toolbar or field controls.
    verify(await page.locator('.onboarding-ops').count()===0,prefix+' onboarding covers field map');
+   const rootHeight=await page.locator('#central-root').evaluate(node=>node.getBoundingClientRect().height);
+   verify(rootHeight>=840,prefix+' zero-height field root clips the map: '+rootHeight);
    const mapPanel=page.locator('.rp-inspection-map-panel,.rp-guard-cockpit .patrol-map-panel').first();
    const mapRect=await mapPanel.boundingBox();
    verify(!!mapRect,prefix+' map panel missing');
@@ -93,7 +95,12 @@ try{
    await page.locator('#rp-field-chat-overlay[open]').waitFor({state:'detached',timeout:5000});
    const bottom=page.locator('[data-field-tool-chat]').first();
    if(await bottom.count()&&await bottom.isVisible()){
-    await bottom.click();
+    const hit=await bottom.evaluate(node=>{
+      const b=node.getBoundingClientRect(),x=b.left+b.width/2,y=b.top+b.height/2,hit=document.elementFromPoint(x,y);
+      return {x,y,tag:hit?.tagName,target:!!hit?.closest('[data-field-tool-chat]'),hitHtml:hit?.outerHTML?.slice(0,160)};
+    });
+    verify(hit.target,prefix+' lower chat is covered by another element: '+JSON.stringify(hit));
+    await bottom.click({timeout:5000});
     await page.locator('#rp-field-chat-overlay[open]').waitFor({timeout:12000});
     checks.push({role,width,action:'bottom message opens same sheet'});
     await page.keyboard.press('Escape');
