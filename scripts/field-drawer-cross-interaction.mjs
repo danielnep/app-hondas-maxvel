@@ -68,6 +68,12 @@ try{
    await page.waitForTimeout(400);
    verify(await notif.evaluate(n=>n.open),prefix+' notification drawer did not open');
    const panel=notif.locator('.rp-popover-list');
+   const drawerSurface=await panel.evaluate(node=>{
+     const style=getComputedStyle(node),color=style.backgroundColor;
+     const alpha=color.match(/rgba?\\(([^)]+)\\)/)?.[1]?.split(',').map(x=>Number(x.trim()))||[];
+     return {color,alpha:alpha.length>3?alpha[3]:1};
+   });
+   verify(drawerSurface.alpha>=.995,prefix+' map and cards bleed through notification glass: '+JSON.stringify(drawerSurface));
    const rect=await panel.boundingBox();
    verify(!!rect&&rect.x>=-2&&rect.x+rect.width<=width+3,prefix+' notification exceeds viewport: '+JSON.stringify(rect));
    verify(rect.x>=width-435,prefix+' notice not right-anchored: '+JSON.stringify(rect));
