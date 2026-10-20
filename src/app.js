@@ -1900,5 +1900,5 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
-(async()=>{try{if(isPagesTestMode()){await activatePagesRole('ronda');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
+(async()=>{try{if(isPagesTestMode()){await activatePagesRole('admin');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
