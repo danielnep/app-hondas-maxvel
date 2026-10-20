@@ -89,7 +89,18 @@ try {
         }
       };
       walk(virtual.cssRules);
-      return {url:url.pathname,bytes:source.length,http:response.status,media600:matchMedia('(max-width:600px)').matches,
+      const sample=[];
+      const scan=(rules,depth=0)=>{
+        for(const rule of rules){
+          if(rule.cssRules){scan(rule.cssRules,depth+1);continue;}
+          if(rule.selectorText&&(/rp-field-chat-overlay|rp-demo-chat-sheet|^dialog$/.test(rule.selectorText))){
+            sample.push({selector:rule.selectorText.slice(0,250),css:rule.style?.cssText?.slice(0,280),matches:el.matches(rule.selectorText),depth});
+          }
+        }
+      };
+      scan(virtual.cssRules);
+      return {sample:sample.slice(-15),sourceOccurrence:source.lastIndexOf('.rp-field-chat-overlay,.rp-field-chat-overlay[open]'),
+              url:url.pathname,bytes:source.length,http:response.status,media600:matchMedia('(max-width:600px)').matches,
               className:el?.className,cssLoaded:Array.from(document.styleSheets).map(x=>({href:x.href,rules:(()=>{try{return x.cssRules.length}catch{return -1}})()})).slice(-8),
               virtualCount:virtual.cssRules.length,virtualSample:Array.from(virtual.cssRules).slice(0,3).map(x=>x.cssText.slice(0,120)),
               sourceRule:source.includes('.rp-field-chat-overlay,.rp-field-chat-overlay[open]'),
