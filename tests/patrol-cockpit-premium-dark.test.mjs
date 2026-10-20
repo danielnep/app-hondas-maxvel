@@ -19,6 +19,6 @@ test('Paleta institucional, atalho de pânico e cache atualizado',()=>{
  assert.match(css,/--rp-maxvel-red:#f5223d/);
  assert.match(css,/--rp-cyan-current:#38bdf8/);
  assert.match(css,/\.checkpoint-utility-row>\.checkpoint-panic\{/);
- assert.match(index,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(index,/assets\/ronda-pro\.css\?v=20/);
  assert.match(readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8'),/ORIGINAL: assets\/rondas-pro-flow-20261014\.css/);
 });
