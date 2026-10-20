@@ -50,8 +50,9 @@ test('janelas do vigia usam altura por conteúdo e retorno único',()=>{
 });
 test('estilos críticos carregam por último e entram no PWA',()=>{
  assert.ok(index.includes('mobile-critical.css?v=50'));
- assert.match(index,/rondas-pro-updated-v59/);
- assert.match(sw,/rondas-pro-interface-v59/);
+ const version=Number(index.match(/rondas-pro-updated-v(\d+)/)?.[1]);
+ assert.ok(version>=59,'O cache PWA deve aumentar de versão');
+ assert.match(sw,new RegExp('rondas-pro-interface-v'+version));
  assert.ok(sw.includes('./assets/mobile-critical.css'));
  const before=index.indexOf('operational.css');
  const after=index.indexOf('mobile-critical.css');

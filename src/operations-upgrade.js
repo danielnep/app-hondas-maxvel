@@ -1,4 +1,5 @@
 import {evidenceButtons,createMediaCapture} from './media-capture.js';
+import {isPagesTestMode} from './pages-test-api.js';
 /** Rondas Pro: ampliação aditiva da demonstração operacional.
  * Persistência em IndexedDB no dispositivo; em Android o trajeto também usa SQLite nativo.
  * Sem API de produção, "pendente de envio" nunca significa entregue remotamente.
@@ -125,7 +126,7 @@ export function createOperationsUpgrade(api){
  let inSync=false;
  async function syncPending(){
   const token=sessionStorage.getItem('rondaspro_api_token');
-  if(!token||!navigator.onLine||inSync)return;
+  if(isPagesTestMode()||!token||!navigator.onLine||inSync)return;
   inSync=true;
   try{
    // Eventos concluídos ainda podem conter imagens cujo envio falhou.
