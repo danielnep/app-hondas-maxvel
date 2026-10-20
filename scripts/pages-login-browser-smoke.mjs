@@ -8,10 +8,10 @@ const base='https://danielnep.github.io/app-hondas-maxvel/';
 const origin=new URL(base).origin,root=resolve('.');
 const types={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg'};
 const roles=[
- ['ronda','minha-ronda','Operação de Ronda'],
+ ['admin','overview','Administração'],
  ['coi','overview','COI · Acompanhamento'],
  ['vistoriador','vistoriador','Vistoriador'],
- ['admin','overview','Administração']
+ ['ronda','minha-ronda','Operação de Ronda']
 ];
 let browser;
 mkdirSync('artifacts/pages-browser-login',{recursive:true});
