@@ -36,7 +36,8 @@ try{
     throw error;
    }
    assert(await page.locator('#live-login-form').count()===0,'Tela de login apareceu');
-   assert(await page.locator('#dialog .role-picker-list [data-action="sim-role"]').count()===2,'Somente Vigia e Vistoriador devem aparecer');
+   assert(await page.locator('#dialog .role-picker-list [data-action="sim-role"]').count()===4,'Devem aparecer Vigia, COI, Vistoriador e Administração');
+   for(const role of ['ronda','coi','vistoriador','admin'])assert(await page.locator('#dialog .role-picker-list [data-role="'+role+'"]').count()===1,'Perfil ausente: '+role);
    await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
    await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Vistoriador'));
    assert(await page.locator('#live-login-form').count()===0,'Login apareceu ao escolher Vistoriador');
@@ -46,6 +47,10 @@ try{
    await page.locator('#dialog[open] [data-action="sim-role"][data-role="ronda"]').click();
    await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Operação de Ronda'));
    assert(await page.locator('#live-login-form').count()===0,'Login apareceu ao voltar ao Vigia');
+   const map=page.locator('#mobile-map'),bounds=await map.boundingBox();
+   assert(!!bounds&&bounds.width>220&&bounds.height>200,'Mapa do Vigia oculto ou comprimido: '+JSON.stringify(bounds));
+   await map.locator('.map-fallback, .leaflet-container').first().waitFor({timeout:15000});
+   assert(await page.getByText('Nenhuma rota atribuída').count()>0,'Aviso de rota não atribuída ausente');
    await page.screenshot({path:out+'/vigia-'+width+'.png'});
    assert(errors.length===0,'Erro de JavaScript: '+errors.join(' | '));
    console.log(JSON.stringify({width,entry:'role-picker',selected:'vistoriador',return:'vigia',login:false,errors:errors.length}));
