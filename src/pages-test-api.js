@@ -69,7 +69,7 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
  }
  if(p==='/dispatches'){
   const rows=read('dispatches',[]);
-  if(method==='GET')return {dispatches:a.role==='vistoriador'?own(rows,user.id):rows};
+  if(method==='GET')return {dispatches:a.role==='vistoriador'?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
   if(method==='POST'){
    const self=a.role==='vistoriador',kind=data?.kind==='inspection'?'vistoria':data?.kind==='ronda'?'ronda':'ronda';
    if(!self&&!['admin','coi'].includes(a.role))throw fail('Sem permissão.',403);
