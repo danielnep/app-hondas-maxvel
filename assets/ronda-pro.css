@@ -3834,7 +3834,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
 }
 /* Diálogos sempre navegáveis: etapas têm rodapé fixo; a etapa em si pode rolar. */
 @media screen and (max-width:900px){
-  dialog[open]:not(.guide-dialog):not(.ux06-fullscreen){
+  dialog[open]:not(.guide-dialog):not(.ux06-fullscreen):not(.rp-field-chat-overlay){
     width:calc(100vw - 18px)!important;max-width:540px!important;
     height:auto!important;max-height:calc(100dvh - 22px)!important;
     overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;
