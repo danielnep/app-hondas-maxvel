@@ -19,7 +19,8 @@ test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados'
  assert.doesNotMatch(app,/function loginDialog\(\)/,'A demonstração não deve exibir formulário de acesso');
  assert.doesNotMatch(app,/id="login-form"/,'Sem tela de login/seleção obrigatória na demo');
  assert.match(app,/if\(act==='login'\)\{beginSimulation\(/,'O primeiro acesso abre a demonstração diretamente');
- const picker=range(app,"if(act==='sim-role-picker'){","if(act==='schedule-tab')");
+ const picker=range(app,"function openAreaPicker(){","function profileDialog(){");
+ assert.match(app,/if\(act==='sim-role-picker'\)\{openAreaPicker\(\);return;\}/);
  for(const role of ['ronda','operador','cliente','vistoriador','admin'])
   assert.ok(picker.includes("['"+role+"',"),'perfil '+role+' disponível no seletor');
  assert.doesNotMatch(picker,/\['coi','Central COI'/,'Não duplicar COI como área independente');
