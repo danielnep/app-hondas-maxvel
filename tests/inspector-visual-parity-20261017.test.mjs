@@ -53,9 +53,9 @@ test('grafite nos painéis e comunicação, perigo preserva contraste próprio',
 });
 
 test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
- assert.match(index,/rondas-pro-updated-v56/);
+ assert.match(index,/rondas-pro-updated-v57/);
  assert.match(index,/sw\.js\?v=56/);
- assert.match(sw,/rondas-pro-interface-v56/);
+ assert.match(sw,/rondas-pro-interface-v57/);
  for(const page of [index,central]){
   assert.match(page,/field\.css\?v=50/);
  }
@@ -63,5 +63,5 @@ test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
 
 test('minimapa da Administração contém camadas Leaflet dentro de sua própria área',()=>{
  assert.ok(demoStyles.includes('.demo-mini-route-map{position:relative;isolation:isolate;overflow:hidden;height:206px'));
- assert.ok(index.includes('ronda-pro.css?v=50'));
+ assert.ok(index.includes('ronda-pro.css?v=51'));
 });
