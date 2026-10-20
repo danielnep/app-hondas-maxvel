@@ -25,6 +25,7 @@ try {
   const page=await context.newPage();
   page.on('pageerror',e=>errors.push(width+'px JS: '+e.message));
   await page.route('https://**/*',r=>r.abort());
+  let inspected=null;
   try {
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
    await page.locator('#live-login-form').waitFor({state:'visible',timeout:15000});
@@ -49,6 +50,7 @@ try {
       screenshotReady:!!document.querySelector('.entry-topnav .brand')
      };
    });
+   inspected=metrics;
    const {panel,form,labels,inputs,button,viewport}=metrics;
    assert(metrics.screenshotReady,width+' logo missing');
    assert(metrics.formDisplay==='grid',width+' login not a vertical grid');
@@ -71,7 +73,7 @@ try {
    results.push({width,status:'PASS',metrics});
   } catch(error) {
    errors.push(width+'px '+error.message);
-   results.push({width,status:'FAIL',message:error.message});
+   results.push({width,status:'FAIL',message:error.message,metrics:inspected});
    await page.screenshot({path:output+'/FAILED-login-'+width+'.png',fullPage:true}).catch(()=>{});
   } finally { await context.close(); }
  }
