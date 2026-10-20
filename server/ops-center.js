@@ -188,18 +188,20 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    resp(res,200,{dispatches:items});return true;
   }
   if(p==='/api/dispatches'&&method==='POST'){
-   if(!review(user)||!allows(user,'despachos')){resp(res,403,{error:'Despacho indisponível'});return true;}
+   const selfInspection=user.role==='vistoriador';
+   if(!selfInspection&&(!review(user)||!allows(user,'despachos'))){resp(res,403,{error:'Despacho indisponível'});return true;}
    const data=serialize((await body(req)).toString())||{},reason=clean(data.reason),
     kind=data.kind==='inspection'?'vistoria':'ronda';
    const role=kind==='vistoria'?'vistoriador':'ronda';
-   const worker=db.prepare('SELECT id,name,site,role,active FROM users WHERE id=? AND role=?').get(clean(data.workerId),role);
+   if(selfInspection&&clean(data.workerId)!==user.id){resp(res,403,{error:'Vistoriador só pode criar seus próprios atendimentos'});return true;}
+   const worker=selfInspection?db.prepare("SELECT id,name,site,role,active FROM users WHERE id=? AND role='vistoriador'").get(user.id):db.prepare('SELECT id,name,site,role,active FROM users WHERE id=? AND role=?').get(clean(data.workerId),role);
    const hasDestination=kind==='vistoria'&&Boolean(clean(data.destinationId));
    const dest=hasDestination?db.prepare('SELECT * FROM inspection_destinations WHERE id=? AND active=1').get(clean(data.destinationId)):null;
    const address=dest?.address||clean(data.address),site=dest?.client_name||worker?.site||'';
    if(!worker||!worker.active||hasDestination&&!dest||address.length<5||address.length>350||reason.length<10||reason.length>1000){
     resp(res,422,{error:'Escolha um colaborador disponível, destino autorizado e justificativa com 10 ou mais caracteres'});return true;
    }
-   if(!availability().some(w=>w.id===worker.id&&(w.status==='Disponível'||kind==='vistoria'&&w.status==='Em vistoria'))){
+   if(!selfInspection&&!availability().some(w=>w.id===worker.id&&(w.status==='Disponível'||kind==='vistoria'&&w.status==='Em vistoria'))){
     resp(res,409,{error:'Profissional indisponível. Atualize a presença.'});return true;
    }
    const latitude=dest?dest.latitude:data.latitude==null?null:Number(data.latitude),
@@ -212,7 +214,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    if(rawRoute.length>12||rawRoute.some(point=>!point||!Number.isFinite(Number(point.lat))||!Number.isFinite(Number(point.lng))||Math.abs(Number(point.lat))>90||Math.abs(Number(point.lng))>180)){
     resp(res,422,{error:'Rota inválida. Informe até 12 pontos válidos em latitude e longitude.'});return true;
    }
-   const routePoints=kind==='vistoria'?rawRoute.map(p=>({lat:Number(p.lat),lng:Number(p.lng),label:clean(p.label).slice(0,70)})):[];
+   const routePoints=rawRoute.map(p=>({lat:Number(p.lat),lng:Number(p.lng),label:clean(p.label).slice(0,70)}));
    const dispatchId=id(),at=now();
    db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at,kind,destination_id,site,route_points) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
     .run(dispatchId,worker.id,user.id,address,reason,latitude,longitude,at,kind,dest?.id||null,site,JSON.stringify(routePoints));
@@ -220,7 +222,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
     address+' · '+reason,null,dispatchId,at);
    announce(worker.id);
    notify(ADMIN_ROLES,'dispatch','Despacho sob demanda registrado',user.name+' → '+worker.name+' · '+address+' · '+reason,{dispatchId,except:[user.id]});
-   audit(user,'dispatch.'+kind+'.create',dispatchId);
+   audit(user,selfInspection?'dispatch.self.'+kind+'.create':'dispatch.'+kind+'.create',dispatchId);
    resp(res,201,{id:dispatchId,createdAt:at});return true;
   }
   const ack=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/ack$/i);
