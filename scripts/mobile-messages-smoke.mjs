@@ -90,6 +90,9 @@ try {
       };
       walk(virtual.cssRules);
       return {url:url.pathname,bytes:source.length,http:response.status,media600:matchMedia('(max-width:600px)').matches,
+              className:el?.className,cssLoaded:Array.from(document.styleSheets).map(x=>({href:x.href,rules:(()=>{try{return x.cssRules.length}catch{return -1}})()})).slice(-8),
+              virtualCount:virtual.cssRules.length,virtualSample:Array.from(virtual.cssRules).slice(0,3).map(x=>x.cssText.slice(0,120)),
+              sourceRule:source.includes('.rp-field-chat-overlay,.rp-field-chat-overlay[open]'),
               rules:matched.slice(-30)};
     });
     console.log('Chat CSS cascade diagnostic:',JSON.stringify(cascade));
