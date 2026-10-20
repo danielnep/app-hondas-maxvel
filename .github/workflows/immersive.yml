@@ -1,11 +1,11 @@
-name: Experiencia real do app simulada
+name: Experiencia real autenticada Ronda Pro
 on:
   workflow_dispatch:
   pull_request:
   push:
     branches: [main, maxvel-06-ux-mobile]
     paths:
-      - 'scripts/app-immersive-test.mjs'
+      - 'scripts/live-browser-check.mjs'
       - 'scripts/coi-central-smoke.mjs'
       - 'scripts/coi-demo-smoke.mjs'
       - 'src/coi-monitor.js'
@@ -35,29 +35,14 @@ jobs:
           node-version: '24'
       - name: Instalar controlador de navegador
         run: npm install --no-save --no-package-lock playwright-core@1.56.1
-      - name: Conferir desenho real do mapa de vistoria com 1 e 3 destinos
-        run: node scripts/inspection-map-smoke.mjs
+      - name: Validar quatro perfis reais e cadastro no navegador
+        run: node scripts/live-browser-check.mjs
         env:
           CHROME_BIN: /usr/bin/google-chrome
-      - name: Validar ronda real autenticada no mapa do vigia
-        run: node scripts/field-guard-smoke.mjs
-        env:
-          CHROME_BIN: /usr/bin/google-chrome
-      - name: Validar abertura de tratativas no COI demonstrativo
-        run: node scripts/coi-demo-smoke.mjs
-        env:
-          CHROME_BIN: /usr/bin/google-chrome
-      - name: Guardar prévia visual da revisão
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: maxvel-uiux-preview
-          path: artifacts/uiux-refinement/
-          if-no-files-found: warn
-      - name: Executar fluxos do próprio app em sete tamanhos
-        run: node scripts/app-immersive-test.mjs
-      - name: Validar COI autenticado (mobile e desktop)
+      - name: Validar central operacional no backend
         run: node scripts/coi-central-smoke.mjs
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
       - name: Guardar capturas e medidas
         if: always()
         uses: actions/upload-artifact@v4
