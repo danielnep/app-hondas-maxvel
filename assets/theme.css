@@ -1611,6 +1611,23 @@
     }
   }
 
+  /* The field document must occupy real layout space. A zero-height central-root
+     clips its fixed cockpit in Chrome even though getBoundingClientRect reports 100dvh.
+     The old 0px translate on .content also establishes a wrong desktop fixed anchor. */
+  body.rp-theme[data-rp-field="true"] #central-root,
+  body.rp-theme[data-rp-field="true"] #central-root .rp2-workspace,
+  body.rp-theme[data-rp-field="true"] #central-root .content,
+  body.rp-theme[data-rp-field="true"] #central-root :is(.rp-guard-workspace,.rp-inspector-workspace) {
+    box-sizing: border-box !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    translate: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
   /* Field viewport: override the legacy #central-root inspector rules at their origin.
      The prior 100dvh workspace contained a calc(100dvh - 110px) panel, leaving a
      dead strip below the map and allowing instructional content to cross the HUD. */
