@@ -81,7 +81,7 @@ function decorateOverlays(){
    // Keep the right drawer in normal DOM stacking. A popover top layer misplaces
    // the panel on Android and can place it over the map rather than at the edge.
    if(list?.hasAttribute('popover'))list.removeAttribute('popover');
-   if(list&&!$('.rp-drawer-handle',list)){const close=document.createElement('button');close.type='button';close.className='rp-drawer-handle';close.setAttribute('aria-label','Recolher notificações');close.innerHTML=arrows.right;close.addEventListener('click',()=>{popover.open=false;summary.focus()});list.prepend(close)}}
+   if(list&&!$('.rp-drawer-handle',popover)){const close=document.createElement('button');close.type='button';close.className='rp-drawer-handle';close.setAttribute('aria-label','Recolher notificações');close.innerHTML=arrows.right;close.addEventListener('click',()=>{popover.open=false;summary.focus()});popover.append(close)}}
  }
 }
 function openLeft(){closeOtherFieldPanels('menu');const trigger=$('[data-action="open-mobile-menu"]')||$('[data-central-menu]');trigger?.click();decorateOverlays();return $('#dialog[open].rp-side-drawer')||$('#central-navigation.is-open')}
