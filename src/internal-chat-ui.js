@@ -55,6 +55,20 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
   const valid=new Set(rows.flatMap(m=>m.attachments.map(a=>a.id)));for(const [key,url] of urls)if(!valid.has(key)){URL.revokeObjectURL(url);urls.delete(key)}
  }
  const isField=()=>['ronda','vistoriador'].includes(getAccount()?.role);
+ function closeFieldSheet(){
+  const dialog=document.querySelector('#rp-field-chat-overlay');
+  if(!dialog?.open||dialog.dataset.dismissing==='true')return;
+  const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if(reduce||!dialog.animate){dialog.close();return;}
+  dialog.dataset.dismissing='true';
+  const animation=dialog.animate([
+   {opacity:1,translate:'0 0'},
+   {opacity:0,translate:'0 24px'}
+  ],{duration:230,easing:'cubic-bezier(.4,0,.8,.3)',fill:'forwards'});
+  const done=()=>{if(dialog.open)dialog.close();};
+  animation.addEventListener('finish',done,{once:true});
+  animation.addEventListener('cancel',done,{once:true});
+ }
  function fieldOverlay(){
   let overlay=document.querySelector('#rp-field-chat-overlay');
   if(!overlay){
@@ -62,7 +76,7 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
    overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+view()+'<button type="button" class="rp-chat-grip" data-chat-overlay-close aria-label="Recolher mensagens"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 7-7 7 7"/></svg></button>';
    document.body.append(overlay);
    overlay.addEventListener('close',()=>{observer?.disconnect();overlay.remove()},{once:true});
-   overlay.addEventListener('cancel',()=>observer?.disconnect());
+   overlay.addEventListener('cancel',event=>{event.preventDefault();closeFieldSheet()});
    overlay.showModal();
   }else{const old=overlay.querySelector('.chat-page');if(old)old.outerHTML=view();}
   requestAnimationFrame(()=>void mount());return overlay;
@@ -81,7 +95,7 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
   await api('/chat/conversations/'+cid+'/messages',{method:'POST',data:payload});reply=null;await refresh();
  }
  async function click(t){
-  if(t.hasAttribute('data-chat-overlay-close')){document.querySelector('#rp-field-chat-overlay')?.close();return true}
+  if(t.hasAttribute('data-chat-overlay-close')){closeFieldSheet();return true}
    if(t.hasAttribute('data-chat-close')){close();return true}
   if(t.hasAttribute('data-chat-open-quick')){if(isField()){fieldOverlay();return true;}if(active&&conversations.some(c=>c.id===active))await open(active);else if(conversations.length)await open(conversations[0].id);else navigate('chat');return true}
    if(t.hasAttribute('data-chat-page')){if(isField())fieldOverlay();else navigate('chat');return true}
