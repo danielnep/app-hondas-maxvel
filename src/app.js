@@ -872,32 +872,44 @@ function demoEventNotifications(){
  const incoming=localCommunications().filter(n=>!field||n.name===user.name).map(n=>({...n,id:'field:'+n.id,session:{id:'field',name:n.name,route:{name:n.route}}}));
  return [...own,...incoming].sort((a,b)=>b.at-a.at);
 }
+let demoChatScreen='list',liveChatId=null,liveContacts=[],liveConversations=[],liveMessages=[];
+async function refreshRealChat(){
+ if(!user?.id)return;
+ const [contactData,conversationsData]=await Promise.all([liveRequest('/chat/contacts'),liveRequest('/chat/conversations')]);
+ liveContacts=contactData.contacts||[];liveConversations=conversationsData.conversations||[];
+ if(liveChatId){
+  if(liveConversations.some(c=>c.id===liveChatId))liveMessages=(await liveRequest('/chat/conversations/'+encodeURIComponent(liveChatId)+'/messages')).messages||[];
+  else{liveChatId=null;liveMessages=[];demoChatScreen='list';}
+ }
+ const overlay=document.querySelector('#rp-demo-chat-overlay');
+ if(overlay&&overlay.open)overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+demoChatView();
+ if(view==='chat-interno'&&!overlay){const main=document.querySelector('#main .rp-chat-native');if(main)main.outerHTML=demoChatView();}
+}
+function demoChatRows(){return liveMessages;}
 function demoHeaderButtons(){
- const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length;
- const messages=demoChatRows(),last=messages.at(-1),unread=0;
- return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos destinados ao perfil: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos recebidos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Sem eventos para este perfil.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais</button>':'')+'</div></details>'+
- '<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens do COE">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Conversas recentes</strong><button type="button" data-action="demo-chat-overlay"><b>COE · Central de Operações</b><small>'+(last?esc(last.body.slice(0,90)):'Sem mensagens recentes')+'</small></button><button type="button" data-action="demo-chat-overlay-more">Ver mais conversas</button></div></details></div>';
+ const unread=liveConversations.reduce((n,c)=>n+(c.unread||0),0);
+ return '<div class="rp-header-tools"><button type="button" class="rp-blue-button" data-action="demo-chat-overlay">'+ic('message')+'<span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button></div>';
 }
 function openDemoChatOverlay(list=false){
- demoChatScreen=list?'list':'thread';
+ if(list)demoChatScreen='list';
  let overlay=document.querySelector('#rp-demo-chat-overlay');
- if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';
-  document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
+ if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
  overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+demoChatView();
  if(!overlay.open)overlay.showModal();
+ void refreshRealChat().catch(e=>notify(e.message));
 }
-let demoChatScreen='list',demoChatTarget='COI';
-function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows.filter(m=>(m.target||'COI')===demoChatTarget):[]}catch{return []}}
 function demoChatView(){
- const rows=demoChatRows(),mine=user?.name||'Vigia',last=rows.at(-1),thread=demoChatScreen==='thread';
- const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':(allNav[user?.role]||[['minha-ronda']])[0][0];
- const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'" aria-label="Voltar à área de trabalho">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Comunicação operacional</small></div></header>';
- const list='<section class="field-chat-list" aria-label="Conversas"><div class="field-chat-list-label">CONVERSAS</div><button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="COI"><span class="field-chat-avatar">C</span><span class="field-chat-contact-copy"><strong>COI · Central de Operações</strong><small>'+(last?esc(last.body):'Toque para iniciar uma conversa')+'</small></span><span class="field-chat-contact-time">'+(last?time(last.at):'')+'</span></button><div class="field-chat-local-note">Demonstração local: mensagens deste aparelho. Para conversas reais entre equipes, use a central autenticada.</div><a class="field-chat-auth-link" href="/central.html#chat">Abrir mensagens da central autenticada ↗</a></section>';
- const contacts='<section class="field-chat-list"><div class="field-chat-list-label">ESCOLHA O DESTINATÁRIO</div>'+['COI',user?.role==='ronda'?'Vistoriador':'Vigia'].map(name=>'<button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="'+name+'"><span class="field-chat-avatar">'+name[0]+'</span><strong>'+name+'</strong></button>').join('')+'</section>';
- const messages=rows.map(m=>'<article class="field-chat-bubble '+(m.author===mine?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+time(m.at)+(m.author===mine?' · Salva neste aparelho':'')+'</small></article>').join('');
- const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list" aria-label="Voltar para conversas">'+ic('arrowleft')+'</button><span class="field-chat-avatar">C</span><div><strong>'+esc(demoChatTarget==='COI'?'COI · Central de Operações':demoChatTarget)+'</strong><small>Chat local de demonstração</small></div></header><div class="field-chat-thread" role="log" aria-label="Mensagens da conversa com o COI">'+(messages||'<div class="field-chat-empty"><strong>Conversa iniciada</strong><span>Envie uma mensagem para registrar a demonstração.</span></div>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Escrever mensagem</label><input id="demo-chat-body" name="body" required maxlength="2000" placeholder="Mensagem" autocomplete="off"><button type="submit" class="button primary" aria-label="Enviar mensagem">Enviar</button></form></section>';
- return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(demoChatScreen==='contacts'?contacts:thread?conversation:list+'<button type="button" class="button primary" data-action="demo-chat-contacts">Iniciar conversa</button>')+'</div></section>';
+ const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':'overview';
+ const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Equipe · Banco de dados</small></div></header>';
+ const rows=liveConversations.map(c=>'<button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="'+esc(c.id)+'"><span class="field-chat-avatar">'+esc(c.title?.slice(0,1)||'?')+'</span><span class="field-chat-contact-copy"><strong>'+esc(c.title)+'</strong><small>'+esc(c.last?.body||'Sem mensagens')+'</small></span>'+(c.unread?'<b>'+c.unread+'</b>':'')+'</button>').join('');
+ const list='<section class="field-chat-list"><div class="field-chat-list-label">CONVERSAS</div>'+(rows||'<p>Nenhuma conversa iniciada.</p>')+'<button type="button" class="button primary" data-action="demo-chat-contacts">Nova conversa</button></section>';
+ const contacts='<section class="field-chat-list"><div class="field-chat-list-label">CONTATOS</div>'+liveContacts.map(c=>'<button type="button" class="field-chat-contact-row" data-action="live-chat-contact" data-contact="'+esc(c.id)+'"><strong>'+esc(c.name)+'</strong><small>'+esc(roleName[c.role]||c.role)+'</small></button>').join('')+'<button class="button" type="button" data-action="demo-chat-list">Voltar</button></section>';
+ const active=liveConversations.find(c=>c.id===liveChatId);
+ const messages=liveMessages.map(m=>'<article class="field-chat-bubble '+(m.author_id===user.id?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+esc(m.author||'')+' · '+time(m.created_at)+'</small></article>').join('');
+ const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list">'+ic('arrowleft')+'</button><strong>'+esc(active?.title||'Conversa')+'</strong></header><div class="field-chat-thread" role="log">'+(messages||'<p>Escreva a primeira mensagem.</p>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Mensagem</label><input name="body" id="demo-chat-body" required maxlength="4000" autocomplete="off" placeholder="Mensagem"><button type="submit" class="button primary">Enviar</button></form></section>';
+ return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(demoChatScreen==='contacts'?contacts:demoChatScreen==='thread'?conversation:list)+'</div></section>';
 }
+setInterval(()=>{if(user?.id&&!document.hidden&&(document.querySelector('#rp-demo-chat-overlay')?.open||view==='chat-interno'))void refreshRealChat().catch(()=>{});},8000);
 let demoHistoryPage=0;
 function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,selectionKey:'round:'+r.id,type:'round',at:r.startedAt,name:r.name,site:r.route?.name,status:r.status})),...demoInspectionRecords().map((r,i)=>({id:String(i),selectionKey:'inspection:'+i,type:'inspection',at:r.at,name:'Vistoria',site:r.address||DEMO_WATCHERS[0].unit,status:'Enviada'}))].sort((a,b)=>b.at-a.at);}
 let demoHistorySelection=new Set();
@@ -1293,9 +1305,13 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());
   notify('Chegada registrada na simulação. Preencha a vistoria.');return;
  }
- if(act==='demo-chat-contacts'){demoChatScreen='contacts';let overlay=document.querySelector('#rp-demo-chat-overlay');if(overlay){const old=overlay.querySelector('.field-chat-screen');if(old)old.outerHTML=demoChatView();}else render();return;}
- if(act==='demo-chat-open'){demoChatTarget=el.dataset.contact||'COI';demoChatScreen='thread';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
- if(act==='demo-chat-list'){demoChatScreen='list';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(true);else render();return;}
+ if(act==='demo-chat-contacts'){demoChatScreen='contacts';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();return;}
+ if(act==='live-chat-contact'){
+  try{const r=await liveRequest('/chat/conversations',{method:'POST',data:{members:[el.dataset.contact]}});liveChatId=r.id;demoChatScreen='thread';await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();}
+  catch(error){notify(error.message);}return;
+ }
+ if(act==='demo-chat-open'){liveChatId=el.dataset.contact;demoChatScreen='thread';await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();return;}
+ if(act==='demo-chat-list'){liveChatId=null;liveMessages=[];demoChatScreen='list';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
  if(act==='demo-coi-tab'){if(['rondas','vistorias'].includes(el.dataset.tab)){demoCoiTab=el.dataset.tab;render();}return;}
  if(act==='close-dialog'){if(modal.dataset.mandatoryNotice==='true')return;modal.close();return;}
@@ -1649,7 +1665,8 @@ document.addEventListener('submit',async e=>{
   catch(error){notify(error.message);}
   return;
  }
- if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,target:demoChatTarget,at:Date.now()});const others=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]').filter(m=>(m.target||'COI')!==demoChatTarget);localStorage.setItem('rondas-pro-demo-chat',JSON.stringify([...others,...rows]));if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
+ if(e.target.id==='demo-chat-form'){e.preventDefault();const message=String(new FormData(e.target).get('body')||'').trim();if(!liveChatId||!message)return;const button=e.target.querySelector('button');button.disabled=true;try{await liveRequest('/chat/conversations/'+encodeURIComponent(liveChatId)+'/messages',{method:'POST',data:{body:message,id:crypto.randomUUID()}});await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();}catch(error){button.disabled=false;notify(error.message)}return;}
+
  if(e.target.id==='demo-inspection-form'){
   e.preventDefault();if(user?.role!=='vistoriador')return;
   const f=new FormData(e.target),pending=demoPendingInspection();
