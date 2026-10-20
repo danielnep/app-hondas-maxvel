@@ -6,6 +6,7 @@ const app=read('src/app.js');
 const css=read('assets/inspector-patrol-parity-20261016.css');
 const wizard=read('src/wizard.js');
 const index=read('index.html');
+const bundled=read('assets/ronda-pro.css');
 
 test('administração alterna panes reais no desktop, resumo agrega e supervisão preserva paralelismo',()=>{
  assert.match(app,/wideDesktop\.matches&&\(user\.role!=='admin'\|\|selected==='resumo'\)/);
@@ -46,8 +47,9 @@ test('programação tem seleção legível e mensagens de erro próximas aos cam
 });
 test('CSS corretivo permanece carregado no último slot da demonstração',()=>{
  const name='inspector-patrol-parity-20261016.css';
- assert.ok(index.includes(name));
- assert.ok(index.indexOf(name)>index.indexOf('maxvel-print-qa-20261016.css'));
+ assert.match(index,/assets\/ronda-pro\.css\?v=19/);
+ assert.ok(bundled.includes('/* ORIGINAL: assets/'+name+' */'));
+ assert.ok(bundled.indexOf(name)>bundled.indexOf('maxvel-print-qa-20261016.css'));
 });
 
 test('mapa de seleção permanece contido e os botões de endereço e coordenadas não recebem eventos do Leaflet',()=>{
