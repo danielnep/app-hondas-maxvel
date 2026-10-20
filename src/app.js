@@ -1010,6 +1010,9 @@ function reports(){
 }
 function settings(){
  if(user?.role!=='admin')return pageTitle('Sem permissão','Regras disponíveis somente para Gerência e Administração.');
+ return pageTitle('Configurações','Cadastro de profissionais autorizado apenas à Administração.')+'<section class="schedule-workspace"><h2>Cadastro de profissionais</h2><form id="live-create-user-form" class="live-register"><label>Perfil<select name="role"><option value="coi">COI</option><option value="ronda">Vigia / Ronda</option><option value="vistoriador">Vistoriador</option></select></label><label>Nome<input name="name" required minlength="2"></label><label>E-mail<input type="email" name="email" required></label><label>Telefone<input type="tel" name="phone" required></label><label>Usuário (opcional; pode usar e-mail)<input name="username" minlength="3" maxlength="40"></label><label>Senha<input type="password" name="password" required minlength="12" autocomplete="new-password"></label><button type="submit" class="button primary">Cadastrar</button></form><div class="team-list" style="margin-top:16px">'+liveUsers.map(p=>'<div class="team-row"><strong>'+esc(p.name)+'</strong><span>'+esc(p.username||p.email)+' · '+esc(roleName[p.role]||p.role)+'</span></div>').join('')+'</div></section>';
+}
+function legacySettings(){
  const options=[
   {id:'dwellSeconds',title:'Tempo de permanência',value:operationalSettings.dwellSeconds+' segundos',
    info:'Defina de 5 a 120 segundos em cada ponto.'},
@@ -1498,7 +1501,7 @@ if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch((
   if(!assignment){notify('Vistoria indisponivel.');return;}
   showDialog('<h2>Concluir vistoria · '+esc(assignment.address)+'</h2><form id="live-inspection-form" data-dispatch="'+esc(assignment.id)+'"><p>Marque os itens em conformidade.</p>'+
   ['acessos','estrutura','equipamentos','sinalizacao'].map(key=>'<label class="field">'+esc(key)+'<select name="'+key+'" required><option value="true">Conforme</option><option value="false">Nao conforme</option></select></label>').join('')+
-  '<label class="field">Relato<textarea name="note" required minlength="10" maxlength="1500></textarea></label>'+
+  '<label class="field">Relato<textarea name="note" required minlength="10" maxlength="1500"></textarea></label>'+
   '<label class="field">Selfie<input type="file" name="selfie" accept="image/jpeg,image/png,image/webp" capture="user" required></label>'+
   '<label class="field">Foto do local<input type="file" name="local" accept="image/jpeg,image/png,image/webp" capture="environment" required></label>'+
   '<button type="submit" class="button primary full">Enviar laudo e concluir</button></form>');
