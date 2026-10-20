@@ -1879,7 +1879,7 @@ dialog :is(.choice,.section-note,.rules li,.guide-pan,.guide-tabs button),.tour-
  .dashboard .app-header .header-actions .user-pill svg,
  .dashboard .app-header .header-actions .compact-role-picker svg{display:none!important}
 .dashboard .app-header .header-actions .user-pill{width:36px!important;min-width:36px!important;overflow:hidden!important}
-.dashboard .app-header .header-actions .avatar{width:25px!important;height:25px!important;font-size:11px!important}
+.dashboard .app-header .header-actions .avatar{width:30px!important;height:30px!important;font-size:13px!important}
 .dashboard .simulation-rolebar{flex:0 0 45px!important;min-height:45px!important;max-height:45px!important;padding:0 4px!important}
 .dashboard .simulation-caption,.dashboard .simulation-actions .simulation-progress,.dashboard .simulation-actions [data-action="end-presentation"]{display:none!important}
 .dashboard .simulation-rolebar .simulation-roles{width:100%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:2px!important}
