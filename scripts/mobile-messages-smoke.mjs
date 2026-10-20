@@ -47,71 +47,9 @@ try {
     await sheet.waitFor();
     const box=await sheet.boundingBox();
     assert.ok(box,'Mensagem deve ficar visível e clicável');
-    const diagnostics=await sheet.evaluate(node=>({
-      rect:{width:node.getBoundingClientRect().width,height:node.getBoundingClientRect().height,
-            x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y},
-      viewport:{width:window.innerWidth,height:window.innerHeight},
-      styles:{width:getComputedStyle(node).width,height:getComputedStyle(node).height,
-              maxWidth:getComputedStyle(node).maxWidth,maxHeight:getComputedStyle(node).maxHeight},
-      matched:(()=>{
-        const out=[];
-        const walk=(list,media='all')=>{
-          for(const rule of list){
-            if(rule.cssRules?.length){walk(rule.cssRules,rule.conditionText||media);continue;}
-            if(!rule.selectorText||!rule.style?.length)continue;
-            try{if(!node.matches(rule.selectorText))continue;}catch{continue;}
-            const props=['width','max-width','height','max-height','margin','padding'];
-            if(!props.some(p=>rule.style.getPropertyValue(p)))continue;
-            out.push({selector:rule.selectorText,media,width:rule.style.width,
-                      maxWidth:rule.style.maxWidth,height:rule.style.height,maxHeight:rule.style.maxHeight});
-          }
-        };
-        for(const sheet of document.styleSheets)try{walk(sheet.cssRules);}catch{}
-        return out.slice(-18);
-      })()
-    }));
-    console.log('Chat viewport diagnostic:',JSON.stringify(diagnostics));
-    const cascade=await page.evaluate(async()=>{
-      const url=new URL('./assets/ronda-pro.css?v=20',location.href);
-      const response=await fetch(url,{cache:'no-store'});
-      const source=await response.text();
-      const virtual=new CSSStyleSheet();
-      virtual.replaceSync(source);
-      const el=document.querySelector('#rp-demo-chat-overlay');
-      const matched=[];
-      const walk=(list,media='all')=>{
-        for(const rule of list){
-          if(rule.cssRules?.length){walk(rule.cssRules,rule.conditionText||media);continue;}
-          if(!rule.selectorText||!rule.style)continue;
-          try{if(!el.matches(rule.selectorText))continue;}catch{continue;}
-          if(!['width','max-width','height','max-height'].some(p=>rule.style.getPropertyValue(p)))continue;
-          matched.push({selector:rule.selectorText,media,css:rule.style.cssText.slice(0,270)});
-        }
-      };
-      walk(virtual.cssRules);
-      const sample=[];
-      const scan=(rules,depth=0)=>{
-        for(const rule of rules){
-          if(rule.cssRules?.length){scan(rule.cssRules,depth+1);continue;}
-          if(rule.selectorText&&(/rp-field-chat-overlay|rp-demo-chat-sheet|^dialog$/.test(rule.selectorText))){
-            sample.push({selector:rule.selectorText.slice(0,250),css:rule.style?.cssText?.slice(0,280),matches:el.matches(rule.selectorText),depth});
-          }
-        }
-      };
-      scan(virtual.cssRules);
-      return {sample:sample.slice(-15),sourceOccurrence:source.lastIndexOf('.rp-field-chat-overlay,.rp-field-chat-overlay[open]'),
-              url:url.pathname,bytes:source.length,http:response.status,media600:matchMedia('(max-width:600px)').matches,
-              className:el?.className,cssLoaded:Array.from(document.styleSheets).map(x=>({href:x.href,rules:(()=>{try{return x.cssRules.length}catch{return -1}})()})).slice(-8),
-              virtualCount:virtual.cssRules.length,virtualSample:Array.from(virtual.cssRules).slice(0,3).map(x=>x.cssText.slice(0,120)),
-              tailRules:Array.from(virtual.cssRules).slice(-8).map(x=>({type:x.constructor.name,length:x.cssText.length,
-              head:x.cssText.slice(0,240),tail:x.cssText.slice(-240),selector:x.selectorText||null})),
-              sourceRule:source.includes('.rp-field-chat-overlay,.rp-field-chat-overlay[open]'),
-              rules:matched.slice(-30)};
-    });
-    console.log('Chat CSS cascade diagnostic:',JSON.stringify(cascade));
     if(width<=600){
       assert.ok(box.width>=width-2 && box.height>=height-2,
-        'Janela de mensagens deve ocupar a viewport mobile: '+JSON.stringify(diagnostics));
+        'Janela de mensagens deve ocupar a viewport mobile');
       assert.ok(Math.abs(box.y)<3,'Painel deve começar no topo da viewport');
     }
     await sheet.locator('#demo-chat-body').fill('Mensagem real de teste de interface');
