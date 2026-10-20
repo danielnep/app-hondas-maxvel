@@ -24,9 +24,12 @@ const svg=key=>'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stro
 export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base=null,gpsActive=false,fullTitle='Minhas vistorias'}={}){
  const current=queue[0]||null,coords=pointOf(current),p=pointOf(position),
   distance=coords&&p?Math.round(metersBetween(coords,p)):null;
- const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada':'Aguardando COI';
+ const round=current&&(current.taskKind==='ronda'||current.kind==='ronda');
+ const step=mode==='live'&&round?(started(current)?'Ronda em andamento':'Ronda preparada'):current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada':'Aguardando COI';
  const liveAction=kind=>'data-action="live-inspection-'+kind+'" data-id="'+html(current?.id)+'"';
- const action=current?started(current)?arrived(current)?
+ const action=mode==='live'&&round?started(current)?
+  '<button type="button" class="rp-inspection-main-action" data-action="inspector-round-finish" data-id="'+html(current.id)+'">Finalizar ronda '+svg('arrow')+'</button>':
+  '<button type="button" class="primary rp-inspection-main-action" '+liveAction('start')+'>Iniciar ronda '+svg('arrow')+'</button>':current?started(current)?arrived(current)?
   '<button type="button" class="rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-wizard-open"':mode==='live'?liveAction('report'):'data-wizard-open')+'>'+(mode==='live'?'Registrar vistoria':'Abrir checklist')+' '+svg('arrow')+'</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':mode==='live'?liveAction('arrive'):'data-inspection-arrive')+'>Confirmar chegada '+svg('arrow')+'</button>':
   '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-depart"':mode==='live'?liveAction('start'):'data-inspection-depart')+'>Iniciar deslocamento '+svg('arrow')+'</button>':
@@ -63,6 +66,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
    (current?'<nav class="rp-inspection-directions" aria-label="Abrir destino em aplicativo de navegação">'+
    '<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(directions)+'" aria-label="Abrir destino no Google Maps">Google Maps ↗</a>'+
    '<a class="rp-inspection-navigate" target="_blank" rel="noopener noreferrer" href="'+html(waze)+'" aria-label="Abrir destino no Waze">Waze ↗</a></nav>':'')+'</div>'+
+  (mode==='live'?'<nav class="rp-inspector-create-actions" aria-label="Criar atividades"><button type="button" data-action="inspector-create" data-task-kind="inspection">+ Nova vistoria</button><button type="button" data-action="inspector-create" data-task-kind="ronda">+ Nova ronda</button><button type="button" data-action="inspector-history-all">Histórico</button></nav>':'')+
   '</div>'+
  '</section>'+
  '<dialog class="rp-inspection-dialog" data-inspection-circuit-modal aria-label="Circuito e próximas vistorias">'+
