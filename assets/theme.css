@@ -1611,6 +1611,118 @@
     }
   }
 
+  /* The field document must occupy real layout space. A zero-height central-root
+     clips its fixed cockpit in Chrome even though getBoundingClientRect reports 100dvh.
+     The old 0px translate on .content also establishes a wrong desktop fixed anchor. */
+  body.rp-theme[data-rp-field="true"] #central-root,
+  body.rp-theme[data-rp-field="true"] #central-root .rp2-workspace,
+  body.rp-theme[data-rp-field="true"] #central-root .content,
+  body.rp-theme[data-rp-field="true"] #central-root :is(.rp-guard-workspace,.rp-inspector-workspace) {
+    box-sizing: border-box !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    translate: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+  /* Field viewport: override the legacy #central-root inspector rules at their origin.
+     The prior 100dvh workspace contained a calc(100dvh - 110px) panel, leaving a
+     dead strip below the map and allowing instructional content to cross the HUD. */
+  body.rp-theme[data-rp-field="true"] #central-root .rp-inspector-workspace > .rp-inspection-cockpit,
+  body.rp-theme[data-rp-field="true"] #central-root .rp-inspector-workspace > .patrol-workspace,
+  body.rp-theme[data-rp-field="true"] #central-root .rp-guard-workspace > .patrol-workspace {
+    position: fixed !important;
+    inset: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+  }
+  body.rp-theme[data-rp-field="true"] #central-root .rp-inspector-workspace .rp-inspection-map-panel,
+  body.rp-theme[data-rp-field="true"] #central-root .rp-guard-workspace .patrol-map-panel {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+  }
+  body.rp-theme[data-rp-field="true"] #central-root .rp-inspector-workspace .rp-inspection-map-canvas,
+  body.rp-theme[data-rp-field="true"] #central-root .rp-inspector-workspace .rp-inspector-map,
+  body.rp-theme[data-rp-field="true"] #central-root .rp-guard-workspace .patrol-map-canvas,
+  body.rp-theme[data-rp-field="true"] #central-root .rp-guard-workspace .map-container {
+    position: absolute !important;
+    inset: 0 !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+  }
+  /* Avoid ghost cards and bright map roads bleeding through the open
+     notification drawer while keeping its Glass borders, glow and motion. */
+  body.rp-theme[data-rp-field="true"] .rp-notification-popover[open] > .rp-popover-list {
+    background: #19232c !important;
+  }
+  /* Same control position and form as the left menu's close action: in the top
+     toolbar of the drawer, never dangling at the middle of its outer edge. */
+  body.rp-theme[data-rp-field="true"] .rp-notification-popover[open] > .rp-drawer-handle {
+    position: fixed !important;
+    inset: calc(75px + env(safe-area-inset-top,0px)) 10px auto auto !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 9px !important;
+    box-shadow: none !important;
+    color: var(--rp-ink) !important;
+    z-index: 5520 !important;
+  }
+  body.rp-theme[data-rp-field="true"] .rp-notification-popover[open] > .rp-drawer-handle:focus-visible {
+    outline: 2px solid var(--rp-blue) !important;
+    outline-offset: 2px !important;
+  }
+  /* Swipe zones remain functional but must not paint two floating metal bars
+     on top of a field map or intercept controls beyond their narrow edge. */
+  body.rp-theme[data-rp-field="true"] .rp-gesture-edge {
+    width: 16px !important;
+    pointer-events: auto;
+  }
+  body.rp-theme[data-rp-field="true"] .rp-gesture-edge.left { left: 0 !important; }
+  body.rp-theme[data-rp-field="true"] .rp-gesture-edge.right { right: 0 !important; }
+  body.rp-theme[data-rp-field="true"] .rp-gesture-edge::after {
+    content: none !important;
+  }
+  @media (min-width:901px) {
+    body.rp-theme[data-rp-field="true"] .rp-gesture-edge { display:none !important; }
+  }
+
   /* Responsive geometry of the approved Glass UI; no palette, type or field-screen replacements. */
   @media (max-width: 1199px) and (min-width: 901px) {
     body.rp-theme[data-rp-field="false"] :is(#central-root .ops-monitor-columns,#central-root .coi3-columns) {
@@ -1862,5 +1974,6 @@
       transition: none !important;
     }
   }
+
 
 }
