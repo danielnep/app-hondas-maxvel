@@ -56,6 +56,7 @@ function initialize(){
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='planned_start'))db.exec('ALTER TABLE planned_routes ADD COLUMN planned_start INTEGER');
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='phone'))db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='username'))db.exec("ALTER TABLE users ADD COLUMN username TEXT");
+ if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='bootstrap_password_revision'))db.exec('ALTER TABLE users ADD COLUMN bootstrap_password_revision INTEGER NOT NULL DEFAULT 0');
  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL");
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
@@ -68,18 +69,37 @@ function initialize(){
   db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)')
    .run(id(),email,'Master','master',salt,authHash(pass,salt),'Conta principal',now());
  }
- // Contas iniciais configuradas por segredo do Railway; nunca credenciais no codigo.
+ // Contas iniciais configuradas no Railway; nunca publicar senhas no repositorio.
+ // A revisao cresce a cada rotacao solicitada e evita sobrescrever senhas em reinicios.
  if(process.env.RONDA_PRO_INITIAL_ACCOUNTS){
   let seeds=[];try{seeds=JSON.parse(process.env.RONDA_PRO_INITIAL_ACCOUNTS)}catch{throw new Error('RONDA_PRO_INITIAL_ACCOUNTS invalido')}
   if(!Array.isArray(seeds))throw new Error('Contas iniciais invalidas');
-  for(const a of seeds){
-   const username=clean(a.username).toLowerCase(),email=clean(a.email).toLowerCase(),password=a.password,role=a.role;
-   if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||!['admin','coi','ronda','vistoriador'].includes(role)||typeof password!=='string'||password.length<12)throw new Error('Conta inicial invalida');
-   if(db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE OR email=?').get(username,email))continue;
-   const salt=randomBytes(16).toString('hex');
-   db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,phone,site,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
-    .run(id(),email,username,clean(a.name)||role,role,salt,authHash(password,salt),'',clean(a.phone),'Grupo Maxvel',now());
-  }
+  const revision=Number(process.env.RONDA_PRO_INITIAL_ACCOUNTS_REVISION||0);
+  if(!Number.isSafeInteger(revision)||revision<0)throw new Error('RONDA_PRO_INITIAL_ACCOUNTS_REVISION invalida');
+  db.exec('BEGIN IMMEDIATE');
+  try{
+   for(const a of seeds){
+    const username=clean(a.username).toLowerCase(),email=clean(a.email).toLowerCase(),password=a.password,role=a.role;
+    if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||!['admin','coi','ronda','vistoriador'].includes(role)||typeof password!=='string'||password.length<12)throw new Error('Conta inicial invalida');
+    const existing=db.prepare('SELECT id,email,username,role,bootstrap_password_revision FROM users WHERE username=? COLLATE NOCASE OR email=?').get(username,email);
+    if(existing){
+     if(revision>existing.bootstrap_password_revision){
+      if(existing.username!==username||existing.email!==email||existing.role!==role){
+       console.warn('Rotacao de credencial ignorada: identidade da conta inicial divergente:',username);
+       continue;
+      }
+      const salt=randomBytes(16).toString('hex');
+      db.prepare('UPDATE users SET salt=?,password_hash=?,bootstrap_password_revision=? WHERE id=?').run(salt,authHash(password,salt),revision,existing.id);
+      db.prepare('DELETE FROM tokens WHERE user_id=?').run(existing.id);
+     }
+     continue;
+    }
+    const salt=randomBytes(16).toString('hex');
+    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,phone,site,created_at,bootstrap_password_revision) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
+     .run(id(),email,username,clean(a.name)||role,role,salt,authHash(password,salt),'',clean(a.phone),'Grupo Maxvel',now(),revision);
+   }
+   db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error}
  }
  const insert=db.prepare('INSERT OR IGNORE INTO templates(id,title,trigger,priority,enabled,cooldown_min) VALUES(?,?,?,?,?,?)');
  for(const row of presets)insert.run(...row);
