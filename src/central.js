@@ -938,7 +938,7 @@ document.addEventListener('click',async e=>{
    }
    if(target.hasAttribute('data-field-tool-torch')){await torch.toggle();return;}
    if(target.hasAttribute('data-field-tool-panic')){document.querySelector('#central-panic-dialog')?.showModal();return;}
-   if(target.hasAttribute('data-field-tool-chat')){const button=document.querySelector('[data-chat-page]');if(button)await chat.click(button);else {page='chat';render();}return;}
+   if(target.hasAttribute('data-field-tool-chat')){const button=document.querySelector('[data-chat-open-quick],[data-chat-page]');if(button)await chat.click(button);else {page='chat';render();}return;}
    if(target.hasAttribute('data-field-tool-alert')||target.hasAttribute('data-field-tool-incident')){composeKind=target.hasAttribute('data-field-tool-alert')?'alert':'incident';page='send';render();return;}
    if(target.hasAttribute('data-inspection-fit')){inspectionMap?.fit();return;}
   if(target.hasAttribute('data-inspection-depart')){

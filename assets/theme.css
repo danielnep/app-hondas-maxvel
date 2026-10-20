@@ -258,8 +258,11 @@
     box-shadow: none !important;
     color: #f4faff !important
   }
-  .rp-theme .rp-header-tools {
+  .rp-theme[data-rp-field=true] .rp-header-tools {
     gap: 15px !important
+  }
+  .rp-theme:not([data-rp-field=true]) .rp-header-tools {
+    gap: 7px !important
   }
   .rp-theme .rp-blue-button {
     background: transparent !important;
@@ -275,6 +278,19 @@
   .rp-theme :is(.top,.app-header) svg {
     width: 25px !important;
     height: 25px !important
+  }
+  /* Header-only geometry: management controls stay compact, field HUD is unchanged. */
+  /* Icon-button padding must not inherit the 15px global control padding: at 36px wide it leaves only 6px for the menu and squeezes the avatar into an oval. */
+  .rp-theme:not([data-rp-field=true]) .app-header :is(.app-menu-button,.rp-blue-button,.user-profile-button) {
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important
+  }
+  .rp-theme:not([data-rp-field=true]) .app-header :is(.app-menu-button,.rp-blue-button,.rp-header-popover>summary,.user-profile-button) .icon-svg {
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important
   }
   .rp-theme .rp-popover-list {
     border-left: 1px solid var(--rp-red) !important;
@@ -419,7 +435,7 @@
     color: #fff !important
   }
   .rp-theme .rp-field-chat-overlay {
-    background: rgba(25,35,44,.72) !important;
+    background: rgba(25,35,44,.97) !important;
     border: 1px solid var(--rp-red) !important;
     border-top: 0 !important;
     border-bottom: 0 !important;
@@ -449,12 +465,12 @@
   .rp-theme .rp-chat-grip {
     display: grid !important;
     place-items: center !important;
-    min-height: 64px !important;
+    min-height: 44px !important;
     touch-action: none !important;
     border: 0 !important;
     background: transparent !important;
     width: 100% !important;
-    padding: 10px 0 max(15px,env(safe-area-inset-bottom)) !important;
+    padding: 6px 0 max(7px,env(safe-area-inset-bottom)) !important;
     color: #fff !important
   }
   .rp-theme .rp-chat-grip svg {
@@ -670,14 +686,14 @@
   }
   .rp-theme .rp-field-chat-overlay {
     position: fixed!important;
-    inset: 0 5%!important;
+    inset: calc(68px + env(safe-area-inset-top,0px)) 5% 0!important;
     margin: 0!important;
     width: 90%!important;
     max-width: none!important;
-    height: 100dvh!important;
-    max-height: 100dvh!important;
-    padding: max(18px,env(safe-area-inset-top,0px)) 0 0!important;
-    border-radius: 0!important;
+    height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
+    max-height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
+    padding: 12px 0 calc(8px + env(safe-area-inset-bottom,0px))!important;
+    border-radius: 15px 15px 0 0!important;
     overflow: hidden!important
   }
   .rp-theme .rp-field-chat-overlay[open] {
@@ -910,7 +926,7 @@
     overflow: auto!important
   }
   .rp-theme .rp-notification-popover[open]>.rp-popover-list {
-    background: rgba(25,35,44,.75) !important;
+    background: rgba(25,35,44,.97) !important;
     backdrop-filter: blur(20px) saturate(.8) !important;
     -webkit-backdrop-filter: blur(20px) saturate(.8) !important;
     border: 0 !important;
@@ -918,14 +934,17 @@
     box-shadow: var(--rp-neon) !important;
     color: var(--rp-ink) !important;
     position: fixed!important;
-    inset: 0 0 0 auto!important;
-    width: min(84vw,430px)!important;
-    height: 100dvh!important;
-    max-height: 100dvh!important;
-    border-radius: 14px 0 0 14px!important;
-    padding: 20px 18px!important;
+    inset: calc(68px + env(safe-area-inset-top,0px)) 0 0 auto!important;
+    width: min(82vw,380px)!important;
+    max-width: min(82vw,380px)!important;
+    height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
+    max-height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
+    border-radius: 15px 0 0 15px!important;
+    padding: 20px 16px!important;
     z-index: 5500!important;
-    overflow: auto!important;
+    overflow-x: hidden!important;
+    overflow-y: auto!important;
+    overscroll-behavior-y: contain!important;
     touch-action: pan-y!important
   }
   @media (max-width:900px) {
@@ -1520,15 +1539,78 @@
     contain: none !important;
     will-change: auto !important
   }
-  .rp-theme .rp-notification-popover[open]>.rp-popover-list {
-    transform: none !important;
-    margin: 0 !important;
-    top: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: auto !important
-  }
+
   .rp-theme #central-root .rp2-nav-dismiss { display: none !important; }
+
+  /* Operational motion: existing Glass surfaces keep their exact palette and geometry. */
+  @keyframes rp-notice-arrive {
+    from { opacity: 0; translate: 24px 0; filter: blur(5px); }
+    to { opacity: 1; translate: 0 0; filter: blur(0); }
+  }
+  @keyframes rp-dialog-rise {
+    from { opacity: 0; translate: 0 26px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+  @keyframes rp-menu-arrive {
+    from { opacity: 0; translate: -22px 0; }
+    to { opacity: 1; translate: 0 0; }
+  }
+  @keyframes rp-content-arrive {
+    from { opacity: .4; translate: 0 10px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+  .rp-theme[data-rp-field=true] .rp-notification-popover[open]>.rp-popover-list {
+    animation: rp-notice-arrive 340ms cubic-bezier(.2,.85,.25,1) both !important;
+  }
+  .rp-theme[data-rp-field=true] .rp-notification-popover[open]>.rp-drawer-handle {
+    position: fixed !important;
+    left: auto !important;
+    right: calc(min(82vw,380px) - 22px) !important;
+    top: clamp(140px,48dvh,620px) !important;
+    width: 44px !important;
+    height: 66px !important;
+    min-height: 66px !important;
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    border: 1px solid var(--rp-rule) !important;
+    border-radius: 14px 0 0 14px !important;
+    background: rgba(25,35,44,.96) !important;
+    backdrop-filter: blur(14px) !important;
+    z-index: 5520 !important;
+    color: #e8f6ff !important;
+  }
+  .rp-theme[data-rp-field=true] #dialog.rp-side-drawer[open] {
+    animation: rp-menu-arrive 340ms cubic-bezier(.2,.85,.25,1) both !important;
+  }
+  .rp-theme[data-rp-field=true] :is(.rp-field-chat-overlay[open],#rp-demo-chat-overlay[open]) {
+    animation: rp-dialog-rise 360ms cubic-bezier(.18,.86,.25,1) both !important;
+  }
+  .rp-theme :is(.rp2-contextbar,.dashboard .app-content:not(.ronda-page)>section,.content>.surface) {
+    animation: rp-content-arrive 290ms cubic-bezier(.2,.8,.2,1) both;
+  }
+  .rp-theme :is(.rp-field-controls button,.rp-header-tools button,.rp-header-tools summary,.rp-inspection-map-controls button,.patrol-sheet-toggle) {
+    transition: color 200ms ease, background-color 220ms ease, border-color 220ms ease,
+      box-shadow 240ms ease, opacity 180ms ease, scale 200ms cubic-bezier(.2,.8,.2,1) !important;
+  }
+  @media (hover:hover) {
+    .rp-theme :is(.rp-field-controls button,.rp-header-tools button,.rp-header-tools summary,.rp-inspection-map-controls button):hover {
+      scale: 1.035;
+    }
+  }
+  .rp-theme :is(.rp-field-controls button,.rp-header-tools button,.rp-header-tools summary,.rp-inspection-map-controls button):active {
+    scale: .965;
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .rp-theme :is(.rp-notification-popover[open]>.rp-popover-list,#dialog.rp-side-drawer[open],.rp-field-chat-overlay[open],#rp-demo-chat-overlay[open],.rp2-contextbar,.dashboard .app-content>section,.content>.surface) {
+      animation: none !important;
+    }
+    .rp-theme :is(.rp-field-controls button,.rp-header-tools button,.rp-header-tools summary,.rp-inspection-map-controls button,.patrol-sheet-toggle) {
+      transition: none !important;
+      scale: 1 !important;
+    }
+  }
+
   /* Responsive geometry of the approved Glass UI; no palette, type or field-screen replacements. */
   @media (max-width: 1199px) and (min-width: 901px) {
     body.rp-theme[data-rp-field="false"] :is(#central-root .ops-monitor-columns,#central-root .coi3-columns) {

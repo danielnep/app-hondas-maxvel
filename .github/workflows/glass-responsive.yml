@@ -5,11 +5,14 @@ on:
       - 'assets/theme.css'
       - 'src/central.js'
       - 'scripts/responsive-management-review.mjs'
+      - 'scripts/field-drawer-cross-interaction.mjs'
+      - 'src/theme-shell.js'
+      - 'src/internal-chat-ui.js'
       - 'tests/glass-responsive-management.test.mjs'
       - '.github/workflows/glass-responsive.yml'
   workflow_dispatch:
   push:
-    branches: [feat/glass-responsive-management-20261020]
+    branches: [feat/glass-responsive-management-20261020, fix/field-drawers-motion-20261020]
 
 permissions:
   contents: read
@@ -30,12 +33,24 @@ jobs:
           npm run check
           npm run check:styles
           node --check scripts/responsive-management-review.mjs
+          node --check scripts/field-drawer-cross-interaction.mjs
       - name: Responsive CSS regressions
         run: node --test tests/glass-responsive-management.test.mjs
       - name: Authenticated real Chromium journeys at 320/360/393/768/1024/1440
         run: node scripts/responsive-management-review.mjs
         env:
           CHROME_BIN: /usr/bin/google-chrome
+      - name: Field drawers, message equivalence, open-close, edge handle (real Chromium)
+        run: node scripts/field-drawer-cross-interaction.mjs
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+      - name: Upload field interaction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ronda-field-drawer-evidence
+          path: artifacts/field-drawer-cross-interaction/
+          if-no-files-found: warn
       - name: Upload mobile and desktop evidence
         if: always()
         uses: actions/upload-artifact@v4

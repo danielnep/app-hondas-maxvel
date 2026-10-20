@@ -2,7 +2,44 @@
 const $=(s,root=document)=>root.querySelector(s);
 const glyph=(path)=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>';
 const arrows={left:glyph('<path d="m15 5-7 7 7 7"/>'),right:glyph('<path d="m9 5 7 7-7 7"/>'),up:glyph('<path d="m5 15 7-7 7 7"/>')};
+function animatePanelClose(element,finish,horizontal=true){
+ const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ if(!element?.animate||reduce){finish();return;}
+ const move=horizontal?'18px 0':'-18px 0';
+ const animation=element.animate([{opacity:1,translate:'0 0'},{opacity:0,translate:move}],{
+  duration:210,easing:'cubic-bezier(.4,0,.8,.3)',fill:'forwards'
+ });
+ animation.addEventListener('finish',finish,{once:true});
+ animation.addEventListener('cancel',finish,{once:true});
+}
 let installed=false,scheduled=false;
+function closeOtherFieldPanels(except){
+ if(document.body.dataset.rpField!=='true')return;
+ if(except!=='notice')document.querySelectorAll('.rp-notification-popover[open]').forEach(node=>{node.open=false});
+ if(except!=='chat')document.querySelectorAll('#rp-field-chat-overlay[open],#rp-demo-chat-overlay[open]').forEach(node=>node.close());
+ if(except!=='menu'){
+  const side=$('#dialog[open].rp-side-drawer');side?.close();
+  const nav=$('#central-navigation.is-open');nav?.classList.remove('is-open');
+  $('[data-central-menu]')?.setAttribute('aria-expanded','false');
+ }
+}
+function fieldPanelClick(e){
+ if(document.body.dataset.rpField!=='true')return;
+ const target=e.target;
+ if(target.closest('[data-chat-open-quick],[data-chat-page],[data-field-tool-chat],[data-action="demo-chat-overlay"],[data-action="demo-chat-overlay-more"]')){
+  closeOtherFieldPanels('chat');return;
+ }
+ if(target.closest('.rp-notification-popover>summary')){
+  closeOtherFieldPanels('notice');return;
+ }
+ if(target.closest('[data-action="open-mobile-menu"],[data-central-menu]')){
+  closeOtherFieldPanels('menu');return;
+ }
+ if(!target.closest('.rp-notification-popover,.rp-popover-list,.rp-drawer-handle')){
+  document.querySelectorAll('.rp-notification-popover[open]').forEach(node=>{node.open=false});
+ }
+}
+
 export function decorateTheme(role,name=''){
  document.body.classList.add('rp-theme');
  const field=['ronda','vistoriador'].includes(role),workspace=$('.patrol-workspace');
@@ -42,22 +79,23 @@ export function decorateTheme(role,name=''){
   }
   if(!$('.rp-gesture-edge'))for(const side of ['left','right']){const edge=document.createElement('div');edge.className='rp-gesture-edge '+side;edge.setAttribute('aria-hidden','true');document.body.append(edge);}
  }else{document.querySelectorAll('.rp-gesture-edge').forEach(n=>n.remove());document.querySelectorAll('header.top>.rp-field-profile,header.top>[data-central-menu]').forEach(n=>n.remove());}
- if(!installed){installed=true;document.addEventListener('pointerdown',pointerDown);document.addEventListener('pointermove',pointerMove,{passive:false});document.addEventListener('pointerup',e=>finish(e));document.addEventListener('pointercancel',e=>finish(e,true));document.addEventListener('click',e=>{if(Date.now()<suppress){e.preventDefault();e.stopImmediatePropagation()}},true);new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;decorateOverlays()})}}).observe(document.body,{childList:true,subtree:true});}
+ if(!installed){installed=true;document.addEventListener('click',fieldPanelClick,true);document.addEventListener('pointerdown',pointerDown);document.addEventListener('pointermove',pointerMove,{passive:false});document.addEventListener('pointerup',e=>finish(e));document.addEventListener('pointercancel',e=>finish(e,true));document.addEventListener('click',e=>{if(Date.now()<suppress){e.preventDefault();e.stopImmediatePropagation()}},true);new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;decorateOverlays()})}}).observe(document.body,{childList:true,subtree:true});}
  decorateOverlays();
 }
 function decorateOverlays(){
  for(const overlay of document.querySelectorAll('.rp-field-chat-overlay'))if(!$('.rp-chat-grip',overlay)){const grip=document.createElement('button');grip.type='button';grip.className='rp-chat-grip';grip.setAttribute('aria-label','Recolher mensagens');grip.innerHTML=arrows.up;grip.addEventListener('click',()=>overlay.close());overlay.append(grip);}
  const dialog=$('#dialog'),menu=$('.ux-access-menu',dialog||document);
- if(dialog){dialog.classList.toggle('rp-side-drawer',!!menu);if(menu&&!$('.rp-drawer-handle',menu)){const active=$('.side-link.active')?.dataset.view;menu.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('rp-menu-selected',n.dataset.view===active));const button=document.createElement('button');button.type='button';button.className='rp-drawer-handle';button.setAttribute('aria-label','Recolher menu');button.innerHTML=arrows.left;button.addEventListener('click',()=>dialog.close());menu.prepend(button);}}
+ if(dialog){dialog.classList.toggle('rp-side-drawer',!!menu);if(menu&&!$('.rp-drawer-handle',menu)){const active=$('.side-link.active')?.dataset.view;menu.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('rp-menu-selected',n.dataset.view===active));const button=document.createElement('button');button.type='button';button.className='rp-drawer-handle';button.setAttribute('aria-label','Recolher menu');button.innerHTML=arrows.left;button.addEventListener('click',()=>animatePanelClose(dialog,()=>dialog.close(),false));menu.prepend(button);}}
  if(document.body.dataset.rpField==='true'){
   for(const popover of document.querySelectorAll('.rp-header-popover')){const summary=$('summary',popover);if(!summary||!/Eventos|Notificações/.test(summary.getAttribute('aria-label')||summary.textContent))continue;popover.classList.add('rp-notification-popover');const list=$('.rp-popover-list',popover);
-   // The top layer escapes the header's backdrop/stacking context without cloning controls.
-   if(list&&!popover.dataset.rpTopLayer){popover.dataset.rpTopLayer='true';list.setAttribute('popover','manual');const sync=()=>{if(popover.open&&!list.matches(':popover-open'))list.showPopover();else if(!popover.open&&list.matches(':popover-open'))list.hidePopover()};popover.addEventListener('toggle',sync);sync()}
-   if(list&&!$('.rp-drawer-handle',list)){const close=document.createElement('button');close.type='button';close.className='rp-drawer-handle';close.setAttribute('aria-label','Recolher notificações');close.innerHTML=arrows.right;close.addEventListener('click',()=>{popover.open=false;summary.focus()});list.prepend(close)}}
+   // Keep the right drawer in normal DOM stacking. A popover top layer misplaces
+   // the panel on Android and can place it over the map rather than at the edge.
+   if(list?.hasAttribute('popover'))list.removeAttribute('popover');
+   if(list&&!$('.rp-drawer-handle',popover)){const close=document.createElement('button');close.type='button';close.className='rp-drawer-handle';close.setAttribute('aria-label','Recolher notificações');close.innerHTML=arrows.right;close.addEventListener('click',()=>animatePanelClose(list,()=>{popover.open=false;summary.focus()}));popover.append(close)}}
  }
 }
-function openLeft(){const trigger=$('[data-action="open-mobile-menu"]')||$('[data-central-menu]');trigger?.click();decorateOverlays();return $('#dialog[open].rp-side-drawer')||$('#central-navigation.is-open')}
-function openRight(){const details=$('.rp-notification-popover');if(details){details.open=true;return $('.rp-popover-list',details)}return null}
+function openLeft(){closeOtherFieldPanels('menu');const trigger=$('[data-action="open-mobile-menu"]')||$('[data-central-menu]');trigger?.click();decorateOverlays();return $('#dialog[open].rp-side-drawer')||$('#central-navigation.is-open')}
+function openRight(){closeOtherFieldPanels('notice');const details=$('.rp-notification-popover');if(details){details.open=true;return $('.rp-popover-list',details)}return null}
 function closeDrawer(node){const d=node.closest('dialog');if(d)d.close();else if(node.closest('details'))node.closest('details').open=false;else{node.classList.remove('is-open');$('[data-central-menu]')?.setAttribute('aria-expanded','false')}}
 let drag=null,suppress=0;
 function pointerDown(e){
