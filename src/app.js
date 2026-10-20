@@ -99,7 +99,7 @@ async function refreshLiveUsers(){if(['admin','coi'].includes(user?.role))liveUs
 async function refreshLiveOperational(){
  if(['admin','coi','ronda'].includes(user?.role))liveRoutes=(await liveRequest('/routes').catch(()=>({routes:[]}))).routes||[];
  liveEvents=(await liveRequest('/events?limit=200').catch(()=>({events:[]}))).events||[];
- if(['admin','coi','vistoriador'].includes(user?.role))liveAssignments=(await liveRequest('/inspection-assignments').catch(()=>({assignments:[]}))).assignments||[];
+ if(['admin','coi','vistoriador'].includes(user?.role))liveAssignments=(await liveRequest('/dispatches').catch(()=>({dispatches:[]}))).dispatches||[];
 }
 function runtimeRoute(raw){
  if(!raw?.points?.length)return null;
@@ -120,7 +120,9 @@ async function restoreLiveAccount(){
  operationalSettings={...operationalSettings,...saved?.operationalSettings};
  screen='dashboard';presentation=false;mode='real';session=null;
  view=user.role==='ronda'?'minha-ronda':user.role==='vistoriador'?'vistoriador':'overview';
- await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);render();
+ await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);
+ if(['ronda','vistoriador'].includes(user.role))void liveRequest('/presence',{method:'POST',data:{position:null}}).catch(()=>{});
+ render();
 }
 function liveLogout(){
  liveSession.token='';user=null;session=null;sessions=[];programs=[];liveUsers=[];screen='landing';presentation=false;mode='real';render();
@@ -751,7 +753,32 @@ function demoCoiView(){
  '<section class="coi-demo-content"><header class="toolbar"><h2>Rondas e vistorias recentes</h2><button type="button" class="rp-coi-history-link" data-view="historico-operacional">Ver histórico <span aria-hidden="true">↗</span></button></header>'+demoActivityRows().slice(0,5).map(demoActivityRow).join('')+'</section>'+
  '</div><p class="map-caption">Demonstração: os registros não representam uma operação de vigilância ao vivo. Para o COI autenticado, acesse a Central Operacional.</p></section>';
 }
+function realOverview(){
+ const admin=user.role==='admin',reviewer=['admin','coi','operador'].includes(user.role);
+ const pending=liveAssignments.filter(d=>!d.completed_at),active=liveAssignments.filter(d=>d.started_at&&!d.completed_at);
+ const incidents=liveEvents.filter(e=>['incident','panic','alert'].includes(e.kind));
+ const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execucao',active.length],['Eventos',liveEvents.length]];
+ const metrics='<div class="ops-metrics">'+rows.map(([label,n])=>'<article class="ops-metric"><strong>'+n+'</strong><h3>'+esc(label)+'</h3></article>').join('')+'</div>';
+ const recent=liveEvents.slice(0,30).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
+ const report=pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+metrics+
+ '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento recebido.</p>')+'</div></section>';
+ return report+(reviewer?'<section class="schedule-workspace"><h2>Despachar vistoria</h2><form id="live-dispatch-form" class="live-register"><label>Vistoriador<select name="workerId" required>'+liveUsers.filter(u=>u.role==='vistoriador'&&u.active).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('')+'</select></label><label>Destino / endereco<input name="address" required minlength="5"></label><label>Motivo<textarea name="reason" required minlength="10"></textarea></label><button class="button primary" type="submit">Solicitar vistoria</button></form></section>':'');
+}
+function realRondas(){
+ if(user?.role!=='admin')return pageTitle('Rotas','Somente administradores cadastram rotas.');
+ const rows=liveRoutes.map(r=>'<div class="team-row"><div><strong>'+esc(r.name)+'</strong><small>'+esc(r.workerName||'')+' · '+r.points.length+' pontos</small></div><span>'+esc(r.site||'Grupo Maxvel')+'</span></div>').join('');
+ return pageTitle('Rotas e rondas','Cadastro de percursos reais e atribuicao de vigias.')+
+ '<section class="schedule-workspace"><h2>Cadastrar rota</h2><form id="live-route-form" class="live-register"><label>Vigia<select name="userId" required>'+liveUsers.filter(u=>u.role==='ronda'&&u.active).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('')+'</select></label><label>Nome da rota<input name="name" required minlength="3"></label><label>Pontos: um por linha (nome;latitude;longitude)<textarea name="points" required rows="5" placeholder="Portaria;-20.141;-44.881\nEntrada;-20.142;-44.882"></textarea></label><button type="submit" class="button primary">Salvar rota</button></form></section>'+
+ '<section class="schedule-workspace"><h2>Rotas cadastradas</h2><div class="team-list">'+(rows||'<p>Nenhuma rota cadastrada.</p>')+'</div></section>';
+}
+function realInspector(){
+ const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=assigned.filter(x=>!x.completed_at);
+ const rows=pending.map(d=>'<section class="schedule-workspace"><h2>'+esc(d.address)+'</h2><p>'+esc(d.reason)+'</p><p>'+fmt(d.created_at)+'</p><div class="modal-actions">'+(!d.started_at?btn('Iniciar deslocamento','live-inspection-start','primary', 'data-id="'+esc(d.id)+'"'):!d.arrived_at?btn('Estou aqui','live-inspection-arrive','primary','data-id="'+esc(d.id)+'"'):btn('Registrar vistoria','live-inspection-report','primary','data-id="'+esc(d.id)+'"'))+'</div></section>').join('');
+ return pageTitle('Minhas vistorias','Solicitacoes atribuidas pelo COI e salvas no banco de dados.')+(rows||'<section class="schedule-workspace"><p>Nenhuma vistoria pendente.</p></section>')+
+ '<section class="schedule-workspace"><h2>Historico</h2>'+assigned.filter(x=>x.completed_at).map(x=>'<div class="team-row">'+esc(x.address)+' · '+fmt(x.completed_at)+'</div>').join('')+'</section>';
+}
 function overview(){
+ if(user?.id)return realOverview();
  if(user?.role==='admin')return dashboardV4();
  if(['operador','coi'].includes(user?.role))return demoCoiView();
  const all=sessionList(),alerts=recentNotification(),open=alerts.filter(x=>!x.seenAt),inc=recentIncidents(),finished=all.filter(s=>s.status==='completed'),active=all.filter(s=>s.status==='active');
@@ -846,6 +873,7 @@ function demoClientView(){
  '<section><h3>Em andamento</h3>'+rows(active)+'<h3>Histórico recente</h3>'+rows(past.slice(0,12))+'</section></div></section>';
 }
 function demoInspectorView(){
+ if(user?.id)return realInspector();
  const records=demoInspectionRecords(),queue=demoInspectionQueue(),pending=queue[0]||null;
  if(pending&&demoInspectionDraft?.id!==pending.id)demoInspectionDraft=emptyInspectionDraft(pending.id);
  const map=inspectionCockpit({queue,mapId:'demo-inspection-map',mode:'demo',
@@ -867,6 +895,7 @@ function demoAdminRouteQueue(){
 }
 
 function rondas(){
+ if(user?.id)return realRondas();
  const context=supervisedContext(),route=context.route,actual=context.current;
  const active=actual?.status==='active',current=active?actual.index:-1;
  const progress=actual?actual.checkpoints.filter(p=>p.completedAt).length:0;
@@ -1178,7 +1207,8 @@ function startDialog(){const real=mode==='real'&&!presentation;showDialog(`<div 
 function incidentDialog(){showDialog(`<div class="field-composer"><h2>Registrar ocorrência</h2><form id="incident-form"><div class="field-composer-row"><label class="field">Tipo<select name="category"><option>Segurança</option><option>Acesso</option><option>Patrimônio</option><option>Manutenção</option><option>Outros</option></select></label><label class="field">Gravidade<select name="severity"><option>Baixa</option><option selected>Média</option><option>Alta</option></select></label></div><label class="field">Assunto<input name="title" required minlength="3" maxlength="100" placeholder="O que aconteceu?"></label><label class="field">Descrição<textarea name="description" rows="2" required minlength="10" maxlength="1400" placeholder="Descreva o fato observado."></textarea></label><details><summary>Anexar evidência</summary>${ops.mediaFields()}</details><label class="check-label"><input name="truth" type="checkbox" required>Confirmo o relato observado.</label><button type="submit" class="button primary full">Registrar ocorrência</button></form></div>`);}
 function alertDialog(){showDialog('<div class="field-composer"><h2>Enviar alerta</h2><form id="field-alert-form"><label class="field">Alerta<input name="description" required minlength="3" maxlength="240" placeholder="O que aconteceu?" autocomplete="off"></label><button class="button primary full" type="submit">Enviar alerta</button></form></div>');}
 function mySubmissions(){
- if(sessionStorage.getItem('rondaspro_api_token'))return pageTitle('Meus alertas e ocorrências','Acompanhe a resposta do COI.')+'<a class="button primary" href="/central.html#history">Abrir meus registros</a>';
+ if(user?.id)return pageTitle('Meus alertas e ocorrencias','Registros salvos no servidor.')+
+ '<div class="team-list">'+liveEvents.filter(e=>['alert','incident','panic'].includes(e.kind)).map(e=>'<div class="team-row"><strong>'+esc(e.description||e.kind)+'</strong><span>'+esc(e.status||'aberta')+' · '+fmt(e.occurred_at)+'</span></div>').join('')+'</div>';
  const own=localCommunications().filter(n=>n.name===user.name);
  const items=own.map(n=>'<article class="guide-pan"><h3>'+esc(n.label)+'</h3>'+tag(n.seenAt?'Resolvida':'Em aberto',n.seenAt?'green':'orange')+'<p>'+esc(n.response||'Aguardando resposta do COI.')+'</p>'+btn('Ver registro','own-notice-detail','small',`data-id="field:${esc(n.id)}" data-session="field"`)+'</article>');
  for(const s of sessions.filter(s=>s.name===user.name))for(const i of s.incidents)items.push('<article class="guide-pan"><h3>'+esc(i.title)+'</h3>'+tag(i.status==='Em análise'?'Em aberto · Em análise':i.status,i.status==='Resolvida'?'green':'orange')+'<p>'+esc(i.history?.at(-1)?.note||'Aguardando resposta do COI.')+'</p>'+btn('Ver registro','own-notice-detail','small',`data-id="${esc(s.notifications.find(n=>n.incidentId===i.id)?.id||'')}" data-session="${esc(s.id)}"`)+'</article>');
