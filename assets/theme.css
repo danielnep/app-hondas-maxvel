@@ -1528,6 +1528,7 @@
     bottom: 0 !important;
     left: auto !important
   }
+  .rp-theme #central-root .rp2-nav-dismiss { display: none !important; }
   /* Responsive geometry of the approved Glass UI; no palette, type or field-screen replacements. */
   @media (max-width: 1199px) and (min-width: 901px) {
     body.rp-theme[data-rp-field="false"] :is(#central-root .ops-monitor-columns,#central-root .coi3-columns) {
