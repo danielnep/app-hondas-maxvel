@@ -1422,6 +1422,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
 if(act==='sim-role'){
   if(isPagesTestMode()){modal.close();await activatePagesRole(el.dataset.role);return;}
   if(!presentation||!['ronda','operador','coi','cliente','vistoriador','admin'].includes(el.dataset.role))return;
+  if(isRailwayOpenAccess())modal.close();
   const name=el.dataset.role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):el.dataset.role==='operador'?'Operador COI · Monitoramento':el.dataset.role==='coi'?'Operador COI':el.dataset.role==='cliente'?'Cliente de exemplo':el.dataset.role==='vistoriador'?'Vistoriador de exemplo':'Administrador';
   user={name,role:el.dataset.role};
   view=user.role==='ronda'?'minha-ronda':user.role==='cliente'?'cliente':user.role==='vistoriador'?'vistoriador':'overview';
