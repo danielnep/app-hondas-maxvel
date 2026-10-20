@@ -462,7 +462,7 @@ function startDemoInspectorGps(){
   if(demoInspectorMap)demoInspectorMap.update({position:p});
  },()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
 }
-function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!(isPagesTestMode()&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(false&&presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
@@ -1418,7 +1418,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='sim-role-picker'){openAreaPicker();return;}
 
 if(act==='sim-role'){
-  if(isPagesTestMode()){await activatePagesRole(el.dataset.role);return;}
+  if(isPagesTestMode()){modal.close();await activatePagesRole(el.dataset.role);return;}
   if(!presentation||!['ronda','operador','coi','cliente','vistoriador','admin'].includes(el.dataset.role))return;
   const name=el.dataset.role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):el.dataset.role==='operador'?'Operador COI · Monitoramento':el.dataset.role==='coi'?'Operador COI':el.dataset.role==='cliente'?'Cliente de exemplo':el.dataset.role==='vistoriador'?'Vistoriador de exemplo':'Administrador';
   user={name,role:el.dataset.role};
