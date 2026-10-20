@@ -1675,4 +1675,35 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
  .dashboard form.live-register>label:has(textarea){grid-column:auto;}
  .dashboard form.live-register>button{width:100%;justify-self:stretch;}
 }
+
+/* Vistoriador: recuperar ações e histórico sem cobrir o mapa nem criar cards soltos. */
+.dashboard .rp-inspector-create-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #42505d;}
+.dashboard .rp-inspector-create-actions button{min-width:0;min-height:44px;padding:10px 6px;white-space:normal;font-weight:650;font-size:12px;line-height:1.25;background:#212b36;border:1px solid #50606e;color:#edf5fb;border-radius:9px;}
+.dashboard .rp-inspector-records{width:100%;min-width:0;display:grid;gap:22px;padding:16px 2px 45px;max-width:100%;color:#edf3fa;}
+.dashboard .rp-inspector-recent{display:grid;gap:9px;min-width:0;border-top:1px solid #46515e;padding:16px 0 0;}
+.dashboard .rp-inspector-recent>header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+.dashboard .rp-inspector-recent h2,.dashboard .rp-inspector-latest-map h2{font-size:18px;line-height:1.3;margin:0;}
+.dashboard .rp-inspector-recent header span{font-size:12px;color:#b8c5d2;}
+.dashboard .rp-inspector-history-item{min-width:0;border-bottom:1px solid #3e4a55;padding:0 0 9px;}
+.dashboard .rp-inspector-history-item summary{cursor:pointer;display:grid;gap:5px;padding:9px 0;}
+.dashboard .rp-inspector-history-item summary strong{font-size:14px;overflow-wrap:anywhere;}
+.dashboard .rp-inspector-history-item :is(small,p,a){font-size:12px;line-height:1.5;color:#bfcbd6;overflow-wrap:anywhere;}
+.dashboard .rp-inspector-history-item p{margin:8px 0;}
+.dashboard .rp-inspector-history-item a{color:#72cbff;}
+.dashboard .rp-inspector-latest-map{display:grid;gap:8px;min-width:0;}
+.dashboard .rp-inspector-latest-map p{font-size:12px;color:#bfcbd6;}
+.dashboard .rp-inspector-latest-map .map-container{height:260px!important;min-height:260px;width:100%;border-radius:12px;overflow:hidden;background:#171e27;}
+#dialog .rp-inspector-create{display:grid;gap:16px;width:100%;min-width:0;}
+#dialog .rp-inspector-create form.live-register{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;width:100%;max-width:100%;min-width:0;}
+#dialog .rp-inspector-create form.live-register>label{display:grid;gap:7px;min-width:0;font-size:14px;color:#edf3fa;}
+#dialog .rp-inspector-create form.live-register :is(input,textarea){display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:45px;margin:0;padding:11px;border:1px solid #465563;border-radius:10px;background:#171f28;color:#fff;font:inherit;}
+#dialog .rp-inspector-create form.live-register textarea{min-height:92px;resize:vertical;}
+#dialog .rp-inspector-create form.live-register button{min-height:46px;}
+.dashboard .rp-live-inspector [data-inspection-history-dialog]{width:min(600px,calc(100vw - 24px));max-height:calc(100dvh - 30px);overflow:auto;}
+.dashboard .rp-live-inspector .rp-inspection-history-content{max-height:65dvh;overflow:auto;}
+@media(max-width:420px){
+ .dashboard .rp-inspector-create-actions{gap:6px;}
+ .dashboard .rp-inspector-create-actions button{font-size:11px;padding-inline:5px;}
+ .dashboard .rp-inspector-records{padding-inline:0;}
+}
 }
