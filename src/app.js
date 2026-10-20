@@ -71,6 +71,8 @@ const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
 const helpButton=(topic,label)=>`<button type="button" class="context-help" data-action="feature-help" data-topic="${topic}" aria-label="O que é ${label}?" title="Entenda: ${label}">?</button>`;
 const operationalLink='';
+// Acesso de avaliação livre apenas no domínio de teste do Railway, sem tocar no backend.
+const isRailwayOpenAccess=()=>typeof location!=='undefined'&&location.hostname==='ronda-pro-production.up.railway.app';
 const brand=()=>'<div class="brand maxvel-only-brand" aria-label="Grupo Maxvel"><span class="brand-product"><span class="ronda-pro-wordmark">Ronda <b>Pro</b></span></span><span class="brand-divider" aria-hidden="true"></span><span class="brand-partner"><span class="brand-group">GRUPO</span><img class="maxvel-real-logo" src="./assets/maxvel-logo.webp" width="585" height="183" alt="Maxvel"></span></div>';
 const persisted=loadState();
 let sessions=[];
@@ -462,7 +464,7 @@ function startDemoInspectorGps(){
   if(demoInspectorMap)demoInspectorMap.update({position:p});
  },()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
 }
-function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!(isPagesTestMode()&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+function render(){if(!user){if(isRailwayOpenAccess()){beginSimulation('Vigia',false,'ronda');openAreaPicker();return;}root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!((isPagesTestMode()||isRailwayOpenAccess())&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(false&&presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
@@ -1222,10 +1224,10 @@ async function activatePagesRole(role){
 }
 function openAreaPicker(){
   if(!presentation&&!isPagesTestMode())return;
-  const roles=isPagesTestMode()
+  const roles=isRailwayOpenAccess()?[['ronda','Vigia','compass'],['vistoriador','Vistoriador','clipboard']]:isPagesTestMode()
    ?[['ronda','Vigia','compass'],['coi','COI · Acompanhamento','headset'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']]
    :[['ronda','Vigia','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
-  showDialog(`<div class="eyebrow">ÁREAS DO RONDA PRO · ${isPagesTestMode()?'TESTES':'DEMONSTRAÇÃO'}</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">${isPagesTestMode()?'Escolha livremente uma área de teste. Os dados permanecem neste navegador.':'A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.'}</p>${isPagesTestMode()?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`);
+  showDialog(`<div class="eyebrow">ÁREAS DO RONDA PRO · ${isPagesTestMode()?'TESTES':'DEMONSTRAÇÃO'}</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">${isPagesTestMode()?'Escolha livremente uma área de teste. Os dados permanecem neste navegador.':isRailwayOpenAccess()?'Escolha Vigia ou Vistoriador. Os testes deste acesso ficam neste navegador.':'A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.'}</p>${(isPagesTestMode()||isRailwayOpenAccess())?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`);
   modal.classList.add('role-picker-dialog');
 }
 function profileDialog(){
@@ -1420,6 +1422,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
 if(act==='sim-role'){
   if(isPagesTestMode()){modal.close();await activatePagesRole(el.dataset.role);return;}
   if(!presentation||!['ronda','operador','coi','cliente','vistoriador','admin'].includes(el.dataset.role))return;
+  if(isRailwayOpenAccess())modal.close();
   const name=el.dataset.role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):el.dataset.role==='operador'?'Operador COI · Monitoramento':el.dataset.role==='coi'?'Operador COI':el.dataset.role==='cliente'?'Cliente de exemplo':el.dataset.role==='vistoriador'?'Vistoriador de exemplo':'Administrador';
   user={name,role:el.dataset.role};
   view=user.role==='ronda'?'minha-ronda':user.role==='cliente'?'cliente':user.role==='vistoriador'?'vistoriador':'overview';
@@ -1523,7 +1526,7 @@ if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch((
   return;
  }
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'){if(isPagesTestMode()){openAreaPicker();return;}stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
+ if(act==='logout'){if(isPagesTestMode()||isRailwayOpenAccess()){openAreaPicker();return;}stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
  if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
@@ -1900,5 +1903,5 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
-(async()=>{try{if(isPagesTestMode()){await activatePagesRole('admin');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
+(async()=>{try{if(isRailwayOpenAccess()){liveSession.token='';beginSimulation('Vigia',false,'ronda');openAreaPicker();}else if(isPagesTestMode()){await activatePagesRole('admin');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();if(!isRailwayOpenAccess())notify('Entre novamente para acessar seus dados.');}})();
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
