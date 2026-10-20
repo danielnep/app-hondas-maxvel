@@ -25,10 +25,11 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
  const current=queue[0]||null,coords=pointOf(current),p=pointOf(position),
   distance=coords&&p?Math.round(metersBetween(coords,p)):null;
  const step=current?started(current)?arrived(current)?'No destino':'Em deslocamento':'Vistoria preparada':'Aguardando COI';
+ const liveAction=kind=>'data-action="live-inspection-'+kind+'" data-id="'+html(current?.id)+'"';
  const action=current?started(current)?arrived(current)?
-  '<button type="button" class="rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-wizard-open"':'data-wizard-open')+'>Abrir checklist '+svg('arrow')+'</button>':
-  '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':'data-inspection-arrive')+'>Confirmar chegada '+svg('arrow')+'</button>':
-  '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-depart"':'data-inspection-depart')+'>Iniciar deslocamento '+svg('arrow')+'</button>':
+  '<button type="button" class="rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-wizard-open"':mode==='live'?liveAction('report'):'data-wizard-open')+'>'+(mode==='live'?'Registrar vistoria':'Abrir checklist')+' '+svg('arrow')+'</button>':
+  '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-arrive"':mode==='live'?liveAction('arrive'):'data-inspection-arrive')+'>Confirmar chegada '+svg('arrow')+'</button>':
+  '<button type="button" class="primary rp-inspection-main-action" '+(mode==='demo'?'data-action="demo-inspection-depart"':mode==='live'?liveAction('start'):'data-inspection-depart')+'>Iniciar deslocamento '+svg('arrow')+'</button>':
   '';
  const first=html(current?.address||current?.site||'Sem destinos atribuídos');
  const destination=coords?coords.lat+','+coords.lng:String(current?.address||current?.site||'');
@@ -40,7 +41,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
   '<div class="patrol-map-canvas rp-inspection-map-canvas">'+
    '<div id="'+html(mapId)+'" class="map-container mini rp-inspector-map" role="application" aria-label="Mapa de ruas e trajeto de vistorias do COI"></div>'+
    '<header class="patrol-map-heading rp-inspection-route-bar"><div class="patrol-map-heading-copy"><strong>'+html(current?current.routeName||current.route_name||'Circuito de vistorias · COI':fullTitle)+'</strong><small><span data-inspection-queue-count>'+count+'</span> destino(s) · '+html(current?'Próximo: '+(current.address||current.site||'Local designado'):'Aguardando COI')+'</small></div>'+
-    '<button type="button" class="rp-inspection-map-fit" '+(mode==='demo'?'data-action="demo-inspection-fit"':'data-inspection-fit')+' aria-label="Enquadrar destinos">'+svg('locate')+'</button></header>'+
+    '<button type="button" class="rp-inspection-map-fit" '+(mode==='demo'?'data-action="demo-inspection-fit"':mode==='live'?'data-action="center-maps"':'data-inspection-fit')+' aria-label="Enquadrar destinos">'+svg('locate')+'</button></header>'+
    '<div class="rp-inspection-map-controls"><button type="button" class="rp-inspection-panic" data-field-tool-panic aria-label="Acionar pânico">'+svg('panic')+'<span>PÂNICO</span></button>'+
     '<button type="button" class="rp-inspection-help" data-inspection-help-open aria-label="Ajuda do mapa">'+svg('help')+'</button></div>'+
    '<button type="button" class="rp-inspection-torch" data-field-tool-torch aria-label="Ligar ou desligar lanterna">'+svg('torch')+'<span>Lanterna</span></button>'+

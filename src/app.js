@@ -456,10 +456,14 @@ function startDemoInspectorGps(){
   const p={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy};
   if(p.accuracy>150)return;
   demoInspectorLocation=p;
-  // A demonstração mantém seus locais FICTÍCIOS; leituras reais não viram vistoria confirmada.
+  // GPS do aparelho não confirma presença no destino nem cria coordenadas fictícias.
   const state=document.querySelector('[data-inspection-gps-state]');
   if(state)state.textContent='GPS do dispositivo · '+Math.round(p.accuracy)+' m';
-  if(demoInspectorMap)demoInspectorMap.update({position:p});
+  if(demoInspectorMap){
+   const tasks=user?.id?queueInspections(liveAssignments.filter(x=>x.worker_id===user.id),p,p):demoInspectionQueue();
+   demoInspectorMap.setRoute(inspectionRoute(tasks,p),demoInspectorMap.session);
+   demoInspectorMap.update({position:p});
+  }
  },()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
 }
 function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!((isPagesTestMode())&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
@@ -471,6 +475,7 @@ function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRou
  else if(screen==='presentation')root.innerHTML=appShell();
  else root.innerHTML=appShell();
  installViewportViews();installUX06();
+ if(user?.id&&user.role==='vistoriador'&&view==='vistoriador')startDemoInspectorGps();
  const workspace=document.querySelector('.patrol-workspace');
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900&&!workspace.matches('[data-inspection-cockpit]'))workspace.insertBefore(routeAction,routeMap);
@@ -538,10 +543,12 @@ function attachMaps(){
   if(document.getElementById('demo-inspection-map')){
    const host=document.querySelector('#demo-inspection-map');
    if(host){
-    const tasks=demoInspectionQueue(),route=inspectionRoute(tasks,DEMO_ROUTE.base);
-    demoInspectorQueueSignature=inspectionSignature(tasks);
-    demoInspectorMap=new PatrolMap(host,{route,session:tasks.length?{mode:'simulation',currentId:tasks[0].id,checkpoints:[],deviations:[]}:null,
-      position:demoInspectorLocation||DEMO_ROUTE.base,standbyClean:!tasks.length,interactive:true,
+    const liveInspector=!!user?.id,base=liveInspector?(demoInspectorLocation??null):DEMO_ROUTE.base;
+    const tasks=liveInspector?queueInspections(liveAssignments.filter(x=>x.worker_id===user.id),demoInspectorLocation,base):demoInspectionQueue();
+    const route=inspectionRoute(tasks,base);
+    if(!liveInspector)demoInspectorQueueSignature=inspectionSignature(tasks);
+    demoInspectorMap=new PatrolMap(host,{route,session:tasks.length?{mode:liveInspector?'real':'simulation',currentId:tasks[0].id,checkpoints:[],deviations:[]}:null,
+      position:demoInspectorLocation||route.base,positionVerified:!!demoInspectorLocation||(!liveInspector&&!!base),standbyClean:!tasks.length,interactive:true,
       onStreetRoute:status=>{const el=document.querySelector('[data-inspection-road-state]');if(el)el.textContent=status;}});
     liveMaps.push(demoInspectorMap);
    }
@@ -774,10 +781,11 @@ function realRondas(){
  '<section class="schedule-workspace"><h2>Rotas cadastradas</h2><div class="team-list">'+(rows||'<p>Nenhuma rota cadastrada.</p>')+'</div></section>';
 }
 function realInspector(){
- const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=assigned.filter(x=>!x.completed_at);
- const rows=pending.map(d=>'<section class="schedule-workspace"><h2>'+esc(d.address)+'</h2><p>'+esc(d.reason)+'</p><p>'+fmt(d.created_at)+'</p><div class="modal-actions">'+(!d.started_at?btn('Iniciar deslocamento','live-inspection-start','primary', 'data-id="'+esc(d.id)+'"'):!d.arrived_at?btn('Estou aqui','live-inspection-arrive','primary','data-id="'+esc(d.id)+'"'):btn('Registrar vistoria','live-inspection-report','primary','data-id="'+esc(d.id)+'"'))+'</div></section>').join('');
- return pageTitle('Minhas vistorias','Solicitacoes atribuidas pelo COI e salvas no banco de dados.')+(rows||'<section class="schedule-workspace"><p>Nenhuma vistoria pendente.</p></section>')+
- '<section class="schedule-workspace"><h2>Historico</h2>'+assigned.filter(x=>x.completed_at).map(x=>'<div class="team-row">'+esc(x.address)+' · '+fmt(x.completed_at)+'</div>').join('')+'</section>';
+ const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=queueInspections(assigned,demoInspectorLocation,demoInspectorLocation);
+ const cockpit=inspectionCockpit({queue:pending,mapId:'demo-inspection-map',mode:'live',position:demoInspectorLocation,base:demoInspectorLocation,gpsActive:!!demoInspectorLocation});
+ const history=assigned.filter(x=>x.completed_at);
+ return '<section class="rp-demo-inspector rp-live-inspector">'+cockpit+
+  '<section class="schedule-workspace"><h2>Histórico de vistorias</h2>'+(history.length?history.map(x=>'<div class="team-row">'+esc(x.address)+' · '+fmt(x.completed_at)+'</div>').join(''):'<p>Nenhuma vistoria finalizada.</p>')+'</section></section>';
 }
 function overview(){
  if(user?.id)return realOverview();
