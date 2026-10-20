@@ -59,7 +59,7 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
   let overlay=document.querySelector('#rp-field-chat-overlay');
   if(!overlay){
    overlay=document.createElement('dialog');overlay.id='rp-field-chat-overlay';overlay.className='rp-field-chat-overlay';
-   overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+view();
+   overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+view()+'<button type="button" class="rp-chat-grip" data-chat-overlay-close aria-label="Recolher mensagens"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 7-7 7 7"/></svg></button>';
    document.body.append(overlay);
    overlay.addEventListener('close',()=>{observer?.disconnect();overlay.remove()},{once:true});
    overlay.addEventListener('cancel',()=>observer?.disconnect());
