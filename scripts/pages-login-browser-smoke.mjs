@@ -1,4 +1,4 @@
-/** Smoke no Chromium: GitHub Pages abre diretamente o seletor das cinco áreas, sem login e sem API. */
+/** Smoke no Chromium: GitHub Pages abre as quatro áreas operacionais atuais, sem login e sem API. */
 import {chromium} from 'playwright-core';
 import {existsSync,mkdirSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
@@ -9,8 +9,7 @@ const origin=new URL(base).origin,root=resolve('.');
 const types={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg'};
 const roles=[
  ['ronda','minha-ronda','Operação de Ronda'],
- ['operador','overview','COI · Acompanhamento'],
- ['cliente','cliente','Visão Cliente'],
+ ['coi','overview','COI · Acompanhamento'],
  ['vistoriador','vistoriador','Vistoriador'],
  ['admin','overview','Administração']
 ];
@@ -40,7 +39,7 @@ try{
     await page.locator('#dialog [data-action="sim-role-picker"]').click();
    }
    await page.locator('#dialog [data-action="sim-role"][data-role="'+role+'"]').click();
-   await page.waitForFunction(({view,label})=>document.querySelector('.dashboard.simulation-mode')&&document.querySelector('.side-link.active')?.dataset.view===view&&document.querySelector('.user-profile-button small')?.textContent.trim()===label,{view,label},{timeout:15000});
+   await page.waitForFunction(({view,label})=>document.querySelector('.dashboard:not(.simulation-mode)')&&document.querySelector('.side-link.active')?.dataset.view===view&&document.querySelector('.user-profile-button small')?.textContent.trim()===label,{view,label},{timeout:15000});
    if(await page.locator('#live-login-form').count())throw Error('Login reapareceu após troca de área');
    await page.screenshot({path:'artifacts/pages-browser-login/'+role+'.png'});
    console.log('OK: '+role+' sem login, tela '+view);
