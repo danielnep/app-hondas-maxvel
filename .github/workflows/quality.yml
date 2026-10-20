@@ -29,6 +29,8 @@ jobs:
         run: npm install --no-save --no-package-lock playwright-core@1.56.1
       - name: Confirmar quatro logins no GitHub Pages em Chromium
         run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/pages-login-browser-smoke.mjs
+      - name: Verificar Vigia e Vistoriador sem login na interface atual
+        run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/railway-no-login-smoke.mjs
       - name: Validar tema, conversas e gestos em ambiente isolado
         run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/glass-ui-review.mjs
       - name: Capturas da interface
