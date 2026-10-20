@@ -28,7 +28,13 @@ try{
   });
   try{
    await page.goto(base,{waitUntil:'domcontentloaded'});
-   await page.locator('#dialog[open] .role-picker-list').waitFor({timeout:15000});
+   try{await page.locator('#dialog[open] .role-picker-list').waitFor({timeout:15000});}
+   catch(error){
+    const state=await page.evaluate(()=>({host:location.hostname,hasDashboard:!!document.querySelector('.dashboard'),hasLogin:!!document.querySelector('#live-login-form'),dialogOpen:document.querySelector('#dialog')?.open,dialogText:document.querySelector('#dialog')?.textContent?.slice(0,450),appText:document.querySelector('#app')?.textContent?.slice(0,250)}));
+    console.error('Railway picker not ready',JSON.stringify({width,state,errors}));
+    await page.screenshot({path:out+'/picker-failure-'+width+'.png'}).catch(()=>{});
+    throw error;
+   }
    assert(await page.locator('#live-login-form').count()===0,'Tela de login apareceu');
    assert(await page.locator('#dialog .role-picker-list [data-action="sim-role"]').count()===2,'Somente Vigia e Vistoriador devem aparecer');
    await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
