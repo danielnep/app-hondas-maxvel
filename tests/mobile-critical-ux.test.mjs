@@ -51,8 +51,8 @@ test('estilos críticos carregam por último e entram no PWA',()=>{
  const bundled=read('assets/ronda-pro.css');
  assert.match(index,/assets\/ronda-pro\.css\?v=19/);
  assert.ok(bundled.includes('/* ORIGINAL: assets/mobile-critical-20261016.css */'));
- assert.match(index,/rondas-pro-updated-v49/);
- assert.match(sw,/rondas-pro-interface-v49/);
+ assert.match(index,/rondas-pro-updated-v50/);
+ assert.match(sw,/rondas-pro-interface-v50/);
  assert.ok(sw.includes('./assets/mobile-critical-20261016.css'));
  const before=bundled.indexOf('/* ORIGINAL: assets/field-compact.css */');
  const after=bundled.indexOf('/* ORIGINAL: assets/mobile-critical-20261016.css */');
