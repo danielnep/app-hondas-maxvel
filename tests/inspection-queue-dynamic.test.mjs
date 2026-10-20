@@ -62,7 +62,7 @@ test('acesso real, demonstração e cache carregam o mesmo cockpit',()=>{
  assert.match(central,/refreshInspectorStops/);
  assert.match(server,/kind==='vistoria'&&w\.status==='Em vistoria'/);
  assert.match(server,/inspection\.arrive/);
- assert.match(html,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(html,/assets\/ronda-pro\.css\?v=20/);
  assert.match(file('assets/ronda-pro.css'),/ORIGINAL: assets\/inspector-cockpit-20261016\.css/);
  assert.match(auth,/inspector-cockpit-20261016\.css/);
  assert.match(worker,/src\/inspection-queue\.js/);
