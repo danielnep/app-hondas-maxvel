@@ -52,7 +52,23 @@ try {
             x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y},
       viewport:{width:window.innerWidth,height:window.innerHeight},
       styles:{width:getComputedStyle(node).width,height:getComputedStyle(node).height,
-              maxWidth:getComputedStyle(node).maxWidth,maxHeight:getComputedStyle(node).maxHeight}
+              maxWidth:getComputedStyle(node).maxWidth,maxHeight:getComputedStyle(node).maxHeight},
+      matched:(()=>{
+        const out=[];
+        const walk=(list,media='all')=>{
+          for(const rule of list){
+            if(rule.cssRules){walk(rule.cssRules,rule.conditionText||media);continue;}
+            if(!rule.selectorText||!rule.style?.length)continue;
+            try{if(!node.matches(rule.selectorText))continue;}catch{continue;}
+            const props=['width','max-width','height','max-height','margin','padding'];
+            if(!props.some(p=>rule.style.getPropertyValue(p)))continue;
+            out.push({selector:rule.selectorText,media,width:rule.style.width,
+                      maxWidth:rule.style.maxWidth,height:rule.style.height,maxHeight:rule.style.maxHeight});
+          }
+        };
+        for(const sheet of document.styleSheets)try{walk(sheet.cssRules);}catch{}
+        return out.slice(-18);
+      })()
     }));
     console.log('Chat viewport diagnostic:',JSON.stringify(diagnostics));
     if(width<=600){
