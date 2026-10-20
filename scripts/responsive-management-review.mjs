@@ -109,6 +109,10 @@ try{
          if(target===initial)continue;
          try{
            await visit(page,target,width);
+           if(target==='chat'&&(width===393||width===1440)){
+             await page.locator('.chat-list-empty').waitFor({state:'visible',timeout:8000});
+             assert(await page.locator('.chat-list-empty').getByText('Nenhuma conversa por aqui').isVisible(),role+' chat vazio sem instrução legível em '+width+'px');
+           }
            await measure(page,role,target,width);
            if(width===393||width===1440)await page.screenshot({path:output+'/'+role+'-'+width+'-'+target+'.png',fullPage:true});
          }catch(error){issues.push({role,target,width,issue:'navigation',message:error.message});}
