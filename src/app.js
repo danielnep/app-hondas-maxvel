@@ -13,7 +13,7 @@ import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
 import {getConsent,saveConsent,LOCATION_REQUIREMENTS} from './consent.js';
 import {createSpotlightTour} from './tutorial.js';
-import {createUiMotion} from './ui-motion.js?v=2';
+import {createUiMotion} from './ui-motion.js?v=3';
 import {createOperationsUpgrade} from './operations-upgrade.js';
 import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
