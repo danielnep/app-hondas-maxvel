@@ -2,6 +2,16 @@
 const $=(s,root=document)=>root.querySelector(s);
 const glyph=(path)=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>';
 const arrows={left:glyph('<path d="m15 5-7 7 7 7"/>'),right:glyph('<path d="m9 5 7 7-7 7"/>'),up:glyph('<path d="m5 15 7-7 7 7"/>')};
+function animatePanelClose(element,finish,horizontal=true){
+ const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ if(!element?.animate||reduce){finish();return;}
+ const move=horizontal?'18px 0':'-18px 0';
+ const animation=element.animate([{opacity:1,translate:'0 0'},{opacity:0,translate:move}],{
+  duration:210,easing:'cubic-bezier(.4,0,.8,.3)',fill:'forwards'
+ });
+ animation.addEventListener('finish',finish,{once:true});
+ animation.addEventListener('cancel',finish,{once:true});
+}
 let installed=false,scheduled=false;
 function closeOtherFieldPanels(except){
  if(document.body.dataset.rpField!=='true')return;
@@ -75,13 +85,13 @@ export function decorateTheme(role,name=''){
 function decorateOverlays(){
  for(const overlay of document.querySelectorAll('.rp-field-chat-overlay'))if(!$('.rp-chat-grip',overlay)){const grip=document.createElement('button');grip.type='button';grip.className='rp-chat-grip';grip.setAttribute('aria-label','Recolher mensagens');grip.innerHTML=arrows.up;grip.addEventListener('click',()=>overlay.close());overlay.append(grip);}
  const dialog=$('#dialog'),menu=$('.ux-access-menu',dialog||document);
- if(dialog){dialog.classList.toggle('rp-side-drawer',!!menu);if(menu&&!$('.rp-drawer-handle',menu)){const active=$('.side-link.active')?.dataset.view;menu.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('rp-menu-selected',n.dataset.view===active));const button=document.createElement('button');button.type='button';button.className='rp-drawer-handle';button.setAttribute('aria-label','Recolher menu');button.innerHTML=arrows.left;button.addEventListener('click',()=>dialog.close());menu.prepend(button);}}
+ if(dialog){dialog.classList.toggle('rp-side-drawer',!!menu);if(menu&&!$('.rp-drawer-handle',menu)){const active=$('.side-link.active')?.dataset.view;menu.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('rp-menu-selected',n.dataset.view===active));const button=document.createElement('button');button.type='button';button.className='rp-drawer-handle';button.setAttribute('aria-label','Recolher menu');button.innerHTML=arrows.left;button.addEventListener('click',()=>animatePanelClose(dialog,()=>dialog.close(),false));menu.prepend(button);}}
  if(document.body.dataset.rpField==='true'){
   for(const popover of document.querySelectorAll('.rp-header-popover')){const summary=$('summary',popover);if(!summary||!/Eventos|Notificações/.test(summary.getAttribute('aria-label')||summary.textContent))continue;popover.classList.add('rp-notification-popover');const list=$('.rp-popover-list',popover);
    // Keep the right drawer in normal DOM stacking. A popover top layer misplaces
    // the panel on Android and can place it over the map rather than at the edge.
    if(list?.hasAttribute('popover'))list.removeAttribute('popover');
-   if(list&&!$('.rp-drawer-handle',popover)){const close=document.createElement('button');close.type='button';close.className='rp-drawer-handle';close.setAttribute('aria-label','Recolher notificações');close.innerHTML=arrows.right;close.addEventListener('click',()=>{popover.open=false;summary.focus()});popover.append(close)}}
+   if(list&&!$('.rp-drawer-handle',popover)){const close=document.createElement('button');close.type='button';close.className='rp-drawer-handle';close.setAttribute('aria-label','Recolher notificações');close.innerHTML=arrows.right;close.addEventListener('click',()=>animatePanelClose(list,()=>{popover.open=false;summary.focus()}));popover.append(close)}}
  }
 }
 function openLeft(){closeOtherFieldPanels('menu');const trigger=$('[data-action="open-mobile-menu"]')||$('[data-central-menu]');trigger?.click();decorateOverlays();return $('#dialog[open].rp-side-drawer')||$('#central-navigation.is-open')}
