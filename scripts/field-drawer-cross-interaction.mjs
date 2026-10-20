@@ -55,7 +55,7 @@ try{
    await chatTop.click();
    await page.locator('#rp-field-chat-overlay[open]').waitFor({timeout:12000});
    verify(!(await notif.evaluate(n=>n.open)),prefix+' notifications stayed open over chat');
-   verify(await page.locator('#rp-field-chat-overlay .rp-chat-grip').isVisible(),prefix+' chat collapse control missing');
+   await page.locator('#rp-field-chat-overlay .rp-chat-grip').waitFor({state:'visible',timeout:5000});
    await page.screenshot({path:evidence+'/'+prefix+'-chat-top.png',fullPage:false});
    await page.locator('#rp-field-chat-overlay .rp-chat-grip').click();
    await page.locator('#rp-field-chat-overlay[open]').waitFor({state:'detached',timeout:5000});
