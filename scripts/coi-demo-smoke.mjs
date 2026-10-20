@@ -116,8 +116,7 @@ try{
    await page.locator('#demo-inspection-form [type="submit"]').click();
    if(await page.locator('#demo-inspection-form').count())throw Error('Vistoria concluída não voltou para o mapa sem pendências');
    await page.locator('.rp-inspection-cockpit.is-idle .rp-inspection-destination').waitFor();
-   await page.locator('.rp-header-tools [aria-label="Mensagens do COE"]').click();
-   await page.locator('[data-action="demo-chat-overlay"]').click();
+   await page.locator('.dashboard .rp-message-trigger[aria-label="Abrir mensagens"]').click();
    await page.locator('#rp-demo-chat-overlay #demo-chat-form').waitFor();
    if(await page.locator('#rp-demo-chat-overlay .field-chat-contact-row:visible').count())throw Error('Chat de campo abriu lista em vez de conversa direta');
    await page.screenshot({path:out+'/chat-vistoriador-'+width+'.png',fullPage:true});

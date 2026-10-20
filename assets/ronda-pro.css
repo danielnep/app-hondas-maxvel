@@ -3748,8 +3748,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
     box-shadow:inset 0 1px 0 #ffffff24,0 8px 18px #020c1699!important;
     -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
     transform-origin:center bottom;
-    animation:rp-dock-reveal .55s cubic-bezier(.18,.84,.24,1.2) both,
-              rp-dock-idle 3.6s ease-in-out 1.1s infinite;
+    animation:rp-dock-reveal .55s cubic-bezier(.18,.84,.24,1.2) both;
     transition:transform .25s cubic-bezier(.2,.85,.25,1.22),box-shadow .25s ease,
                background .25s ease,border-color .25s ease!important;
   }
@@ -3802,10 +3801,6 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
   70%{opacity:1;transform:translateY(-3px) scale(1.045)}
   to{opacity:1;transform:translateY(0) scale(1)}
 }
-@keyframes rp-dock-idle{
-  0%,100%{filter:brightness(1);transform:translateY(0)}
-  50%{filter:brightness(1.07);transform:translateY(-2px)}
-}
 @keyframes rp-panic-breathe{
   0%,100%{box-shadow:0 0 0 4px #c3294b22,0 0 20px #c3294b44}
   50%{box-shadow:0 0 0 8px #c3294b16,0 0 31px #c3294b7a}
@@ -3839,7 +3834,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
 }
 /* Diálogos sempre navegáveis: etapas têm rodapé fixo; a etapa em si pode rolar. */
 @media screen and (max-width:900px){
-  dialog[open]:not(.guide-dialog):not(.ux06-fullscreen){
+  dialog[open]:not(.guide-dialog):not(.ux06-fullscreen):not(.rp-field-chat-overlay){
     width:calc(100vw - 18px)!important;max-width:540px!important;
     height:auto!important;max-height:calc(100dvh - 22px)!important;
     overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;
@@ -6480,7 +6475,8 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
   display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:5px!important;min-width:0;
  }
  .dashboard .app-header .rp-header-popover{flex:none;min-width:0}
- .dashboard .app-header .rp-header-popover>summary{
+ .dashboard .app-header .rp-header-popover>summary,
+ .dashboard .app-header .rp-message-trigger{
   display:flex!important;align-items:center!important;justify-content:center!important;
   list-style:none!important;position:relative;width:40px!important;height:42px!important;
   min-height:42px!important;min-width:40px!important;padding:5px!important;gap:0!important;
@@ -6488,8 +6484,10 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
  }
  .dashboard .app-header .rp-header-popover>summary::marker{content:""}
  .dashboard .app-header .rp-header-popover>summary::-webkit-details-marker{display:none!important}
- .dashboard .app-header .rp-header-popover>summary .icon-svg{width:22px!important;height:22px!important;flex:none!important}
- .dashboard .app-header .rp-header-popover>summary>span{display:none!important}
+ .dashboard .app-header .rp-header-popover>summary .icon-svg,
+ .dashboard .app-header .rp-message-trigger .icon-svg{width:22px!important;height:22px!important;flex:none!important}
+ .dashboard .app-header .rp-header-popover>summary>span,
+ .dashboard .app-header .rp-message-trigger>span{display:none!important}
  .dashboard .app-header .rp-header-popover>summary .rp-unread-count{
   position:absolute;top:-5px;right:-4px;font-size:10px!important;
  }
@@ -7076,7 +7074,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
  box-shadow:none!important;font-size:15px!important}
 .dashboard .field-chat-compose .button.primary{min-width:94px!important;min-height:49px!important;
  border-radius:13px!important;background:#e7edf5!important;border:1px solid #e7edf5!important;
- color:#151b22!important;font-weight:750!important;box-shadow:none!important
+ color:#151b22!important;font-weight:750!important;box-shadow:none!important}
 .dashboard .field-chat-compose .button.primary:hover{background:#d0dae6!important}
 .dashboard .rp-direct-chat{display:flex!important;align-items:center;justify-content:center;
  background:#26313b!important;color:#edf3f8!important;
@@ -7971,6 +7969,18 @@ body:has(#central-root) > header.top .rp-popover-list{
  max-height:calc(100dvh - 24px)!important;border-radius:15px!important;
  background:#191b20!important;border-color:#414852!important
 }
+/* A conversa abre pelo topo em uma única superfície e mantém todas as ações alcançáveis. */
+.rp-demo-chat-sheet>.field-chat-screen{
+ width:100%!important;max-width:none!important;height:calc(100% - 53px)!important;
+ min-height:0!important;display:flex!important;flex-direction:column!important;margin:0!important;
+}
+.rp-demo-chat-sheet .field-chat-surface{flex:1 1 auto!important;min-height:0!important;}
+@keyframes rp-chat-slide-down{
+ from{transform:translateY(-24px);opacity:.92}
+ to{transform:translateY(0);opacity:1}
+}
+.rp-demo-chat-sheet[open]{animation:rp-chat-slide-down .24s ease-out both;}
+@media(prefers-reduced-motion:reduce){.rp-demo-chat-sheet[open]{animation:none;}}
 .rp-field-chat-overlay-head,.rp-field-chat-overlay .field-chat-threadbar,
 .rp-field-chat-overlay .field-chat-compose{background:#202329!important;border-color:#3b4451!important}
 .rp-field-chat-overlay .field-chat-compose{
@@ -7998,7 +8008,7 @@ body:has(#central-root) > header.top .rp-popover-list{
 @media(max-width:600px){
  .rp-field-wizard-dialog,.rp-field-wizard-dialog[open]{width:calc(100vw - 18px)!important;height:auto!important;max-height:calc(100dvh - 24px)!important;border-radius:14px!important}
  .rp-field-wizard-dialog>form{height:auto!important;max-height:calc(100dvh - 28px)!important}
- .rp-field-chat-overlay,.rp-field-chat-overlay[open]{width:calc(100vw - 18px)!important;height:min(80dvh,680px)!important;max-height:calc(100dvh - 20px)!important;border-radius:14px!important}
+ .rp-field-chat-overlay,.rp-field-chat-overlay[open]{width:100vw!important;max-width:none!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important;inset:0!important}
  .rp-field-wizard-stage{padding:8px 12px 12px!important}
  .rp-inspection-capture-actions{gap:7px}
  .rp-field-wizard-stage .rp-inspection-capture-actions .rp-capture-button{padding:9px!important;min-height:66px!important}
@@ -8015,6 +8025,10 @@ body:has(#central-root) > header.top .rp-popover-list{
 }
 .rp-inspection-torch svg{height:23px;width:23px;color:#62c0f0}
 .rp-inspection-torch span{font-size:11px;font-weight:700}
+:is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch.is-lit{
+ background:#44361fdc!important;border-color:#ffd36a!important;color:#ffe6ab!important
+}
+.rp-inspection-torch.is-lit svg{color:#ffd36a!important}
 @media(max-width:600px){
  :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit .rp-inspection-torch{
   right:14px!important;top:86px!important;width:62px!important;height:62px!important;min-height:62px!important

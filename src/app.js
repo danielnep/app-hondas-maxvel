@@ -13,7 +13,7 @@ import {travel,interpolated,travelDuration} from './simulation.js';
 import {loadState,saveState,clearState} from './storage.js';
 import {getConsent,saveConsent,LOCATION_REQUIREMENTS} from './consent.js';
 import {createSpotlightTour} from './tutorial.js';
-import {createUiMotion} from './ui-motion.js?v=2';
+import {createUiMotion} from './ui-motion.js?v=3';
 import {createOperationsUpgrade} from './operations-upgrade.js';
 import {createInstallManager} from './install.js';
 import {createCheckpointCurtain} from './checkpoint-curtain.js';
@@ -844,24 +844,24 @@ function demoEventNotifications(){
 }
 function demoHeaderButtons(){
  const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length;
- const messages=demoChatRows(),last=messages.at(-1),unread=0;
- return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos destinados ao perfil: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos recebidos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Sem eventos para este perfil.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais</button>':'')+'</div></details>'+
- '<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens do COE">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Conversas recentes</strong><button type="button" data-action="demo-chat-overlay"><b>COE · Central de Operações</b><small>'+(last?esc(last.body.slice(0,90)):'Sem mensagens recentes')+'</small></button><button type="button" data-action="demo-chat-overlay-more">Ver mais conversas</button></div></details></div>';
+  return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos destinados ao perfil: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos recebidos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Sem eventos para este perfil.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais</button>':'')+'</div></details>'+
+ '<button type="button" class="rp-blue-button rp-message-trigger" data-action="demo-chat-overlay" aria-haspopup="dialog" aria-controls="rp-demo-chat-overlay" aria-label="Abrir mensagens">'+ic('message')+'<span>Mensagens</span></button></div>';
 }
 function openDemoChatOverlay(list=false){
  demoChatScreen=list?'list':'thread';
  let overlay=document.querySelector('#rp-demo-chat-overlay');
- if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';
+ if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay rp-demo-chat-sheet';
   document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
- overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens · demonstração local</strong><button type="button" data-action="demo-chat-overlay-close">✕</button></div>'+demoChatView();
+ overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens · demonstração local</strong><button type="button" data-action="demo-chat-overlay-close">✕</button></div>'+demoChatView(true);
  if(!overlay.open)overlay.showModal();
 }
 let demoChatScreen='thread';
 function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows:[]}catch{return []}}
-function demoChatView(){
+function demoChatView(inSheet=false){
  const rows=demoChatRows(),mine=user?.name||'Vigia',last=rows.at(-1),thread=demoChatScreen==='thread';
  const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':(allNav[user?.role]||[['minha-ronda']])[0][0];
- const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'" aria-label="Voltar à área de trabalho">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Comunicação operacional</small></div></header>';
+ const backAction=inSheet?'data-action="demo-chat-overlay-close"':'data-view="'+back+'"';
+ const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" '+backAction+' aria-label="Voltar à área de trabalho">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Comunicação operacional</small></div></header>';
  const list='<section class="field-chat-list" aria-label="Conversas"><div class="field-chat-list-label">CONVERSAS</div><button type="button" class="field-chat-contact-row" data-action="demo-chat-open"><span class="field-chat-avatar">C</span><span class="field-chat-contact-copy"><strong>COI · Central de Operações</strong><small>'+(last?esc(last.body):'Toque para iniciar uma conversa')+'</small></span><span class="field-chat-contact-time">'+(last?time(last.at):'')+'</span></button><div class="field-chat-local-note">Demonstração local: mensagens deste aparelho. Para conversas reais entre equipes, use a central autenticada.</div><a class="field-chat-auth-link" href="/central.html#chat">Abrir mensagens da central autenticada ↗</a></section>';
  const messages=rows.map(m=>'<article class="field-chat-bubble '+(m.author===mine?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+time(m.at)+(m.author===mine?' · Salva neste aparelho':'')+'</small></article>').join('');
  const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list" aria-label="Voltar para conversas">'+ic('arrowleft')+'</button><span class="field-chat-avatar">C</span><div><strong>COI · Central de Operações</strong><small>Chat local de demonstração</small></div></header><div class="field-chat-thread" role="log" aria-label="Mensagens da conversa com o COI">'+(messages||'<div class="field-chat-empty"><strong>Conversa iniciada</strong><span>Envie uma mensagem para registrar a demonstração.</span></div>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Escrever mensagem</label><input id="demo-chat-body" name="body" required maxlength="2000" placeholder="Mensagem" autocomplete="off"><button type="submit" class="button primary" aria-label="Enviar mensagem">Enviar</button></form></section>';
@@ -1229,7 +1229,10 @@ setInterval(()=>{if(session?.status==='active')save()},10000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&session?.status==='active'){if(!window.AndroidTracking){session.insideSince=null;const p=currentCheckpoint(session);if(p)session.checkpoints[session.index].dwellMs=0;}movement=null;save();}else if(screen!=='landing'&&session?.status==='active'){syncNativeHistory();render()}});
 window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status==='active'&&mode==='real')syncNativeHistory()});
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
- const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
+ const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';// A rota escolhida pelo menu mobile precisa fechar o diálogo que bloqueia
+ // os cliques na área de trabalho; mudar a rota sem fechar mantém o backdrop.
+ if(el.closest('.ux-access-menu')&&modal.open)modal.close();
+ view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
  if(act==='demo-wizard-open'){const d=document.querySelector('#rp-demo-wizard-dialog');if(d&&!d.open)d.showModal();return;}
  if(act==='demo-wizard-close'){document.querySelector('#rp-demo-wizard-dialog')?.close();return;}

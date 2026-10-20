@@ -48,12 +48,14 @@ test('janelas do vigia usam altura por conteúdo e retorno único',()=>{
  assert.match(css,/\.checkpoint-curtain\s*\.checkpoint-curtain-panel/);
 });
 test('estilos críticos carregam por último e entram no PWA',()=>{
- assert.ok(index.includes('mobile-critical-20261016.css?v=1'));
- assert.match(index,/rondas-pro-updated-v48/);
- assert.match(sw,/rondas-pro-interface-v48/);
+ const bundled=read('assets/ronda-pro.css');
+ assert.match(index,/assets\/ronda-pro\.css\?v=20/);
+ assert.ok(bundled.includes('/* ORIGINAL: assets/mobile-critical-20261016.css */'));
+ assert.match(index,/rondas-pro-updated-v50/);
+ assert.match(sw,/rondas-pro-interface-v50/);
  assert.ok(sw.includes('./assets/mobile-critical-20261016.css'));
- const before=index.indexOf('field-compact.css');
- const after=index.indexOf('mobile-critical-20261016.css');
+ const before=bundled.indexOf('/* ORIGINAL: assets/field-compact.css */');
+ const after=bundled.indexOf('/* ORIGINAL: assets/mobile-critical-20261016.css */');
  assert.ok(before>=0&&after>before,'CSS novo deve sobrescrever o estilo legado');
 });
 
@@ -62,7 +64,7 @@ test('marca Grupo Maxvel permanece visível no cabeçalho mobile',()=>{
  assert.match(style,/\.dashboard \.app-header \.brand \.brand-partner\{[^}]*display:flex!important/);
  assert.match(style,/\.dashboard \.app-header \.brand \.maxvel-real-logo\{[^}]*display:block!important/);
  assert.doesNotMatch(style,/\.dashboard \.app-header \.brand \.brand-partner\{display:none!important/);
- assert.ok(index.includes('maxvel-atelier-20261016.css?v=3'));
+ assert.ok(read('assets/ronda-pro.css').includes('/* ORIGINAL: assets/maxvel-atelier-20261016.css */'));
 });
 
 test('vistorias têm mapa independente, fotos múltiplas e termos profissionais',()=>{
@@ -77,5 +79,5 @@ test('vistorias têm mapa independente, fotos múltiplas e termos profissionais'
  assert.match(inspector,/watchPosition/);
  assert.match(inspector,/route_points/);
  assert.match(server,/route_points/);
- assert.match(index,/maxvel-field-refinement-20261016\.css/);
+ assert.match(read('assets/ronda-pro.css'),/ORIGINAL: assets\/maxvel-field-refinement-20261016\.css/);
 });

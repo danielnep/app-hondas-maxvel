@@ -1,4 +1,13 @@
 /** Motion belongs to the interface, independent of patrol, GPS and storage. */
+const INTERACTIVE_SURFACE='button,a,input,textarea,select,summary,[role="button"],[role="link"],[contenteditable],[data-action],[data-view],.leaflet-container';
+export function canDragDialogSurface(target,modal,styleFor=node=>window.getComputedStyle(node)){
+ if(!target||target===modal||!modal.contains(target)||target.closest(INTERACTIVE_SURFACE))return false;
+ // A surface may be dragged, but scrolling within forms, lists and message threads wins.
+ for(let node=target;node&&node!==modal;node=node.parentElement){
+  if(node.scrollHeight>node.clientHeight+2&&/^(auto|scroll)$/.test(styleFor(node).overflowY))return false;
+ }
+ return true;
+}
 export function createUiMotion({root,modal}) {
  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
  let drag=null;
@@ -16,23 +25,22 @@ export function createUiMotion({root,modal}) {
   drag=null;
  }
  modal.addEventListener('pointerdown',event=>{
-  if(reduce.matches||modal.classList.contains('guide-dialog')||event.button!==0||!event.isPrimary||window.innerWidth>900)return;
-  const handle=event.target.closest('h2,.ux06-sheet-header');
-  if(!handle||event.target.closest('button,input,select,textarea,a'))return;
-  event.preventDefault();
+  if(modal.classList.contains('guide-dialog')||event.button!==0||!event.isPrimary||window.innerWidth>900)return;
+  if(!canDragDialogSurface(event.target,modal))return;
   drag={id:event.pointerId,startY:event.clientY,amount:0};
   modal.setPointerCapture?.(event.pointerId);
  });
  modal.addEventListener('pointermove',event=>{
   if(!drag||drag.id!==event.pointerId)return;
   drag.amount=Math.max(0,event.clientY-drag.startY);
-  if(drag.amount<4)return;
+  if(drag.amount<8)return;
+  event.preventDefault();
   modal.classList.add('rp-sheet-dragging');
   modal.style.setProperty('--rp-drag-y',`${Math.min(140,drag.amount*.65)}px`);
  });
  modal.addEventListener('pointerup',event=>{
   if(!drag||drag.id!==event.pointerId)return;
-  const dismiss=Math.max(drag.amount,event.clientY-drag.startY)>110;
+  const dismiss=drag.amount>110;
   if(modal.hasPointerCapture?.(event.pointerId))modal.releasePointerCapture(event.pointerId);
   restore();
   if(dismiss)modal.close();
