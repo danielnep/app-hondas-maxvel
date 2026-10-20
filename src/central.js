@@ -371,6 +371,7 @@ function nav(){
  const moreActive=secondary.some(([key])=>key===page);
  const wide=typeof window!=='undefined'&&window.matchMedia('(min-width:761px)').matches;
  return '<nav id="central-navigation" class="side rp2-role-nav" aria-label="Navegação do '+escape(roles[role])+'">'+
+  '<button type="button" class="rp2-nav-dismiss" data-close-central-menu aria-label="Fechar navegação">Menu <span aria-hidden="true">✕</span></button>'+ 
   '<span class="rp2-nav-eyebrow">TRABALHO · '+escape(roles[role])+'</span>'+
   '<div class="rp2-nav-primary">'+primaries.map(node).join('')+'</div>'+
   (secondary.length?'<details class="rp2-nav-secondary" '+(wide||moreActive?'open':'')+'><summary>Mais áreas <span aria-hidden="true">'+(moreActive?'●':'⌄')+'</span></summary><div class="rp2-nav-secondary-items">'+secondary.map(node).join('')+'</div></details>':'')+
@@ -862,6 +863,11 @@ document.addEventListener('change',e=>{
  e.target.value='';
 });
 document.addEventListener('click',async e=>{
+ const openedNavigation=document.querySelector('#central-navigation.is-open');
+ if(openedNavigation&&!e.target.closest('#central-navigation,[data-central-menu]')){
+  openedNavigation.classList.remove('is-open');
+  document.querySelector('[data-central-menu]')?.setAttribute('aria-expanded','false');
+ }
  const target=e.target.closest('button');if(!target)return;
  try{
   if(target.dataset.evidenceKind&&['ronda','vistoriador'].includes(account?.role)&&['send','inspections'].includes(page)){
@@ -991,6 +997,10 @@ document.addEventListener('click',async e=>{
    requestAnimationFrame(()=>document.querySelector('.ops-inspector-section')?.scrollIntoView({behavior:'smooth',block:'start'}));
    return;
   }
+  if(target.hasAttribute('data-close-central-menu')){
+   document.querySelector('#central-navigation')?.classList.remove('is-open');
+   const trigger=document.querySelector('[data-central-menu]');trigger?.setAttribute('aria-expanded','false');trigger?.focus();return;
+  }
   if(target.hasAttribute('data-central-menu')){
    const nav=document.querySelector('#central-navigation'),open=!nav.classList.contains('is-open');nav.classList.toggle('is-open',open);target.setAttribute('aria-expanded',String(open));return;
   }
@@ -1116,6 +1126,12 @@ document.addEventListener('change',e=>{
  routeBoard.change(e.target);
 });
 exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;eventResponseDrafts.clear();sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Escape')return;
+ const nav=document.querySelector('#central-navigation.is-open');if(!nav)return;
+ nav.classList.remove('is-open');
+ const trigger=document.querySelector('[data-central-menu]');trigger?.setAttribute('aria-expanded','false');trigger?.focus();
+});
 load();
 
 setInterval(guardTick,1000);
