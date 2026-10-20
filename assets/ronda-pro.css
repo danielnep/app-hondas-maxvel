@@ -1319,7 +1319,7 @@ dialog h2{letter-spacing:-.8px}
 }
 #live-login-form input{
  display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
- min-height:50px;padding:12px 14px;font-size:16px;
+ min-height:50px!important;padding:12px 14px;font-size:16px;
 }
 #live-login-form button[type=submit]{
  display:flex;justify-content:center;align-items:center;
@@ -2048,10 +2048,10 @@ dialog .rules li p{font-size:10px!important}
 .entry-screen .topnav{padding:0!important;height:54px!important;min-height:54px!important;border-bottom:1px solid var(--mx-line)!important}
 .entry-screen .topnav .brand{width:155px!important;min-width:0!important}
 .entry-screen .entry-aside{display:none!important}
-.entry-screen .entry-main{min-height:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:0 3px!important;gap:0!important;overflow:hidden!important}
-.entry-screen .entry-panel{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}
-.entry-screen .entry-panel h1{font-size:clamp(22px,6vw,32px)!important;line-height:1.14!important;margin:8px 0!important;letter-spacing:-.03em!important}
-.entry-screen .entry-panel>p{font-size:12px!important;line-height:1.55!important;margin:5px 0 11px!important}
+.entry-screen:not(:has(#live-login-form)) .entry-main{min-height:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:0 3px!important;gap:0!important;overflow:hidden!important}
+.entry-screen:not(:has(#live-login-form)) .entry-panel{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}
+.entry-screen:not(:has(#live-login-form)) .entry-panel h1{font-size:clamp(22px,6vw,32px)!important;line-height:1.14!important;margin:8px 0!important;letter-spacing:-.03em!important}
+.entry-screen:not(:has(#live-login-form)) .entry-panel>p{font-size:12px!important;line-height:1.55!important;margin:5px 0 11px!important}
 .entry-screen .entry-eyebrow{font-size:10px!important}
 .entry-screen .entry-actions{gap:8px!important;margin:0!important}
 .entry-screen .entry-actions>.button{min-height:40px!important;height:40px!important;font-size:12px!important;padding:4px 8px!important;width:auto!important;max-width:100%!important}
