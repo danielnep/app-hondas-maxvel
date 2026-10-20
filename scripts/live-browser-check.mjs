@@ -37,6 +37,7 @@ try{
      message:icon('.dashboard .app-header [data-action="demo-chat-overlay"]'),
      bell:rect('.dashboard .app-header .rp-header-popover>summary svg.icon-svg'),
      menuControl:rect('.dashboard .app-menu-button'),
+     avatar:rect('.dashboard .app-header .user-profile-button .avatar'),
      messageControl:rect('.dashboard .app-header [data-action="demo-chat-overlay"]'),
      paths:menu?.querySelector('path')?.getAttribute('d')||'',
      overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth
@@ -49,6 +50,7 @@ try{
     fail(header.menu?.width>=18&&header.menu.width<=23,'menu fora da escala');
     fail(header.paths.includes('M4 6h16'),'hamburguer não foi carregado');
     fail(header.menuControl?.width>=34,'menu com alvo pequeno');
+    fail(header.avatar?.width>=28&&header.avatar?.height>=28&&Math.abs(header.avatar.width-header.avatar.height)<=3,'avatar comprimido em elipse');
    }
    if(header.bell)fail(header.bell.width>=18&&header.bell.width<=23,'sino fora da escala');
    fail(header.overflow<=2,'estouro horizontal');
