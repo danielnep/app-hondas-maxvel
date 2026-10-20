@@ -6,9 +6,13 @@ const storage=()=>{const data=new Map();return {getItem:k=>data.get(k)??null,set
 globalThis.localStorage=storage();
 globalThis.sessionStorage=storage();
 globalThis.location={hostname:'danielnep.github.io'};
-test('GitHub Pages activates offline adapter only for its own origin',()=>{
+test('Pages and Ronda Pro Railway use password-free local test profiles without enabling them elsewhere',()=>{
  assert.equal(isPagesTestMode(),true);
  location.hostname='ronda-pro-production.up.railway.app';
+ assert.equal(isPagesTestMode(),true);
+ location.hostname='outro-servico.up.railway.app';
+ assert.equal(isPagesTestMode(),false);
+ location.hostname='localhost';
  assert.equal(isPagesTestMode(),false);
  location.hostname='danielnep.github.io';
 });
