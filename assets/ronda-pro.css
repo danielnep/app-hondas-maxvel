@@ -8008,7 +8008,7 @@ body:has(#central-root) > header.top .rp-popover-list{
 @media(max-width:600px){
  .rp-field-wizard-dialog,.rp-field-wizard-dialog[open]{width:calc(100vw - 18px)!important;height:auto!important;max-height:calc(100dvh - 24px)!important;border-radius:14px!important}
  .rp-field-wizard-dialog>form{height:auto!important;max-height:calc(100dvh - 28px)!important}
- .rp-field-chat-overlay,.rp-field-chat-overlay[open]{width:100vw!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important;inset:0!important}
+ .rp-field-chat-overlay,.rp-field-chat-overlay[open]{width:100vw!important;max-width:none!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;margin:0!important;inset:0!important}
  .rp-field-wizard-stage{padding:8px 12px 12px!important}
  .rp-inspection-capture-actions{gap:7px}
  .rp-field-wizard-stage .rp-inspection-capture-actions .rp-capture-button{padding:9px!important;min-height:66px!important}
