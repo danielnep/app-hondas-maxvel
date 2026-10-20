@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {pagesTestRequest} from '../src/pages-test-api.js';
+import {inspectionRoute} from '../src/inspection-queue.js';
+test('Vistoriador cria suas próprias rondas e vistorias, persiste o histórico e não cria tarefas de outras pessoas',async()=>{
+ const local=new Map(),session=new Map();
+ globalThis.localStorage={getItem:key=>local.get(key)??null,setItem:(key,value)=>local.set(key,value)};
+ globalThis.sessionStorage={getItem:key=>session.get(key)??null,setItem:(key,value)=>session.set(key,value),removeItem:key=>session.delete(key)};
+ session.set('rondaspro_api_token','pages-test:vistoriador');
+ const self='pages-vistoriador',points=[{label:'Portaria',lat:-20.1402,lng:-44.88366},{label:'Acesso lateral',lat:-20.14052,lng:-44.88338}];
+ const round=await pagesTestRequest('/dispatches',{method:'POST',data:{workerId:self,kind:'ronda',address:'Ronda no perímetro',reason:'Verificar acessos e instalações',routePoints:points,latitude:points[0].lat,longitude:points[0].lng}});
+ const inspection=await pagesTestRequest('/dispatches',{method:'POST',data:{workerId:self,kind:'inspection',address:'Área de inspeção',reason:'Conferir condições do acesso principal'}});
+ let items=(await pagesTestRequest('/dispatches')).dispatches;
+ assert.equal(items.length,2);assert.equal(items.find(x=>x.id===round.id).kind,'ronda');assert.equal(items.find(x=>x.id===inspection.id).kind,'vistoria');
+ assert.ok(items.every(x=>x.worker_id===self));
+ await pagesTestRequest('/dispatches/'+round.id+'/start',{method:'POST',data:{}});
+ await pagesTestRequest('/dispatches/'+round.id+'/complete',{method:'POST',data:{note:'Ronda concluída sem anormalidades'}});
+ items=(await pagesTestRequest('/dispatches')).dispatches;
+ assert.ok(items.find(x=>x.id===round.id).completed_at);
+ await assert.rejects(pagesTestRequest('/dispatches',{method:'POST',data:{workerId:'pages-admin',kind:'ronda',address:'Outra ronda de teste',reason:'Motivo suficientemente detalhado'}}),/somente seus atendimentos/);
+ const planned=inspectionRoute([{...items.find(x=>x.id===round.id),taskKind:'ronda'}],{lat:-20.14,lng:-44.88});
+ assert.deepEqual(planned.points.map(p=>p.name),['Portaria','Acesso lateral']);
+});
