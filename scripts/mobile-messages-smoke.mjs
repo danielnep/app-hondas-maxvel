@@ -57,7 +57,7 @@ try {
         const out=[];
         const walk=(list,media='all')=>{
           for(const rule of list){
-            if(rule.cssRules){walk(rule.cssRules,rule.conditionText||media);continue;}
+            if(rule.cssRules?.length){walk(rule.cssRules,rule.conditionText||media);continue;}
             if(!rule.selectorText||!rule.style?.length)continue;
             try{if(!node.matches(rule.selectorText))continue;}catch{continue;}
             const props=['width','max-width','height','max-height','margin','padding'];
@@ -81,7 +81,7 @@ try {
       const matched=[];
       const walk=(list,media='all')=>{
         for(const rule of list){
-          if(rule.cssRules){walk(rule.cssRules,rule.conditionText||media);continue;}
+          if(rule.cssRules?.length){walk(rule.cssRules,rule.conditionText||media);continue;}
           if(!rule.selectorText||!rule.style)continue;
           try{if(!el.matches(rule.selectorText))continue;}catch{continue;}
           if(!['width','max-width','height','max-height'].some(p=>rule.style.getPropertyValue(p)))continue;
@@ -92,7 +92,7 @@ try {
       const sample=[];
       const scan=(rules,depth=0)=>{
         for(const rule of rules){
-          if(rule.cssRules){scan(rule.cssRules,depth+1);continue;}
+          if(rule.cssRules?.length){scan(rule.cssRules,depth+1);continue;}
           if(rule.selectorText&&(/rp-field-chat-overlay|rp-demo-chat-sheet|^dialog$/.test(rule.selectorText))){
             sample.push({selector:rule.selectorText.slice(0,250),css:rule.style?.cssText?.slice(0,280),matches:el.matches(rule.selectorText),depth});
           }
