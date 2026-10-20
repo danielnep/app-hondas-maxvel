@@ -934,7 +934,11 @@ function occurrences(){
  '<section class="rp-treatment-archive">'+(records.length?records.map(n=>'<article class="rp-archive-record" data-archive-id="'+esc(n.id)+'"><span>'+esc(n.kind==='panic'?'Pânico':n.kind==='incident'?'Ocorrência':n.kind==='alert'?'Alerta':'Registro')+' · '+fmt(n.at)+'</span><strong>'+esc(n.label||'Evento finalizado')+'</strong><small>'+esc(n.session?.name||'Campo')+' · '+esc(n.session?.route?.name||'Local não informado')+'</small><p>'+esc(archivedResolution(n).resolution)+'</p><span class="rp-archive-status">'+ic('checkcircle')+' Concluído'+(archivedResolution(n).owner?' por '+esc(archivedResolution(n).owner):'')+'</span></article>').join(''):'<div class="empty">Nenhum evento finalizado. As pendências ficam em Eventos.</div>')+'</section>';
 }
 
-function team(){return pageTitle('Equipe','Vigias e escalas fictícios neste navegador.',helpButton('team','equipes e permissões'))+`<section class="schedule-workspace"><header class="schedule-heading"><div><div class="eyebrow">EFETIVO OPERACIONAL</div><h2>${DEMO_WATCHERS.length} vigias cadastrados</h2><p>Colaboradores fictícios para apresentar operações com múltiplas rondas.</p></div></header><div class="team-list">${DEMO_WATCHERS.map(w=>`<div class="team-row"><span class="avatar">${esc(w.name[0])}</span><div><strong>${esc(w.name)}</strong><small>${esc(w.unit)}</small></div><span>${programsForWatcher(programs,w.id).length} rondas</span></div>`).join('')}</div></section>`}
+function team(){
+ if(!['admin','coi','operador'].includes(user?.role))return pageTitle('Equipe','Acesso indisponivel para este perfil.');
+ return pageTitle('Equipe','Profissionais cadastrados no servidor.')+
+ '<div class="team-list">'+liveUsers.map(u=>'<div class="team-row"><span class="avatar">'+esc(u.name[0])+'</span><div><strong>'+esc(u.name)+'</strong><small>'+esc(u.username||u.email)+' · '+esc(roleName[u.role]||u.role)+'</small></div><span>'+esc(u.phone||'')+'</span></div>').join('')+'</div>';
+}
 function reports(){
  const all=sessionList(),notices=recentNotification(),completed=all.filter(s=>s.status==='completed').length,progress=all.reduce((sum,s)=>sum+s.checkpoints.filter(p=>p.completedAt).length,0),possible=all.reduce((sum,s)=>sum+s.route.points.length,0);
  const ratios=[{label:'Rondas concluídas',n:completed,total:all.length,color:'safe'},{label:'Pontos verificados',n:progress,total:possible,color:'blue'},{label:'Eventos analisados',n:notices.filter(n=>n.seenAt).length,total:notices.length,color:'cyan'}];
@@ -952,7 +956,16 @@ function settings(){
   {id:'evidenceEnabled',title:'Verificação ilustrativa',value:operationalSettings.evidenceEnabled?'Ativada':'Desativada',
    info:'Exibe as etapas demonstrativas de conferência no ponto.'}
  ];
- return pageTitle('Configurações','Regras para novas rondas.',helpButton('privacy','configurações e privacidade'))+
+ const people='<section class="schedule-workspace"><div class="schedule-heading"><div><h2>Cadastro de profissionais</h2><p>Somente a Administracao pode criar acessos.</p></div></div>'+
+ '<form id="live-create-user-form" class="live-register"><label>Perfil<select name="role" required><option value="coi">COI</option><option value="ronda">Vigia / Ronda</option><option value="vistoriador">Vistoriador</option></select></label>'+
+ '<label>Nome<input name="name" required minlength="2" maxlength="100"></label>'+
+ '<label>E-mail<input type="email" name="email" required maxlength="150"></label>'+
+ '<label>Telefone<input type="tel" name="phone" required maxlength="35"></label>'+
+ '<label>Usuario (ou use o e-mail)<input name="username" minlength="3" maxlength="40" placeholder="Opcional"></label>'+
+ '<label>Senha<input type="password" name="password" required minlength="12" autocomplete="new-password"></label>'+
+ '<button type="submit" class="button primary">Cadastrar</button></form>'+
+ '<div class="team-list" style="margin-top:18px">'+liveUsers.map(p=>'<div class="team-row"><strong>'+esc(p.name)+'</strong><span>'+esc(p.username||p.email)+' · '+esc(roleName[p.role]||p.role)+'</span></div>').join('')+'</div></section>';
+ return pageTitle('Configurações','Profissionais e regras operacionais.')+people+
   '<section class="hx05-settings-list" aria-label="Regras configuráveis">'+
   '<div class="hx05-list-heading"><strong>Regras de operação</strong><span>Gerência e Administração</span></div>'+
   options.map(o=>'<div class="hx05-setting-row"><span class="hx05-setting-copy"><strong>'+esc(o.title)+'</strong>'+
@@ -1132,7 +1145,7 @@ function evidenceDialog(){
 }
 function profileDialog(){
  if(!user)return;
- showDialog(`<div class="profile-modal"><div class="profile-heading"><span class="avatar">${esc(user.name.charAt(0).toUpperCase())}</span><div><div class="eyebrow">ACESSO ATUAL</div><div class="profile-name">${esc(user.name)}</div><div class="profile-meta">${esc(roleName[user.role])} · Ambiente de avaliação</div></div></div><div class="profile-actions">${presentation?btn(ic("users")+" Trocar área","sim-role-picker","full"):""}${btn(ic('help')+' Rever tutorial','tour-restart','full')}${btn('Guia completo','guide','full')}${btn(ic('shield')+' Privacidade e dados','privacy','full')}${btn(ic('logout')+' Sair deste perfil','logout','full')}</div><a class="button full" href="/central.html">${ic('shield')} Entrar na operação real</a><p class="map-caption">Demonstração com registros locais. A operação real exige autenticação e salva informações no servidor.</p></div>`,false);
+ showDialog('<div class="profile-modal"><h2>'+esc(user.name)+'</h2><p>'+esc(roleName[user.role]||user.role)+' · '+esc(user.username||user.email||'')+'</p><div class="profile-actions">'+btn('Guia completo','guide','full')+btn('Sair','logout','full')+'</div></div>');
 }
 function startDialog(){const real=mode==='real'&&!presentation;showDialog(`<div class="start-confirm"><h2>Iniciar ronda?</h2><ul><li>Siga a ordem dos pontos e finalize na base.</li><li>Valide sua presença dentro do raio de 25 metros.</li><li>Permaneça pelo tempo configurado em cada ponto, com GPS confiável.</li><li>Informe desvios e ocorrências.</li></ul><p>${real?'Autorize a localização para registrar a ronda. No navegador, mantenha o aplicativo aberto.':'Demonstração: percurso e alertas simulados; tempo de permanência real.'}</p><label class="check-label"><input type="checkbox" id="declaration-check">Li e compreendi as orientações.</label>${btn('Confirmar e iniciar','confirm-start','primary full','disabled')}</div>`);modal.classList.add('start-confirm-dialog');}
 function incidentDialog(){showDialog(`<div class="field-composer"><h2>Registrar ocorrência</h2><form id="incident-form"><div class="field-composer-row"><label class="field">Tipo<select name="category"><option>Segurança</option><option>Acesso</option><option>Patrimônio</option><option>Manutenção</option><option>Outros</option></select></label><label class="field">Gravidade<select name="severity"><option>Baixa</option><option selected>Média</option><option>Alta</option></select></label></div><label class="field">Assunto<input name="title" required minlength="3" maxlength="100" placeholder="O que aconteceu?"></label><label class="field">Descrição<textarea name="description" rows="2" required minlength="10" maxlength="1400" placeholder="Descreva o fato observado."></textarea></label><details><summary>Anexar evidência</summary>${ops.mediaFields()}</details><label class="check-label"><input name="truth" type="checkbox" required>Confirmo o relato observado.</label><button type="submit" class="button primary full">Registrar ocorrência</button></form></div>`);}
@@ -1398,7 +1411,7 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
   programs=[...programs,...result.items];pendingProgram=null;persist();render();
   notify(result.items.length+' ronda(s) programada(s) neste navegador.');return;
  }
-if(act==='profile-menu'){profileDialog();return;}
+if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch(()=>{});profileDialog();return;}
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
  if(act==='logout'){stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
