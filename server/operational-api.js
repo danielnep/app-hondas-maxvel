@@ -78,7 +78,7 @@ function initialize(){
    if(db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE OR email=?').get(username,email))continue;
    const salt=randomBytes(16).toString('hex');
    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,phone,site,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
-    .run(id(),email,username,clean(a.name)||role,role,salt,authHash(password,salt),'',clean(a.phone),'',now());
+    .run(id(),email,username,clean(a.name)||role,role,salt,authHash(password,salt),'',clean(a.phone),'Grupo Maxvel',now());
   }
  }
  const insert=db.prepare('INSERT OR IGNORE INTO templates(id,title,trigger,priority,enabled,cooldown_min) VALUES(?,?,?,?,?,?)');
@@ -198,7 +198,7 @@ export function createOperationalApi(){
     if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
     if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
-    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site,phone);
+    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site||'Grupo Maxvel',phone);
 
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
