@@ -1,5 +1,6 @@
 import {decorateTheme} from './theme-shell.js';
 import {liveRequest,liveSession,loginHtml} from './live-client.js';
+import {isPagesTestMode} from './pages-test-api.js';
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
 import {createInspectionRouteMap} from './inspection-route-map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf} from './inspection-queue.js';
@@ -660,7 +661,7 @@ function myPatrolHistory(){
  '<section class="schedule-workspace"><div class="schedule-heading"><div><div class="eyebrow">HISTÓRICO INDIVIDUAL</div><h2>'+mine.length+' ronda(s) registradas</h2><p>Resumo primeiro; abra uma execução para ver todos os registros.</p></div></div>'+
  (mine.length?mine.slice(0,50).map(item).join(''):'<p>Nenhuma ronda registrada neste aparelho.</p>')+
  '<p class="map-caption">Dados deste dispositivo. Para mensagens da equipe e histórico central sincronizado, utilize seu acesso autenticado.</p>'+
- '<a class="button" href="/central.html">Ver histórico completo e respostas da equipe</a></section>';
+ '<a class="button" href="./central.html">Ver histórico completo e respostas da equipe</a></section>';
 }
 function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'meus-envios':return mySubmissions();case 'overview':return overview();case 'cliente':return demoClientView();case 'vistoriador':return demoInspectorView();case 'rondas':return rondas();case 'chat-interno':return demoChatView();case 'historico-operacional':return demoHistoryView();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
@@ -890,7 +891,7 @@ function demoInspectorView(){
 
 function demoAdminRouteQueue(){
  const w=watcherById(selectedSupervisedWatcherId)||DEMO_WATCHERS[0],history=sessionList().filter(s=>s.name===w.name).slice(0,5),planned=programsForWatcher(programs,w.id);
- return '<section class="demo-admin-route-queue"><header class="demo-admin-route-header"><div><span class="eyebrow">MAPAS · RONDAS POR COLABORADOR</span><h2>'+esc(w.name)+'</h2><p>'+esc(w.unit)+' · '+history.length+' registros recentes · '+planned.length+' programações</p></div><a class="button primary" href="/central.html#routes">+ Criar nova rota para colaborador</a></header>'+
+ return '<section class="demo-admin-route-queue"><header class="demo-admin-route-header"><div><span class="eyebrow">MAPAS · RONDAS POR COLABORADOR</span><h2>'+esc(w.name)+'</h2><p>'+esc(w.unit)+' · '+history.length+' registros recentes · '+planned.length+' programações</p></div><a class="button primary" href="./central.html#routes">+ Criar nova rota para colaborador</a></header>'+
  '<p class="map-caption">A seleção do vigia acima filtra os mapas e o histórico. O cadastro persistente abre a central autenticada.</p>'+
  (history.length?history.map((s,i)=>'<article class="demo-admin-route-line"><div id="admin-route-mini-'+i+'" class="demo-mini-route-map"></div><div><span class="demo-route-flag">'+(s.status==='active'?'Em andamento':'Concluída')+'</span><h3>'+esc(s.route.name)+'</h3><p>'+esc(w.unit)+' · '+fmt(s.startedAt)+'</p><p>'+(s.checkpoints||[]).filter(p=>p.completedAt).length+'/'+s.route.points.length+' pontos verificados</p><button class="button small" data-action="session-detail" data-id="'+esc(s.id)+'">Ver cronologia</button></div></article>').join(''):'<p class="empty">Sem execução registrada para este vigia. Confira a agenda abaixo.</p>')+'</section>';
 }
@@ -1402,7 +1403,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='sim-role-picker'){
   if(!presentation)return;
   const roles=[['ronda','Vigia','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
-  showDialog(`<div class="eyebrow">ÁREAS DO RONDAS PRO · DEMONSTRAÇÃO</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.</p><a class="button full" href="/central.html">Entrar na operação real ↗</a>`);
+  showDialog(`<div class="eyebrow">ÁREAS DO RONDAS PRO · DEMONSTRAÇÃO</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.</p><a class="button full" href="./central.html">Entrar na operação real ↗</a>`);
   modal.classList.add('role-picker-dialog');
   return;
  }
@@ -1714,7 +1715,7 @@ document.addEventListener('click',async e=>{
   else if(button.hasAttribute('data-field-tool-chat'))openDemoChatOverlay(true);
   else if(button.hasAttribute('data-field-tool-incident'))incidentDialog();
   else if(button.hasAttribute('data-field-tool-alert'))alertDialog();
-  else if(button.hasAttribute('data-field-tool-panic'))showDialog('<h2>Pânico · demonstração</h2><p>O acionamento real fica na Central autenticada. Esta tela não envia alarmes.</p><a class="button primary" href="/central.html">Abrir operação real</a>');
+  else if(button.hasAttribute('data-field-tool-panic'))showDialog('<h2>Pânico · demonstração</h2><p>O acionamento real fica na Central autenticada. Esta tela não envia alarmes.</p><a class="button primary" href="./central.html">Abrir operação real</a>');
  }catch{notify('Ferramenta indisponível neste aparelho.')}
 });
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
@@ -1762,11 +1763,13 @@ document.addEventListener('submit',async e=>{
    const event=await liveRequest('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),roundId:dispatchId,description:note,details:{criteria,dispatchId}}});
    for(const [name,view] of [['selfie','selfie'],['local','front']]){
     const file=data.get(name);if(!(file instanceof File)||!file.size)throw new Error('Foto obrigatoria ausente');
-    const upload=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+liveSession.token,'Content-Type':file.type,'X-Ronda-Event-Id':event.id,'X-Media-View':view},body:file});
-    if(!upload.ok){const response=await upload.json().catch(()=>({}));throw new Error(response.error||'Erro no envio da foto');}
+    if(!isPagesTestMode()){
+     const upload=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+liveSession.token,'Content-Type':file.type,'X-Ronda-Event-Id':event.id,'X-Media-View':view},body:file});
+     if(!upload.ok){const response=await upload.json().catch(()=>({}));throw new Error(response.error||'Erro no envio da foto');}
+    }
    }
    await liveRequest('/dispatches/'+encodeURIComponent(dispatchId)+'/complete',{method:'POST',data:{note}});
-   modal.close();await refreshLiveOperational();render();notify('Vistoria concluida e fotos registradas.');
+   modal.close();await refreshLiveOperational();render();notify(isPagesTestMode()?'Vistoria de teste salva somente neste navegador.':'Vistoria concluida e fotos registradas.');
   }catch(error){button.disabled=false;notify(error.message)}return;
  }
  if(e.target.id==='live-create-user-form'){
@@ -1873,7 +1876,7 @@ const ops=createOperationsUpgrade({
  get:()=>({user,view,session,sessions,programs,operationalSettings,mode,locationFix,
   selectedRoute:session?.route??routeForWatcher(selectedWatcherId)}),
  render,save,persist,notify,showDialog,incidentDialog,alertDialog,
- openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('/central.html#chat');return;}openDemoChatOverlay(true);},
+ openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('./central.html#chat');return;}openDemoChatOverlay(true);},
  closeDialog:()=>modal.close(),
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });
