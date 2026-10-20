@@ -53,9 +53,9 @@ test('grafite nos painéis e comunicação, perigo preserva contraste próprio',
 });
 
 test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
- assert.match(index,/rondas-pro-updated-v52/);
- assert.match(index,/sw\.js\?v=52/);
- assert.match(sw,/rondas-pro-interface-v52/);
+ assert.match(index,/rondas-pro-updated-v53/);
+ assert.match(index,/sw\.js\?v=53/);
+ assert.match(sw,/rondas-pro-interface-v53/);
  for(const page of [index,central]){
   assert.match(page,/field\.css\?v=50/);
  }
