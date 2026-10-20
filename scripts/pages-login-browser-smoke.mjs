@@ -69,6 +69,32 @@ try{
      if(!bounds||bounds.width<220||bounds.height<200)throw Error('Mapa do Vistoriador oculto: '+JSON.stringify(bounds));
      await map.locator('.map-fallback, .leaflet-container').first().waitFor({timeout:12000});
      console.log('OK: '+target.name+' / Vistoriador com mapa ('+Math.round(bounds.width)+'x'+Math.round(bounds.height)+')');
+     const create=async(kind,address,reason,points='')=>{
+      await page.locator('[data-action="inspector-create"][data-task-kind="'+kind+'"]').click();
+      const form=page.locator('#dialog #inspector-create-form');
+      await form.locator('[name="address"]').fill(address);
+      await form.locator('[name="reason"]').fill(reason);
+      if(points)await form.locator('[name="points"]').fill(points);
+      await form.locator('button[type="submit"]').click();
+      await form.waitFor({state:'hidden',timeout:12000});
+     };
+     await create('ronda','Ronda externa ponto A','Revisão de acesso e iluminação perimetral','Portaria;-20.14020;-44.88366\nEstacionamento;-20.14052;-44.88338');
+     await page.locator('#inspector-latest-round-map .map-fallback, #inspector-latest-round-map .leaflet-container').first().waitFor({timeout:12000});
+     if(!await page.locator('.rp-inspector-records').getByText('Ronda externa ponto A').count())throw Error('Ronda recém-criada não aparece nas últimas rondas');
+     await page.locator('[data-action="live-inspection-start"]').first().click();
+     await page.locator('[data-action="inspector-round-finish"]').first().click();
+     const finishForm=page.locator('#dialog #inspector-finish-round-form');
+     await finishForm.locator('[name="note"]').fill('Ronda concluída sem anormalidades nos acessos.');
+     await finishForm.locator('button[type="submit"]').click();
+     await finishForm.waitFor({state:'hidden',timeout:12000});
+     await create('inspection','Vistoria de acesso lateral','Inspecionar acesso lateral e condições da porta.');
+     if(!await page.locator('.rp-inspector-records').getByText('Vistoria de acesso lateral').count())throw Error('Vistoria recém-criada não aparece nas últimas vistorias');
+     await page.locator('[data-action="inspector-history-all"]').first().click();
+     const history=page.locator('[data-inspection-history-dialog][open]');
+     await history.waitFor({timeout:12000});
+     if(!await history.getByText('Ronda externa ponto A').count()||!await history.getByText('Vistoria de acesso lateral').count())throw Error('Histórico completo não mostra ambas as atividades');
+     await history.locator('[data-inspection-modal-close]').click();
+     console.log('OK: '+target.name+' / Vistoriador criou ronda com pontos, iniciou, concluiu, criou vistoria e consultou ambos históricos');
     }
     if(role==='ronda'){
      const map=page.locator('#mobile-map'),bounds=await map.boundingBox();

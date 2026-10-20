@@ -24,7 +24,12 @@ try{
   await page.locator('#live-login-form [name="identifier"]').fill(role);
   await page.locator('#live-login-form [name="password"]').fill(password);
   await page.locator('#live-login-form button[type=submit]').click();
-  await page.locator('.dashboard').waitFor({timeout:15000});
+  try{await page.locator('.dashboard').waitFor({timeout:15000});}
+  catch(error){
+   const state=await page.evaluate(()=>({text:document.querySelector('#app')?.innerText?.slice(0,600),form:!!document.querySelector('#live-login-form'),loginError:document.querySelector('#live-login-form')?.textContent?.slice(0,350),dialog:document.querySelector('#dialog')?.textContent?.slice(0,220)}));
+   console.error('AUTH DIAGNOSTIC',JSON.stringify({role,width,state,errors}));
+   throw error;
+  }
   if(await page.locator('.simulation-rolebar').count())throw Error(role+': seletor de simulacao permanece visivel');
   // Prevent the oversized notification controls and miniature list glyph reported on COI mobile.
   if(['admin','coi'].includes(role)){

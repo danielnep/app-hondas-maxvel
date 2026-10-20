@@ -69,18 +69,32 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
  }
  if(p==='/dispatches'){
   const rows=read('dispatches',[]);
-  if(method==='GET')return {dispatches:a.role==='vistoriador'?own(rows,user.id):rows};
+  if(method==='GET')return {dispatches:a.role==='vistoriador'?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
   if(method==='POST'){
-   if(!['admin','coi'].includes(a.role))throw fail('Sem permissão.',403);
-   const item={...data,id:newId(),createdAt:Date.now(),status:'pending'};
-   store('dispatches',[item,...rows]);return {id:item.id};
+   const self=a.role==='vistoriador',kind=data?.kind==='inspection'?'vistoria':data?.kind==='ronda'?'ronda':'ronda';
+   if(!self&&!['admin','coi'].includes(a.role))throw fail('Sem permissão.',403);
+   if(self&&data?.workerId!==user.id)throw fail('Vistoriador cria somente seus atendimentos.',403);
+   if(!allUsers().some(x=>'pages-'+x.username===data?.workerId&&x.active!==false))throw fail('Profissional não encontrado.',422);
+   const address=String(data?.address||'').trim(),reason=String(data?.reason||'').trim();
+   if(address.length<5||reason.length<10)throw fail('Informe local e motivo com pelo menos 10 caracteres.',422);
+   const at=Date.now(),item={...data,id:newId(),kind,workerId:data.workerId,worker_id:data.workerId,
+    author_id:user.id,address,reason,createdAt:at,created_at:at,started_at:null,arrived_at:null,completed_at:null,status:'pending',
+    route_points:Array.isArray(data.routePoints)?data.routePoints:[]};
+   store('dispatches',[item,...rows]);return {id:item.id,createdAt:at};
   }
  }
  const dispatch=p.match(/^\/dispatches\/([^/]+)\/(arrive|complete|start|cancel)$/);
  if(dispatch&&method==='POST'){
   const rows=read('dispatches',[]),item=rows.find(x=>x.id===dispatch[1]);
   if(!item)throw fail('Solicitação não encontrada.',404);
-  item.status=dispatch[2]==='complete'?'completed':dispatch[2]==='cancel'?'cancelled':'in_progress';
+  if(item.worker_id!==user.id)throw fail('Atendimento de outro profissional.',403);
+  if(dispatch[2]==='start'){item.started_at=item.started_at||Date.now();item.status='in_progress';}
+  if(dispatch[2]==='arrive'){if(item.kind!=='vistoria'||!item.started_at)throw fail('Inicie a vistoria antes da chegada.',409);item.arrived_at=item.arrived_at||Date.now();}
+  if(dispatch[2]==='complete'){
+   if(!item.started_at)throw fail('Inicie o atendimento primeiro.',409);
+   item.completed_at=Date.now();item.completion_note=String(data?.note||'').trim();item.status='completed';
+  }
+  if(dispatch[2]==='cancel'){item.completed_at=Date.now();item.status='cancelled';}
   store('dispatches',rows);return {ok:true};
  }
  if(p==='/events'){

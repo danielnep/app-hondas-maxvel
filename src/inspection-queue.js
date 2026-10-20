@@ -47,8 +47,12 @@ export function inspectionRoute(ordered=[],base=null){
  for(const {item,p} of located){
   let waypoints=item.routePoints??item.route_points??[];
   if(typeof waypoints==='string')try{waypoints=JSON.parse(waypoints)}catch{waypoints=[]}
-  const intermediate=(Array.isArray(waypoints)?waypoints:[]).map(pointOf).filter(Boolean).slice(0,12);
-  legs.push(intermediate);
+  const intermediate=(Array.isArray(waypoints)?waypoints:[]).map((q,i)=>({...pointOf(q),label:String(q?.label||q?.name||'Ponto '+(i+1))})).filter(q=>Number.isFinite(q.lat)&&Number.isFinite(q.lng)).slice(0,12);
+  if((item.taskKind==='ronda'||item.kind==='ronda')&&intermediate.length){
+   intermediate.forEach((stop,i)=>{legs.push([]);points.push({...stop,id:item.id+':'+i,name:stop.label,instruction:item.reason||'Ronda',radius:25,inspection:true});});
+   continue;
+  }
+  legs.push(intermediate.map(({lat,lng})=>({lat,lng})));
   points.push({...p,id:item.id,name:item.address||item.site||'Vistoria',
    instruction:item.reason||item.instructions||'Verificar o local',radius:0,inspection:true,
    completedAt:item.completed_at||item.completedAt||null,startedAt:item.started_at||item.startedAt||null});
