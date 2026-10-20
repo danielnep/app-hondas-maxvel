@@ -61,6 +61,7 @@ function initialize(){
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(events)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE events ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  db.exec('CREATE INDEX IF NOT EXISTS idx_events_site_time ON events(site,occurred_at)');
+ db.exec('CREATE TABLE IF NOT EXISTS app_state(user_id TEXT PRIMARY KEY,data TEXT NOT NULL,updated_at INTEGER NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))');
  if(!db.prepare("PRAGMA table_info(recipients)").all().some(x=>x.name==='group_name'))db.exec('ALTER TABLE recipients ADD COLUMN group_name TEXT NOT NULL DEFAULT "operations"');
  if(!db.prepare("SELECT id FROM users WHERE role='master' LIMIT 1").get()){
   const salt=randomBytes(16).toString('hex');
@@ -172,6 +173,18 @@ export function createOperationalApi(){
    const a=userFrom(req);
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
+   if(p==='/api/app-state'&&m==='GET'){
+    const record=db.prepare('SELECT data,updated_at FROM app_state WHERE user_id=?').get(a.id);
+    resp(res,200,{state:record?serialize(record.data):null,updatedAt:record?.updated_at||null});return true;
+   }
+   if(p==='/api/app-state'&&m==='PUT'){
+    const data=serialize((await body(req,2e6)).toString());
+    if(!data||typeof data!=='object'||Array.isArray(data)||!Array.isArray(data.sessions)||!Array.isArray(data.programs)||data.sessions.length>500||data.programs.length>500){resp(res,422,{error:'Dados operacionais invalidos'});return true;}
+    // O estado local de cada usuario so pode ser lido por ele. Eventos e chat compartilhados usam suas APIs autenticadas.
+    const payload=JSON.stringify({sessions:data.sessions,programs:data.programs,selectedWatcherId:clean(data.selectedWatcherId).slice(0,100),operationalSettings:data.operationalSettings||{}});
+    db.prepare('INSERT INTO app_state(user_id,data,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at').run(a.id,payload,now());
+    resp(res,200,{stored:true});return true;
+   }
    if(p==='/api/profile'&&m==='PUT'){const d=serialize((await body(req)).toString())||{};if(typeof d.phone!=='string'||d.phone.length>35){resp(res,422,{error:'Telefone inválido'});return true;}db.prepare('UPDATE users SET phone=? WHERE id=?').run(clean(d.phone),a.id);resp(res,200,{ok:true});return true;}
    if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
    if(await chat.handle(req,res,a,p,m))return true;
