@@ -1294,6 +1294,54 @@ dialog h2{letter-spacing:-.8px}
 .entry-screen .entry-topnav .nav-actions .button{min-height:44px}
 .entry-main{width:min(1180px,100% - 36px);margin:auto;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(285px,.8fr);gap:30px;align-items:center;padding:30px 0 40px}
 .entry-panel{min-width:0;padding:18px 5px}
+/* Operational login is a single form in the existing Glass panel, not a second card. */
+.product-home:has(#live-login-form) .entry-main{
+ display:flex;flex:1 1 auto;align-items:center;justify-content:center;
+ box-sizing:border-box;min-width:0;width:min(520px,calc(100% - 32px));
+ margin-inline:auto;padding:clamp(18px,4vh,44px) 0;
+}
+.product-home:has(#live-login-form) .entry-panel{
+ box-sizing:border-box;width:100%;max-width:520px;min-width:0;
+ margin:0;padding:clamp(20px,5vw,32px);
+}
+.product-home:has(#live-login-form) .entry-panel>p{
+ max-width:100%;line-height:1.5;margin:0 0 22px;
+}
+#live-login-form{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:16px;
+ width:100%;min-width:0;margin:0;padding:0;
+ border:0;background:transparent;box-shadow:none;backdrop-filter:none;
+}
+#live-login-form label{
+ display:grid;grid-template-columns:minmax(0,1fr);align-items:start;
+ gap:7px;width:100%;min-width:0;margin:0;
+ font-size:14px;line-height:1.4;font-weight:650;text-align:left;
+}
+#live-login-form input{
+ display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+ min-height:50px;padding:12px 14px;font-size:16px;
+}
+#live-login-form button[type=submit]{
+ display:flex;justify-content:center;align-items:center;
+ width:100%;max-width:100%;min-height:52px;margin:4px 0 0;font-size:16px;
+}
+@media(max-width:500px){
+ .product-home:has(#live-login-form) .entry-main{
+   width:calc(100% - 30px);padding:18px 0 22px;
+ }
+ .product-home:has(#live-login-form) .entry-panel{
+   padding:clamp(19px,5vw,26px);
+ }
+ .product-home:has(#live-login-form) .entry-eyebrow{
+   font-size:10px;line-height:1.5;letter-spacing:1.3px;overflow-wrap:anywhere;
+ }
+ .product-home:has(#live-login-form) .entry-panel h1{
+   font-size:clamp(32px,9vw,42px);margin:6px 0 12px;
+ }
+ .product-home:has(#live-login-form) .entry-panel>p{
+   font-size:14px;line-height:1.5;margin-bottom:20px;
+ }
+}
 .entry-identity{display:none}
 .entry-eyebrow{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1.8px;font-weight:800;margin-bottom:14px}
 .entry-eyebrow svg{width:18px;height:18px}
