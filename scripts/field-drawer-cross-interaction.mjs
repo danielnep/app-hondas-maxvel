@@ -34,6 +34,16 @@ try{
    await page.locator('#central-login button').click();
    await page.locator('#central-navigation').waitFor({state:'attached',timeout:15000});
    await page.waitForFunction(()=>document.body.dataset.rpField==='true',{timeout:12000});
+   await page.waitForTimeout(650);
+   const layout=await page.evaluate(()=>{
+    const sels=['#central-root','#central-root .content','.rp-guard-workspace','.rp-inspector-workspace','.rp-inspection-cockpit','.rp-inspection-map-panel','.rp-inspection-map-canvas','.rp-inspector-map','.rp-field-controls','.rp-inspection-commands','.patrol-map-heading','[data-field-tool-chat]','.onboarding-ops'];
+    const rows=Object.fromEntries(sels.map(sel=>{
+      const el=document.querySelector(sel),style=el&&getComputedStyle(el),b=el?.getBoundingClientRect();
+      return [sel,el?{rect:b&&{x:Math.round(b.x),y:Math.round(b.y),w:Math.round(b.width),h:Math.round(b.height)},position:style.position,display:style.display,opacity:style.opacity,background:style.backgroundColor,transform:style.transform,translate:style.translate,visibility:style.visibility,z:style.zIndex}:null]
+    }));
+    return {rows,atCenter:document.elementFromPoint(innerWidth/2,innerHeight/2)?.outerHTML?.slice(0,250)};
+   });
+   console.log('FIELD_GEOMETRY',prefix,JSON.stringify(layout));
    // No tutorial may be drawn underneath the map toolbar or field controls.
    verify(await page.locator('.onboarding-ops').count()===0,prefix+' onboarding covers field map');
    const mapPanel=page.locator('.rp-inspection-map-panel,.rp-guard-cockpit .patrol-map-panel').first();
