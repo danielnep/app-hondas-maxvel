@@ -1,6 +1,6 @@
 import {decorateTheme} from './theme-shell.js';
 import {liveRequest,liveSession,loginHtml} from './live-client.js';
-import {isPagesTestMode} from './pages-test-api.js';
+import {isPagesTestMode,PAGES_TEST_ACCOUNTS} from './pages-test-api.js';
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
 import {createInspectionRouteMap} from './inspection-route-map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf} from './inspection-queue.js';
@@ -1213,15 +1213,24 @@ function evidenceDialog(){
  }).join('');
  showDialog(`<div class="evidence-demo-dialog"><div class="eyebrow">DEMONSTRAÇÃO · SEM FOTOS REAIS</div><h2>Verificação do ponto ${index+1}</h2><p>Conheça a sequência de quatro direções e giro. Esta simulação não ativa a câmera, não utiliza o giroscópio e não constitui prova de inspeção.</p><div class="evidence-demo-count">${stat.captured} de 4 etapas</div><div class="evidence-demo-list">${items}</div><div class="evidence-demo-motion"><span><strong>Giro do aparelho</strong><small>${stat.rotated?'Etapa simulada, sem leitura de sensor':'Leitura física ainda depende de piloto'}</small></span>${btn(stat.rotated?'Simulado':'Simular giro','demo-rotation','small')}</div><div class="evidence-demo-note">Para uso real, as evidências precisarão de captura segura, permissão e validação em dispositivos.</div>${btn(stat.confirmed?'Exemplo registrado':'Registrar demonstração','demo-evidence-confirm','primary full',stat.captured!==stat.total||!stat.rotated||stat.confirmed?'disabled':'')}${btn('Voltar ao mapa','close-dialog','full')}</div>`,true);
 }
+async function activatePagesRole(role){
+ if(!isPagesTestMode())return;
+ const account=PAGES_TEST_ACCOUNTS.find(item=>item.role===role);
+ if(!account)throw new Error('Perfil de teste indisponível.');
+ liveSession.token='pages-test:'+account.username;
+ await restoreLiveAccount();
+}
 function openAreaPicker(){
-  if(!presentation)return;
-  const roles=[['ronda','Vigia','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
-  showDialog(`<div class="eyebrow">ÁREAS DO RONDAS PRO · DEMONSTRAÇÃO</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.</p>${isPagesTestMode()?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`);
+  if(!presentation&&!isPagesTestMode())return;
+  const roles=isPagesTestMode()
+   ?[['ronda','Vigia','compass'],['coi','COI · Acompanhamento','headset'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']]
+   :[['ronda','Vigia','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
+  showDialog(`<div class="eyebrow">ÁREAS DO RONDA PRO · ${isPagesTestMode()?'TESTES':'DEMONSTRAÇÃO'}</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">${isPagesTestMode()?'Escolha livremente uma área de teste. Os dados permanecem neste navegador.':'A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.'}</p>${isPagesTestMode()?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`);
   modal.classList.add('role-picker-dialog');
 }
 function profileDialog(){
  if(!user)return;
- showDialog('<div class="profile-modal"><h2>'+esc(user.name)+'</h2><p>'+esc(roleName[user.role]||user.role)+' · '+esc(user.username||user.email||'')+'</p><div class="profile-actions">'+btn('Guia completo','guide','full')+(presentation?btn('Trocar de área','sim-role-picker','full'):'')+btn('Sair deste perfil','logout','full')+'</div></div>');
+ showDialog('<div class="profile-modal"><h2>'+esc(user.name)+'</h2><p>'+esc(roleName[user.role]||user.role)+' · '+esc(user.username||user.email||'')+'</p><div class="profile-actions">'+btn('Guia completo','guide','full')+((presentation||isPagesTestMode())?btn('Trocar de área','sim-role-picker','full'):'')+btn('Sair deste perfil','logout','full')+'</div></div>');
 }
 function startDialog(){const real=mode==='real'&&!presentation;showDialog(`<div class="start-confirm"><h2>Iniciar ronda?</h2><ul><li>Siga a ordem dos pontos e finalize na base.</li><li>Valide sua presença dentro do raio de 25 metros.</li><li>Permaneça pelo tempo configurado em cada ponto, com GPS confiável.</li><li>Informe desvios e ocorrências.</li></ul><p>${real?'Autorize a localização para registrar a ronda. No navegador, mantenha o aplicativo aberto.':'Demonstração: percurso e alertas simulados; tempo de permanência real.'}</p><label class="check-label"><input type="checkbox" id="declaration-check">Li e compreendi as orientações.</label>${btn('Confirmar e iniciar','confirm-start','primary full','disabled')}</div>`);modal.classList.add('start-confirm-dialog');}
 function incidentDialog(){showDialog(`<div class="field-composer"><h2>Registrar ocorrência</h2><form id="incident-form"><div class="field-composer-row"><label class="field">Tipo<select name="category"><option>Segurança</option><option>Acesso</option><option>Patrimônio</option><option>Manutenção</option><option>Outros</option></select></label><label class="field">Gravidade<select name="severity"><option>Baixa</option><option selected>Média</option><option>Alta</option></select></label></div><label class="field">Assunto<input name="title" required minlength="3" maxlength="100" placeholder="O que aconteceu?"></label><label class="field">Descrição<textarea name="description" rows="2" required minlength="10" maxlength="1400" placeholder="Descreva o fato observado."></textarea></label><details><summary>Anexar evidência</summary>${ops.mediaFields()}</details><label class="check-label"><input name="truth" type="checkbox" required>Confirmo o relato observado.</label><button type="submit" class="button primary full">Registrar ocorrência</button></form></div>`);}
@@ -1409,6 +1418,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='sim-role-picker'){openAreaPicker();return;}
 
 if(act==='sim-role'){
+  if(isPagesTestMode()){await activatePagesRole(el.dataset.role);return;}
   if(!presentation||!['ronda','operador','coi','cliente','vistoriador','admin'].includes(el.dataset.role))return;
   const name=el.dataset.role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):el.dataset.role==='operador'?'Operador COI · Monitoramento':el.dataset.role==='coi'?'Operador COI':el.dataset.role==='cliente'?'Cliente de exemplo':el.dataset.role==='vistoriador'?'Vistoriador de exemplo':'Administrador';
   user={name,role:el.dataset.role};
@@ -1513,7 +1523,7 @@ if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch((
   return;
  }
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'){if(isPagesTestMode()&&presentation){openAreaPicker();return;}stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
+ if(act==='logout'){if(isPagesTestMode()){openAreaPicker();return;}stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
  if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
@@ -1890,5 +1900,5 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
-(async()=>{try{if(isPagesTestMode()){liveSession.token='';beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
+(async()=>{try{if(isPagesTestMode()){await activatePagesRole('ronda');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
