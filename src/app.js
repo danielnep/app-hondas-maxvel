@@ -554,6 +554,11 @@ function attachMaps(){
     liveMaps.push(demoInspectorMap);
    }
   }
+  if(document.getElementById('inspector-latest-round-map')){
+   const last=liveAssignments.find(x=>x.worker_id===user?.id&&x.kind==='ronda'&&x.latitude!=null&&x.longitude!=null);
+   if(last){const route=inspectionRoute([{...last,taskKind:'ronda'}],null);
+    registerMap('inspector-latest-round-map',route,null,route.base,true,false);}
+  }
   if(view==='overview'&&['operador','coi'].includes(user?.role)){
    const host=document.querySelector('#demo-coi-inspection-map'),focus=demoInspectionRequests().find(r=>!r.completedAt)||demoInspectionRequests()[0];
    if(host&&focus)demoCoiRouteMap.mount(host,focus,{demo:true});
@@ -785,6 +790,7 @@ function realInspector(){
  const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=inspectorTaskQueue();
  const cockpit=inspectionCockpit({queue:pending,mapId:'demo-inspection-map',mode:'live',position:demoInspectorLocation,base:demoInspectorLocation,gpsActive:!!demoInspectorLocation});
  const rounds=assigned.filter(x=>x.kind==='ronda'),inspections=assigned.filter(x=>x.kind==='vistoria'||x.kind==='inspection');
+ const mappedRound=rounds.find(x=>x.latitude!=null&&x.longitude!=null);
  const row=item=>{
   const at=item.created_at||item.createdAt,done=!!(item.completed_at||item.completedAt),started=!!(item.started_at||item.startedAt);
   const coords=Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))&&item.latitude!=null&&item.longitude!=null;
@@ -799,7 +805,9 @@ function realInspector(){
   (items.length?items.slice(0,maxItems).map(row).join(''):'<p>Nenhum registro ainda.</p>')+
   (items.length>5?'<button type="button" class="button small" data-action="inspector-history-all" data-task-kind="'+(title==='Últimas rondas'?'ronda':'vistoria')+'">Ver histórico completo</button>':'')+'</section>';
  return '<section class="rp-demo-inspector rp-live-inspector">'+cockpit+
-  '<section class="rp-inspector-records" aria-label="Histórico do vistoriador">'+recent('Últimas rondas',rounds)+recent('Últimas vistorias',inspections)+'</section>'+
+  '<section class="rp-inspector-records" aria-label="Histórico do vistoriador">'+
+  (mappedRound?'<section class="rp-inspector-latest-map"><h2>Última ronda no mapa</h2><p>Pontos registrados · '+esc(mappedRound.address)+'</p><div id="inspector-latest-round-map" class="map-container mini" aria-label="Mapa dos pontos da última ronda"></div></section>':'')+
+  recent('Últimas rondas',rounds)+recent('Últimas vistorias',inspections)+'</section>'+
   '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de rondas e vistorias"><header><h2>Histórico de rondas e vistorias</h2><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+recent('Últimas rondas',rounds.slice(0,80),80)+recent('Últimas vistorias',inspections.slice(0,80),80)+'</div></dialog></section>';
 }
 function overview(){
