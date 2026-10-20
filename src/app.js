@@ -1737,7 +1737,7 @@ modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const 
 document.addEventListener('submit',async e=>{
  if(e.target.id==='live-login-form'){
   e.preventDefault();const f=new FormData(e.target);e.target.querySelector('button').disabled=true;
-  try{const r=await liveRequest('/login',{method:'POST',data:{email:String(f.get('identifier')||'').trim(),password:String(f.get('password')||'')}});
+  try{const r=await liveRequest('/login',{method:'POST',data:{email:String(f.get('identifier')||'').trim(),password:String(f.get('password')||'').trim()}});
    liveSession.token=r.token;await restoreLiveAccount();
   }catch(error){liveSession.token='';root.innerHTML=loginHtml(brand(),error.message);}
   return;
