@@ -61,3 +61,45 @@ test('rotacao versionada de senha preserva usuario, estado e invalida token ante
   for(const key of keys){if(previous[key]===undefined)delete process.env[key];else process.env[key]=previous[key]}
  }
 });
+
+
+test('quatro perfis iniciais (admin, coi, vigia e vistoriador) autenticam com papeis corretos',async()=>{
+ const folder=mkdtempSync(join(tmpdir(),'ronda-four-accounts-'));
+ const keys=['RONDA_PRO_DB_PATH','RONDA_PRO_MASTER_EMAIL','RONDA_PRO_MASTER_PASSWORD','RONDA_PRO_INITIAL_ACCOUNTS','RONDA_PRO_INITIAL_ACCOUNTS_REVISION'];
+ const original=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+ const accounts=[
+  ['admin','admin','AdminTest2026!!'],['coi','coi','CoiTest2026!!!'],
+  ['vigia','ronda','VigiaTest2026!!'],['vistoriador','vistoriador','VistoriaTest2026!!']
+ ];
+ let server;
+ try{
+  Object.assign(process.env,{
+   RONDA_PRO_DB_PATH:join(folder,'four.sqlite'),
+   RONDA_PRO_MASTER_EMAIL:'master@four.local',
+   RONDA_PRO_MASTER_PASSWORD:'MasterTest2026!!',
+   RONDA_PRO_INITIAL_ACCOUNTS_REVISION:'20261020',
+   RONDA_PRO_INITIAL_ACCOUNTS:JSON.stringify(accounts.map(([username,role,password])=>({
+    username,role,password,name:username,email:username+'@four.local'
+   })))
+  });
+  server=createAppServer();
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const base='http://127.0.0.1:'+server.address().port;
+  for(const [username,role,password] of accounts){
+   const result=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:username,password})});
+   assert.equal(result.status,200,'login real deve aceitar '+username);
+   const response=await result.json();
+   const me=await fetch(base+'/api/me',{headers:{Authorization:'Bearer '+response.token}});
+   assert.equal(me.status,200);
+   const user=(await me.json()).user;
+   assert.equal(user.role,role);
+   assert.equal(user.username,username);
+   const refused=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:username,password:'wrong'})});
+   assert.equal(refused.status,401);
+  }
+ }finally{
+  if(server)await new Promise(resolve=>server.close(resolve));
+  rmSync(folder,{recursive:true,force:true});
+  for(const key of keys){if(original[key]===undefined)delete process.env[key];else process.env[key]=original[key]}
+ }
+});
