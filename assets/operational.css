@@ -1676,6 +1676,9 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
  .dashboard form.live-register>button{width:100%;justify-self:stretch;}
 }
 
+/* O mapa do último registro NÃO pode cobrir os botões operacionais do mapa principal. */
+.dashboard .rp-live-inspector>.rp-inspection-cockpit{position:relative!important;z-index:3!important;isolation:isolate!important;}
+.dashboard .rp-live-inspector>.rp-inspector-records{position:relative!important;z-index:0!important;isolation:isolate!important;}
 /* Vistoriador: recuperar ações e histórico sem cobrir o mapa nem criar cards soltos. */
 .dashboard .rp-inspector-create-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #42505d;}
 .dashboard .rp-inspector-create-actions button{min-width:0;min-height:44px;padding:10px 6px;white-space:normal;font-weight:650;font-size:12px;line-height:1.25;background:#212b36;border:1px solid #50606e;color:#edf5fb;border-radius:9px;}
