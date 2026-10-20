@@ -6,7 +6,7 @@ const css=read('assets/maxvel-premium-system-20261014.css');
 const web=read('index.html'),central=read('central.html'),sw=read('sw.js');
 const old=read('assets/rondas-pro-flow-20261014.css');
 test('Premium Dark aplicado às duas entradas do sistema e atualizado na PWA',()=>{
- assert.match(web,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(web,/assets\/ronda-pro\.css\?v=20/);
  assert.match(read('assets/ronda-pro.css'),/ORIGINAL: assets\/maxvel-premium-system-20261014\.css/);
  assert.match(central,/maxvel-premium-system-20261014\.css\?v=3/);
  assert.match(sw,/maxvel-premium-system-20261014\.css/);
