@@ -70,6 +70,7 @@ try{
    await notif.locator('summary').click();
    verify(await notif.evaluate(n=>n.open),prefix+' notice cannot reopen');
    await handle.click();
+   await page.waitForFunction(()=>!document.querySelector('.rp-notification-popover[open]'),null,{timeout:4000});
    verify(!(await notif.evaluate(n=>n.open)),prefix+' edge grip cannot close notice');
    const navTrigger=page.locator('[data-central-menu]').first();
    await navTrigger.click();
