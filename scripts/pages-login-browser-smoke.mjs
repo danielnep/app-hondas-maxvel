@@ -37,6 +37,8 @@ try{
   try{
    await page.goto(target.url,{waitUntil:'domcontentloaded'});
    await page.locator('#dialog .role-picker-list [data-role="ronda"]').waitFor({timeout:15000});
+   const visibleRoles=await page.locator('#dialog .role-picker-list [data-action="sim-role"]').count();
+   if(visibleRoles!==4)throw Error(target.name+': seletor mostrou '+visibleRoles+' áreas, esperado 4');
    if(await page.locator('#live-login-form').count())throw Error('Login visível em '+target.name);
    for(const [index,[role,view,label]] of roles.entries()){
     if(index>0){
@@ -46,6 +48,13 @@ try{
     await page.locator('#dialog [data-action="sim-role"][data-role="'+role+'"]').click();
     await page.waitForFunction(({view,label})=>document.querySelector('.dashboard:not(.simulation-mode)')&&document.querySelector('.side-link.active')?.dataset.view===view&&document.querySelector('.user-profile-button small')?.textContent.trim()===label,{view,label},{timeout:15000});
     if(await page.locator('#live-login-form').count())throw Error('Login reapareceu após troca de área: '+role);
+    if(role==='ronda'){
+     const map=page.locator('#mobile-map'),bounds=await map.boundingBox();
+     if(!bounds||bounds.width<220||bounds.height<200)throw Error('Mapa do Vigia não está visível: '+JSON.stringify(bounds));
+     await map.locator('.map-fallback, .leaflet-container').first().waitFor({timeout:15000});
+     if(!(await page.getByText('Nenhuma rota atribuída').count()))throw Error('Falta aviso sobre rota não atribuída');
+     console.log('OK: '+target.name+' / Vigia mostra mapa sem rota ('+Math.round(bounds.width)+'x'+Math.round(bounds.height)+')');
+    }
     await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-'+role+'.png'});
     console.log('OK: '+target.name+' / '+role+' sem login, tela '+view);
    }
