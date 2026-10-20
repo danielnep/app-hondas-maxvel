@@ -1652,4 +1652,27 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
  body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-view-grid{margin:4px 0!important}
 }
 
+
+/* Formulários reais de gestão: o rótulo pertence ao seu campo, sem colisões no mobile. */
+.dashboard form.live-register{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;
+ align-items:start;width:100%;max-width:100%;min-width:0;margin-top:16px;
+}
+.dashboard form.live-register>label{
+ display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0;
+ max-width:100%;line-height:1.35;font-size:14px;font-weight:650;
+}
+.dashboard form.live-register>label :is(input,select,textarea){
+ display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+ min-height:46px;margin:0;padding:11px 12px;border-radius:10px;
+ background:#171f28;color:#eef4fa;border:1px solid #465563;
+}
+.dashboard form.live-register>label textarea{min-height:112px;resize:vertical;}
+.dashboard form.live-register>label:has(textarea){grid-column:1/-1;}
+.dashboard form.live-register>button{justify-self:start;max-width:100%;min-height:46px;}
+@media(max-width:640px){
+ .dashboard form.live-register{grid-template-columns:minmax(0,1fr);gap:16px;}
+ .dashboard form.live-register>label:has(textarea){grid-column:auto;}
+ .dashboard form.live-register>button{width:100%;justify-self:stretch;}
+}
 }
