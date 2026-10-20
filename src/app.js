@@ -1,4 +1,5 @@
 import {decorateTheme} from './theme-shell.js';
+import {liveRequest,liveSession,loginHtml} from './live-client.js';
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
 import {createInspectionRouteMap} from './inspection-route-map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf} from './inspection-queue.js';
@@ -67,11 +68,11 @@ const time=t=>t?new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2
 const tag=(t,type='neutral')=>`<span class="tag ${type}">${esc(t)}</span>`;
 const btn=(label,action,type='',attrs='')=>`<button type="button" class="button ${type}" data-action="${action}" ${attrs}>${label}</button>`;
 const helpButton=(topic,label)=>`<button type="button" class="context-help" data-action="feature-help" data-topic="${topic}" aria-label="O que é ${label}?" title="Entenda: ${label}">?</button>`;
-const operationalLink='<a class="button small" href="/central.html">Central autenticada</a>';
+const operationalLink='';
 const brand=()=>'<div class="brand maxvel-only-brand" aria-label="Grupo Maxvel"><span class="brand-product"><span class="ronda-pro-wordmark">Ronda <b>Pro</b></span></span><span class="brand-divider" aria-hidden="true"></span><span class="brand-partner"><span class="brand-group">GRUPO</span><img class="maxvel-real-logo" src="./assets/maxvel-logo.webp" width="585" height="183" alt="Maxvel"></span></div>';
 const persisted=loadState();
-let sessions=Array.isArray(persisted?.sessions)?persisted.sessions:[];
-let programs=Array.isArray(persisted?.programs)?persisted.programs:demoSchedule();
+let sessions=[];
+let programs=[];
 let operationalSettings={
  verificationMode:['gps','qr','gps+qr'].includes(persisted?.operationalSettings?.verificationMode)?persisted.operationalSettings.verificationMode:'gps',
  dwellSeconds:Math.max(5,Math.min(120,Number(persisted?.operationalSettings?.dwellSeconds)||30)),
@@ -88,7 +89,44 @@ const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
-function persist(){const ok=saveState({sessions,programs,selectedWatcherId,operationalSettings,activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:session?.status==='active'&&mode==='real'?user:null});if(!ok)notify('Não foi possível gravar no navegador. Confira o espaço disponível.');}
+let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null;
+const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
+function persist(){
+ saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
+ if(user?.id){clearTimeout(syncTimer);syncTimer=setTimeout(()=>liveRequest('/app-state',{method:'PUT',data:liveData()}).catch(()=>notify('Nao foi possivel sincronizar agora.')),700);}
+}
+async function refreshLiveUsers(){if(['admin','coi'].includes(user?.role))liveUsers=(await liveRequest('/users')).users||[];}
+async function refreshLiveOperational(){
+ if(['admin','coi','ronda'].includes(user?.role))liveRoutes=(await liveRequest('/routes').catch(()=>({routes:[]}))).routes||[];
+ liveEvents=(await liveRequest('/events?limit=200').catch(()=>({events:[]}))).events||[];
+ if(['admin','coi','vistoriador'].includes(user?.role))liveAssignments=(await liveRequest('/dispatches').catch(()=>({dispatches:[]}))).dispatches||[];
+}
+function runtimeRoute(raw){
+ if(!raw?.points?.length)return null;
+ const coords=raw.points.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+ if(coords.length<2)return null;
+ return {id:raw.id,name:raw.name,unit:raw.site||'Grupo Maxvel',
+  base:{id:'base',name:'Base da rota',lat:coords[0].lat,lng:coords[0].lng},
+  points:coords.map((p,i)=>({id:'p'+(i+1),name:p.name,instruction:p.name,lat:p.lat,lng:p.lng,radius:RADIUS_METERS})),legs:[]};
+}
+const assignedRoute=()=>runtimeRoute(liveRoutes.find(r=>r.userId===user?.id)||liveRoutes[0]);
+async function restoreLiveAccount(){
+ const a=(await liveRequest('/me')).user;
+ user={id:a.id,name:a.name,email:a.email,username:a.username||'',role:a.role==='master'?'admin':a.role};
+ const saved=(await liveRequest('/app-state')).state;
+ sessions=Array.isArray(saved?.sessions)?saved.sessions:[];
+ programs=Array.isArray(saved?.programs)?saved.programs:[];
+ selectedWatcherId=saved?.selectedWatcherId||selectedWatcherId;
+ operationalSettings={...operationalSettings,...saved?.operationalSettings};
+ screen='dashboard';presentation=false;mode='real';session=null;
+ view=user.role==='ronda'?'minha-ronda':user.role==='vistoriador'?'vistoriador':'overview';
+ await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);
+ if(['ronda','vistoriador'].includes(user.role))void liveRequest('/presence',{method:'POST',data:{position:null}}).catch(()=>{});
+ render();
+}
+function liveLogout(){
+ liveSession.token='';user=null;session=null;sessions=[];programs=[];liveUsers=[];screen='landing';presentation=false;mode='real';render();
+}
 function save(){if(session){const idx=sessions.findIndex(s=>s.id===session.id);if(idx>=0)sessions[idx]=session;else sessions.unshift(session);}persist();void ops.autoReport()}
 function notify(message){toast.textContent=message;toast.classList.add('toast-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('toast-visible'),4900)}
 const ux06RoleTips={
@@ -422,8 +460,8 @@ function startDemoInspectorGps(){
   if(demoInspectorMap)demoInspectorMap.update({position:p});
  },()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
 }
-function render(){demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
- if(presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
+function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+ if(false&&presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
  }
@@ -494,7 +532,7 @@ function attachMaps(){
     const history=sessionList().filter(x=>x.name===w.name).slice(0,5);
     history.forEach((item,index)=>registerMap('admin-route-mini-'+index,item.route,item,item.lastFix??item.route.base,true));
    }
-  if(document.getElementById('mobile-map')){const selectedRoute=session?.route??routeForWatcher(selectedWatcherId);registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
+  if(document.getElementById('mobile-map')){const selectedRoute=session?.route??assignedRoute();if(selectedRoute)registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
   if(document.getElementById('demo-inspection-map')){
    const host=document.querySelector('#demo-inspection-map');
    if(host){
@@ -594,7 +632,7 @@ function fieldViewContent(){
  return backdrop+'<section class="rp-field-page-overlay" aria-label="Área de trabalho"><button type="button" class="rp-page-back" data-view="'+back+'">← Voltar ao mapa</button>'+content+'</section>';
 }
 function appShell(){const entries=allNav[user.role];let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
- return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Demo sem login. Na implantação, o administrador cadastra os profissionais e seus logins/senhas individuais.</span><p style="font-size:11px;margin-top:12px">Alertas deste navegador, sem servidor conectado.</p><a class="foot-link" href="/central.html">Central operacional segura</a><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${presentation?btn(ic("users")+" Áreas","sim-role-picker","small compact-role-picker desktop-only"):""}${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ambiente de avaliação · dados locais · Grupo Maxvel</footer></div></div></div>`}
+ return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Acesso individual autenticado · Grupo Maxvel</span><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("list")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ronda Pro · Grupo Maxvel</footer></div></div></div>`}
 function myPatrolHistory(){
  const name=user?.name||'',mine=sessionList().filter(x=>x.name===name),events=ops.allEvents();
  const item=x=>{
@@ -715,7 +753,32 @@ function demoCoiView(){
  '<section class="coi-demo-content"><header class="toolbar"><h2>Rondas e vistorias recentes</h2><button type="button" class="rp-coi-history-link" data-view="historico-operacional">Ver histórico <span aria-hidden="true">↗</span></button></header>'+demoActivityRows().slice(0,5).map(demoActivityRow).join('')+'</section>'+
  '</div><p class="map-caption">Demonstração: os registros não representam uma operação de vigilância ao vivo. Para o COI autenticado, acesse a Central Operacional.</p></section>';
 }
+function realOverview(){
+ const admin=user.role==='admin',reviewer=['admin','coi','operador'].includes(user.role);
+ const pending=liveAssignments.filter(d=>!d.completed_at),active=liveAssignments.filter(d=>d.started_at&&!d.completed_at);
+ const incidents=liveEvents.filter(e=>['incident','panic','alert'].includes(e.kind));
+ const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execucao',active.length],['Eventos',liveEvents.length]];
+ const metrics='<div class="ops-metrics">'+rows.map(([label,n])=>'<article class="ops-metric"><strong>'+n+'</strong><h3>'+esc(label)+'</h3></article>').join('')+'</div>';
+ const recent=liveEvents.slice(0,30).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
+ const report=pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+metrics+
+ '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento recebido.</p>')+'</div></section>';
+ return report+(reviewer?'<section class="schedule-workspace"><h2>Despachar vistoria</h2><form id="live-dispatch-form" class="live-register"><label>Vistoriador<select name="workerId" required>'+liveUsers.filter(u=>u.role==='vistoriador'&&u.active).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('')+'</select></label><label>Destino / endereco<input name="address" required minlength="5"></label><label>Motivo<textarea name="reason" required minlength="10"></textarea></label><button class="button primary" type="submit">Solicitar vistoria</button></form></section>':'');
+}
+function realRondas(){
+ if(user?.role!=='admin')return pageTitle('Rotas','Somente administradores cadastram rotas.');
+ const rows=liveRoutes.map(r=>'<div class="team-row"><div><strong>'+esc(r.name)+'</strong><small>'+esc(r.workerName||'')+' · '+r.points.length+' pontos</small></div><span>'+esc(r.site||'Grupo Maxvel')+'</span></div>').join('');
+ return pageTitle('Rotas e rondas','Cadastro de percursos reais e atribuicao de vigias.')+
+ '<section class="schedule-workspace"><h2>Cadastrar rota</h2><form id="live-route-form" class="live-register"><label>Vigia<select name="userId" required>'+liveUsers.filter(u=>u.role==='ronda'&&u.active).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('')+'</select></label><label>Nome da rota<input name="name" required minlength="3"></label><label>Pontos: um por linha (nome;latitude;longitude)<textarea name="points" required rows="5" placeholder="Portaria;-20.141;-44.881\nEntrada;-20.142;-44.882"></textarea></label><button type="submit" class="button primary">Salvar rota</button></form></section>'+
+ '<section class="schedule-workspace"><h2>Rotas cadastradas</h2><div class="team-list">'+(rows||'<p>Nenhuma rota cadastrada.</p>')+'</div></section>';
+}
+function realInspector(){
+ const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=assigned.filter(x=>!x.completed_at);
+ const rows=pending.map(d=>'<section class="schedule-workspace"><h2>'+esc(d.address)+'</h2><p>'+esc(d.reason)+'</p><p>'+fmt(d.created_at)+'</p><div class="modal-actions">'+(!d.started_at?btn('Iniciar deslocamento','live-inspection-start','primary', 'data-id="'+esc(d.id)+'"'):!d.arrived_at?btn('Estou aqui','live-inspection-arrive','primary','data-id="'+esc(d.id)+'"'):btn('Registrar vistoria','live-inspection-report','primary','data-id="'+esc(d.id)+'"'))+'</div></section>').join('');
+ return pageTitle('Minhas vistorias','Solicitacoes atribuidas pelo COI e salvas no banco de dados.')+(rows||'<section class="schedule-workspace"><p>Nenhuma vistoria pendente.</p></section>')+
+ '<section class="schedule-workspace"><h2>Historico</h2>'+assigned.filter(x=>x.completed_at).map(x=>'<div class="team-row">'+esc(x.address)+' · '+fmt(x.completed_at)+'</div>').join('')+'</section>';
+}
 function overview(){
+ if(user?.id)return realOverview();
  if(user?.role==='admin')return dashboardV4();
  if(['operador','coi'].includes(user?.role))return demoCoiView();
  const all=sessionList(),alerts=recentNotification(),open=alerts.filter(x=>!x.seenAt),inc=recentIncidents(),finished=all.filter(s=>s.status==='completed'),active=all.filter(s=>s.status==='active');
@@ -810,6 +873,7 @@ function demoClientView(){
  '<section><h3>Em andamento</h3>'+rows(active)+'<h3>Histórico recente</h3>'+rows(past.slice(0,12))+'</section></div></section>';
 }
 function demoInspectorView(){
+ if(user?.id)return realInspector();
  const records=demoInspectionRecords(),queue=demoInspectionQueue(),pending=queue[0]||null;
  if(pending&&demoInspectionDraft?.id!==pending.id)demoInspectionDraft=emptyInspectionDraft(pending.id);
  const map=inspectionCockpit({queue,mapId:'demo-inspection-map',mode:'demo',
@@ -831,6 +895,7 @@ function demoAdminRouteQueue(){
 }
 
 function rondas(){
+ if(user?.id)return realRondas();
  const context=supervisedContext(),route=context.route,actual=context.current;
  const active=actual?.status==='active',current=active?actual.index:-1;
  const progress=actual?actual.checkpoints.filter(p=>p.completedAt).length:0;
@@ -850,32 +915,44 @@ function demoEventNotifications(){
  const incoming=localCommunications().filter(n=>!field||n.name===user.name).map(n=>({...n,id:'field:'+n.id,session:{id:'field',name:n.name,route:{name:n.route}}}));
  return [...own,...incoming].sort((a,b)=>b.at-a.at);
 }
+let demoChatScreen='list',liveChatId=null,liveContacts=[],liveConversations=[],liveMessages=[];
+async function refreshRealChat(){
+ if(!user?.id)return;
+ const [contactData,conversationsData]=await Promise.all([liveRequest('/chat/contacts'),liveRequest('/chat/conversations')]);
+ liveContacts=contactData.contacts||[];liveConversations=conversationsData.conversations||[];
+ if(liveChatId){
+  if(liveConversations.some(c=>c.id===liveChatId))liveMessages=(await liveRequest('/chat/conversations/'+encodeURIComponent(liveChatId)+'/messages')).messages||[];
+  else{liveChatId=null;liveMessages=[];demoChatScreen='list';}
+ }
+ const overlay=document.querySelector('#rp-demo-chat-overlay');
+ if(overlay&&overlay.open)overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+demoChatView();
+ if(view==='chat-interno'&&!overlay){const main=document.querySelector('#main .rp-chat-native');if(main)main.outerHTML=demoChatView();}
+}
+function demoChatRows(){return liveMessages;}
 function demoHeaderButtons(){
- const all=demoEventNotifications(),latest=all.slice(0,5),count=all.filter(n=>!n.readAt).length;
- const messages=demoChatRows(),last=messages.at(-1),unread=0;
- return '<div class="rp-header-tools"><details class="rp-header-popover"><summary class="rp-blue-button '+(count?'has-unread':'')+'" aria-label="Eventos destinados ao perfil: '+count+' não lidos">'+ic('bell')+'<span>Eventos</span>'+(count?'<b class="rp-unread-count">'+count+'</b>':'')+'</summary><div class="rp-popover-list"><strong>Últimos eventos recebidos</strong>'+(latest.map(notificationRow).join('')||'<p class="empty">Sem eventos para este perfil.</p>')+(all.length>5?'<button type="button" data-view="notificacoes">Ver mais</button>':'')+'</div></details>'+
- '<details class="rp-header-popover"><summary class="rp-blue-button" aria-label="Mensagens do COE">'+ic('message')+'<span>Mensagens</span></summary><div class="rp-popover-list"><strong>Conversas recentes</strong><button type="button" data-action="demo-chat-overlay"><b>COE · Central de Operações</b><small>'+(last?esc(last.body.slice(0,90)):'Sem mensagens recentes')+'</small></button><button type="button" data-action="demo-chat-overlay-more">Ver mais conversas</button></div></details></div>';
+ const unread=liveConversations.reduce((n,c)=>n+(c.unread||0),0);
+ return '<div class="rp-header-tools"><button type="button" class="rp-blue-button" aria-label="Abrir mensagens" data-action="demo-chat-overlay">'+ic('message')+'<span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button></div>';
 }
 function openDemoChatOverlay(list=false){
- demoChatScreen=list?'list':'thread';
+ if(list)demoChatScreen='list';
  let overlay=document.querySelector('#rp-demo-chat-overlay');
- if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';
-  document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
+ if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
  overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+demoChatView();
  if(!overlay.open)overlay.showModal();
+ void refreshRealChat().catch(e=>notify(e.message));
 }
-let demoChatScreen='list',demoChatTarget='COI';
-function demoChatRows(){try{const rows=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]');return Array.isArray(rows)?rows.filter(m=>(m.target||'COI')===demoChatTarget):[]}catch{return []}}
 function demoChatView(){
- const rows=demoChatRows(),mine=user?.name||'Vigia',last=rows.at(-1),thread=demoChatScreen==='thread';
- const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':(allNav[user?.role]||[['minha-ronda']])[0][0];
- const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'" aria-label="Voltar à área de trabalho">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Comunicação operacional</small></div></header>';
- const list='<section class="field-chat-list" aria-label="Conversas"><div class="field-chat-list-label">CONVERSAS</div><button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="COI"><span class="field-chat-avatar">C</span><span class="field-chat-contact-copy"><strong>COI · Central de Operações</strong><small>'+(last?esc(last.body):'Toque para iniciar uma conversa')+'</small></span><span class="field-chat-contact-time">'+(last?time(last.at):'')+'</span></button><div class="field-chat-local-note">Demonstração local: mensagens deste aparelho. Para conversas reais entre equipes, use a central autenticada.</div><a class="field-chat-auth-link" href="/central.html#chat">Abrir mensagens da central autenticada ↗</a></section>';
- const contacts='<section class="field-chat-list"><div class="field-chat-list-label">ESCOLHA O DESTINATÁRIO</div>'+['COI',user?.role==='ronda'?'Vistoriador':'Vigia'].map(name=>'<button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="'+name+'"><span class="field-chat-avatar">'+name[0]+'</span><strong>'+name+'</strong></button>').join('')+'</section>';
- const messages=rows.map(m=>'<article class="field-chat-bubble '+(m.author===mine?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+time(m.at)+(m.author===mine?' · Salva neste aparelho':'')+'</small></article>').join('');
- const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list" aria-label="Voltar para conversas">'+ic('arrowleft')+'</button><span class="field-chat-avatar">C</span><div><strong>'+esc(demoChatTarget==='COI'?'COI · Central de Operações':demoChatTarget)+'</strong><small>Chat local de demonstração</small></div></header><div class="field-chat-thread" role="log" aria-label="Mensagens da conversa com o COI">'+(messages||'<div class="field-chat-empty"><strong>Conversa iniciada</strong><span>Envie uma mensagem para registrar a demonstração.</span></div>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Escrever mensagem</label><input id="demo-chat-body" name="body" required maxlength="2000" placeholder="Mensagem" autocomplete="off"><button type="submit" class="button primary" aria-label="Enviar mensagem">Enviar</button></form></section>';
- return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(demoChatScreen==='contacts'?contacts:thread?conversation:list+'<button type="button" class="button primary" data-action="demo-chat-contacts">Iniciar conversa</button>')+'</div></section>';
+ const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':'overview';
+ const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Equipe · Banco de dados</small></div></header>';
+ const rows=liveConversations.map(c=>'<button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="'+esc(c.id)+'"><span class="field-chat-avatar">'+esc(c.title?.slice(0,1)||'?')+'</span><span class="field-chat-contact-copy"><strong>'+esc(c.title)+'</strong><small>'+esc(c.last?.body||'Sem mensagens')+'</small></span>'+(c.unread?'<b>'+c.unread+'</b>':'')+'</button>').join('');
+ const list='<section class="field-chat-list"><div class="field-chat-list-label">CONVERSAS</div>'+(rows||'<p>Nenhuma conversa iniciada.</p>')+'<button type="button" class="button primary" data-action="demo-chat-contacts">Nova conversa</button></section>';
+ const contacts='<section class="field-chat-list"><div class="field-chat-list-label">CONTATOS</div>'+liveContacts.map(c=>'<button type="button" class="field-chat-contact-row" data-action="live-chat-contact" data-contact="'+esc(c.id)+'"><strong>'+esc(c.name)+'</strong><small>'+esc(roleName[c.role]||c.role)+'</small></button>').join('')+'<button class="button" type="button" data-action="demo-chat-list">Voltar</button></section>';
+ const active=liveConversations.find(c=>c.id===liveChatId);
+ const messages=liveMessages.map(m=>'<article class="field-chat-bubble '+(m.author_id===user.id?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+esc(m.author||'')+' · '+time(m.created_at)+'</small></article>').join('');
+ const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list">'+ic('arrowleft')+'</button><strong>'+esc(active?.title||'Conversa')+'</strong></header><div class="field-chat-thread" role="log">'+(messages||'<p>Escreva a primeira mensagem.</p>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Mensagem</label><input name="body" id="demo-chat-body" required maxlength="4000" autocomplete="off" placeholder="Mensagem"><button type="submit" class="button primary">Enviar</button></form></section>';
+ return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(demoChatScreen==='contacts'?contacts:demoChatScreen==='thread'?conversation:list)+'</div></section>';
 }
+setInterval(()=>{if(user?.id&&!document.hidden&&(document.querySelector('#rp-demo-chat-overlay')?.open||view==='chat-interno'))void refreshRealChat().catch(()=>{});},8000);
 let demoHistoryPage=0;
 function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,selectionKey:'round:'+r.id,type:'round',at:r.startedAt,name:r.name,site:r.route?.name,status:r.status})),...demoInspectionRecords().map((r,i)=>({id:String(i),selectionKey:'inspection:'+i,type:'inspection',at:r.at,name:'Vistoria',site:r.address||DEMO_WATCHERS[0].unit,status:'Enviada'}))].sort((a,b)=>b.at-a.at);}
 let demoHistorySelection=new Set();
@@ -892,7 +969,12 @@ function demoHistoryView(){
  actions+'<section class="rp-history-list" role="list">'+(rows.map(r=>demoActivityRow(r,canManage)).join('')||'<p class="empty">Nenhum registro neste navegador.</p>')+'</section>'+
  '<div class="rp-history-pagination">'+(offset?btn('Anterior','demo-history-prev','small'):'')+'<span>'+(all.length?offset+1:0)+'–'+Math.min(offset+20,all.length)+' de '+all.length+'</span>'+(offset+20<all.length?btn('Próxima','demo-history-next','small'):'')+'</div>';
 }
+function realEventListing(title,events){
+ const entries=events.map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
+ return pageTitle(title,'Registros operacionais do banco de dados.')+'<section class="schedule-workspace"><button type="button" class="button" data-action="live-refresh">Atualizar</button><div class="team-list">'+(entries||'<p>Nenhum registro.</p>')+'</div></section>';
+}
 function notificationsView(){
+ if(user?.id)return realEventListing('Eventos',liveEvents);
  const all=demoEventNotifications().filter(n=>!n.seenAt),labels={panic:'Pânicos',incident:'Ocorrências',alert:'Alertas',inspection:'Vistorias',deviation:'Desvios',gps_issue:'Sinal GPS',other:'Outros'};
  const groups=new Map(['panic','incident','alert','inspection','deviation','gps_issue'].map(k=>[k,[]]));
  for(const n of all){const kind=groups.has(n.kind)?n.kind:'other';if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
@@ -907,13 +989,19 @@ function archivedResolution(n){
  return {resolution:n.response||last?.note||n.history?.at(-1)?.note||'Conclusão registrada sem observação adicional.',owner:n.respondedBy||last?.assignee||incident?.assignee||n.history?.at(-1)?.actor||''};
 }
 function occurrences(){
+ if(user?.id)return realEventListing('Ocorrencias',liveEvents.filter(e=>['incident','alert','panic','inspection'].includes(e.kind)));
  const records=demoEventNotifications().filter(n=>!!n.seenAt).sort((a,b)=>b.seenAt-a.seenAt);
  return pageTitle('Histórico de tratativas','Eventos finalizados. Respostas, responsáveis e registros preservados para consulta.',btn('Ver pendentes '+ic('arrow'),'nav-alerts','small'))+
  '<section class="rp-treatment-archive">'+(records.length?records.map(n=>'<article class="rp-archive-record" data-archive-id="'+esc(n.id)+'"><span>'+esc(n.kind==='panic'?'Pânico':n.kind==='incident'?'Ocorrência':n.kind==='alert'?'Alerta':'Registro')+' · '+fmt(n.at)+'</span><strong>'+esc(n.label||'Evento finalizado')+'</strong><small>'+esc(n.session?.name||'Campo')+' · '+esc(n.session?.route?.name||'Local não informado')+'</small><p>'+esc(archivedResolution(n).resolution)+'</p><span class="rp-archive-status">'+ic('checkcircle')+' Concluído'+(archivedResolution(n).owner?' por '+esc(archivedResolution(n).owner):'')+'</span></article>').join(''):'<div class="empty">Nenhum evento finalizado. As pendências ficam em Eventos.</div>')+'</section>';
 }
 
-function team(){return pageTitle('Equipe','Vigias e escalas fictícios neste navegador.',helpButton('team','equipes e permissões'))+`<section class="schedule-workspace"><header class="schedule-heading"><div><div class="eyebrow">EFETIVO OPERACIONAL</div><h2>${DEMO_WATCHERS.length} vigias cadastrados</h2><p>Colaboradores fictícios para apresentar operações com múltiplas rondas.</p></div></header><div class="team-list">${DEMO_WATCHERS.map(w=>`<div class="team-row"><span class="avatar">${esc(w.name[0])}</span><div><strong>${esc(w.name)}</strong><small>${esc(w.unit)}</small></div><span>${programsForWatcher(programs,w.id).length} rondas</span></div>`).join('')}</div></section>`}
+function team(){
+ if(!['admin','coi','operador'].includes(user?.role))return pageTitle('Equipe','Acesso indisponivel para este perfil.');
+ return pageTitle('Equipe','Profissionais cadastrados no servidor.')+
+ '<div class="team-list">'+liveUsers.map(u=>'<div class="team-row"><span class="avatar">'+esc(u.name[0])+'</span><div><strong>'+esc(u.name)+'</strong><small>'+esc(u.username||u.email)+' · '+esc(roleName[u.role]||u.role)+'</small></div><span>'+esc(u.phone||'')+'</span></div>').join('')+'</div>';
+}
 function reports(){
+ if(user?.id)return realEventListing('Historico operacional',liveEvents);
  const all=sessionList(),notices=recentNotification(),completed=all.filter(s=>s.status==='completed').length,progress=all.reduce((sum,s)=>sum+s.checkpoints.filter(p=>p.completedAt).length,0),possible=all.reduce((sum,s)=>sum+s.route.points.length,0);
  const ratios=[{label:'Rondas concluídas',n:completed,total:all.length,color:'safe'},{label:'Pontos verificados',n:progress,total:possible,color:'blue'},{label:'Eventos analisados',n:notices.filter(n=>n.seenAt).length,total:notices.length,color:'cyan'}];
  const dates=all.map(s=>s.startedAt).filter(Number.isFinite).sort((a,b)=>a-b);
@@ -922,6 +1010,9 @@ function reports(){
 }
 function settings(){
  if(user?.role!=='admin')return pageTitle('Sem permissão','Regras disponíveis somente para Gerência e Administração.');
+ return pageTitle('Configurações','Cadastro de profissionais autorizado apenas à Administração.')+'<section class="schedule-workspace"><h2>Cadastro de profissionais</h2><form id="live-create-user-form" class="live-register"><label>Perfil<select name="role"><option value="coi">COI</option><option value="ronda">Vigia / Ronda</option><option value="vistoriador">Vistoriador</option></select></label><label>Nome<input name="name" required minlength="2"></label><label>E-mail<input type="email" name="email" required></label><label>Telefone<input type="tel" name="phone" required></label><label>Usuário (opcional; pode usar e-mail)<input name="username" minlength="3" maxlength="40"></label><label>Senha<input type="password" name="password" required minlength="12" autocomplete="new-password"></label><button type="submit" class="button primary">Cadastrar</button></form><div class="team-list" style="margin-top:16px">'+liveUsers.map(p=>'<div class="team-row"><strong>'+esc(p.name)+'</strong><span>'+esc(p.username||p.email)+' · '+esc(roleName[p.role]||p.role)+'</span></div>').join('')+'</div></section>';
+}
+function legacySettings(){
  const options=[
   {id:'dwellSeconds',title:'Tempo de permanência',value:operationalSettings.dwellSeconds+' segundos',
    info:'Defina de 5 a 120 segundos em cada ponto.'},
@@ -930,7 +1021,16 @@ function settings(){
   {id:'evidenceEnabled',title:'Verificação ilustrativa',value:operationalSettings.evidenceEnabled?'Ativada':'Desativada',
    info:'Exibe as etapas demonstrativas de conferência no ponto.'}
  ];
- return pageTitle('Configurações','Regras para novas rondas.',helpButton('privacy','configurações e privacidade'))+
+ const people='<section class="schedule-workspace"><div class="schedule-heading"><div><h2>Cadastro de profissionais</h2><p>Somente a Administracao pode criar acessos.</p></div></div>'+
+ '<form id="live-create-user-form" class="live-register"><label>Perfil<select name="role" required><option value="coi">COI</option><option value="ronda">Vigia / Ronda</option><option value="vistoriador">Vistoriador</option></select></label>'+
+ '<label>Nome<input name="name" required minlength="2" maxlength="100"></label>'+
+ '<label>E-mail<input type="email" name="email" required maxlength="150"></label>'+
+ '<label>Telefone<input type="tel" name="phone" required maxlength="35"></label>'+
+ '<label>Usuario (ou use o e-mail)<input name="username" minlength="3" maxlength="40" placeholder="Opcional"></label>'+
+ '<label>Senha<input type="password" name="password" required minlength="12" autocomplete="new-password"></label>'+
+ '<button type="submit" class="button primary">Cadastrar</button></form>'+
+ '<div class="team-list" style="margin-top:18px">'+liveUsers.map(p=>'<div class="team-row"><strong>'+esc(p.name)+'</strong><span>'+esc(p.username||p.email)+' · '+esc(roleName[p.role]||p.role)+'</span></div>').join('')+'</div></section>';
+ return pageTitle('Configurações','Profissionais e regras operacionais.')+people+
   '<section class="hx05-settings-list" aria-label="Regras configuráveis">'+
   '<div class="hx05-list-heading"><strong>Regras de operação</strong><span>Gerência e Administração</span></div>'+
   options.map(o=>'<div class="hx05-setting-row"><span class="hx05-setting-copy"><strong>'+esc(o.title)+'</strong>'+
@@ -1008,7 +1108,8 @@ function patrolMapClock(){
 }
 /** Verificação e comunicação pertencem à aba Ponto; nunca devem deslocar Iniciar ronda. */
 function phoneContent(){
- const s=session,route=s?.route??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
+ if(user?.role==='ronda'&&!session&&!assignedRoute())return '<section class="patrol-workspace"><div class="patrol-actions"><h2>Nenhuma rota atribuida</h2><p>A Administracao precisa cadastrar e atribuir uma rota antes de iniciar a ronda.</p></div></section>';
+ const s=session,route=s?.route??assignedRoute()??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
  const state=active?(hasBlock(s)?'Atenção · justificativa':point?`Ponto ${s.index+1} de ${route.points.length}`:'Retorno à base'):s?.status==='completed'?'Ronda concluída':'Ronda preparada';
  return `<div class="patrol-workspace${patrolSheetCollapsed?' sheet-collapsed':''}">
   <div class="patrol-statusline">${phoneTelemetry()}</div>
@@ -1110,13 +1211,14 @@ function evidenceDialog(){
 }
 function profileDialog(){
  if(!user)return;
- showDialog(`<div class="profile-modal"><div class="profile-heading"><span class="avatar">${esc(user.name.charAt(0).toUpperCase())}</span><div><div class="eyebrow">ACESSO ATUAL</div><div class="profile-name">${esc(user.name)}</div><div class="profile-meta">${esc(roleName[user.role])} · Ambiente de avaliação</div></div></div><div class="profile-actions">${presentation?btn(ic("users")+" Trocar área","sim-role-picker","full"):""}${btn(ic('help')+' Rever tutorial','tour-restart','full')}${btn('Guia completo','guide','full')}${btn(ic('shield')+' Privacidade e dados','privacy','full')}${btn(ic('logout')+' Sair deste perfil','logout','full')}</div><a class="button full" href="/central.html">${ic('shield')} Entrar na operação real</a><p class="map-caption">Demonstração com registros locais. A operação real exige autenticação e salva informações no servidor.</p></div>`,false);
+ showDialog('<div class="profile-modal"><h2>'+esc(user.name)+'</h2><p>'+esc(roleName[user.role]||user.role)+' · '+esc(user.username||user.email||'')+'</p><div class="profile-actions">'+btn('Guia completo','guide','full')+btn('Sair deste perfil','logout','full')+'</div></div>');
 }
 function startDialog(){const real=mode==='real'&&!presentation;showDialog(`<div class="start-confirm"><h2>Iniciar ronda?</h2><ul><li>Siga a ordem dos pontos e finalize na base.</li><li>Valide sua presença dentro do raio de 25 metros.</li><li>Permaneça pelo tempo configurado em cada ponto, com GPS confiável.</li><li>Informe desvios e ocorrências.</li></ul><p>${real?'Autorize a localização para registrar a ronda. No navegador, mantenha o aplicativo aberto.':'Demonstração: percurso e alertas simulados; tempo de permanência real.'}</p><label class="check-label"><input type="checkbox" id="declaration-check">Li e compreendi as orientações.</label>${btn('Confirmar e iniciar','confirm-start','primary full','disabled')}</div>`);modal.classList.add('start-confirm-dialog');}
 function incidentDialog(){showDialog(`<div class="field-composer"><h2>Registrar ocorrência</h2><form id="incident-form"><div class="field-composer-row"><label class="field">Tipo<select name="category"><option>Segurança</option><option>Acesso</option><option>Patrimônio</option><option>Manutenção</option><option>Outros</option></select></label><label class="field">Gravidade<select name="severity"><option>Baixa</option><option selected>Média</option><option>Alta</option></select></label></div><label class="field">Assunto<input name="title" required minlength="3" maxlength="100" placeholder="O que aconteceu?"></label><label class="field">Descrição<textarea name="description" rows="2" required minlength="10" maxlength="1400" placeholder="Descreva o fato observado."></textarea></label><details><summary>Anexar evidência</summary>${ops.mediaFields()}</details><label class="check-label"><input name="truth" type="checkbox" required>Confirmo o relato observado.</label><button type="submit" class="button primary full">Registrar ocorrência</button></form></div>`);}
 function alertDialog(){showDialog('<div class="field-composer"><h2>Enviar alerta</h2><form id="field-alert-form"><label class="field">Alerta<input name="description" required minlength="3" maxlength="240" placeholder="O que aconteceu?" autocomplete="off"></label><button class="button primary full" type="submit">Enviar alerta</button></form></div>');}
 function mySubmissions(){
- if(sessionStorage.getItem('rondaspro_api_token'))return pageTitle('Meus alertas e ocorrências','Acompanhe a resposta do COI.')+'<a class="button primary" href="/central.html#history">Abrir meus registros</a>';
+ if(user?.id)return pageTitle('Meus alertas e ocorrencias','Registros salvos no servidor.')+
+ '<div class="team-list">'+liveEvents.filter(e=>['alert','incident','panic'].includes(e.kind)).map(e=>'<div class="team-row"><strong>'+esc(e.description||e.kind)+'</strong><span>'+esc(e.status||'aberta')+' · '+fmt(e.occurred_at)+'</span></div>').join('')+'</div>';
  const own=localCommunications().filter(n=>n.name===user.name);
  const items=own.map(n=>'<article class="guide-pan"><h3>'+esc(n.label)+'</h3>'+tag(n.seenAt?'Resolvida':'Em aberto',n.seenAt?'green':'orange')+'<p>'+esc(n.response||'Aguardando resposta do COI.')+'</p>'+btn('Ver registro','own-notice-detail','small',`data-id="field:${esc(n.id)}" data-session="field"`)+'</article>');
  for(const s of sessions.filter(s=>s.name===user.name))for(const i of s.incidents)items.push('<article class="guide-pan"><h3>'+esc(i.title)+'</h3>'+tag(i.status==='Em análise'?'Em aberto · Em análise':i.status,i.status==='Resolvida'?'green':'orange')+'<p>'+esc(i.history?.at(-1)?.note||'Aguardando resposta do COI.')+'</p>'+btn('Ver registro','own-notice-detail','small',`data-id="${esc(s.notifications.find(n=>n.incidentId===i.id)?.id||'')}" data-session="${esc(s.id)}"`)+'</article>');
@@ -1142,7 +1244,7 @@ async function startSession(){if(!locationGate.isGranted()){locationGate.open({d
  try{const loc=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
   const f={lat:loc.coords.latitude,lng:loc.coords.longitude,accuracy:loc.coords.accuracy,at:now};
   if(f.accuracy>25){notify(`Sinal com precisão de ${Math.round(f.accuracy)} m. Tente em uma área com melhor recepção.`);return;}
-  const route=offsetRouteNear(f.lat,f.lng);route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
+  const route=assignedRoute();if(!route){notify('Nenhuma rota real atribuida. Solicite cadastro da rota.');return;}route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode};
  session=createSession(user?.name??presentationName,route,now,'real');session.requiresManualCheckin=true;session.evidenceEnabled=operationalSettings.evidenceEnabled;locationFix=f;
   try{window.AndroidTracking?.startTracking()}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
@@ -1258,9 +1360,13 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());
   notify('Chegada registrada na simulação. Preencha a vistoria.');return;
  }
- if(act==='demo-chat-contacts'){demoChatScreen='contacts';let overlay=document.querySelector('#rp-demo-chat-overlay');if(overlay){const old=overlay.querySelector('.field-chat-screen');if(old)old.outerHTML=demoChatView();}else render();return;}
- if(act==='demo-chat-open'){demoChatTarget=el.dataset.contact||'COI';demoChatScreen='thread';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});return;}
- if(act==='demo-chat-list'){demoChatScreen='list';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(true);else render();return;}
+ if(act==='demo-chat-contacts'){demoChatScreen='contacts';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();return;}
+ if(act==='live-chat-contact'){
+  try{const r=await liveRequest('/chat/conversations',{method:'POST',data:{members:[el.dataset.contact]}});liveChatId=r.id;demoChatScreen='thread';await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();}
+  catch(error){notify(error.message);}return;
+ }
+ if(act==='demo-chat-open'){liveChatId=el.dataset.contact;demoChatScreen='thread';await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();return;}
+ if(act==='demo-chat-list'){liveChatId=null;liveMessages=[];demoChatScreen='list';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();return;}
  if(act==='field-notice-ack'){if(!canReviewDemo())return;const rows=localCommunications(),n=rows.find(x=>x.id===el.dataset.id);if(n&&!n.seenAt){const response=modal.querySelector('[data-alert-response]')?.value.trim();if(!modal.querySelector('[data-alert-check]')?.checked||!response||response.length<10){notify('Marque a conferência e escreva a resposta ao profissional (mínimo 10 caracteres).');return;}n.response=response;n.respondedBy=user.name;n.status=n.kind==='incident'?modal.querySelector('[data-field-status]')?.value||'em_analise':'resolvida';n.seenAt=n.status==='resolvida'?Date.now():null;n.history??=[];n.history.push({at:Date.now(),status:n.status,actor:user.name,note:response});localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));modal.close();render();}return;}
  if(act==='demo-coi-tab'){if(['rondas','vistorias'].includes(el.dataset.tab)){demoCoiTab=el.dataset.tab;render();}return;}
  if(act==='close-dialog'){if(modal.dataset.mandatoryNotice==='true')return;modal.close();return;}
@@ -1376,10 +1482,33 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
   programs=[...programs,...result.items];pendingProgram=null;persist();render();
   notify(result.items.length+' ronda(s) programada(s) neste navegador.');return;
  }
-if(act==='profile-menu'){profileDialog();return;}
+if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch(()=>{});profileDialog();return;}
+ if(act==='live-refresh'){try{await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);render();notify('Dados atualizados.');}catch(error){notify(error.message)}return;}
+ if(act==='live-inspection-start'||act==='live-inspection-arrive'){
+  const id=el.dataset.id,verb=act==='live-inspection-start'?'start':'arrive';
+  try{
+   let data={};if(verb==='arrive'){
+    if(!navigator.geolocation)throw new Error('GPS indisponivel');
+    const fix=await new Promise((ok,bad)=>navigator.geolocation.getCurrentPosition(ok,bad,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
+    data={position:{lat:fix.coords.latitude,lng:fix.coords.longitude,accuracy:fix.coords.accuracy}};
+   }
+   await liveRequest('/dispatches/'+encodeURIComponent(id)+'/'+verb,{method:'POST',data});
+   await refreshLiveOperational();render();notify('Etapa registrada no servidor.');
+  }catch(error){notify(error.message)}return;
+ }
+ if(act==='live-inspection-report'){
+  const assignment=liveAssignments.find(d=>d.id===el.dataset.id&&d.worker_id===user?.id&&d.started_at&&!d.completed_at);
+  if(!assignment){notify('Vistoria indisponivel.');return;}
+  showDialog('<h2>Concluir vistoria · '+esc(assignment.address)+'</h2><form id="live-inspection-form" data-dispatch="'+esc(assignment.id)+'"><p>Marque os itens em conformidade.</p>'+
+  ['acessos','estrutura','equipamentos','sinalizacao'].map(key=>'<label class="field">'+esc(key)+'<select name="'+key+'" required><option value="true">Conforme</option><option value="false">Nao conforme</option></select></label>').join('')+
+  '<label class="field">Relato<textarea name="note" required minlength="10" maxlength="1500"></textarea></label>'+
+  '<label class="field">Selfie<input type="file" name="selfie" accept="image/jpeg,image/png,image/webp" capture="user" required></label>'+
+  '<label class="field">Foto do local<input type="file" name="local" accept="image/jpeg,image/png,image/webp" capture="environment" required></label>'+
+  '<button type="submit" class="button primary full">Enviar laudo e concluir</button></form>');
+  return;
+ }
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'&&presentation){tour.close();locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'){stopLocation();locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
+ if(act==='logout'){stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
  if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
@@ -1601,8 +1730,50 @@ document.addEventListener('change',e=>{
 });
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
-document.addEventListener('submit',e=>{
- if(e.target.id==='demo-chat-form'){e.preventDefault();const body=String(new FormData(e.target).get('body')||'').trim();if(!body)return;try{const rows=demoChatRows();rows.push({id:crypto.randomUUID(),author:user?.name||'Vigia',body,target:demoChatTarget,at:Date.now()});const others=JSON.parse(localStorage.getItem('rondas-pro-demo-chat')||'[]').filter(m=>(m.target||'COI')!==demoChatTarget);localStorage.setItem('rondas-pro-demo-chat',JSON.stringify([...others,...rows]));if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();requestAnimationFrame(()=>{const thread=document.querySelector('.field-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;document.querySelector('#demo-chat-body')?.focus();});}catch{notify('Não foi possível salvar a mensagem.');}return;}
+document.addEventListener('submit',async e=>{
+ if(e.target.id==='live-login-form'){
+  e.preventDefault();const f=new FormData(e.target);e.target.querySelector('button').disabled=true;
+  try{const r=await liveRequest('/login',{method:'POST',data:{email:String(f.get('identifier')||'').trim(),password:String(f.get('password')||'')}});
+   liveSession.token=r.token;await restoreLiveAccount();
+  }catch(error){liveSession.token='';root.innerHTML=loginHtml(brand(),error.message);}
+  return;
+ }
+ if(e.target.id==='live-route-form'){
+  e.preventDefault();const data=new FormData(e.target);
+  try{
+   const points=String(data.get('points')||'').trim().split(/\\r?\\n/).filter(Boolean).map(line=>{const [name,lat,lng]=line.split(';').map(x=>x.trim());return {name,lat:Number(lat),lng:Number(lng)};});
+   await liveRequest('/routes',{method:'POST',data:{userId:data.get('userId'),name:data.get('name'),points}});
+   await refreshLiveOperational();render();notify('Rota salva e atribuida.');
+  }catch(error){notify(error.message)}return;
+ }
+ if(e.target.id==='live-dispatch-form'){
+  e.preventDefault();const d=Object.fromEntries(new FormData(e.target));
+  try{await liveRequest('/dispatches',{method:'POST',data:{...d,kind:'inspection'}});await refreshLiveOperational();render();notify('Vistoria despachada.');}
+  catch(error){notify(error.message)}return;
+ }
+ if(e.target.id==='live-inspection-form'){
+  e.preventDefault();const data=new FormData(e.target),dispatchId=e.target.dataset.dispatch,button=e.target.querySelector('button');button.disabled=true;
+  try{
+   const note=String(data.get('note')||'').trim();if(note.length<10)throw new Error('Relato curto');
+   const criteria=Object.fromEntries(['acessos','estrutura','equipamentos','sinalizacao'].map(k=>[k,data.get(k)==='true']));
+   const event=await liveRequest('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),roundId:dispatchId,description:note,details:{criteria,dispatchId}}});
+   for(const [name,view] of [['selfie','selfie'],['local','front']]){
+    const file=data.get(name);if(!(file instanceof File)||!file.size)throw new Error('Foto obrigatoria ausente');
+    const upload=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+liveSession.token,'Content-Type':file.type,'X-Ronda-Event-Id':event.id,'X-Media-View':view},body:file});
+    if(!upload.ok){const response=await upload.json().catch(()=>({}));throw new Error(response.error||'Erro no envio da foto');}
+   }
+   await liveRequest('/dispatches/'+encodeURIComponent(dispatchId)+'/complete',{method:'POST',data:{note}});
+   modal.close();await refreshLiveOperational();render();notify('Vistoria concluida e fotos registradas.');
+  }catch(error){button.disabled=false;notify(error.message)}return;
+ }
+ if(e.target.id==='live-create-user-form'){
+  e.preventDefault();if(user?.role!=='admin')return;
+  try{await liveRequest('/users',{method:'POST',data:Object.fromEntries(new FormData(e.target))});await refreshLiveUsers();modal.close();render();notify('Profissional cadastrado no banco de dados.');}
+  catch(error){notify(error.message);}
+  return;
+ }
+ if(e.target.id==='demo-chat-form'){e.preventDefault();const message=String(new FormData(e.target).get('body')||'').trim();if(!liveChatId||!message)return;const button=e.target.querySelector('button');button.disabled=true;try{await liveRequest('/chat/conversations/'+encodeURIComponent(liveChatId)+'/messages',{method:'POST',data:{body:message,id:crypto.randomUUID()}});await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();}catch(error){button.disabled=false;notify(error.message)}return;}
+
  if(e.target.id==='demo-inspection-form'){
   e.preventDefault();if(user?.role!=='vistoriador')return;
   const f=new FormData(e.target),pending=demoPendingInspection();
@@ -1712,5 +1883,5 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
-beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');
+(async()=>{try{if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);

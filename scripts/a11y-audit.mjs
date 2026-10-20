@@ -1,81 +1,50 @@
 import {chromium} from 'playwright-core';
 import {createRequire} from 'node:module';
-import {spawn,execFileSync} from 'node:child_process';
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createAppServer} from '../server.js';
 const require=createRequire(import.meta.url);
 const axePath=require.resolve('axe-core/axe.min.js');
-const folder='artifacts/accessibility',port=8191;
+const folder='artifacts/accessibility',temp=mkdtempSync(join(tmpdir(),'ronda-access-'));
 mkdirSync(folder,{recursive:true});
-const server=spawn('python3',['-m','http.server',String(port),'--bind','127.0.0.1'],{stdio:'ignore'});
-const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const bin=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v chromium || command -v google-chrome'],{encoding:'utf8'}).trim();
-const browser=await chromium.launch({headless:true,executablePath:bin,args:['--no-sandbox','--disable-dev-shm-usage']});
-const results=[];
-async function check(page,label,width){
- await page.addScriptTag({path:axePath});
- const violations=await page.evaluate(async()=>{
-  const x=await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});
-  return x.violations.map(v=>({id:v.id,impact:v.impact,description:v.help,nodes:v.nodes.slice(0,9).map(n=>({target:n.target,summary:n.failureSummary?.slice(0,250)})),count:v.nodes.length}));
- });
- results.push({width,label,violations,count:violations.reduce((n,v)=>n+v.count,0)});
-}
-async function click(page,selector){await page.locator(selector).first().click({timeout:7000});await sleep(120);}
+const roles=['admin','coi','ronda','vistoriador'];
+const secret='AccessibilityRunnerPassword_2026!';
+const initial=roles.map(role=>({name:role.toUpperCase(),email:role+'@audit.local',username:role,password:secret,role}));
+process.env.RONDA_PRO_DB_PATH=join(temp,'ronda.sqlite');
+process.env.RONDA_PRO_MASTER_EMAIL='master@audit.local';
+process.env.RONDA_PRO_MASTER_PASSWORD='AccessibilityMasterPassword_2026!';
+process.env.RONDA_PRO_INITIAL_ACCOUNTS=JSON.stringify(initial);
+const server=createAppServer();
+let browser;const results=[],failures=[];
 try{
- await sleep(800);
- for(const width of [390,1440]){
-  const context=await browser.newContext({viewport:{width,height:850},isMobile:width<500,hasTouch:width<500,locale:'pt-BR',reducedMotion:'reduce',permissions:['geolocation'],geolocation:{latitude:-20.1402,longitude:-44.8837,accuracy:8}});
+ await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
+ const url='http://127.0.0.1:'+server.address().port;
+ const executablePath=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium'],{encoding:'utf8'}).trim();
+ browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
+ for(const width of [390,1440])for(const role of roles){
+  const context=await browser.newContext({viewport:{width,height:850},locale:'pt-BR',reducedMotion:'reduce',isMobile:width<500,hasTouch:width<500,permissions:['geolocation'],geolocation:{latitude:-20.14,longitude:-44.88,accuracy:5}});
   const page=await context.newPage();
-  await page.goto('http://127.0.0.1:'+port,{waitUntil:'domcontentloaded',timeout:13000});
-  await page.locator('.dashboard').waitFor({timeout:12000});
-  await check(page,'01-primeiro-acesso-gps',width);
-  if(await page.locator('.location-entry-gate').count()){
-   await click(page,'.location-entry-grant');
-   await page.locator('.location-entry-gate').waitFor({state:'detached',timeout:11000});
-  }
-  await sleep(450);
-  if(await page.locator('#horizon-tour [data-tour="close"]').count())await click(page,'#horizon-tour [data-tour="close"]');
-  await check(page,'03-ronda',width);
-  // Alternância entre perfis acontece diretamente no demonstrativo, sem login.
-  if(width<=900){
-   // O seletor do cabeçalho é desktop-only. No celular, trocar pelo menu de perfil.
-   await click(page,'[data-action="profile-menu"]');
-   await click(page,'#dialog [data-action="sim-role-picker"]');
-   await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');
-  }else{
-   const role=page.locator('.simulation-rolebar [data-action="sim-role"][data-role="admin"]:visible');
-   if(await role.count())await role.click();
-   else{await click(page,'[data-action="sim-role-picker"]');await click(page,'#dialog [data-action="sim-role"][data-role="admin"]');}
-  }
-  await sleep(400);
-  await check(page,'04-administracao',width);
-  if(width<=900)await click(page,'[data-action="open-mobile-menu"]');
-  await page.locator(width<=900?'#dialog [data-view="rondas"]':'.sidebar [data-view="rondas"]').click();
-  await check(page,'04b-agenda',width);
-  const nav=key=>page.locator(width<=900?'#dialog [data-view="'+key+'"]':'.sidebar [data-view="'+key+'"]').first();
-  if(width<=900)await click(page,'[data-action="open-mobile-menu"]');
-  await nav('notificacoes').click();
-  await sleep(140);
-  await check(page,'05-alertas',width);
-  if(width<=900){
-   await click(page,'[data-action="open-mobile-menu"]');
-   await click(page,'#dialog [data-view="relatorios"]');
-  }else await nav('relatorios').click();
-  await sleep(140);
-  await check(page,'06-relatorios',width);
+  page.on('pageerror',e=>failures.push(role+' '+width+': '+e.message));
+  await page.goto(url+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#live-login-form').waitFor({timeout:15000});
+  await page.locator('#live-login-form [name="identifier"]').fill(role);
+  await page.locator('#live-login-form [name="password"]').fill(secret);
+  await page.locator('#live-login-form button[type="submit"]').click();
+  await page.locator('.dashboard').waitFor({timeout:15000});
+  if(role==='admin'){await page.evaluate(()=>document.querySelector('[data-view="configuracoes"]')?.click());await page.locator('#live-create-user-form').waitFor();}
+  await page.addScriptTag({path:axePath});
+  const violations=await page.evaluate(async()=>{const result=await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});return result.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length,targets:v.nodes.slice(0,5).map(x=>x.target)}));});
+  results.push({role,width,violations});
+  await page.screenshot({path:folder+'/'+role+'-'+width+'.png',fullPage:true});
+  if(violations.some(v=>v.impact==='critical'||v.impact==='serious'))failures.push(role+' '+width+': '+JSON.stringify(violations));
   await context.close();
  }
-}finally{await browser.close();server.kill('SIGTERM');}
-const lines=[
- '# Auditoria axe-core de acessibilidade',
- 'Executada: '+new Date().toISOString(),
- '',
- '| Largura | Estado | Ocorrências automáticas | Impactos críticos/sérios |',
- '|---:|---|---:|---:|',
- ...results.map(r=>'|'+r.width+'|'+r.label+'|'+r.count+'|'+r.violations.filter(v=>['critical','serious'].includes(v.impact)).reduce((n,v)=>n+v.count,0)+'|'),
- '',
- 'A análise automatizada não substitui inspeção humana/TalkBack, nem prova conformidade WCAG.',
- 'Corrigir os problemas severos da interface antes de entregar a operação.'
-];
-writeFileSync(folder+'/report.json',JSON.stringify(results,null,2));
-writeFileSync(folder+'/summary.md',lines.join('\n'));
-console.log(JSON.stringify({checks:results.length,found:results.reduce((n,x)=>n+x.count,0),criticalSerious:results.reduce((n,r)=>n+r.violations.filter(v=>['critical','serious'].includes(v.impact)).reduce((a,v)=>a+v.count,0),0)}));
+}finally{
+ writeFileSync(folder+'/report.json',JSON.stringify({results,failures},null,2));
+ await browser?.close();
+ await new Promise(ok=>server.close(ok));
+ rmSync(temp,{recursive:true,force:true});
+}
+if(failures.length){console.error(failures.join('\n'));process.exitCode=1;}else console.log('8 revisoes WCAG dos perfis autenticados sem erros graves');

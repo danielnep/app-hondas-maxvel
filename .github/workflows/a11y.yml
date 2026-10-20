@@ -8,6 +8,7 @@ on:
       - 'scripts/a11y-audit.mjs'
       - 'index.html'
       - 'src/app.js'
+      - 'src/live-client.js'
       - 'assets/*.css'
       - 'assets/maxvel-logo.webp'
       - 'src/tutorial.js'
@@ -21,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Instalar auditor
         run: npm install --no-save --no-package-lock playwright-core@1.56.1 axe-core@4.10.3
       - name: Analisar páginas reais

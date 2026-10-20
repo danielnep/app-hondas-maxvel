@@ -55,15 +55,31 @@ function initialize(){
  if(!db.prepare('PRAGMA table_info(media)').all().some(x=>x.name==='evidence_view'))db.exec("ALTER TABLE media ADD COLUMN evidence_view TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='planned_start'))db.exec('ALTER TABLE planned_routes ADD COLUMN planned_start INTEGER');
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='phone'))db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+ if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='username'))db.exec("ALTER TABLE users ADD COLUMN username TEXT");
+ db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL");
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE users ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(events)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE events ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  db.exec('CREATE INDEX IF NOT EXISTS idx_events_site_time ON events(site,occurred_at)');
+ db.exec('CREATE TABLE IF NOT EXISTS app_state(user_id TEXT PRIMARY KEY,data TEXT NOT NULL,updated_at INTEGER NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))');
  if(!db.prepare("PRAGMA table_info(recipients)").all().some(x=>x.name==='group_name'))db.exec('ALTER TABLE recipients ADD COLUMN group_name TEXT NOT NULL DEFAULT "operations"');
  if(!db.prepare("SELECT id FROM users WHERE role='master' LIMIT 1").get()){
   const salt=randomBytes(16).toString('hex');
   db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)')
    .run(id(),email,'Master','master',salt,authHash(pass,salt),'Conta principal',now());
+ }
+ // Contas iniciais configuradas por segredo do Railway; nunca credenciais no codigo.
+ if(process.env.RONDA_PRO_INITIAL_ACCOUNTS){
+  let seeds=[];try{seeds=JSON.parse(process.env.RONDA_PRO_INITIAL_ACCOUNTS)}catch{throw new Error('RONDA_PRO_INITIAL_ACCOUNTS invalido')}
+  if(!Array.isArray(seeds))throw new Error('Contas iniciais invalidas');
+  for(const a of seeds){
+   const username=clean(a.username).toLowerCase(),email=clean(a.email).toLowerCase(),password=a.password,role=a.role;
+   if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||!['admin','coi','ronda','vistoriador'].includes(role)||typeof password!=='string'||password.length<12)throw new Error('Conta inicial invalida');
+   if(db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE OR email=?').get(username,email))continue;
+   const salt=randomBytes(16).toString('hex');
+   db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,phone,site,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+    .run(id(),email,username,clean(a.name)||role,role,salt,authHash(password,salt),'',clean(a.phone),'Grupo Maxvel',now());
+  }
  }
  const insert=db.prepare('INSERT OR IGNORE INTO templates(id,title,trigger,priority,enabled,cooldown_min) VALUES(?,?,?,?,?,?)');
  for(const row of presets)insert.run(...row);
@@ -115,7 +131,7 @@ export function createOperationalApi(){
  const audit=(u,action,subject)=>db.prepare('INSERT INTO audit(id,user_id,action,subject_id,at) VALUES(?,?,?,?,?)').run(id(),u.id,action,subject,now());
  const userFrom=req=>{
   const match=String(req.headers.authorization||'').match(/^Bearer ([0-9a-f]{64})$/i);if(!match)return null;
-  return db.prepare('SELECT u.id,u.name,u.email,u.role,u.active,u.site,u.phone FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
+  return db.prepare('SELECT u.id,u.name,u.email,u.username,u.role,u.active,u.site,u.phone FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
  };
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
  const visible=(u,e)=>u.role==='cliente'?Boolean(u.site&&e.site===u.site&&['inspection','checkpoint','patrol_start','patrol_end'].includes(e.kind)):['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
@@ -148,7 +164,7 @@ export function createOperationalApi(){
   try{
    if(p==='/api/login'&&m==='POST'){
     const d=serialize((await body(req)).toString())||{},email=clean(d.email).toLowerCase();
-    const row=db.prepare('SELECT * FROM users WHERE email=? AND active=1').get(email);
+    const row=db.prepare('SELECT * FROM users WHERE (email=? OR username=? COLLATE NOCASE) AND active=1').get(email,email);
     const candidate=typeof d.password==='string'&&row?authHash(d.password,row.salt):null;
     if(!candidate||!timingSafeEqual(Buffer.from(candidate,'hex'),Buffer.from(row.password_hash,'hex'))){resp(res,401,{error:'Credenciais inválidas'});return true;}
     const token=randomBytes(32).toString('hex');db.prepare('INSERT INTO tokens(token_hash,user_id,expires_at) VALUES(?,?,?)').run(hash(token),row.id,now()+28800000);
@@ -157,20 +173,33 @@ export function createOperationalApi(){
    const a=userFrom(req);
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
+   if(p==='/api/app-state'&&m==='GET'){
+    const record=db.prepare('SELECT data,updated_at FROM app_state WHERE user_id=?').get(a.id);
+    resp(res,200,{state:record?serialize(record.data):null,updatedAt:record?.updated_at||null});return true;
+   }
+   if(p==='/api/app-state'&&m==='PUT'){
+    const data=serialize((await body(req,2e6)).toString());
+    if(!data||typeof data!=='object'||Array.isArray(data)||!Array.isArray(data.sessions)||!Array.isArray(data.programs)||data.sessions.length>500||data.programs.length>500){resp(res,422,{error:'Dados operacionais invalidos'});return true;}
+    // O estado local de cada usuario so pode ser lido por ele. Eventos e chat compartilhados usam suas APIs autenticadas.
+    const payload=JSON.stringify({sessions:data.sessions,programs:data.programs,selectedWatcherId:clean(data.selectedWatcherId).slice(0,100),operationalSettings:data.operationalSettings||{}});
+    db.prepare('INSERT INTO app_state(user_id,data,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at').run(a.id,payload,now());
+    resp(res,200,{stored:true});return true;
+   }
    if(p==='/api/profile'&&m==='PUT'){const d=serialize((await body(req)).toString())||{};if(typeof d.phone!=='string'||d.phone.length>35){resp(res,422,{error:'Telefone inválido'});return true;}db.prepare('UPDATE users SET phone=? WHERE id=?').run(clean(d.phone),a.id);resp(res,200,{ok:true});return true;}
    if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
    if(await chat.handle(req,res,a,p,m))return true;
    if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
-   if(p==='/api/users'&&m==='GET'&&reviewer(a)&&operations.allows(a,'rondas')){resp(res,200,{users:db.prepare('SELECT id,email,name,role,description,site,phone,created_at,active FROM users').all()});return true;}
+   if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),description=clean(d.description),site=clean(d.site).slice(0,100);
-    if(!roles.includes(d.role)||d.role==='master'&&a.role!=='master'||!email.includes('@')||name.length<2||typeof d.password!=='string'||d.password.length<12||d.role==='ronda'&&description.length<10||['cliente','ronda'].includes(d.role)&&site.length<2){resp(res,422,{error:'Cadastro inválido: informe local/posto; vigia exige descrição da supervisão'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100);
+    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof d.password!=='string'||d.password.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e senha de 12 caracteres ou mais'});return true;}
     if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
+    if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
-    db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at,site) VALUES(?,?,?,?,?,?,?,?,?)').run(uid,email,name,d.role,salt,authHash(d.password,salt),description,now(),site);
-    db.prepare('UPDATE users SET phone=? WHERE id=?').run(clean(d.phone),uid);
+    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site||'Grupo Maxvel',phone);
+
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
    if(p==='/api/routes'&&m==='GET'){

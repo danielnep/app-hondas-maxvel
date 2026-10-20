@@ -1,0 +1,45 @@
+name: Ronda Pro · Glass UI responsiva
+on:
+  pull_request:
+    paths:
+      - 'assets/theme.css'
+      - 'src/central.js'
+      - 'scripts/responsive-management-review.mjs'
+      - 'tests/glass-responsive-management.test.mjs'
+      - '.github/workflows/glass-responsive.yml'
+  workflow_dispatch:
+  push:
+    branches: [feat/glass-responsive-management-20261020]
+
+permissions:
+  contents: read
+
+jobs:
+  responsive-management:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install browser controller and project CSS parser
+        run: npm install --no-save --no-package-lock playwright-core@1.56.1 postcss@8.5.30
+      - name: Syntax and canonical CSS checks
+        run: |
+          npm run check
+          npm run check:styles
+          node --check scripts/responsive-management-review.mjs
+      - name: Responsive CSS regressions
+        run: node --test tests/glass-responsive-management.test.mjs
+      - name: Authenticated real Chromium journeys at 320/360/393/768/1024/1440
+        run: node scripts/responsive-management-review.mjs
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+      - name: Upload mobile and desktop evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ronda-glass-responsive-evidence
+          path: artifacts/responsive-management/
+          if-no-files-found: warn
