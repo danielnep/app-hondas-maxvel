@@ -85,6 +85,15 @@
     min-height: 42px !important;
     padding: 10px 12px !important
   }
+  /* Login tem alvos de toque próprios; corrigir no mesmo layer que define os mínimos. */
+  .rp-theme #live-login-form input {
+    min-height: 50px !important;
+    font-size: 16px !important;
+  }
+  .rp-theme #live-login-form button[type="submit"] {
+    min-height: 52px !important;
+    font-size: 16px !important;
+  }
   .rp-theme option {
     background: #202d37 !important
   }
