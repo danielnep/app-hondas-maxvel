@@ -1023,7 +1023,7 @@ document.addEventListener('click',async e=>{
     }});return;
   }
   if(target.dataset.coiTab){if(page==='monitor'&&coi.selectTab(target.dataset.coiTab))render();return;}
-   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}await releaseTreatment();selected=null;page=target.dataset.page;if(page==='treatments')await readTreatmentRows();if(page==='activity-history')await activity.refresh();render();return;}
+   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}await releaseTreatment();selected=null;page=target.dataset.page;if(page==='treatments')await readTreatmentRows();if(page==='activity-history')await activity.refresh();render();window.scrollTo(0,0);return;}
   if(target.dataset.event){if(account.role==='cliente')return;await openEvent(target.dataset.event);return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
   if(target.dataset.template){
