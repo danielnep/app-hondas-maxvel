@@ -48,7 +48,7 @@ try{
    verify(!!rect&&rect.x>=-2&&rect.x+rect.width<=width+3,prefix+' notification exceeds viewport: '+JSON.stringify(rect));
    verify(rect.x>=width-435,prefix+' notice not right-anchored: '+JSON.stringify(rect));
    verify(rect.y>=60,prefix+' notice overlaps header: '+JSON.stringify(rect));
-   const handle=panel.locator('.rp-drawer-handle');
+   const handle=notif.locator('.rp-drawer-handle');
    const handleRect=await handle.boundingBox();
    verify(!!handleRect&&Math.abs((handleRect.x+handleRect.width/2)-rect.x)<30,prefix+' collapse handle is not at drawer edge: '+JSON.stringify({handleRect,rect}));
    await page.screenshot({path:evidence+'/'+prefix+'-notification.png',fullPage:false});
