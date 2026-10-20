@@ -71,6 +71,28 @@ try {
       })()
     }));
     console.log('Chat viewport diagnostic:',JSON.stringify(diagnostics));
+    const cascade=await page.evaluate(async()=>{
+      const url=new URL('./assets/ronda-pro.css?v=20',location.href);
+      const response=await fetch(url,{cache:'no-store'});
+      const source=await response.text();
+      const virtual=new CSSStyleSheet();
+      virtual.replaceSync(source);
+      const el=document.querySelector('#rp-demo-chat-overlay');
+      const matched=[];
+      const walk=(list,media='all')=>{
+        for(const rule of list){
+          if(rule.cssRules){walk(rule.cssRules,rule.conditionText||media);continue;}
+          if(!rule.selectorText||!rule.style)continue;
+          try{if(!el.matches(rule.selectorText))continue;}catch{continue;}
+          if(!['width','max-width','height','max-height'].some(p=>rule.style.getPropertyValue(p)))continue;
+          matched.push({selector:rule.selectorText,media,css:rule.style.cssText.slice(0,270)});
+        }
+      };
+      walk(virtual.cssRules);
+      return {url:url.pathname,bytes:source.length,http:response.status,media600:matchMedia('(max-width:600px)').matches,
+              rules:matched.slice(-30)};
+    });
+    console.log('Chat CSS cascade diagnostic:',JSON.stringify(cascade));
     if(width<=600){
       assert.ok(box.width>=width-2 && box.height>=height-2,
         'Janela de mensagens deve ocupar a viewport mobile: '+JSON.stringify(diagnostics));
