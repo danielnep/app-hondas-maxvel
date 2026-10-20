@@ -310,6 +310,10 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 #central-root .chat-workspace{border:0!important;border-radius:0!important;background:#141a20!important;
  box-shadow:none!important;min-height:min(70dvh,700px)!important}
 #central-root .chat-sidebar{background:#181e25!important;border-right:1px solid #46515e!important}
+#central-root .chat-list-empty,.rp-field-chat-overlay .chat-list-empty{padding:18px 12px;color:#c2d2df;font-size:13px;line-height:1.5;max-width:35ch}
+#central-root .chat-list-empty strong,.rp-field-chat-overlay .chat-list-empty strong{display:block;font-size:14px;color:#eff6fc;margin-bottom:5px}
+#central-root .chat-list-empty p,.rp-field-chat-overlay .chat-list-empty p{margin:0;line-height:1.5;color:#bac6d1}
+
 #central-root .chat-main,#central-root .chat-thread{background:#141a20!important}
 #central-root .chat-thread-heading{background:#1f252d!important;border-bottom:1px solid #46515c!important}
 #central-root .chat-bubble{background:#252e38!important;border:1px solid #445360!important;border-radius:16px!important}

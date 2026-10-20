@@ -55,6 +55,6 @@ test('V3 mantém feedback visual e o novo cockpit respeita movimento reduzido',(
   else assert.match(css,/\.patrol-communication-actions/);
  }
  const app=read('../index.html'),central=read('../central.html');
- assert.match(app,/ronda-pro\.css\?v=50/);
+ assert.match(app,/ronda-pro\.css\?v=51/);
  assert.match(central,/central\.css\?v=50/);
 });

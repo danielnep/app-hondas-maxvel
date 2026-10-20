@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'assets/theme.css'
+      - 'assets/ronda-pro.css'
+      - 'src/live-client.js'
+      - 'index.html'
+      - 'scripts/visual-entry-review.mjs'
       - 'src/central.js'
       - 'scripts/responsive-management-review.mjs'
       - 'scripts/field-drawer-cross-interaction.mjs'
@@ -34,8 +38,13 @@ jobs:
           npm run check:styles
           node --check scripts/responsive-management-review.mjs
           node --check scripts/field-drawer-cross-interaction.mjs
+          node --check scripts/visual-entry-review.mjs
       - name: Responsive CSS regressions
         run: node --test tests/glass-responsive-management.test.mjs
+      - name: Real user URL entry review at six viewport widths
+        run: node scripts/visual-entry-review.mjs
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
       - name: Authenticated real Chromium journeys at 320/360/393/768/1024/1440
         run: node scripts/responsive-management-review.mjs
         env:
@@ -50,6 +59,13 @@ jobs:
         with:
           name: ronda-field-drawer-evidence
           path: artifacts/field-drawer-cross-interaction/
+          if-no-files-found: warn
+      - name: Upload actual-site login screenshots and geometric review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ronda-visual-entry-evidence
+          path: artifacts/visual-entry-review/
           if-no-files-found: warn
       - name: Upload mobile and desktop evidence
         if: always()

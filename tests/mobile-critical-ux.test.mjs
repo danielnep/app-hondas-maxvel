@@ -50,8 +50,8 @@ test('janelas do vigia usam altura por conteúdo e retorno único',()=>{
 });
 test('estilos críticos carregam por último e entram no PWA',()=>{
  assert.ok(index.includes('mobile-critical.css?v=50'));
- assert.match(index,/rondas-pro-updated-v56/);
- assert.match(sw,/rondas-pro-interface-v56/);
+ assert.match(index,/rondas-pro-updated-v59/);
+ assert.match(sw,/rondas-pro-interface-v59/);
  assert.ok(sw.includes('./assets/mobile-critical.css'));
  const before=index.indexOf('operational.css');
  const after=index.indexOf('mobile-critical.css');
@@ -63,7 +63,7 @@ test('marca Grupo Maxvel permanece visível no cabeçalho mobile',()=>{
  assert.match(style,/\.dashboard \.app-header \.brand \.brand-partner\{[^}]*display:flex!important/);
  assert.match(style,/\.dashboard \.app-header \.brand \.maxvel-real-logo\{[^}]*display:block!important/);
  assert.doesNotMatch(style,/\.dashboard \.app-header \.brand \.brand-partner\{display:none!important/);
- assert.ok(index.includes('field.css?v=50'));
+ assert.ok(index.includes('field.css?v=51'));
 });
 
 test('vistorias têm mapa independente, fotos múltiplas e termos profissionais',()=>{

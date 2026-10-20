@@ -109,6 +109,22 @@ try{
          if(target===initial)continue;
          try{
            await visit(page,target,width);
+           if(width===1440){
+             const position=await page.evaluate(()=>{
+               const top=document.querySelector('header.top')?.getBoundingClientRect();
+               const context=document.querySelector('#central-root .rp2-contextbar')?.getBoundingClientRect();
+               const head=document.querySelector('#central-root .chat-page .toolbar')?.getBoundingClientRect();
+               return {scroll:window.scrollY,top:top?.top,topBottom:top?.bottom,contextTop:context?.top,chatTop:head?.top};
+             });
+             assert(position.scroll<=2,role+'/'+target+' retained old page scroll: '+JSON.stringify(position));
+             assert(position.top>=-2&&position.top<=2,role+'/'+target+' header detached: '+JSON.stringify(position));
+             assert(position.contextTop>=position.topBottom-2,role+'/'+target+' context overlaps header: '+JSON.stringify(position));
+             if(target==='chat')assert(position.chatTop>=position.contextTop+20,role+' chat toolbar covered by context: '+JSON.stringify(position));
+           }
+           if(target==='chat'&&(width===393||width===1440)){
+             await page.locator('.chat-list-empty').waitFor({state:'visible',timeout:8000});
+             assert(await page.locator('.chat-list-empty').getByText('Nenhuma conversa por aqui').isVisible(),role+' chat vazio sem instrução legível em '+width+'px');
+           }
            await measure(page,role,target,width);
            if(width===393||width===1440)await page.screenshot({path:output+'/'+role+'-'+width+'-'+target+'.png',fullPage:true});
          }catch(error){issues.push({role,target,width,issue:'navigation',message:error.message});}
