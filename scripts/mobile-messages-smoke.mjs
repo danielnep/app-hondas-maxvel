@@ -47,9 +47,17 @@ try {
     await sheet.waitFor();
     const box=await sheet.boundingBox();
     assert.ok(box,'Mensagem deve ficar visível e clicável');
+    const diagnostics=await sheet.evaluate(node=>({
+      rect:{width:node.getBoundingClientRect().width,height:node.getBoundingClientRect().height,
+            x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y},
+      viewport:{width:window.innerWidth,height:window.innerHeight},
+      styles:{width:getComputedStyle(node).width,height:getComputedStyle(node).height,
+              maxWidth:getComputedStyle(node).maxWidth,maxHeight:getComputedStyle(node).maxHeight}
+    }));
+    console.log('Chat viewport diagnostic:',JSON.stringify(diagnostics));
     if(width<=600){
       assert.ok(box.width>=width-2 && box.height>=height-2,
-        'Janela de mensagens deve ocupar a viewport mobile');
+        'Janela de mensagens deve ocupar a viewport mobile: '+JSON.stringify(diagnostics));
       assert.ok(Math.abs(box.y)<3,'Painel deve começar no topo da viewport');
     }
     await sheet.locator('#demo-chat-body').fill('Mensagem real de teste de interface');
