@@ -35,7 +35,8 @@ test('rotacao versionada de senha preserva usuario, estado e invalida token ante
   const first=await current.request('/login','POST',{email:'admin',password:oldPassword});
   assert.equal(first.status,200);
   const oldToken=first.data.token;
-  assert.equal((await current.request('/app-state','PUT',{marker:'kept'},oldToken)).status,200);
+  const savedState={sessions:[],programs:[],selectedWatcherId:'',operationalSettings:{dwellSeconds:30}};
+  assert.equal((await current.request('/app-state','PUT',savedState,oldToken)).status,200);
   await close(current.server);current=null;
 
   process.env.RONDA_PRO_INITIAL_ACCOUNTS=seed(newPassword);
@@ -45,7 +46,7 @@ test('rotacao versionada de senha preserva usuario, estado e invalida token ante
   assert.equal((await current.request('/me','GET',undefined,oldToken)).status,401);
   const changed=await current.request('/login','POST',{email:'admin',password:newPassword});
   assert.equal(changed.status,200);
-  assert.deepEqual((await current.request('/app-state','GET',undefined,changed.data.token)).data.state,{marker:'kept'});
+  assert.deepEqual((await current.request('/app-state','GET',undefined,changed.data.token)).data.state,savedState);
   await close(current.server);current=null;
 
   // Revisao anterior, mesmo que carregue a senha antiga, nao faz rollback.
