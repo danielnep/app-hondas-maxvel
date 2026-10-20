@@ -932,7 +932,9 @@ async function refreshRealChat(){
 function demoChatRows(){return liveMessages;}
 function demoHeaderButtons(){
  const unread=liveConversations.reduce((n,c)=>n+(c.unread||0),0);
- return '<div class="rp-header-tools"><button type="button" class="rp-blue-button" aria-label="Abrir mensagens" data-action="demo-chat-overlay">'+ic('message')+'<span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button></div>';
+ const eventsLink=(allNav[user.role]||[]).some(([key])=>key==='notificacoes')
+  ?'<button type="button" class="rp-blue-button rp-header-events" aria-label="Abrir eventos e notificações" data-view="notificacoes">'+ic('bell')+'</button>':'';
+ return '<div class="rp-header-tools">'+eventsLink+'<button type="button" class="rp-blue-button" aria-label="Abrir mensagens" data-action="demo-chat-overlay">'+ic('message')+'<span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button></div>';
 }
 function openDemoChatOverlay(list=false){
  if(list)demoChatScreen='list';
