@@ -424,6 +424,7 @@ function installViewportViews(){
 const demoCoiRouteMap=createInspectionRouteMap({onError:notify});
 let demoInspectorMap=null,demoInspectorLocation=null,demoInspectorWatch=null,demoInspectorQueueSignature='';
 let demoInspectionDraft=null,demoWizardAutoId=null;
+function inspectorTaskQueue(){return queueInspections(liveAssignments.filter(x=>x.worker_id===user?.id).map(x=>({...x,taskKind:x.kind,kind:'vistoria'})),demoInspectorLocation,demoInspectorLocation)}
 function demoInspectionQueue(){
  const items=demoInspectionRequests().map(item=>{
   // Local demonstrativo conhecido: restaurar coordenadas em dados antigos.
@@ -460,7 +461,7 @@ function startDemoInspectorGps(){
   const state=document.querySelector('[data-inspection-gps-state]');
   if(state)state.textContent='GPS do dispositivo · '+Math.round(p.accuracy)+' m';
   if(demoInspectorMap){
-   const tasks=user?.id?queueInspections(liveAssignments.filter(x=>x.worker_id===user.id),p,p):demoInspectionQueue();
+   const tasks=user?.id?inspectorTaskQueue():demoInspectionQueue();
    demoInspectorMap.setRoute(inspectionRoute(tasks,p),demoInspectorMap.session);
    demoInspectorMap.update({position:p});
   }
@@ -544,7 +545,7 @@ function attachMaps(){
    const host=document.querySelector('#demo-inspection-map');
    if(host){
     const liveInspector=!!user?.id,base=liveInspector?(demoInspectorLocation??null):DEMO_ROUTE.base;
-    const tasks=liveInspector?queueInspections(liveAssignments.filter(x=>x.worker_id===user.id),demoInspectorLocation,base):demoInspectionQueue();
+    const tasks=liveInspector?inspectorTaskQueue():demoInspectionQueue();
     const route=inspectionRoute(tasks,base);
     if(!liveInspector)demoInspectorQueueSignature=inspectionSignature(tasks);
     demoInspectorMap=new PatrolMap(host,{route,session:tasks.length?{mode:liveInspector?'real':'simulation',currentId:tasks[0].id,checkpoints:[],deviations:[]}:null,
@@ -781,11 +782,25 @@ function realRondas(){
  '<section class="schedule-workspace"><h2>Rotas cadastradas</h2><div class="team-list">'+(rows||'<p>Nenhuma rota cadastrada.</p>')+'</div></section>';
 }
 function realInspector(){
- const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=queueInspections(assigned,demoInspectorLocation,demoInspectorLocation);
+ const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=inspectorTaskQueue();
  const cockpit=inspectionCockpit({queue:pending,mapId:'demo-inspection-map',mode:'live',position:demoInspectorLocation,base:demoInspectorLocation,gpsActive:!!demoInspectorLocation});
- const history=assigned.filter(x=>x.completed_at);
+ const rounds=assigned.filter(x=>x.kind==='ronda'),inspections=assigned.filter(x=>x.kind==='vistoria'||x.kind==='inspection');
+ const row=item=>{
+  const at=item.created_at||item.createdAt,done=!!(item.completed_at||item.completedAt),started=!!(item.started_at||item.startedAt);
+  const coords=Number.isFinite(Number(item.latitude))&&Number.isFinite(Number(item.longitude))&&item.latitude!=null&&item.longitude!=null;
+  const routePoints=typeof item.route_points==='string'?(()=>{try{return JSON.parse(item.route_points)}catch{return []}})():item.route_points||[];
+  return '<details class="rp-inspector-history-item"><summary><strong>'+esc(item.address||'Local não informado')+'</strong><small>'+fmt(at)+' · '+(done?'Concluído':started?'Em execução':'Pendente')+'</small></summary>'+
+   '<p>'+esc(item.reason||'Sem observações')+'</p><p>Início: '+fmt(item.started_at||item.startedAt)+' · Conclusão: '+fmt(item.completed_at||item.completedAt)+'</p>'+
+   (item.completion_note?'<p>Resultado: '+esc(item.completion_note)+'</p>':'')+
+   (routePoints.length?'<p>Destinos: '+routePoints.map((p,i)=>(i+1)+'. '+esc(p.label||p.name||'Ponto')).join(' · ')+'</p>':'')+
+   (coords?'<a target="_blank" rel="noopener noreferrer" href="https://www.openstreetmap.org/?mlat='+Number(item.latitude)+'&mlon='+Number(item.longitude)+'#map=17/'+Number(item.latitude)+'/'+Number(item.longitude)+'">Ver localização no mapa ↗</a>':'<p>Sem coordenadas registradas para este atendimento.</p>')+'</details>';
+ };
+ const recent=(title,items)=>'<section class="rp-inspector-recent" aria-label="'+title+'"><header><h2>'+title+'</h2><span>'+items.length+' registro(s)</span></header>'+
+  (items.length?items.slice(0,5).map(row).join(''):'<p>Nenhum registro ainda.</p>')+
+  (items.length>5?'<button type="button" class="button small" data-action="inspector-history-all" data-task-kind="'+(title==='Últimas rondas'?'ronda':'vistoria')+'">Ver histórico completo</button>':'')+'</section>';
  return '<section class="rp-demo-inspector rp-live-inspector">'+cockpit+
-  '<section class="schedule-workspace"><h2>Histórico de vistorias</h2>'+(history.length?history.map(x=>'<div class="team-row">'+esc(x.address)+' · '+fmt(x.completed_at)+'</div>').join(''):'<p>Nenhuma vistoria finalizada.</p>')+'</section></section>';
+  '<section class="rp-inspector-records" aria-label="Histórico do vistoriador">'+recent('Últimas rondas',rounds)+recent('Últimas vistorias',inspections)+'</section>'+
+  '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de rondas e vistorias"><header><h2>Histórico de rondas e vistorias</h2><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+recent('Últimas rondas',rounds.slice(0,80))+recent('Últimas vistorias',inspections.slice(0,80))+'</div></dialog></section>';
 }
 function overview(){
  if(user?.id)return realOverview();
@@ -1368,6 +1383,22 @@ window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status=
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(user?.role==='vistoriador'&&user?.id&&act==='inspector-create'){
+  const kind=el.dataset.taskKind==='ronda'?'ronda':'inspection';
+  showDialog('<section class="rp-inspector-create"><div class="eyebrow">VISTORIADOR · NOVO REGISTRO</div><h2>'+(kind==='ronda'?'Criar ronda':'Criar vistoria')+'</h2>'+
+   '<form id="inspector-create-form" class="live-register"><input type="hidden" name="kind" value="'+kind+'">'+
+   '<label>Local / endereço<input name="address" minlength="5" maxlength="350" required placeholder="Informe o destino"></label>'+
+   '<label>Motivo e orientações<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a atividade a executar"></textarea></label>'+
+   '<label>Pontos com coordenadas (opcional)<textarea name="points" placeholder="Portaria;-20.14020;-44.88366&#10;Recepção;-20.14052;-44.88338"></textarea></label>'+
+   '<button type="submit" class="button primary full">Criar '+(kind==='ronda'?'ronda':'vistoria')+'</button></form></section>');
+  return;
+ }
+ if(user?.role==='vistoriador'&&act==='inspector-history-all'){
+  document.querySelector('[data-inspection-history-dialog]')?.showModal();return;
+ }
+ if(user?.role==='vistoriador'&&user?.id&&act==='inspector-round-finish'){
+  showDialog('<h2>Finalizar ronda</h2><form id="inspector-finish-round-form" data-id="'+esc(el.dataset.id)+'"><label class="field">Resultado da ronda<textarea required minlength="10" maxlength="1500" name="note" placeholder="Descreva o resultado e ocorrências"></textarea></label><button type="submit" class="button primary full">Concluir e registrar</button></form>');return;
+ }
  if(act==='demo-wizard-open'){const d=document.querySelector('#rp-demo-wizard-dialog');if(d&&!d.open)d.showModal();return;}
  if(act==='demo-wizard-close'){document.querySelector('#rp-demo-wizard-dialog')?.close();return;}
  if(act==='demo-chat-overlay'){openDemoChatOverlay(true);return;}
@@ -1759,6 +1790,30 @@ document.addEventListener('submit',async e=>{
    liveSession.token=r.token;await restoreLiveAccount();
   }catch(error){liveSession.token='';root.innerHTML=loginHtml(brand(),error.message);}
   return;
+ }
+ if(e.target.id==='inspector-create-form'){
+  e.preventDefault();if(user?.role!=='vistoriador'||!user.id)return;
+  const button=e.target.querySelector('button[type=submit]'),data=new FormData(e.target);
+  const kind=data.get('kind')==='ronda'?'ronda':'inspection';
+  const source=String(data.get('points')||'').trim(),routePoints=source?source.split(/\\r?\\n/).filter(Boolean).map(row=>{
+   const [label,lat,lng]=row.split(';').map(x=>x.trim());
+   return {label,lat:Number(lat),lng:Number(lng)};
+  }):[];
+  if(routePoints.length>12||routePoints.some(p=>!p.label||!Number.isFinite(p.lat)||!Number.isFinite(p.lng)||Math.abs(p.lat)>90||Math.abs(p.lng)>180)){notify('Informe até 12 pontos válidos: nome;latitude;longitude.');return;}
+  button.disabled=true;
+  try{
+   await liveRequest('/dispatches',{method:'POST',data:{workerId:user.id,kind,address:String(data.get('address')||'').trim(),reason:String(data.get('reason')||'').trim(),routePoints,
+    ...(demoInspectorLocation?{latitude:demoInspectorLocation.lat,longitude:demoInspectorLocation.lng}:{})}});
+   await refreshLiveOperational();modal.close();render();notify(kind==='ronda'?'Ronda criada. Confira o mapa e inicie.':'Vistoria criada. Confira o mapa e inicie.');
+  }catch(error){button.disabled=false;notify(error.message)}return;
+ }
+ if(e.target.id==='inspector-finish-round-form'){
+  e.preventDefault();if(user?.role!=='vistoriador'||!user.id)return;
+  const button=e.target.querySelector('button[type=submit]'),id=e.target.dataset.id,note=String(new FormData(e.target).get('note')||'').trim();
+  button.disabled=true;try{
+   await liveRequest('/dispatches/'+encodeURIComponent(id)+'/complete',{method:'POST',data:{note,position:demoInspectorLocation||null}});
+   await refreshLiveOperational();modal.close();render();notify('Ronda concluída e registrada no histórico.');
+  }catch(error){button.disabled=false;notify(error.message)}return;
  }
  if(e.target.id==='live-route-form'){
   e.preventDefault();const data=new FormData(e.target);
