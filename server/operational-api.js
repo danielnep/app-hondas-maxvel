@@ -191,10 +191,10 @@ export function createOperationalApi(){
    if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
-   if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
+   if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username||d.email).toLowerCase(),phone=clean(d.phone),site=clean(d.site).slice(0,100);
-    if(!['coi','ronda','vistoriador'].includes(d.role)||!email.includes('@')||name.length<2||!/^[a-z0-9._-]{3,40}$/.test(username)||typeof d.password!=='string'||d.password.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e senha de 12 caracteres ou mais'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100);
+    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof d.password!=='string'||d.password.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e senha de 12 caracteres ou mais'});return true;}
     if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
     if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
