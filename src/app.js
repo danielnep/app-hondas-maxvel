@@ -89,13 +89,27 @@ const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
-let liveUsers=[],syncTimer=null;
+let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null;
 const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
 function persist(){
  saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
  if(user?.id){clearTimeout(syncTimer);syncTimer=setTimeout(()=>liveRequest('/app-state',{method:'PUT',data:liveData()}).catch(()=>notify('Nao foi possivel sincronizar agora.')),700);}
 }
-async function refreshLiveUsers(){if(user?.role==='admin')liveUsers=(await liveRequest('/users')).users||[];}
+async function refreshLiveUsers(){if(['admin','coi'].includes(user?.role))liveUsers=(await liveRequest('/users')).users||[];}
+async function refreshLiveOperational(){
+ if(['admin','coi','ronda'].includes(user?.role))liveRoutes=(await liveRequest('/routes').catch(()=>({routes:[]}))).routes||[];
+ liveEvents=(await liveRequest('/events?limit=200').catch(()=>({events:[]}))).events||[];
+ if(['admin','coi','vistoriador'].includes(user?.role))liveAssignments=(await liveRequest('/inspection-assignments').catch(()=>({assignments:[]}))).assignments||[];
+}
+function runtimeRoute(raw){
+ if(!raw?.points?.length)return null;
+ const coords=raw.points.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+ if(coords.length<2)return null;
+ return {id:raw.id,name:raw.name,unit:raw.site||'Grupo Maxvel',
+  base:{id:'base',name:'Base da rota',lat:coords[0].lat,lng:coords[0].lng},
+  points:coords.map((p,i)=>({id:'p'+(i+1),name:p.name,instruction:p.name,lat:p.lat,lng:p.lng,radius:RADIUS_METERS})),legs:[]};
+}
+const assignedRoute=()=>runtimeRoute(liveRoutes.find(r=>r.userId===user?.id)||liveRoutes[0]);
 async function restoreLiveAccount(){
  const a=(await liveRequest('/me')).user;
  user={id:a.id,name:a.name,email:a.email,username:a.username||'',role:a.role==='master'?'admin':a.role};
@@ -106,7 +120,7 @@ async function restoreLiveAccount(){
  operationalSettings={...operationalSettings,...saved?.operationalSettings};
  screen='dashboard';presentation=false;mode='real';session=null;
  view=user.role==='ronda'?'minha-ronda':user.role==='vistoriador'?'vistoriador':'overview';
- await refreshLiveUsers();render();
+ await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);render();
 }
 function liveLogout(){
  liveSession.token='';user=null;session=null;sessions=[];programs=[];liveUsers=[];screen='landing';presentation=false;mode='real';render();
@@ -516,7 +530,7 @@ function attachMaps(){
     const history=sessionList().filter(x=>x.name===w.name).slice(0,5);
     history.forEach((item,index)=>registerMap('admin-route-mini-'+index,item.route,item,item.lastFix??item.route.base,true));
    }
-  if(document.getElementById('mobile-map')){const selectedRoute=session?.route??routeForWatcher(selectedWatcherId);registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
+  if(document.getElementById('mobile-map')){const selectedRoute=session?.route??assignedRoute();if(selectedRoute)registerMap('mobile-map',selectedRoute,session,locationFix??selectedRoute.base,true);}
   if(document.getElementById('demo-inspection-map')){
    const host=document.querySelector('#demo-inspection-map');
    if(host){
@@ -1055,7 +1069,8 @@ function patrolMapClock(){
 }
 /** Verificação e comunicação pertencem à aba Ponto; nunca devem deslocar Iniciar ronda. */
 function phoneContent(){
- const s=session,route=s?.route??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
+ if(user?.role==='ronda'&&!session&&!assignedRoute())return '<section class="patrol-workspace"><div class="patrol-actions"><h2>Nenhuma rota atribuida</h2><p>A Administracao precisa cadastrar e atribuir uma rota antes de iniciar a ronda.</p></div></section>';
+ const s=session,route=s?.route??assignedRoute()??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
  const state=active?(hasBlock(s)?'Atenção · justificativa':point?`Ponto ${s.index+1} de ${route.points.length}`:'Retorno à base'):s?.status==='completed'?'Ronda concluída':'Ronda preparada';
  return `<div class="patrol-workspace${patrolSheetCollapsed?' sheet-collapsed':''}">
   <div class="patrol-statusline">${phoneTelemetry()}</div>
@@ -1189,7 +1204,7 @@ async function startSession(){if(!locationGate.isGranted()){locationGate.open({d
  try{const loc=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
   const f={lat:loc.coords.latitude,lng:loc.coords.longitude,accuracy:loc.coords.accuracy,at:now};
   if(f.accuracy>25){notify(`Sinal com precisão de ${Math.round(f.accuracy)} m. Tente em uma área com melhor recepção.`);return;}
-  const route=offsetRouteNear(f.lat,f.lng);route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
+  const route=assignedRoute();if(!route){notify('Nenhuma rota real atribuida. Solicite cadastro da rota.');return;}route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode};
  session=createSession(user?.name??presentationName,route,now,'real');session.requiresManualCheckin=true;session.evidenceEnabled=operationalSettings.evidenceEnabled;locationFix=f;
   try{window.AndroidTracking?.startTracking()}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
