@@ -38,7 +38,7 @@ try{
    await page.locator('.user-profile-button').click();
    await page.locator('#dialog[open] [data-action="sim-role-picker"]').click();
    await page.locator('#dialog[open] [data-action="sim-role"][data-role="ronda"]').click();
-   await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Vigia'));
+   await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Operação de Ronda'));
    assert(await page.locator('#live-login-form').count()===0,'Login apareceu ao voltar ao Vigia');
    await page.screenshot({path:out+'/vigia-'+width+'.png'});
    assert(errors.length===0,'Erro de JavaScript: '+errors.join(' | '));
