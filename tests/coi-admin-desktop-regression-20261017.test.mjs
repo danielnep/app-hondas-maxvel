@@ -47,7 +47,7 @@ test('programação tem seleção legível e mensagens de erro próximas aos cam
 });
 test('CSS corretivo permanece carregado no último slot da demonstração',()=>{
  const name='inspector-patrol-parity-20261016.css';
- assert.match(index,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(index,/assets\/ronda-pro\.css\?v=20/);
  assert.ok(bundled.includes('/* ORIGINAL: assets/'+name+' */'));
  assert.ok(bundled.indexOf(name)>bundled.indexOf('maxvel-print-qa-20261016.css'));
 });
