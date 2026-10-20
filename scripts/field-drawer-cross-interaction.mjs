@@ -34,6 +34,18 @@ try{
    await page.locator('#central-login button').click();
    await page.locator('#central-navigation').waitFor({state:'attached',timeout:15000});
    await page.waitForFunction(()=>document.body.dataset.rpField==='true',{timeout:12000});
+   // No tutorial may be drawn underneath the map toolbar or field controls.
+   verify(await page.locator('.onboarding-ops').count()===0,prefix+' onboarding covers field map');
+   const mapPanel=page.locator('.rp-inspection-map-panel,.rp-guard-cockpit .patrol-map-panel').first();
+   const mapRect=await mapPanel.boundingBox();
+   verify(!!mapRect,prefix+' map panel missing');
+   verify(mapRect.height>=840,prefix+' map does not fill the viewport: '+JSON.stringify(mapRect));
+   verify(mapRect.y<=2,prefix+' map displaced from viewport: '+JSON.stringify(mapRect));
+   const mapCanvas=page.locator('.rp-inspection-map-canvas,.rp-guard-cockpit .patrol-map-canvas').first();
+   const canvasRect=await mapCanvas.boundingBox();
+   verify(!!canvasRect&&canvasRect.height>=840,prefix+' map canvas leaves blank lower strip: '+JSON.stringify(canvasRect));
+   const gestureBars=page.locator('.rp-gesture-edge');
+   if(width<901)verify(await gestureBars.first().evaluate(node=>getComputedStyle(node,'::after').content)==='none',prefix+' stray swipe bar is drawn on map');
    await page.screenshot({path:evidence+'/'+prefix+'-initial.png',fullPage:false});
    const chatTop=page.locator('[data-chat-open-quick]').first();
    verify(await chatTop.isVisible(),prefix+' top chat button missing');
@@ -50,7 +62,7 @@ try{
    verify(rect.y>=60,prefix+' notice overlaps header: '+JSON.stringify(rect));
    const handle=notif.locator('.rp-drawer-handle');
    const handleRect=await handle.boundingBox();
-   verify(!!handleRect&&Math.abs((handleRect.x+handleRect.width/2)-rect.x)<30,prefix+' collapse handle is not at drawer edge: '+JSON.stringify({handleRect,rect}));
+   verify(!!handleRect&&handleRect.y>=rect.y-5&&handleRect.y<rect.y+55&&handleRect.x>=rect.x+rect.width-65,prefix+' notification close is not in its upper toolbar: '+JSON.stringify({handleRect,rect}));
    await page.screenshot({path:evidence+'/'+prefix+'-notification.png',fullPage:false});
    await chatTop.click();
    await page.locator('#rp-field-chat-overlay[open]').waitFor({timeout:12000});
