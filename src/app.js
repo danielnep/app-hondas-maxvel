@@ -795,12 +795,12 @@ function realInspector(){
    (routePoints.length?'<p>Destinos: '+routePoints.map((p,i)=>(i+1)+'. '+esc(p.label||p.name||'Ponto')).join(' · ')+'</p>':'')+
    (coords?'<a target="_blank" rel="noopener noreferrer" href="https://www.openstreetmap.org/?mlat='+Number(item.latitude)+'&mlon='+Number(item.longitude)+'#map=17/'+Number(item.latitude)+'/'+Number(item.longitude)+'">Ver localização no mapa ↗</a>':'<p>Sem coordenadas registradas para este atendimento.</p>')+'</details>';
  };
- const recent=(title,items)=>'<section class="rp-inspector-recent" aria-label="'+title+'"><header><h2>'+title+'</h2><span>'+items.length+' registro(s)</span></header>'+
-  (items.length?items.slice(0,5).map(row).join(''):'<p>Nenhum registro ainda.</p>')+
+ const recent=(title,items,maxItems=5)=>'<section class="rp-inspector-recent" aria-label="'+title+'"><header><h2>'+title+'</h2><span>'+items.length+' registro(s)</span></header>'+
+  (items.length?items.slice(0,maxItems).map(row).join(''):'<p>Nenhum registro ainda.</p>')+
   (items.length>5?'<button type="button" class="button small" data-action="inspector-history-all" data-task-kind="'+(title==='Últimas rondas'?'ronda':'vistoria')+'">Ver histórico completo</button>':'')+'</section>';
  return '<section class="rp-demo-inspector rp-live-inspector">'+cockpit+
   '<section class="rp-inspector-records" aria-label="Histórico do vistoriador">'+recent('Últimas rondas',rounds)+recent('Últimas vistorias',inspections)+'</section>'+
-  '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de rondas e vistorias"><header><h2>Histórico de rondas e vistorias</h2><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+recent('Últimas rondas',rounds.slice(0,80))+recent('Últimas vistorias',inspections.slice(0,80))+'</div></dialog></section>';
+  '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de rondas e vistorias"><header><h2>Histórico de rondas e vistorias</h2><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+recent('Últimas rondas',rounds.slice(0,80),80)+recent('Últimas vistorias',inspections.slice(0,80),80)+'</div></dialog></section>';
 }
 function overview(){
  if(user?.id)return realOverview();
@@ -1795,7 +1795,7 @@ document.addEventListener('submit',async e=>{
   e.preventDefault();if(user?.role!=='vistoriador'||!user.id)return;
   const button=e.target.querySelector('button[type=submit]'),data=new FormData(e.target);
   const kind=data.get('kind')==='ronda'?'ronda':'inspection';
-  const source=String(data.get('points')||'').trim(),routePoints=source?source.split(/\\r?\\n/).filter(Boolean).map(row=>{
+  const source=String(data.get('points')||'').trim(),routePoints=source?source.split(/\r?\n/).filter(Boolean).map(row=>{
    const [label,lat,lng]=row.split(';').map(x=>x.trim());
    return {label,lat:Number(lat),lng:Number(lng)};
   }):[];
@@ -1803,7 +1803,7 @@ document.addEventListener('submit',async e=>{
   button.disabled=true;
   try{
    await liveRequest('/dispatches',{method:'POST',data:{workerId:user.id,kind,address:String(data.get('address')||'').trim(),reason:String(data.get('reason')||'').trim(),routePoints,
-    ...(demoInspectorLocation?{latitude:demoInspectorLocation.lat,longitude:demoInspectorLocation.lng}:{})}});
+    ...(routePoints.length?{latitude:routePoints[0].lat,longitude:routePoints[0].lng}:{})}});
    await refreshLiveOperational();modal.close();render();notify(kind==='ronda'?'Ronda criada. Confira o mapa e inicie.':'Vistoria criada. Confira o mapa e inicie.');
   }catch(error){button.disabled=false;notify(error.message)}return;
  }
