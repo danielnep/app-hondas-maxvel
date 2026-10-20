@@ -26,7 +26,7 @@ test('Pânico e fluxo map-first preservados',()=>{
  assert.ok(premium.includes('.ops-panic,.field-torch-fab'));
 });
 test('Revisão e cache carregados no app e central',()=>{
- assert.match(index,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(index,/assets\/ronda-pro\.css\?v=20/);
  const consolidated=read('assets/ronda-pro.css');
  for(const name of ['rondas-pro-flow-20261014.css','maxvel-premium-system-20261014.css'])
   assert.ok(consolidated.includes('/* ORIGINAL: assets/'+name+' */'));
