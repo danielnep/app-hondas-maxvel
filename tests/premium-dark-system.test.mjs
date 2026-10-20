@@ -1,14 +1,15 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=(p)=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const css=read('assets/maxvel-premium-system-20261014.css');
+const css=readStyles('maxvel-premium-system-20261014');
 const web=read('index.html'),central=read('central.html'),sw=read('sw.js');
-const old=read('assets/rondas-pro-flow-20261014.css');
+const old=readStyles('rondas-pro-flow-20261014');
 test('Premium Dark aplicado às duas entradas do sistema e atualizado na PWA',()=>{
- assert.match(web,/maxvel-premium-system-20261014\.css\?v=3/);
- assert.match(central,/maxvel-premium-system-20261014\.css\?v=3/);
- assert.match(sw,/maxvel-premium-system-20261014\.css/);
+ assert.match(web,/operational\.css\?v=50/);
+ assert.match(central,/operational\.css\?v=50/);
+ assert.match(sw,/operational\.css/);
  assert.match(sw,/rondas-pro-interface-v\d+/);
 });
 test('Tokens do sistema respeitam o vermelho Maxvel, celeste, aviso e fundo escuro',()=>{

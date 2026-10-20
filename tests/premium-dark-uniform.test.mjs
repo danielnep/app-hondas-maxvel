@@ -1,10 +1,11 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const premium=read('assets/maxvel-premium-system-20261014.css');
-const glass=read('assets/central-glass-20261014.css');
-const flow=read('assets/rondas-pro-flow-20261014.css');
+const premium=readStyles('maxvel-premium-system-20261014');
+const glass=readStyles('central-glass-20261014');
+const flow=readStyles('rondas-pro-flow-20261014');
 const index=read('index.html'),central=read('central.html'),sw=read('sw.js');
 test('Grafite uniforme sem degradês e com identidade Maxvel',()=>{
  for(const token of ['--mxp-red:#f5223d','--mxp-cyan:#38bdf8','--mxp-canvas:#09090b','--mxp-r-sm:7px','--mxp-r-md:10px','--mxp-r-lg:14px'])
@@ -26,9 +27,9 @@ test('Pânico e fluxo map-first preservados',()=>{
  assert.ok(premium.includes('.ops-panic,.field-torch-fab'));
 });
 test('Revisão e cache carregados no app e central',()=>{
- assert.match(index,/rondas-pro-flow-20261014\.css\?v=\d+/);
- assert.ok(index.includes('maxvel-premium-system-20261014.css?v=3'));
- assert.ok(central.includes('central-glass-20261014.css?v=2'));
- assert.ok(central.includes('maxvel-premium-system-20261014.css?v=3'));
+ assert.match(index,/ronda-pro\.css\?v=\d+/);
+ assert.ok(index.includes('operational.css?v=50'));
+ assert.ok(central.includes('central.css?v=50'));
+ assert.ok(central.includes('operational.css?v=50'));
  assert.match(sw,/rondas-pro-interface-v\d+/);
 });

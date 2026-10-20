@@ -33,17 +33,15 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  current?round.insideSince==null?'<button type="button" class="rp-inspection-main-action" data-guard-arrive>Estou aqui</button>':
  '<button type="button" class="rp-inspection-main-action" data-guard-checkpoint>Confirmar ponto após 30 segundos</button>':
  '<button type="button" class="rp-inspection-main-action" data-guard-finish>Cheguei à base · concluir ronda</button>';
- const status=!round?'● RONDA PREPARADA':current?'● PONTO '+(round.index+1):'● RETORNO À BASE';
  return '<div class="patrol-workspace rp-inspection-cockpit rp-guard-cockpit" data-guard-cockpit>'+
  '<section class="patrol-map-panel rp-inspection-map-panel"><header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>'+safe(round?.routeName||planned?.name||'Minha ronda')+'</strong><small>Ronda · '+(round?.index||0)+' de '+total+' pontos</small></div><button type="button" class="rp-inspection-map-fit" data-guard-fit aria-label="Enquadrar percurso">⌖</button></header>'+
  '<div class="patrol-map-canvas rp-inspection-map-canvas"><div class="map-container mini rp-inspector-map" id="guard-real-map" aria-label="Mapa da ronda em operação real"></div>'+
- '<div class="rp-inspection-map-hud"><span class="rp-inspection-hud-label">'+status+'</span><strong>'+safe(current?.name||(!round?'Rota pronta para partida':'Volte à base'))+'</strong><small data-guard-distance>'+
- (Number.isFinite(d)?'Distância '+(current?'ao ponto':'à base')+': '+Math.round(d)+' m':'Aguardando GPS real')+'</small></div></div>'+
+ '</div>'+
  '<div class="patrol-map-footer"><span data-guard-gps>'+safe(gpsStatus)+'</span><span data-guard-road>Traçado viário disponível com internet</span></div></section>'+
  '<section class="patrol-actions rp-inspection-commands" aria-label="Comandos da ronda">'+
  '<div class="rp-field-quicktools"><button type="button" data-field-tool-torch>Lanterna</button><button type="button" class="rp-urgent" data-field-tool-panic>Pânico</button><button type="button" data-field-tool-alert>Alerta</button><button type="button" data-field-tool-incident>Ocorrência</button><button type="button" data-field-tool-chat>Mensagens</button></div>'+
- '<div class="patrol-action-heading"><strong>'+(current?'PONTO '+(round.index+1)+' DE '+total:'PRÓXIMA RONDA')+'</strong></div>'+
- '<div class="rp-inspection-commands-body"><p data-guard-timer>'+(round&&round.insideSince!=null?'Permanência em verificação. Aguarde 30 segundos.':'Siga para o próximo ponto indicado no mapa.')+'</p><div class="rp-inspection-primary-actions">'+action+'</div></div>'+
+ '<div class="patrol-action-heading"><strong>'+(current?'Ponto '+(round.index+1)+' de '+total:round?'Retorno à base':'Ronda preparada')+'</strong></div>'+
+ '<div class="rp-inspection-commands-body"><strong class="rp-inspection-destination">'+safe(current?.name||(!round?'Pronto para iniciar?':'Retorne à base'))+'</strong><p data-guard-timer>'+ (!planned?'O COI enviará a rota para o seu turno.':(round&&round.insideSince!=null?'Permanência em verificação. Aguarde 30 segundos.':'Siga para o próximo ponto indicado no mapa.'))+'</p><small data-guard-distance '+(!planned?'hidden':'')+'>'+safe(Number.isFinite(d)?'Distância '+(current?'ao ponto':'à base')+': '+Math.round(d)+' m':'Aguardando GPS real')+'</small><div class="rp-inspection-primary-actions">'+action+'</div></div>'+
  '<details class="rp-inspection-upcoming"><summary>Ver pontos da ronda <span>'+total+'</span></summary><ol data-guard-stops>'+
  (round?.points||planned?.points||[]).map((p,i)=>'<li class="rp-inspection-stop '+(i===(round?.index||0)?'is-next':'')+'"><span class="rp-stop-order">'+(round&&i<round.index?'✓':i+1)+'</span><div><strong>'+safe(p.name)+'</strong><small>'+safe(i<(round?.index||0)?'Concluído':'Aguardando verificação')+'</small></div></li>').join('')+
  '</ol></details></section></div>';

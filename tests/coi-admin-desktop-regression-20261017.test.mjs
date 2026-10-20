@@ -1,9 +1,10 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const app=read('src/app.js');
-const css=read('assets/inspector-patrol-parity-20261016.css');
+const css=readStyles('inspector-patrol-parity-20261016');
 const wizard=read('src/wizard.js');
 const index=read('index.html');
 
@@ -45,9 +46,9 @@ test('programação tem seleção legível e mensagens de erro próximas aos cam
  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
 });
 test('CSS corretivo permanece carregado no último slot da demonstração',()=>{
- const name='inspector-patrol-parity-20261016.css';
+ const name='field.css';
  assert.ok(index.includes(name));
- assert.ok(index.indexOf(name)>index.indexOf('maxvel-print-qa-20261016.css'));
+ assert.ok(index.indexOf(name)>index.indexOf('mobile-critical.css'));
 });
 
 test('mapa de seleção permanece contido e os botões de endereço e coordenadas não recebem eventos do Leaflet',()=>{

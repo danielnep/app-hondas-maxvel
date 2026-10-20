@@ -1,10 +1,11 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const app=read('../src/app.js');
-const css=read('../assets/ronda-pro.css');
+const css=readStyles('application');
 const paginate=read('../src/dialog-pagination.js');
 const motion=read('../src/ui-motion.js');
 
@@ -26,7 +27,7 @@ test('guia mobile do vigia mantém cinco etapas, conteúdos e navegação guiada
  assert.match(app,/data-action="guide"/);
 });
 test('somente o corpo do guia rola e abas não exigem deslizar lateralmente no celular',()=>{
- const rules=css.slice(css.lastIndexOf('MAXVEL 14 · Guia de ronda mobile'));
+ const rules=css.slice(css.indexOf('MAXVEL 14 · Guia de ronda mobile'));
  assert.match(rules,/dialog\.guide-dialog\[open\]/);
  assert.match(rules,/height:calc\(100dvh - 12px\)!important/);
  assert.match(rules,/overflow-y:auto!important;overflow-x:hidden!important/);

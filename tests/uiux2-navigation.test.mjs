@@ -1,9 +1,10 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const central=read('src/central.js'),app=read('src/app.js'),curtain=read('src/checkpoint-curtain.js');
-const css=read('assets/maxvel-premium-system-20261014.css'),sw=read('sw.js'),entry=read('src/location-entry-gate.js');
+const css=readStyles('maxvel-premium-system-20261014'),sw=read('sw.js'),entry=read('src/location-entry-gate.js');
 
 test('perfis conservam comandos existentes mas separam acesso frequente e áreas secundárias',()=>{
  assert.match(central,/const rp2Priority=\{/);

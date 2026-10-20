@@ -1,8 +1,9 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
-const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+const css=readStyles('app-shell');
 const map=readFileSync(new URL('../src/map.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 

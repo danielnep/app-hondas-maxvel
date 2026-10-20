@@ -1,3 +1,4 @@
+import {readStyles} from './helpers/styles.mjs';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,7 +29,7 @@ test('Comprovação continua reservada à aba Ponto da ronda ativa',()=>{
 
 test('Ações rápidas aparecem na tela inicial antes da ronda e preservam Iniciar ronda',()=>{
  const ops=readFileSync(new URL('../src/operations-upgrade.js',import.meta.url),'utf8');
- const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
+ const css=readStyles('application');
  assert.ok(ops.includes("if(view==='minha-ronda')"));
  assert.ok(ops.includes("main.querySelector('.patrol-actions')"),'Atalhos mobile devem ficar fora de Mais opções');
  assert.ok(ops.includes("primaryTarget?.insertAdjacentHTML('afterend',communicationActions())"));
@@ -48,7 +49,7 @@ test('Aba Ponto ocupa o painel de ferramentas apenas durante a ronda',()=>{
  assert.match(app,/verificacao:extra\.querySelector\('\.patrol-verification-pane'\)/);
  assert.match(app,/\['verificacao','Ponto'\]/);
  assert.match(app,/active\?'<section class="patrol-verification-pane"/);
- const css=readFileSync(new URL('../assets/ronda-pro.css',import.meta.url),'utf8');
+ const css=readStyles('application');
  assert.match(css,/\.ux-patrol-stage>\.patrol-verification-pane\[data-ux-tools-pane\]\{overflow-y:auto!important/);
 });
 
@@ -72,7 +73,7 @@ test('Desvio confirmado encerra cortina do ponto e libera justificativa',()=>{
 
 
 test('Ajuda do mapa não fica embaixo do painel de comandos no celular',()=>{
- const css=readFileSync(new URL('../assets/maxvel-visual-2026.css',import.meta.url),'utf8');
+ const css=readStyles('maxvel-visual-2026');
  assert.match(css,/\.patrol-workspace>\.ux06-map-help\{/);
  assert.match(css,/top:72px!important;right:12px!important;left:auto!important/);
  assert.match(css,/focus-visible/);

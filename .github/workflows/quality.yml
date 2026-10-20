@@ -15,12 +15,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Instalar dependências de validação
+        run: npm ci
+      - name: Validar CSS canônico
+        run: npm run check:styles
       - name: Validar sintaxe
         run: npm run check
       - name: Testes de domínio e interface
         run: npm test
       - name: Abertura real em Chromium
         run: bash scripts/browser-smoke.sh
+      - name: Instalar ferramenta de revisão visual
+        run: npm install --no-save --no-package-lock playwright-core@1.56.1
+      - name: Validar tema, conversas e gestos em ambiente isolado
+        run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/glass-ui-review.mjs
       - name: Capturas da interface
         if: always()
         uses: actions/upload-artifact@v4

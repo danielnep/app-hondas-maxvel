@@ -1,7 +1,8 @@
+import {readStyles} from './helpers/styles.mjs';
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-const css=readFileSync(new URL('../assets/rondas-pro-flow-20261014.css',import.meta.url),'utf8');
+const css=readStyles('rondas-pro-flow-20261014');
 const curtain=readFileSync(new URL('../src/checkpoint-curtain.js',import.meta.url),'utf8');
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 test('Ronda mobile não possui nova rolagem no cockpit recolhido',()=>{
@@ -19,5 +20,5 @@ test('Paleta institucional, atalho de pânico e cache atualizado',()=>{
  assert.match(css,/--rp-maxvel-red:#f5223d/);
  assert.match(css,/--rp-cyan-current:#38bdf8/);
  assert.match(css,/\.checkpoint-utility-row>\.checkpoint-panic\{/);
- assert.match(index,/rondas-pro-flow-20261014\.css\?v=\d+/);
+ assert.match(index,/ronda-pro\.css\?v=\d+/);
 });

@@ -1,3 +1,4 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -49,12 +50,12 @@ test('visor de vistorias fornece Google Maps e Waze sob a ação de deslocamento
  }finally{globalThis.document=old;}
 });
 test('tela não mantém força de 100dvh nas janelas e evita vermelho em ação comum',()=>{
- const css=read('assets/inspector-patrol-parity-20261016.css');
+ const css=readStyles('inspector-patrol-parity-20261016');
  assert.match(css,/Rondas Pro · contrato visual de 17\/10\/2026/);
  assert.match(css,/\.rp-field-wizard-dialog\[open\][\s\S]*?height:auto!important/);
  assert.match(css,/\.rp-inspection-main-action\{[\s\S]*?background:#edf0f5!important/);
  assert.match(css,/\.rp-inspection-directions/);
  const index=read('index.html'),central=read('central.html');
- assert.match(index,/inspector-patrol-parity-20261016\.css\?v=3/);
- assert.match(central,/inspector-patrol-parity-20261016\.css\?v=3/);
+ assert.match(index,/field\.css\?v=50/);
+ assert.match(central,/field\.css\?v=50/);
 });

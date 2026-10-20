@@ -1,10 +1,11 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
 const map=readFileSync(new URL('../src/map.js',import.meta.url),'utf8');
-const css=readFileSync(new URL('../assets/horizon-operacional.css',import.meta.url),'utf8');
+const css=readStyles('app-shell');
 
 test('supervisão tem destino Rondas com agenda principal e aba de mapa operacional',()=>{
  assert.match(app,/\['rondas','Rondas','map'\]/);

@@ -1,12 +1,12 @@
 /* Cache da interface para a demonstração Web/PWA. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v48';
-const CORE=['./assets/field-unified-20261016.css','./src/field-inspection-wizard.js','./src/inspection-demo-camera.js','./assets/inspector-cockpit-20261016.css','./src/inspection-queue.js','./src/inspection-cockpit.js','./src/inspection-street-route.js','./assets/maxvel-print-qa-20261016.css','./src/inspection-route-map.js','./assets/maxvel-field-refinement-20261016.css','./assets/maxvel-atelier-20261016.css','./assets/mobile-critical-20261016.css','./assets/field-compact.css','./assets/events-chat-history.css','./src/internal-chat-ui.js','./src/internal-chat-calls.js','./src/activity-history-ui.js','./assets/uiux-refinement.css',
+const CACHE='rondas-pro-interface-v50';
+const CORE=['./assets/theme.css','./src/theme-shell.js','./assets/ronda-pro.css','./assets/central.css','./assets/operational.css','./assets/mobile-critical.css','./assets/field.css','./src/field-inspection-wizard.js','./src/inspection-demo-camera.js','./src/inspection-queue.js','./src/inspection-cockpit.js','./src/inspection-street-route.js','./src/inspection-route-map.js','./src/internal-chat-ui.js','./src/internal-chat-calls.js','./src/activity-history-ui.js',
  './','./index.html','./manifest.webmanifest',
- './assets/ronda-pro.css','./assets/maxvel-premium-system-20261014.css','./assets/rondas-pro-flow-20261014.css','./assets/maxvel-visual-2026.css','./assets/field-entry-v2.css','./assets/evidence-direct.css','./assets/demo-roles.css','./assets/ronda-pro-upgrade.css','./assets/soft-polish.css',
+
  './assets/maxvel-logo.webp',
- './src/app.js','./src/field-torch.js','./src/location-entry-gate.js','./src/media-capture.js','./src/mobile-role-guides.js','./src/soft-polish.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./src/coi-monitor.js','./src/treatment-policy.js','./src/ops-center-ui.js','./central.html','./assets/central.css','./assets/ops-center.css','./assets/coi-operations-v3.css','./assets/checkpoint-curtain.css',
+ './src/app.js','./src/field-torch.js','./src/location-entry-gate.js','./src/media-capture.js','./src/mobile-role-guides.js','./src/soft-polish.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./src/coi-monitor.js','./src/treatment-policy.js','./src/ops-center-ui.js','./central.html',
  './src/domain.js','./src/map.js','./src/wizard.js',
  './src/demo-scenarios.js','./src/dashboard-insights.js',
  './src/dialog-pagination.js','./src/evidence.js',

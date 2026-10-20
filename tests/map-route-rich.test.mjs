@@ -1,3 +1,4 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -56,7 +57,7 @@ test('GPS local desloca vertices intermediarios e mapa offline mantem trajeto',(
 
 test('vigia tem mapa workspace inteiro com comandos recolhiveis e perfil intacto',()=>{
  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
- const css=readFileSync(new URL('../assets/horizon-graphite.css',import.meta.url),'utf8');
+ const css=readStyles('app-shell');
  assert.match(app,/patrol-workspace\$\{patrolSheetCollapsed/);
  assert.match(app,/toggle-patrol-sheet/);
  assert.match(app,/id="mobile-map"/);

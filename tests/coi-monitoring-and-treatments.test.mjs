@@ -1,3 +1,4 @@
+import {readStyles} from './helpers/styles.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -85,7 +86,7 @@ test('composição COI mantém abas, mapa contextual e distinção de GPS antigo
  const {readFileSync}=await import('node:fs');
  const module=readFileSync(new URL('../src/coi-monitor.js',import.meta.url),'utf8');
  const central=readFileSync(new URL('../src/central.js',import.meta.url),'utf8');
- const css=readFileSync(new URL('../assets/coi-operations-v3.css',import.meta.url),'utf8');
+ const css=readStyles('coi-operations-v3');
  assert.match(module,/data-coi-tab="rondas"/);
  assert.match(module,/data-coi-tab="vistorias"/);
  assert.match(module,/position/);

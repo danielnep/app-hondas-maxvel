@@ -23,7 +23,7 @@ test('servidor de implantação entrega o app e impede acesso ao repositório', 
     for (const [path, file, mime] of [
       ['/', 'index.html', 'text/html'],
       ['/src/app.js?v=27', 'src/app.js', 'text/javascript'],
-      ['/assets/maxvel-refinement-07.css?v=1', 'assets/maxvel-refinement-07.css', 'text/css'],
+      ['/assets/ronda-pro.css?v=50', 'assets/ronda-pro.css', 'text/css'],
       ['/assets/horizon-logo-transparente.webp', 'assets/horizon-logo-transparente.webp', 'image/webp']
     ]) {
       const res = await get(path);

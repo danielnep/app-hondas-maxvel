@@ -7,7 +7,6 @@ on:
       - 'android/**'
       - 'src/**'
       - 'assets/**'
-      - 'styles.css'
       - 'index.html'
       - '.github/workflows/android-build.yml'
   push:
@@ -16,7 +15,6 @@ on:
       - 'android/**'
       - 'src/**'
       - 'assets/**'
-      - 'styles.css'
       - 'index.html'
       - '.github/workflows/android-build.yml'
 
