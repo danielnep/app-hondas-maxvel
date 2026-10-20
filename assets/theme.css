@@ -1562,7 +1562,7 @@
   .rp-theme[data-rp-field=true] .rp-notification-popover[open]>.rp-popover-list {
     animation: rp-notice-arrive 340ms cubic-bezier(.2,.85,.25,1) both !important;
   }
-  .rp-theme[data-rp-field=true] .rp-notification-popover .rp-drawer-handle {
+  .rp-theme[data-rp-field=true] .rp-notification-popover[open]>.rp-drawer-handle {
     position: fixed !important;
     left: auto !important;
     right: calc(min(82vw,380px) - 22px) !important;
