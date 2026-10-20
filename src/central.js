@@ -621,7 +621,8 @@ const guideByRole={
  master:[['Gestão','Acompanhe indicadores, rondas e ocorrências.'],['Rotas','Na Administração > Rotas por vigia, acompanhe o histórico e cadastre novas rotas no mapa.'],['Acesso','Gerencie colaboradores, perfis e vinculações por local.'],['Registros','Utilize a auditoria e os relatórios disponíveis.']]
 };
 function firstAccessGuide(){
- if(page==='guide'||localStorage.getItem('rondaspro-guide-seen-'+account.role)==='yes')return '';
+ // Field roles use a full-screen operational map; onboarding stays in the Guide page, never behind field controls.
+ if(page==='guide'||['ronda','vistoriador'].includes(account.role)||localStorage.getItem('rondaspro-guide-seen-'+account.role)==='yes')return '';
  const items=guideByRole[account.role]||guideByRole.operador;
  return '<section class="surface onboarding-ops"><div class="toolbar"><div><div class="eyebrow">PRIMEIRO ACESSO · '+escape(roles[account.role])+'</div><h2>Como começar</h2></div><button type="button" data-guide-dismiss>Entendi</button></div><p class="muted">Sua área: '+escape(roles[account.role])+' · Local: '+escape(account.site||'não vinculado / abrangência da gestão')+'</p><ol>'+items.slice(0,3).map(x=>'<li><b>'+escape(x[0])+':</b> '+escape(x[1])+'</li>').join('')+'</ol><button type="button" data-page="guide">Ler o guia completo</button></section>';
 }
