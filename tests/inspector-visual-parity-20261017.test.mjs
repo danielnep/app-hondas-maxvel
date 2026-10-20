@@ -52,10 +52,10 @@ test('grafite nos painéis e comunicação, perigo preserva contraste próprio',
 
 test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
  assert.match(index,/rondas-pro-updated-v50/);
- assert.match(index,/sw\.js\?v=49/);
+ assert.match(index,/sw\.js\?v=50/);
  assert.match(sw,/rondas-pro-interface-v50/);
  const bundled=read('assets/ronda-pro.css');
- assert.match(index,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(index,/assets\/ronda-pro\.css\?v=20/);
  for(const name of ['inspector-patrol-parity-20261016.css','maxvel-field-refinement-20261016.css'])
   assert.ok(bundled.includes('/* ORIGINAL: assets/'+name+' */'));
  assert.match(central,/inspector-patrol-parity-20261016\.css\?v=3/);
