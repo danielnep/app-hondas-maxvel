@@ -969,7 +969,12 @@ function demoHistoryView(){
  actions+'<section class="rp-history-list" role="list">'+(rows.map(r=>demoActivityRow(r,canManage)).join('')||'<p class="empty">Nenhum registro neste navegador.</p>')+'</section>'+
  '<div class="rp-history-pagination">'+(offset?btn('Anterior','demo-history-prev','small'):'')+'<span>'+(all.length?offset+1:0)+'–'+Math.min(offset+20,all.length)+' de '+all.length+'</span>'+(offset+20<all.length?btn('Próxima','demo-history-next','small'):'')+'</div>';
 }
+function realEventListing(title,events){
+ const entries=events.map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
+ return pageTitle(title,'Registros operacionais do banco de dados.')+'<section class="schedule-workspace"><button type="button" class="button" data-action="live-refresh">Atualizar</button><div class="team-list">'+(entries||'<p>Nenhum registro.</p>')+'</div></section>';
+}
 function notificationsView(){
+ if(user?.id)return realEventListing('Eventos',liveEvents);
  const all=demoEventNotifications().filter(n=>!n.seenAt),labels={panic:'Pânicos',incident:'Ocorrências',alert:'Alertas',inspection:'Vistorias',deviation:'Desvios',gps_issue:'Sinal GPS',other:'Outros'};
  const groups=new Map(['panic','incident','alert','inspection','deviation','gps_issue'].map(k=>[k,[]]));
  for(const n of all){const kind=groups.has(n.kind)?n.kind:'other';if(!groups.has(kind))groups.set(kind,[]);groups.get(kind).push(n);}
@@ -984,6 +989,7 @@ function archivedResolution(n){
  return {resolution:n.response||last?.note||n.history?.at(-1)?.note||'Conclusão registrada sem observação adicional.',owner:n.respondedBy||last?.assignee||incident?.assignee||n.history?.at(-1)?.actor||''};
 }
 function occurrences(){
+ if(user?.id)return realEventListing('Ocorrencias',liveEvents.filter(e=>['incident','alert','panic','inspection'].includes(e.kind)));
  const records=demoEventNotifications().filter(n=>!!n.seenAt).sort((a,b)=>b.seenAt-a.seenAt);
  return pageTitle('Histórico de tratativas','Eventos finalizados. Respostas, responsáveis e registros preservados para consulta.',btn('Ver pendentes '+ic('arrow'),'nav-alerts','small'))+
  '<section class="rp-treatment-archive">'+(records.length?records.map(n=>'<article class="rp-archive-record" data-archive-id="'+esc(n.id)+'"><span>'+esc(n.kind==='panic'?'Pânico':n.kind==='incident'?'Ocorrência':n.kind==='alert'?'Alerta':'Registro')+' · '+fmt(n.at)+'</span><strong>'+esc(n.label||'Evento finalizado')+'</strong><small>'+esc(n.session?.name||'Campo')+' · '+esc(n.session?.route?.name||'Local não informado')+'</small><p>'+esc(archivedResolution(n).resolution)+'</p><span class="rp-archive-status">'+ic('checkcircle')+' Concluído'+(archivedResolution(n).owner?' por '+esc(archivedResolution(n).owner):'')+'</span></article>').join(''):'<div class="empty">Nenhum evento finalizado. As pendências ficam em Eventos.</div>')+'</section>';
@@ -995,6 +1001,7 @@ function team(){
  '<div class="team-list">'+liveUsers.map(u=>'<div class="team-row"><span class="avatar">'+esc(u.name[0])+'</span><div><strong>'+esc(u.name)+'</strong><small>'+esc(u.username||u.email)+' · '+esc(roleName[u.role]||u.role)+'</small></div><span>'+esc(u.phone||'')+'</span></div>').join('')+'</div>';
 }
 function reports(){
+ if(user?.id)return realEventListing('Historico operacional',liveEvents);
  const all=sessionList(),notices=recentNotification(),completed=all.filter(s=>s.status==='completed').length,progress=all.reduce((sum,s)=>sum+s.checkpoints.filter(p=>p.completedAt).length,0),possible=all.reduce((sum,s)=>sum+s.route.points.length,0);
  const ratios=[{label:'Rondas concluídas',n:completed,total:all.length,color:'safe'},{label:'Pontos verificados',n:progress,total:possible,color:'blue'},{label:'Eventos analisados',n:notices.filter(n=>n.seenAt).length,total:notices.length,color:'cyan'}];
  const dates=all.map(s=>s.startedAt).filter(Number.isFinite).sort((a,b)=>a-b);
@@ -1473,6 +1480,30 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
   notify(result.items.length+' ronda(s) programada(s) neste navegador.');return;
  }
 if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch(()=>{});profileDialog();return;}
+ if(act==='live-refresh'){try{await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);render();notify('Dados atualizados.');}catch(error){notify(error.message)}return;}
+ if(act==='live-inspection-start'||act==='live-inspection-arrive'){
+  const id=el.dataset.id,verb=act==='live-inspection-start'?'start':'arrive';
+  try{
+   let data={};if(verb==='arrive'){
+    if(!navigator.geolocation)throw new Error('GPS indisponivel');
+    const fix=await new Promise((ok,bad)=>navigator.geolocation.getCurrentPosition(ok,bad,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
+    data={position:{lat:fix.coords.latitude,lng:fix.coords.longitude,accuracy:fix.coords.accuracy}};
+   }
+   await liveRequest('/dispatches/'+encodeURIComponent(id)+'/'+verb,{method:'POST',data});
+   await refreshLiveOperational();render();notify('Etapa registrada no servidor.');
+  }catch(error){notify(error.message)}return;
+ }
+ if(act==='live-inspection-report'){
+  const assignment=liveAssignments.find(d=>d.id===el.dataset.id&&d.worker_id===user?.id&&d.started_at&&!d.completed_at);
+  if(!assignment){notify('Vistoria indisponivel.');return;}
+  showDialog('<h2>Concluir vistoria · '+esc(assignment.address)+'</h2><form id="live-inspection-form" data-dispatch="'+esc(assignment.id)+'"><p>Marque os itens em conformidade.</p>'+
+  ['acessos','estrutura','equipamentos','sinalizacao'].map(key=>'<label class="field">'+esc(key)+'<select name="'+key+'" required><option value="true">Conforme</option><option value="false">Nao conforme</option></select></label>').join('')+
+  '<label class="field">Relato<textarea name="note" required minlength="10" maxlength="1500></textarea></label>'+
+  '<label class="field">Selfie<input type="file" name="selfie" accept="image/jpeg,image/png,image/webp" capture="user" required></label>'+
+  '<label class="field">Foto do local<input type="file" name="local" accept="image/jpeg,image/png,image/webp" capture="environment" required></label>'+
+  '<button type="submit" class="button primary full">Enviar laudo e concluir</button></form>');
+  return;
+ }
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
  if(act==='logout'){stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
@@ -1703,6 +1734,34 @@ document.addEventListener('submit',async e=>{
    liveSession.token=r.token;await restoreLiveAccount();
   }catch(error){liveSession.token='';root.innerHTML=loginHtml(brand(),error.message);}
   return;
+ }
+ if(e.target.id==='live-route-form'){
+  e.preventDefault();const data=new FormData(e.target);
+  try{
+   const points=String(data.get('points')||'').trim().split(/\\r?\\n/).filter(Boolean).map(line=>{const [name,lat,lng]=line.split(';').map(x=>x.trim());return {name,lat:Number(lat),lng:Number(lng)};});
+   await liveRequest('/routes',{method:'POST',data:{userId:data.get('userId'),name:data.get('name'),points}});
+   await refreshLiveOperational();render();notify('Rota salva e atribuida.');
+  }catch(error){notify(error.message)}return;
+ }
+ if(e.target.id==='live-dispatch-form'){
+  e.preventDefault();const d=Object.fromEntries(new FormData(e.target));
+  try{await liveRequest('/dispatches',{method:'POST',data:{...d,kind:'inspection'}});await refreshLiveOperational();render();notify('Vistoria despachada.');}
+  catch(error){notify(error.message)}return;
+ }
+ if(e.target.id==='live-inspection-form'){
+  e.preventDefault();const data=new FormData(e.target),dispatchId=e.target.dataset.dispatch,button=e.target.querySelector('button');button.disabled=true;
+  try{
+   const note=String(data.get('note')||'').trim();if(note.length<10)throw new Error('Relato curto');
+   const criteria=Object.fromEntries(['acessos','estrutura','equipamentos','sinalizacao'].map(k=>[k,data.get(k)==='true']));
+   const event=await liveRequest('/events',{method:'POST',data:{kind:'inspection',occurredAt:Date.now(),roundId:dispatchId,description:note,details:{criteria,dispatchId}}});
+   for(const [name,view] of [['selfie','selfie'],['local','front']]){
+    const file=data.get(name);if(!(file instanceof File)||!file.size)throw new Error('Foto obrigatoria ausente');
+    const upload=await fetch('/api/media',{method:'POST',headers:{Authorization:'Bearer '+liveSession.token,'Content-Type':file.type,'X-Ronda-Event-Id':event.id,'X-Media-View':view},body:file});
+    if(!upload.ok){const response=await upload.json().catch(()=>({}));throw new Error(response.error||'Erro no envio da foto');}
+   }
+   await liveRequest('/dispatches/'+encodeURIComponent(dispatchId)+'/complete',{method:'POST',data:{note}});
+   modal.close();await refreshLiveOperational();render();notify('Vistoria concluida e fotos registradas.');
+  }catch(error){button.disabled=false;notify(error.message)}return;
  }
  if(e.target.id==='live-create-user-form'){
   e.preventDefault();if(user?.role!=='admin')return;
