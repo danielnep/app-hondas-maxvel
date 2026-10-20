@@ -49,7 +49,7 @@ test('janelas do vigia usam altura por conteúdo e retorno único',()=>{
 });
 test('estilos críticos carregam por último e entram no PWA',()=>{
  const bundled=read('assets/ronda-pro.css');
- assert.match(index,/assets\/ronda-pro\.css\?v=19/);
+ assert.match(index,/assets\/ronda-pro\.css\?v=20/);
  assert.ok(bundled.includes('/* ORIGINAL: assets/mobile-critical-20261016.css */'));
  assert.match(index,/rondas-pro-updated-v50/);
  assert.match(sw,/rondas-pro-interface-v50/);
