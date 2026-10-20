@@ -24,7 +24,7 @@ try{
  const executablePath=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium'],{encoding:'utf8'}).trim();
  browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox','--disable-dev-shm-usage']});
  for(const width of [390,1440])for(const role of roles){
-  const context=await browser.newContext({viewport:{width,height:850},locale:'pt-BR',reducedMotion:'reduce',isMobile:width<500,hasTouch:width<500});
+  const context=await browser.newContext({viewport:{width,height:850},locale:'pt-BR',reducedMotion:'reduce',isMobile:width<500,hasTouch:width<500,permissions:['geolocation'],geolocation:{latitude:-20.14,longitude:-44.88,accuracy:5}});
   const page=await context.newPage();
   page.on('pageerror',e=>failures.push(role+' '+width+': '+e.message));
   await page.goto(url+'/',{waitUntil:'domcontentloaded'});
