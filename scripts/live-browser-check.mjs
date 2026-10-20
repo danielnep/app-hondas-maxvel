@@ -24,7 +24,18 @@ try{
   await page.locator('#live-login-form [name="identifier"]').fill(role);
   await page.locator('#live-login-form [name="password"]').fill(password);
   await page.locator('#live-login-form button[type=submit]').click();
-  await page.locator('.dashboard').waitFor({timeout:15000});
+  try{await page.locator('.dashboard').waitFor({timeout:15000});}
+  catch(error){
+   const diagnostic=await page.evaluate(()=>({
+    hasLogin:!!document.querySelector('#live-login-form'),
+    error:document.querySelector('.flag')?.textContent||'',
+    appPreview:document.querySelector('#app')?.textContent?.slice(0,350)||'',
+    hasToken:!!sessionStorage.getItem('rondaspro_api_token'),
+    jsOrigin:location.origin
+   })).catch(e=>({browserError:String(e)}));
+   console.error('Authenticated browser failure',JSON.stringify({role,width,diagnostic}));
+   throw error;
+  }
   if(await page.locator('.simulation-rolebar').count())throw Error(role+': seletor de simulacao permanece visivel');
   // Prevent the oversized notification controls and miniature list glyph reported on COI mobile.
   if(['admin','coi'].includes(role)){
