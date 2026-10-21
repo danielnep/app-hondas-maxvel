@@ -13,7 +13,7 @@ export const PAGES_TEST_ACCOUNTS=Object.freeze([
 const PREFIX='ronda-pro-pages-test-v2:',TOKEN_KEY='rondaspro_api_token';
 const read=(key,defaultValue)=>{try{return JSON.parse(localStorage.getItem(PREFIX+key))??defaultValue}catch{return defaultValue}};
 const store=(key,data)=>localStorage.setItem(PREFIX+key,JSON.stringify(data));
-const identity=a=>({id:'pages-'+a.username,name:a.name,username:a.username,email:a.email,role:a.role,active:1,site:'Grupo Maxvel'});
+const identity=a=>({id:'pages-'+a.username,name:a.name,username:a.username,email:a.email,role:a.role,phone:a.phone||'',vehicleType:a.vehicleType||'',vehiclePlate:a.vehiclePlate||'',active:1,site:'Grupo Maxvel'});
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
 const allUsers=()=>[...PAGES_TEST_ACCOUNTS,...read('extra-users',[])];
 const current=()=>{
@@ -44,16 +44,26 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
    return {stored:true};
   }
  }
+ if(p==='/role-permissions'){
+  if(a.role!=='admin')throw fail('Somente Administração define permissões.',403);
+  const defaults={coi:{rondas:true,despachos:true,ocorrencias:true,mensagens:true},ronda:{rondas:true,mensagens:true,ocorrencias:true,vistoria:true}};
+  if(method==='GET')return {permissions:{coi:{...defaults.coi,...read('permissions-coi',{})},ronda:{...defaults.ronda,...read('permissions-ronda',{})}}};
+  if(method==='PUT'){
+   if(!['coi','ronda'].includes(data?.role)||!data.modules||typeof data.modules!=='object')throw fail('Perfil ou permissões inválidos.',422);
+   const allowed=Object.keys(defaults[data.role]),updates=Object.fromEntries(allowed.map(k=>[k,data.modules[k]!==false]));
+   store('permissions-'+data.role,updates);return {ok:true};
+  }
+ }
  if(p==='/users'){
   if(method==='GET')return {users:allUsers().map(identity)};
   if(method==='POST'){
    if(a.role!=='admin')throw fail('Somente administrador cadastra.',403);
-   const username=String(data?.username??'').trim().toLowerCase();
+   const username=String(data?.username??'').trim().toLowerCase()||String(data?.email||'').trim().toLowerCase().split('@')[0].replace(/[^a-z0-9._-]/g,'').slice(0,30);
    const email=String(data?.email??'').trim().toLowerCase();
    if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||String(data?.password||'').length<12||!['coi','ronda','vistoriador','admin'].includes(data?.role)||String(data?.name||'').trim().length<2)throw fail('Informe nome, usuário, e-mail, perfil e senha com 12 caracteres.',422);
    if(allUsers().some(x=>x.username===username||x.email===email))throw fail('Usuário ou e-mail já cadastrado.',409);
    const users=read('extra-users',[]);
-   users.push({name:String(data.name).trim(),email,username,password:data.password,role:data.role});
+   users.push({name:String(data.name).trim(),email,username:username||email.split('@')[0],password:data.password,role:data.role,phone:String(data.phone||'').slice(0,35),vehicleType:data.role==='ronda'?String(data.vehicleType||'a_pe'):'',vehiclePlate:data.role==='ronda'?String(data.vehiclePlate||'').slice(0,12):''});
    store('extra-users',users);return {id:'pages-'+username};
   }
  }
