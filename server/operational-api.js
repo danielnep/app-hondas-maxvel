@@ -228,6 +228,7 @@ export function createOperationalApi(){
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
    if(p==='/api/routes'&&m==='GET'){
+    if(a.role==='ronda'&&!db.prepare("SELECT enabled FROM role_permissions WHERE role='ronda' AND module='rondas'").get()?.enabled){resp(res,403,{error:'Rondas desabilitadas pela Administração'});return true;}
     if(reviewer(a)&&!operations.allows(a,'rondas')){resp(res,403,{error:'Módulo Rondas desabilitado pelo administrador'});return true;}
     if(a.role==='vistoriador'){resp(res,200,{routes:[]});return true;}
     const sql='SELECT r.*,u.name worker_name FROM planned_routes r JOIN users u ON u.id=r.user_id ';
@@ -283,6 +284,11 @@ export function createOperationalApi(){
     inspection=d.kind==='inspection'?d.details?.criteria:null,
     dispatchId=d.kind==='inspection'?clean(d.details?.dispatchId):'',
     inspectionAssignment=dispatchId?db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria' AND started_at IS NOT NULL AND completed_at IS NULL").get(dispatchId,a.id):null;
+    if(a.role==='ronda'&&!['panic','gps','gps_issue','battery'].includes(d.kind)){
+     const mod=['patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted','route_deviation'].includes(d.kind)?'rondas':
+      ['incident','alert','message'].includes(d.kind)?'ocorrencias':null;
+     if(mod&&!db.prepare('SELECT enabled FROM role_permissions WHERE role=? AND module=?').get('ronda',mod)?.enabled){resp(res,403,{error:'Função desabilitada pela Administração'});return true;}
+    }
     if(d.kind==='inspection'&&(a.role!=='vistoriador'||(!a.site&&!inspectionAssignment)||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
      resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
     }
