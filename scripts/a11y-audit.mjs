@@ -33,7 +33,7 @@ try{
   await page.locator('#live-login-form [name="password"]').fill(secret);
   await page.locator('#live-login-form button[type="submit"]').click();
   await page.locator('.dashboard').waitFor({timeout:15000});
-  if(role==='admin'){await page.evaluate(()=>document.querySelector('[data-view="configuracoes"]')?.click());await page.locator('#live-create-user-form').waitFor();}
+  if(role==='admin'){await page.evaluate(()=>document.querySelector('[data-view="configuracoes"]')?.click());await page.locator('[data-action="admin-add-user"]').click();await page.locator('#live-create-user-form').waitFor();}
   await page.addScriptTag({path:axePath});
   const violations=await page.evaluate(async()=>{const result=await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});return result.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length,targets:v.nodes.slice(0,5).map(x=>x.target)}));});
   results.push({role,width,violations});
