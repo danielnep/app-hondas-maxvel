@@ -11,7 +11,7 @@ test('Ronda usa cartao compacto independente; chat permanece na interface de vis
  assert.match(html,/aria-controls="rp-guard-panel-content"/);
  assert.match(html,/data-guard-panel-content/);
  assert.doesNotMatch(html,/data-field-tool-panic/);
- assert.match(read('src/central.js'),/id=\\"central-panic\\"/);
+ assert.match(read('src/central.js'),/id="central-panic"/);
  assert.match(html,/data-field-tool-incident/);
  assert.doesNotMatch(html,/data-field-tool-chat/);
  assert.match(inspectionCockpit({queue:[],mapId:'inspection-map'}),/data-field-tool-chat/);
