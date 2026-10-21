@@ -2054,7 +2054,10 @@
 .rp-theme .dashboard .rp-plan-summary>div{min-width:0;display:grid;gap:4px}
 .rp-theme .dashboard .rp-plan-summary small{font-size:11px;color:#b4cada!important}
 .rp-theme .dashboard .rp-plan-summary strong{font-size:12px;overflow-wrap:anywhere}
-.rp-theme .dashboard .rp-plan-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;grid-column:1/-1}
+.rp-theme .dashboard .rp-plan-actions{display:grid;gap:6px;grid-column:1/-1}
+.rp-theme .dashboard .rp-plan-action-context{display:none}
+.rp-theme .dashboard .rp-plan-action-buttons{display:flex;align-items:center;justify-content:flex-end;gap:9px}
+.rp-theme .dashboard .rp-plan-next-mobile{display:none}
 .rp-theme .dashboard .rp-plan-actions button{min-height:45px!important;padding:11px 18px!important;border-radius:8px!important;font-weight:700;font-size:13px;cursor:pointer}
 .rp-theme .dashboard .rp-plan-secondary{border:1px solid #637888!important;background:#1d2a34!important;color:#ecf5f8!important}
 .rp-theme .dashboard .rp-plan-next,.rp-theme .dashboard .rp-plan-save{background:#176f9e!important;border:1px solid #3bb6ec!important;color:#fff!important}
@@ -2076,7 +2079,7 @@
 .rp-theme .dashboard .rp-demo-banner-global{padding:7px 18px;font-size:12px;color:#e9edf4;background:#263542;border-bottom:1px solid #ed1748;line-height:1.35}
 .rp-theme .dashboard .rp-demo-banner-global b{color:#ff7790}
 @media(max-width:760px){
- .rp-theme .dashboard .rp-plan{padding-bottom:56px}
+ .rp-theme .dashboard .rp-plan{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
  .rp-theme .dashboard .rp-plan-heading{padding-bottom:12px}
  .rp-theme .dashboard .rp-plan-heading h1{font-size:24px!important}
  .rp-theme .dashboard .rp-plan-heading p{font-size:12px!important;line-height:1.4}
@@ -2102,9 +2105,22 @@
  .rp-theme .dashboard .rp-plan-summary{grid-template-columns:1fr;gap:9px}
  .rp-theme .dashboard .rp-plan-saved{display:none}
  .rp-theme .dashboard .rp-plan[data-step="1"] [data-part="2"],.rp-theme .dashboard .rp-plan[data-step="1"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="2"]{display:none!important}
- .rp-theme .dashboard .rp-plan-actions{position:sticky;bottom:9px;z-index:550;display:flex;gap:8px;background:#1b2b35f4;padding:9px;border:1px solid #395062;border-radius:9px}
- .rp-theme .dashboard .rp-plan-actions button{padding:9px!important;min-height:42px!important;font-size:12px}
- .rp-theme .dashboard .rp-plan-actions :is(.rp-plan-next,.rp-plan-save){flex:1}
+ .rp-theme .dashboard .rp-plan-actions{
+  position:sticky;bottom:calc(5px + env(safe-area-inset-bottom,0px));
+  z-index:30;display:grid;gap:4px;
+  background:#1d232aef;padding:6px 8px;
+  border:1px solid #5b444b;border-top:2px solid #ba384d;border-radius:9px;
+  box-shadow:0 8px 22px #0007;backdrop-filter:blur(12px)
+ }
+ .rp-theme .dashboard .rp-plan-action-context{display:block;color:#f3b9c3;font-size:9px;line-height:1.1;text-align:right;font-weight:700;letter-spacing:.04em}
+ .rp-theme .dashboard .rp-plan-action-buttons{display:flex;align-items:center;gap:7px;width:100%}
+ .rp-theme .dashboard .rp-plan-next-desktop{display:none}
+ .rp-theme .dashboard .rp-plan-next-mobile{display:inline}
+ .rp-theme .dashboard .rp-plan-secondary{flex:0 0 72px}
+ .rp-theme .dashboard .rp-plan-layout{padding-bottom:16px}
+ .rp-theme .dashboard .rp-plan-map-panel{scroll-margin-bottom:92px}
+ .rp-theme .dashboard .rp-plan-actions button{padding:6px 10px!important;min-height:36px!important;height:36px!important;font-size:11px!important;line-height:1.15!important}
+ .rp-theme .dashboard .rp-plan-actions :is(.rp-plan-next,.rp-plan-save){flex:1 1 auto;min-width:0}
  .rp-theme .dashboard .rp-plan-actions .rp-plan-save[data-mobile-final="hidden"]{display:none!important}
  .rp-theme .dashboard .rp-plan-demo{font-size:11px;padding:8px 10px}
  .rp-theme .dashboard .rp-demo-banner-global{padding:7px 12px;font-size:11px}
