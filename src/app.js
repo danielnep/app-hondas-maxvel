@@ -118,7 +118,7 @@ function runtimeRoute(raw){
   base:{id:'base',name:'Base da rota',lat:coords[0].lat,lng:coords[0].lng},
   points:coords.map((p,i)=>({id:'p'+(i+1),name:p.name,instruction:p.name,lat:p.lat,lng:p.lng,radius:RADIUS_METERS})),legs:[]};
 }
-const assignedRoute=()=>runtimeRoute(liveRoutes.find(r=>r.userId===user?.id)||liveRoutes[0]);
+const assignedRoute=()=>runtimeRoute(liveRoutes.find(r=>r.userId===user?.id));
 async function restoreLiveAccount(){
  const a=(await liveRequest('/me')).user;
  user={id:a.id,name:a.name,email:a.email,username:a.username||'',role:a.role==='master'?'admin':a.role};
@@ -127,7 +127,7 @@ async function restoreLiveAccount(){
  programs=Array.isArray(saved?.programs)?saved.programs:[];
  selectedWatcherId=saved?.selectedWatcherId||selectedWatcherId;
  operationalSettings={...operationalSettings,...saved?.operationalSettings};
- screen='dashboard';presentation=false;mode='real';session=null;
+ screen='dashboard';presentation=false;mode=isPagesTestMode()?'simulation':'real';session=null;
  view=user.role==='ronda'?'minha-ronda':user.role==='vistoriador'?'vistoriador':'overview';
  await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);
  if(['ronda','vistoriador'].includes(user.role)&&!isPagesTestMode())void liveRequest('/presence',{method:'POST',data:{position:null}}).catch(()=>{});
@@ -1094,7 +1094,8 @@ function phoneTelemetry(){
  return `<div class="mobile-operational-strip"><div class="mobile-location-status"><span class="ops-live-dot"></span><div><strong>${esc(state)}</strong><small>${mode==='simulation'?'Cenário ilustrativo · sem GPS real':'GPS do dispositivo · sujeito à precisão'}</small></div></div><div class="mobile-progress-chip">${s?`${s.index}/${s.route.points.length}`:'0/4'} <span>pontos</span></div></div><div class="mobile-tracking-meta"><div>${ic('map')} <strong>${point?esc(point.name):s?.status==='completed'?'Ronda finalizada':'Rota Centro · Perímetro'}</strong></div><div class="mobile-mini-meter" role="progressbar" aria-label="Progresso da ronda" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div><small>${point?'Próximo ponto obrigatório':'Verifique a sequência no mapa'} · ${mode==='real'&&fix?`Precisão ${Math.round(fix.accuracy??0)} m`:'25 m de raio por ponto'}</small></div>`;
 }
 function readyStartPanel(){
- return `<div class="patrol-stage-intro"><span class="patrol-stage-index">01 · PREPARAÇÃO</span><h2>Pronto para iniciar?</h2><p>4 pontos · raio de 25 m · 30 s por ponto.</p></div><div class="patrol-mode-toggle" aria-label="Modo da ronda"><button type="button" class="${mode==='simulation'?'selected':''}" data-action="mode-simulation" aria-pressed="${mode==='simulation'}">${ic('play')} Cenário</button><button type="button" class="${mode==='real'?'selected':''}" data-action="mode-real" ${presentation?'disabled':''} aria-pressed="${mode==='real'}">${ic('crosshair')} GPS real</button></div>${btn('Iniciar ronda '+ic('arrow'),'start','primary full')}<p class="patrol-microtext">${presentation?'Você experimenta o próprio aplicativo, com mapa e alertas ilustrativos.':mode==='real'?'O aparelho solicitará permissão para localização durante a ronda.':'O mapa contém ruas reais; trajeto e posições do cenário são simulados.'}</p>`;
+ const count=(session?.route??assignedRoute()??routeForWatcher(selectedWatcherId)).points.length;
+ return `<div class="patrol-stage-intro"><span class="patrol-stage-index">01 · PREPARAÇÃO</span><h2>Pronto para iniciar?</h2><p>${count} pontos · raio de 25 m · 30 s por ponto.</p></div><div class="patrol-mode-toggle" aria-label="Modo da ronda"><button type="button" class="${mode==='simulation'?'selected':''}" data-action="mode-simulation" aria-pressed="${mode==='simulation'}">${ic('play')} Cenário</button><button type="button" class="${mode==='real'?'selected':''}" data-action="mode-real" ${presentation?'disabled':''} aria-pressed="${mode==='real'}">${ic('crosshair')} GPS real</button></div>${btn('Iniciar ronda '+ic('arrow'),'start','primary full')}<p class="patrol-microtext">${presentation?'Você experimenta o próprio aplicativo, com mapa e alertas ilustrativos.':mode==='real'?'O aparelho solicitará permissão para localização durante a ronda.':'O mapa contém ruas reais; trajeto e posições do cenário são simulados.'}</p>`;
 }
 function navigationShortcuts(point){
  if(!point)return '';
@@ -1147,12 +1148,12 @@ function patrolMapClock(){
 }
 /** Verificação e comunicação pertencem à aba Ponto; nunca devem deslocar Iniciar ronda. */
 function phoneContent(){
- const s=session,assigned=s?.route??assignedRoute(),noRoute=user?.role==='ronda'&&!s&&!assigned,route=assigned??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
+ const s=session,assigned=s?.route??assignedRoute(),noRoute=user?.role==='ronda'&&!s&&!assigned&&!isPagesTestMode(),route=assigned??routeForWatcher(selectedWatcherId),active=s?.status==='active',point=active?currentCheckpoint(s):null,progress=s?progressPercent(s):0;
  const state=active?(hasBlock(s)?'Atenção · justificativa':point?`Ponto ${s.index+1} de ${route.points.length}`:'Retorno à base'):s?.status==='completed'?'Ronda concluída':'Ronda preparada';
  return `<div class="patrol-workspace${patrolSheetCollapsed?' sheet-collapsed':''}">
   <div class="patrol-statusline">${phoneTelemetry()}</div>
   <section class="patrol-map-panel" aria-label="Mapa da ronda">
-   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(noRoute?'Mapa da unidade':route.name)}${window.innerWidth>900?helpButton('map','mapa e pontos'):''}</strong><small>${noRoute?'Aguardando rota atribuída · mapa disponível':esc(state)+' · '+(s?Math.floor(progress)+'%':'4 pontos previstos')+' · '+(mode==='simulation'?'Demonstração':'GPS do aparelho')}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
+   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(noRoute?'Mapa da unidade':route.name)}${window.innerWidth>900?helpButton('map','mapa e pontos'):''}</strong><small>${noRoute?'Aguardando rota atribuída · mapa disponível':esc(state)+' · '+(s?Math.floor(progress)+'%':route.points.length+' pontos previstos')+' · '+(mode==='simulation'?'Demonstração':'GPS do aparelho')}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
    <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div>${window.innerWidth<=900?`<button type="button" class="ux06-map-help" data-action="feature-help" data-topic="map" aria-label="Ajuda sobre mapa">${ic("help")}</button>`:""}</div>
    <div class="patrol-map-footer"><span>${mode==='real'?'GPS autorizado':'Localização simulada'}</span><span data-live="coords">${locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)}`:'Aguardando início'}</span></div>
   </section>
@@ -1296,7 +1297,7 @@ function notificationDialog(id,sid){if(sid==='field'){const rows=localCommunicat
 function detailSession(id){const s=sessions.find(x=>x.id===id);if(!s)return;showDialog(`<div class="eyebrow">DETALHES DE UMA RONDA</div><h2>${esc(s.route.name)}</h2>${tag(s.status==='completed'?'Concluída':'Em andamento',s.status==='completed'?'green':'orange')}<div style="margin:17px 0">${[['Colaborador',s.name],['Início',fmt(s.startedAt)],['Conclusão',fmt(s.finishedAt)],['Pontos',`${s.index} de ${s.route.points.length}`],['Desvios',s.deviations.length],['Ocorrências',s.incidents.length],['Verificações ilustrativas',Object.values(s.evidences??{}).filter(x=>x.confirmedAt).length]].map(([a,b])=>`<div class="detail-pair"><span>${esc(a)}</span><strong>${esc(b)}</strong></div>`).join('')}</div><div id="patrol-detail-map" class="rp-history-map"></div><p class="map-caption">Rota e pontos ilustrativos do cenário. O percurso real é consultado no histórico da central autenticada.</p><h3>Histórico de eventos</h3><div class="timeline" style="margin-top:13px">${s.timeline.map(x=>`<div class="timeline-entry"><strong>${esc(x.label)}</strong><small>${fmt(x.at)}</small></div>`).join('')}</div>${btn('Fechar','close-dialog','primary full')}`,true);const el=document.querySelector("#patrol-detail-map");if(el){const detailMap=new PatrolMap(el,{route:s.route,session:s,position:s.position,compact:true});modal.addEventListener("close",()=>detailMap.destroy(),{once:true});}}
 function pointDialog(index){const route=session?.route??DEMO_ROUTE,p=route.points[index];if(!p)return;const completed=session?.checkpoints[index]?.completedAt;showDialog(`<div class="eyebrow">PONTO ${index+1} · ROTA DEMONSTRATIVA</div><h2>${esc(p.name)}</h2><p>${esc(p.instruction)}</p>${tag(completed?'Concluído':session?.index===index?'Ponto atual':'Pendente',completed?'green':'neutral')}<div style="margin-top:16px">${[['Raio','25 metros'],['Permanência','30 segundos contínuos'],['Sequência',`${index+1} de ${route.points.length}`],['Localização', 'Ilustrativa no modo simulado']].map(([a,b])=>`<div class="detail-pair"><span>${a}</span><strong>${b}</strong></div>`).join('')}</div>${btn('Entendi','close-dialog','primary full')}`)}
 function finishDialog(){showDialog(`<div class="eyebrow">CONFIRMAR CONCLUSÃO</div><h2>Finalizar esta ronda?</h2><p style="font-size:12px">Os quatro pontos já foram concluídos e o retorno à base foi identificado. O registro ficará salvo neste navegador.</p><div class="modal-actions">${btn('Cancelar','close-dialog')}${btn('Finalizar ronda','confirm-finish','primary')}</div>`)}
-async function startSession(){if(!locationGate.isGranted()){locationGate.open({demo:presentation});notify('Ative a localização antes de iniciar a ronda.');return;}const now=Date.now();if(mode==='real'&&!presentation){
+async function startSession(){if(!locationGate.isGranted()&&!isPagesTestMode()){locationGate.open({demo:presentation});notify('Ative a localização antes de iniciar a ronda.');return;}const now=Date.now();if(mode==='real'&&!presentation){
  if(!navigator.geolocation){notify('Geolocalização indisponível neste navegador.');return;}
  try{const loc=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
   const f={lat:loc.coords.latitude,lng:loc.coords.longitude,accuracy:loc.coords.accuracy,at:now};
@@ -1328,7 +1329,7 @@ async function startSession(){if(!locationGate.isGranted()){locationGate.open({d
    notify(contextWarning);
   },{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
  }catch{notify('Permita o uso do GPS ou volte à simulação.');return;}
- }else{const planned=programs.find(p=>p.id===selectedProgramId&&p.status==='scheduled')??nextProgram(programs,selectedWatcherId,sessions,now);const route=planned?routeForProgram(planned):routeForWatcher(selectedWatcherId);
+ }else{const planned=programs.find(p=>p.id===selectedProgramId&&p.status==='scheduled')??nextProgram(programs,selectedWatcherId,sessions,now);const route=(isPagesTestMode()?assignedRoute():null)??(planned?routeForProgram(planned):routeForWatcher(selectedWatcherId));
  route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode,
   ...(planned?.customRoute?.rules||{})};
@@ -1590,8 +1591,8 @@ if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch((
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
  if(act==='logout'){if(isPagesTestMode()){openAreaPicker();return;}stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
- if(act==='start'){if(!locationGate.isGranted()){locationGate.open({demo:presentation});return;}startDialog();return;}
- if(act==='confirm-start'){if(mode==='real'&&!presentation&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
+ if(act==='start'){if(!locationGate.isGranted()&&!isPagesTestMode()){locationGate.open({demo:presentation});return;}startDialog();return;}
+ if(act==='confirm-start'){if(mode==='real'&&!presentation&&!isPagesTestMode()&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
  if(act==='mode-real'||act==='mode-simulation'){if(presentation&&act==='mode-real'){notify('Neste cenário você não precisa ativar GPS.');return;}if(session?.status==='active')return;mode=act==='mode-real'?'real':'simulation';render();return;}
  if(act==='checkin-now'){
   if(!session||session.status!=='active'||movement)return;
