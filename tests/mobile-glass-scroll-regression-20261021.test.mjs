@@ -41,7 +41,7 @@ test('a solicitação principal de ronda atende o vigia sem apagar o Vistoriador
 
 test('atualização PWA entrega mudanças de CSS e JS em mobile',()=>{
   assert.match(index,/ronda-pro\.css\?v=53/);
-  assert.match(index,/theme\.css\?v=60/);
-  assert.match(index,/app\.js\?v=75/);
-  assert.match(serviceWorker,/rondas-pro-interface-v71/);
+  assert.match(index,/theme\.css\?v=61/);
+  assert.match(index,/app\.js\?v=76/);
+  assert.match(serviceWorker,/rondas-pro-interface-v72/);
 });
