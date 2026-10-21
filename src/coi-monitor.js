@@ -21,7 +21,7 @@ export function createCoiMonitor(){
  function copy(data){snapshot=data}
  function render(data){
   snapshot=data;targets.clear();
-  const {account,rounds=[],events=[],routes=[],users=[],availability=[],dispatches=[]}=data;
+  const {account,rounds=[],events=[],routes=[],users=[],availability=[],dispatches=[],demo=false}=data;
   const isAdmin=['admin','master'].includes(account?.role),who=new Map(users.map(u=>[u.id,u]));
   const online=new Map(availability.map(a=>[a.id,a]));
   const latest=(rounds||[]).slice().sort((a,b)=>(b.start||0)-(a.start||0));
@@ -65,8 +65,19 @@ export function createCoiMonitor(){
   const view=tab==='rondas'?
    (latest.length?'<div class="coi3-record-stack">'+latest.slice(0,16).map(roundCard).join('')+'</div>':'<div class="coi3-empty">Nenhuma ronda sincronizada. Consulte a equipe e as rotas atribuídas.</div>'):
    ((currentInspections.length||inspections.length)?'<div class="coi3-record-stack">'+currentInspections.slice(0,12).map(d=>inspectionCard(d,null)).join('')+inspections.filter(e=>!inspectorSeen.has(e.user_id)||!currentInspections.some(d=>d.worker_id===e.user_id&&e.occurred_at>=d.started_at)).slice(0,18).map(e=>inspectionCard(null,e)).join('')+'</div>':'<div class="coi3-empty">Nenhuma vistoria recebida. Solicite um vistoriador em Despachar equipe.</div>');
+
+  const previewRoutes=demo?routes.filter(route=>Array.isArray(route.points)&&route.points.some(coords)).slice(0,3):[];
+  const showcase=demo?'<section class="coi3-demo-preview"><header><div><strong>Prévia dos percursos cadastrados</strong><p>Ilustração das rotas previstas. Nenhum deslocamento fictício é apresentado como ronda realizada.</p></div><span>DEMONSTRAÇÃO</span></header>'+
+   (previewRoutes.length?'<div class="coi3-record-stack">'+previewRoutes.map((route,i)=>{
+    const ordered=route.points.filter(coords);
+    return '<article class="coi3-record coi3-demo-route"><h3>'+esc(route.name||'Percurso '+(i+1))+'</h3>'+
+     '<ol>'+ordered.slice(0,8).map(p=>'<li>'+esc(p.name||p.address||'Ponto cadastrado')+'</li>').join('')+'</ol>'+
+     location({id:'demonstracao-'+(route.id||i),point:null,at:null,route:ordered,name:'Percurso demonstrativo',kind:'round'})+'</article>';
+   }).join('')+'</div>':'<p class="coi3-empty">Comece cadastrando pontos em Rotas e rondas. O mapa previsto aparecerá aqui, inclusive no celular.</p>')+
+   '</section>':'';
+
   const queueUI='<section class="coi3-secondary"><header><h2>Comunicação que exige resposta</h2><button type="button" data-page="treatments">Abrir tratativas →</button></header><div class="coi3-alert-list">'+(queue.length?queue.slice(0,5).map(e=>'<button type="button" data-event="'+esc(e.id)+'" class="coi3-alert '+(e.kind==='panic'?'is-panic':'')+'"><strong>'+esc(label[e.kind]||e.kind)+'</strong><span>'+esc(e.description||'Sem descrição')+'</span><small>'+time(e.occurred_at)+' · '+esc(e.site||'Sem posto')+'</small></button>').join(''):'<p class="coi3-empty">Nenhuma pendência de comunicação aberta.</p>')+'</div></section>';
-  const body='<section class="coi3-app">'+header+metrics+tools+'<section class="coi3-section"><header class="coi3-section-header"><div><h2>Equipe em acompanhamento</h2><p>Selecione a atividade para ver os registros e a localização disponível de cada profissional.</p></div></header>'+tabs+view+'</section>'+queueUI+'<p class="coi3-footnote">As posições são recebidas mediante permissão GPS do aparelho. Sem leitura recente, o ponto permanece identificado como histórico, nunca como localização ao vivo.</p></section>';
+  const body='<section class="coi3-app">'+header+metrics+tools+'<section class="coi3-section"><header class="coi3-section-header"><div><h2>Equipe em acompanhamento</h2><p>Selecione a atividade para ver os registros e a localização disponível de cada profissional.</p></div></header>'+tabs+view+showcase+'</section>'+queueUI+'<p class="coi3-footnote">As posições são recebidas mediante permissão GPS do aparelho. Sem leitura recente, o ponto permanece identificado como histórico, nunca como localização ao vivo.</p></section>';
   return body;
  }
  function mount(){
