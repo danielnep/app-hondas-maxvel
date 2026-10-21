@@ -262,7 +262,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    timer=setTimeout(async()=>{
     controller=new AbortController();
     try{
-     const response=await fetch('https://photon.komoot.io/api/?lang=pt&limit=6&q='+encodeURIComponent(text),{signal:controller.signal});
+     const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=6&q='+encodeURIComponent(text),{signal:controller.signal});
      if(!response.ok)throw Error('busca indisponível');
      const result=await response.json();
      if(controller.signal.aborted)return;
