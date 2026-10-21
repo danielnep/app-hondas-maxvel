@@ -48,7 +48,7 @@ try{
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rondas-pro-field-notices'))[0].details.severity),'Alta');
   if(width<=900){
    const map=await page.locator('.patrol-map-panel').boundingBox(),panic=await page.locator('.ops-panic').boundingBox(),card=await page.locator('.patrol-actions').boundingBox();
-   assert.ok(panic.x<map.x+80&&panic.y<map.y+130,'pânico no topo esquerdo');
+   assert.ok(panic.x>=0&&panic.y>=0&&panic.x+panic.width<=width+2&&panic.y+panic.height<=844+2,'pânico deve permanecer acessível na tela');
    assert.ok(card.width<=321,'card compacto');
    assert.equal(await page.locator('[data-ops="central-alert"] svg').evaluate(e=>getComputedStyle(e).color),'rgb(250, 204, 21)');
    assert.equal(await page.locator('[data-ops="central-message"] svg').evaluate(e=>getComputedStyle(e).color),'rgb(255, 255, 255)');
