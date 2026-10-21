@@ -88,6 +88,8 @@ try{
       if((await form.locator('#rp-dispatch-stops .rp-dispatch-stop-mini img').count())!==2)throw Error('Miniaturas dos destinos ausentes');
       await form.locator('[data-dispatch-up="1"]').click();
       await form.locator('[data-dispatch-down="0"]').click();
+      await form.locator('#rp-dispatch-stops').scrollIntoViewIfNeeded();
+      await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-destinos.png',animations:'disabled'});
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
       await form.locator('[data-action="dispatch-next"]').click();
