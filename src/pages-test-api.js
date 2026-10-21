@@ -109,11 +109,15 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
  }
  if((p==='/presence'||p==='/presence/off')&&method==='POST')return {ok:true};
  if(p==='/chat/contacts'&&method==='GET')return {contacts:allUsers().filter(x=>x.username!==a.username).map(identity)};
- if(p==='/chat/conversations'&&method==='GET')return {conversations:read('conversations',[]).filter(x=>x.members.includes(user.id))};
+ if(p==='/chat/conversations'&&method==='GET')return {conversations:read('conversations',[]).filter(x=>x.members.includes(user.id)).map(c=>{
+   const others=c.members.filter(id=>id!==user.id).map(id=>allUsers().find(x=>'pages-'+x.username===id)?.name||'Profissional');
+   const messages=read('chat:'+c.id,[]);
+   return {...c,title:c.title||others.join(', ')||'Conversa',unread:0,last:messages.at(-1)||null};
+  })};
  if(p==='/chat/conversations'&&method==='POST'){
   if(!Array.isArray(data?.members)||!data.members.length)throw fail('Selecione um contato.',422);
   const entries=read('conversations',[]);
-  const item={id:newId(),members:[user.id,...data.members],createdAt:Date.now()};
+  const item={id:newId(),members:[...new Set([user.id,...data.members])],createdAt:Date.now()};
   store('conversations',[item,...entries]);return item;
  }
  const chat=p.match(/^\/chat\/conversations\/([^/]+)\/messages$/);
@@ -125,7 +129,7 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
   if(method==='POST'){
    const body=String(data?.body||'').trim();
    if(!body)throw fail('Digite uma mensagem.',422);
-   const message={id:newId(),body,author_id:user.id,createdAt:Date.now()};
+   const message={id:newId(),body,author_id:user.id,author:user.name,created_at:Date.now()};
    store('chat:'+chat[1],[...rows,message]);return message;
   }
  }
