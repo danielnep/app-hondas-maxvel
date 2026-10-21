@@ -56,6 +56,12 @@ function initialize(){
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='planned_start'))db.exec('ALTER TABLE planned_routes ADD COLUMN planned_start INTEGER');
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='route_schedule'))db.exec("ALTER TABLE planned_routes ADD COLUMN route_schedule TEXT NOT NULL DEFAULT '{}'");
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='phone'))db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='vehicle_type'))db.exec("ALTER TABLE users ADD COLUMN vehicle_type TEXT NOT NULL DEFAULT ''");
+  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='vehicle_plate'))db.exec("ALTER TABLE users ADD COLUMN vehicle_plate TEXT NOT NULL DEFAULT ''");
+  db.exec("CREATE TABLE IF NOT EXISTS role_permissions(role TEXT NOT NULL,module TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,updated_at INTEGER NOT NULL,PRIMARY KEY(role,module))");
+  const defaults={coi:['rondas','despachos','ocorrencias','mensagens'],ronda:['rondas','mensagens','ocorrencias','vistoria']};
+  const insertPermission=db.prepare('INSERT OR IGNORE INTO role_permissions(role,module,enabled,updated_at) VALUES(?,?,1,?)');
+  for(const [role,modules] of Object.entries(defaults))for(const module of modules)insertPermission.run(role,module,now());
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='username'))db.exec("ALTER TABLE users ADD COLUMN username TEXT");
  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL");
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
@@ -192,14 +198,32 @@ export function createOperationalApi(){
    if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
-   if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
+   if(p==='/api/role-permissions'&&m==='GET'){
+     if(!manager(a)){resp(res,403,{error:'Somente Administração consulta permissões'});return true;}
+     const permissions={coi:{},ronda:{}};
+     for(const item of db.prepare('SELECT role,module,enabled FROM role_permissions').all())if(permissions[item.role])permissions[item.role][item.module]=!!item.enabled;
+     resp(res,200,{permissions});return true;
+    }
+    if(p==='/api/role-permissions'&&m==='PUT'){
+     if(!manager(a)){resp(res,403,{error:'Somente Administração altera permissões'});return true;}
+     const d=serialize((await body(req)).toString())||{},valid={coi:['rondas','despachos','ocorrencias','mensagens'],ronda:['rondas','mensagens','ocorrencias','vistoria']};
+     if(!valid[d.role]||!d.modules||typeof d.modules!=='object'||Array.isArray(d.modules)||Object.keys(d.modules).some(k=>!valid[d.role].includes(k)||typeof d.modules[k]!=='boolean')){
+      resp(res,422,{error:'Permissões inválidas'});return true;
+     }
+     const update=db.prepare('INSERT INTO role_permissions(role,module,enabled,updated_at) VALUES(?,?,?,?) ON CONFLICT(role,module) DO UPDATE SET enabled=excluded.enabled,updated_at=excluded.updated_at');
+     db.transaction(()=>{for(const module of valid[d.role])update.run(d.role,module,d.modules[module]!==false?1:0,now())})();
+     audit(a,'permission.update',d.role);resp(res,200,{ok:true});return true;
+    }
+    if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,vehicle_type AS vehicleType,vehicle_plate AS vehiclePlate,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100);
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),vehicleType=clean(d.vehicleType),vehiclePlate=clean(d.vehiclePlate).slice(0,12);
     if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof d.password!=='string'||d.password.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e senha de 12 caracteres ou mais'});return true;}
-    if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
+    if(clean(d.phone).length>35||!['','a_pe','moto','carro','bicicleta','outro'].includes(vehicleType)||(d.role==='ronda'&&!vehicleType)){
+      resp(res,422,{error:'Telefone ou tipo de veículo inválido'});return true;
+     }
     if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
-    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site||'Grupo Maxvel',phone);
+    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone,vehicle_type,vehicle_plate) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site||'Grupo Maxvel',phone,d.role==='ronda'?vehicleType:'',d.role==='ronda'?vehiclePlate:'');
 
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
