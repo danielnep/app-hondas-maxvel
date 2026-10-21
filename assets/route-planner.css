@@ -124,3 +124,16 @@
  .rp-theme .dashboard .rp-plan-layout{grid-template-columns:minmax(310px,1fr) minmax(320px,1fr)}
  .rp-theme .dashboard .rp-plan-summary{grid-template-columns:1fr}
 }
+
+/* Seletor do vigia: aparece ANTES do cockpit e não cria área de login. */
+.rp-theme #dialog .rp-demo-worker-picker{display:grid;gap:12px;padding:8px;max-width:560px}
+.rp-theme #dialog .rp-demo-worker-picker h2{font-size:clamp(20px,5vw,26px)!important;margin:0;color:#f4f7fa!important}
+.rp-theme #dialog .rp-demo-worker-picker p{font-size:13px;line-height:1.5;margin:0 0 4px;color:#d1dce5!important}
+.rp-theme #dialog .rp-demo-worker-list{display:grid;gap:9px}
+.rp-theme #dialog .rp-demo-worker-list button{display:flex;gap:12px;align-items:center;text-align:left;width:100%;min-height:72px;padding:12px 15px;background:#1c2d39!important;border:1px solid #436174!important;border-radius:9px!important;color:#eaf4fb!important}
+.rp-theme #dialog .rp-demo-worker-list button:hover,.rp-theme #dialog .rp-demo-worker-list button:focus-visible{background:#22465f!important;border-color:#4ac0ff!important}
+.rp-theme #dialog .rp-demo-worker-list button>b{display:grid;place-items:center;width:32px;height:32px;border:2px solid #35b6fa;border-radius:50%;font-size:14px}
+.rp-theme #dialog .rp-demo-worker-list button>span{display:grid;gap:5px;flex:1;min-width:0}
+.rp-theme #dialog .rp-demo-worker-list button strong{font-size:15px}
+.rp-theme #dialog .rp-demo-worker-list button small{font-size:11px;color:#adc6d7!important}
+.rp-theme #dialog .rp-demo-worker-list .icon-svg{width:20px;height:20px;color:#48bafa}
