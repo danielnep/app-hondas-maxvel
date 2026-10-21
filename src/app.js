@@ -617,8 +617,14 @@ function liveRoundRecords(){
 }
 function previewRoundRecords(){
  if(!isPagesTestMode())return [];
- return withExampleRondas([],Date.now()).map(s=>({id:s.id,worker:s.name,startedAt:s.startedAt,lastAt:s.finishedAt||s.startedAt,completed:s.status==='completed',
-  checkpoints:s.checkpoints?.filter(p=>p.completedAt).length||0,alerts:(s.notifications?.length||0)+(s.incidents?.length||0),route:s.route,track:[],simulation:true}));
+ return withExampleRondas([],Date.now()).map(s=>{
+  const timeline=(s.timeline||[]).map(item=>({kind:item.kind,occurred_at:item.at,description:item.label}));
+  const checkpoints=(s.checkpoints||[]).filter(p=>p.completedAt).map((p,i)=>({kind:'checkpoint',occurred_at:p.completedAt,description:'Ponto '+(i+1)+' concluído'}));
+  const incidents=(s.incidents||[]).map(p=>({kind:'incident',occurred_at:p.at,description:p.description}));
+  const events=[...timeline,...checkpoints,...incidents].sort((a,b)=>a.occurred_at-b.occurred_at);
+  return {id:s.id,worker:s.name,startedAt:s.startedAt,lastAt:s.finishedAt||s.startedAt,completed:s.status==='completed',
+   checkpoints:checkpoints.length,alerts:(s.notifications?.length||0)+(s.incidents?.length||0),route:s.route,track:[],events,simulation:true};
+ });
 }
 function realMapSelection(){
  const planned=liveRoutes.find(r=>r.id===selectedLiveRouteId)||liveRoutes[0]||null;
