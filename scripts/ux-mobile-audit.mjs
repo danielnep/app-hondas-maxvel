@@ -18,7 +18,7 @@ async function screen(page,width,name){
  await page.screenshot({path:out+'/'+width+'-'+name+'.png',animations:'disabled',timeout:14000});
  const measurements=await page.evaluate(()=>{
   const r=s=>{const el=document.querySelector(s);if(!el)return null;const box=el.getBoundingClientRect();return {width:box.width,height:box.height,left:box.left,right:box.right,top:box.top,bottom:box.bottom}};
-  return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,product:r('.brand.maxvel-only-brand:visible'),main:r('.app-content'),map:r('#mobile-map'),planner:r('#rp-plan')};
+  return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,product:r('.brand.maxvel-only-brand'),main:r('.app-content'),map:r('#mobile-map'),planner:r('#rp-plan')};
  });
  check(measurements.documentWidth<=measurements.viewport+3,'Rolagem horizontal '+width+' '+name+': '+JSON.stringify(measurements));
  check(!!measurements.main,'Área de trabalho ausente: '+name);
