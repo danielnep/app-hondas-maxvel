@@ -691,7 +691,7 @@ function myPatrolHistory(){
  '<section class="schedule-workspace"><div class="schedule-heading"><div><div class="eyebrow">HISTÓRICO INDIVIDUAL</div><h2>'+mine.length+' ronda(s) registradas</h2><p>Resumo primeiro; abra uma execução para ver todos os registros.</p></div></div>'+
  (mine.length?mine.slice(0,50).map(item).join(''):'<p>Nenhuma ronda registrada neste aparelho.</p>')+
  '<p class="map-caption">Dados deste dispositivo. Para mensagens da equipe e histórico central sincronizado, utilize seu acesso autenticado.</p>'+
- '<a class="button" href="./central.html">Ver histórico completo e respostas da equipe</a></section>';
+ (isPagesTestMode()?'<button type="button" class="button" data-action="demo-chat-overlay">Abrir mensagens da equipe</button>':'<a class="button" href="./central.html">Ver histórico completo e respostas da equipe</a>')+'</section>';
 }
 function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'meus-envios':return mySubmissions();case 'overview':return overview();case 'cliente':return demoClientView();case 'vistoriador':return demoInspectorView();case 'rondas':return rondas();case 'chat-interno':return demoChatView();case 'historico-operacional':return demoHistoryView();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
@@ -2010,7 +2010,7 @@ const ops=createOperationsUpgrade({
  get:()=>({user,view,session,sessions,programs,operationalSettings,mode,locationFix,
   selectedRoute:session?.route??routeForWatcher(selectedWatcherId)}),
  render,save,persist,notify,showDialog,incidentDialog,alertDialog,
- openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('./central.html#chat');return;}openDemoChatOverlay(true);},
+ openChat:()=>{openDemoChatOverlay(true);},
  closeDialog:()=>modal.close(),
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });
