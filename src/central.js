@@ -1,4 +1,5 @@
 import {decorateTheme} from './theme-shell.js';
+import {isPagesTestMode} from './pages-test-api.js';
 import {createInternalChatUI} from './internal-chat-ui.js';
 import {createChatCalls} from './internal-chat-calls.js';
 import {createActivityHistoryUI} from './activity-history-ui.js';
@@ -462,7 +463,7 @@ function mountOperationalMap(){
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
- const panel=coi.render({account,rounds,events,routes,users,demo:location.hostname.includes('github.io'),...ops.monitoringData()});
+ const panel=coi.render({account,rounds,events,routes,users,demo:isPagesTestMode(),...ops.monitoringData()});
  return '<div class="rp-coi-request-strip"><div><strong>Vistorias de campo</strong><span>Solicite vistorias sob demanda ou de rotina, com destino e orientações.</span></div><button type="button" class="primary" data-inspection-queue>Solicitar vistoria ↗</button></div>'+panel;
 }
 function monitorRows(rows){
