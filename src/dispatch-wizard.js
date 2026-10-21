@@ -98,6 +98,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   const focus=valid(point)?point:locationPoint||destinations.at(-1);
   if(!valid(focus))return;
   const epoch=++previewEpoch;
+  if(!previewMap)fallbackPreview(focus); // Mapas de contingência aparecem sem esperar pelo CDN do Leaflet.
   try{
    const L=await loadLeaflet();if(epoch!==previewEpoch||!host.isConnected)return;
    if(!previewMap){
