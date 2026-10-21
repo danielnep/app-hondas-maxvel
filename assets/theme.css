@@ -1407,6 +1407,7 @@
     left:max(12px,env(safe-area-inset-left,0px))!important;
     right:auto!important;top:calc(148px + env(safe-area-inset-top,0px))!important;bottom:auto!important;
     width:70px!important;height:70px!important;border-radius:50%!important;transform:none!important;
+    opacity:1!important;filter:none!important;background:#b8233a!important;color:#fff!important;border:2px solid #ffc0c6!important;box-shadow:0 6px 24px #0008,0 0 0 2px #b8233a55!important;
   }
   .rp-theme[data-rp-field=true][data-rp-role=ronda] #central-panic strong {font-size:10px!important}
 
