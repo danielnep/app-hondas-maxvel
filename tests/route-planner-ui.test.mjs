@@ -23,6 +23,10 @@ test('cadastro COI usa busca por endereço, mapa, três etapas e zero campos de 
  assert.match(html,/COI \+ Administrador/);
  assert.match(html,/Pesquisar empresa, local ou endereço/);
  assert.match(html,/rp-plan-map/);
+ assert.match(html,/class="rp-plan-action-context"/);
+ assert.match(html,/class="rp-plan-next-mobile">Próximo →/);
+ assert.match(html,/aria-label="Próximo: Agendamento"/);
+ assert.match(html,/class="rp-plan-action-buttons"/);
  for(const item of ['Endereços','Agendamento','Revisão e envio','Dia sim, dia não','Dias específicos'])assert.ok(html.includes(item),item);
  for(const watcher of DEMO_THREE)assert.ok(html.includes(watcher.name));
  assert.ok(!html.includes('Latitude'));
