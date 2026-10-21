@@ -229,7 +229,7 @@ export function createOperationalApi(){
      const hour=typeof rawSchedule.hour==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(rawSchedule.hour)?rawSchedule.hour:'08:00';
      const startDate=typeof rawSchedule.startDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(rawSchedule.startDate)?rawSchedule.startDate:'';
      const weekdays=Array.isArray(rawSchedule.weekdays)?[...new Set(rawSchedule.weekdays.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[];
-     if(((recurrence==='once'||recurrence==='alternate')&&!startDate&&rawSchedule.recurrence)||(recurrence==='weekly'&&!weekdays.length)){
+     if(explicitSchedule&&(((recurrence==='once'||recurrence==='alternate')&&!startDate)||(recurrence==='weekly'&&!weekdays.length))){
       resp(res,422,{error:'Informe uma data de referência ou os dias da semana para o agendamento'});return true;
      }
      const schedule={kind,recurrence,hour,startDate,weekdays};
@@ -249,7 +249,7 @@ export function createOperationalApi(){
     }
     const rid=id();
     db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,route_schedule,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)')
-     .run(rid,user.id,user.site,title,JSON.stringify(safe),plannedStart,JSON.stringify(schedule),now(),now(),a.id);
+     .run(rid,user.id,user.site,title,JSON.stringify(safe),plannedStart,explicitSchedule?JSON.stringify(schedule):'{}',now(),now(),a.id);
     audit(a,'route.create',rid);resp(res,201,{id:rid,created:true});return true;
    }
    if(p==='/api/events'&&m==='POST'){
