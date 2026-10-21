@@ -1,0 +1,30 @@
+name: Preview PR103 on existing GitHub Pages
+on:
+  push:
+    branches:
+      - preview/pages-pr103-20261021
+permissions:
+  contents: read
+  pages: write
+jobs:
+  switch-pages-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect current Pages source and point preview to PR103 branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          url="https://api.github.com/repos/${GITHUB_REPOSITORY}/pages"
+          headers=(-H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GH_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28")
+          echo "Current Pages configuration:"
+          curl --fail-with-body --silent --show-error "${headers[@]}" "$url" | jq '{build_type,source,url,html_url}'
+          payload='{"build_type":"legacy","source":{"branch":"fix/ronda-despacho-mobile-20261021","path":"/"}}'
+          status=$(curl --silent --show-error -o /tmp/pages-source-response -w '%{http_code}' -X PUT "${headers[@]}" "$url" -d "$payload")
+          if [ "$status" != "204" ]; then
+            echo "GitHub refused Pages source update (HTTP $status)."
+            head -c 1000 /tmp/pages-source-response || true
+            exit 1
+          fi
+          echo "Pages source successfully switched to unmerged PR103 branch."
+          curl --fail-with-body --silent --show-error "${headers[@]}" "$url" | jq '{build_type,source,url,html_url}'
