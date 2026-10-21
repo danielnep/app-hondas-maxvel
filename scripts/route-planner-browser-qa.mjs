@@ -18,7 +18,7 @@ let browser;
 function check(ok,message){if(!ok)throw Error(message)}
 try{
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium'],{encoding:'utf8'}).trim(),args:['--no-sandbox','--disable-dev-shm-usage']});
- for(const width of [393,1440]){
+ for(const width of [320,393,1440]){
   const ctx=await browser.newContext({viewport:{width,height:width===393?852:900},locale:'pt-BR',serviceWorkers:'block'});
   const p=await ctx.newPage(),errors=[],backend=[];
   p.on('pageerror',e=>errors.push(e.message));
@@ -46,6 +46,18 @@ try{
     await p.locator('#dialog [data-view="rondas"]').click();
    }else await p.locator('.sidebar [data-view="rondas"]').click();
    await p.locator('#rp-plan').waitFor();
+   if(width<761){
+    const bar=p.locator('.rp-plan-actions'),next=bar.locator('.rp-plan-next');
+    const stat=await bar.evaluate(node=>{
+     const a=node.getBoundingClientRect(),b=node.querySelector('.rp-plan-secondary').getBoundingClientRect(),c=node.querySelector('.rp-plan-next').getBoundingClientRect();
+     return {height:a.height,barRight:a.right,backWidth:b.width,nextWidth:c.width,nextRight:c.right,docWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+    });
+    check(stat.height<=76,'Barra inferior alta: '+JSON.stringify(stat));
+    check(stat.backWidth<=83&&stat.nextWidth>stat.backWidth&&stat.nextRight<=width+2,'Barra extrapola viewport: '+JSON.stringify(stat));
+    check(stat.docWidth<=stat.viewport+3,'Rolagem horizontal na primeira etapa: '+JSON.stringify(stat));
+    check(await next.getByText('Próximo →').isVisible(),'CTA curto mobile não aparece');
+    await p.screenshot({path:output+'/coi-bottom-compact-'+width+'.png',animations:'disabled'});
+   }
    check((await p.locator('#rp-plan .rp-plan-steps button').count())===3,'Etapas ausentes');
    check((await p.locator('#rp-plan-worker option').count())===3,'Não encontrou exatamente três vigias fictícios');
    await p.locator('#rp-plan-name').fill('Ronda teste Divinópolis');
