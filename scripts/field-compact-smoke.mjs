@@ -29,6 +29,9 @@ try{
   assert.equal(await page.locator('#field-alert-form textarea').count(),0);
   await page.locator('#field-alert-form input').fill('Portão aberto');
   await page.locator('#field-alert-form button').click();
+  const afterAlert=await page.evaluate(()=>({dashboard:!!document.querySelector('.dashboard'),rolePicker:!!document.querySelector('#dialog .role-picker-list'),alerts:JSON.parse(localStorage.getItem('rondas-pro-field-notices')||'[]').length,body:document.body.getAttribute('class')}));
+  console.log('CHECK after alert '+width+' '+JSON.stringify(afterAlert));
+  assert.ok(afterAlert.dashboard,'Aplicativo saiu da área Vigia após registrar o alerta');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rondas-pro-field-notices'))[0].label),'Portão aberto');
   await page.locator('[data-view="meus-envios"]').first().evaluate(el=>el.click());
   await page.locator('[data-action="own-notice-detail"]').first().click();
