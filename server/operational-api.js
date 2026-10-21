@@ -59,6 +59,8 @@ function initialize(){
   if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='vehicle_type'))db.exec("ALTER TABLE users ADD COLUMN vehicle_type TEXT NOT NULL DEFAULT ''");
   if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='vehicle_plate'))db.exec("ALTER TABLE users ADD COLUMN vehicle_plate TEXT NOT NULL DEFAULT ''");
   db.exec("CREATE TABLE IF NOT EXISTS role_permissions(role TEXT NOT NULL,module TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,updated_at INTEGER NOT NULL,PRIMARY KEY(role,module))");
+  db.exec('CREATE TABLE IF NOT EXISTS saved_points(id TEXT PRIMARY KEY,name TEXT NOT NULL,address TEXT NOT NULL,latitude REAL NOT NULL,longitude REAL NOT NULL,created_by TEXT NOT NULL,created_at INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_saved_points_active ON saved_points(active,created_at)');
   const defaults={coi:['rondas','despachos','ocorrencias','mensagens'],ronda:['rondas','mensagens','ocorrencias','vistoria']};
   const insertPermission=db.prepare('INSERT OR IGNORE INTO role_permissions(role,module,enabled,updated_at) VALUES(?,?,1,?)');
   for(const [role,modules] of Object.entries(defaults))for(const module of modules)insertPermission.run(role,module,now());
@@ -198,6 +200,27 @@ export function createOperationalApi(){
    if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
+   if(p==='/api/saved-points'&&m==='GET'){
+    if(!['admin','master','coi','operador'].includes(a.role)){resp(res,403,{error:'Pontos disponíveis somente para gestão'});return true;}
+    resp(res,200,{points:db.prepare('SELECT id,name,address,latitude AS lat,longitude AS lng,created_at AS createdAt FROM saved_points WHERE active=1 ORDER BY name COLLATE NOCASE LIMIT 250').all()});return true;
+   }
+   if(p==='/api/saved-points'&&m==='POST'){
+    if(!manager(a)){resp(res,403,{error:'Somente Administração cadastra pontos'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name).slice(0,100),address=clean(d.address).slice(0,350),lat=Number(d.lat),lng=Number(d.lng);
+    if(name.length<2||address.length<5||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180||d.lat==null||d.lng==null){
+     resp(res,422,{error:'Informe nome, endereço e coordenadas válidas'});return true;
+    }
+    const pointId=id();
+    db.prepare('INSERT INTO saved_points(id,name,address,latitude,longitude,created_by,created_at) VALUES(?,?,?,?,?,?,?)').run(pointId,name,address,lat,lng,a.id,now());
+    audit(a,'saved_point.create',pointId);resp(res,201,{id:pointId,name,address,lat,lng});return true;
+   }
+   const savedPointDelete=p.match(/^\/api\/saved-points\/([^/]+)$/);
+   if(savedPointDelete&&m==='DELETE'){
+    if(!manager(a)){resp(res,403,{error:'Somente Administração arquiva pontos'});return true;}
+    const changed=db.prepare('UPDATE saved_points SET active=0 WHERE id=? AND active=1').run(savedPointDelete[1]).changes;
+    if(!changed){resp(res,404,{error:'Ponto não encontrado'});return true;}
+    audit(a,'saved_point.archive',savedPointDelete[1]);resp(res,200,{ok:true});return true;
+   }
    if(p==='/api/role-permissions'&&m==='GET'){
      if(!manager(a)){resp(res,403,{error:'Somente Administração consulta permissões'});return true;}
      const permissions={coi:{},ronda:{}};
