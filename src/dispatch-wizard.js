@@ -181,7 +181,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   searchTimer=setTimeout(async()=>{
    const controller=new AbortController();searchController=controller;
    try{
-    const response=await fetch('https://photon.komoot.io/api/?lang=pt&limit=6&q='+encodeURIComponent(value.trim()),{signal:controller.signal});
+    const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=6&q='+encodeURIComponent(value.trim()),{signal:controller.signal});
     if(!response.ok)throw Error('Pesquisa de endereço indisponível');
     const data=await response.json();
     if(controller.signal.aborted)return;
