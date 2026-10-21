@@ -28,6 +28,9 @@ export function createInternalChat(db,{now,id,audit,resp,body,serialize}){
  };
  return {async handle(req,res,u,p,method){
   if(!p.startsWith('/api/chat'))return false;
+  if(['coi','ronda'].includes(u.role)&&!db.prepare("SELECT enabled FROM role_permissions WHERE role=? AND module='mensagens'").get(u.role)?.enabled){
+   resp(res,403,{error:'Mensagens desabilitadas pela Administração'});return true;
+  }
   const url=new URL(req.url,'http://local'),parts=p.slice('/api/chat'.length).split('/').filter(Boolean);
   const data=async()=>serialize((await body(req,23e6)).toString())||{};
   if(parts[0]==='signals'&&method==='GET'){resp(res,200,{signals:db.prepare('SELECT s.* FROM chat_signals s JOIN chat_members m ON m.conversation_id=s.conversation_id AND m.user_id=? WHERE s.recipient_id=? AND s.created_at>? ORDER BY s.created_at,s.id').all(u.id,u.id,Math.max(Number(url.searchParams.get('since'))||0,now()-120000)).map(s=>({...s,body:serialize(s.body)}))});return true;}
