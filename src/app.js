@@ -101,7 +101,7 @@ const routePlanner=createRoutePlanner({
  api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
  afterSave:async reload=>{if(reload)await refreshLiveOperational();render();}
 });
-const dispatchWizard=createDispatchWizard({dialog:modal,showDialog,getWorkers:()=>liveUsers,request:liveRequest,refresh:refreshLiveOperational,redraw:render,notify});
+const dispatchWizard=createDispatchWizard({dialog:modal,showDialog,getWorkers:()=>liveUsers,getPlaces:()=>liveRoutes,request:liveRequest,refresh:refreshLiveOperational,redraw:render,notify});
 const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
 function persist(){
  saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
