@@ -33,6 +33,9 @@ try{
    if(!filepath.startsWith(root+'/')||!existsSync(filepath))return route.fulfill({status:404,body:'Not Found'});
    return route.fulfill({path:filepath,contentType:types[extname(filepath)]||'application/octet-stream'});
   });
+  await context.route('https://photon.komoot.io/api/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+   type:'FeatureCollection',features:[{type:'Feature',properties:{name:'Ponto QA',street:'Rua Goiás',housenumber:'503',city:'Divinópolis',state:'Minas Gerais'},geometry:{type:'Point',coordinates:[-44.89,-20.14]}}]
+  })}));
   page.on('pageerror',err=>errors.push(err.message));
   try{
    await page.goto(target.url,{waitUntil:'domcontentloaded'});
@@ -58,20 +61,38 @@ try{
     }
     await page.waitForFunction(({view,label})=>document.querySelector('.dashboard:not(.simulation-mode)')&&document.querySelector('.side-link.active')?.dataset.view===view&&document.querySelector('.user-profile-button small')?.textContent.trim()===label,{view,label},{timeout:15000});
     if(await page.locator('#live-login-form').count())throw Error('Login reapareceu após troca de área: '+role);
-    if(role==='admin'){
+    if(['admin','coi'].includes(role)){
+      const map=page.locator('#real-ops-map');await map.waitFor({state:'visible',timeout:12000});
+      const bounds=await map.boundingBox();
+      if(!bounds||bounds.width<260||bounds.height<220)throw Error('Mapa mobile ausente: '+role);
+      if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+3))throw Error('Rolagem horizontal no mapa '+role);
+      await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-'+role+'-mapa.png',animations:'disabled'});
+      await page.locator('.side-link[data-view="historico-operacional"]').evaluate(el=>el.click());
+      await page.locator('#real-history-detail-map').waitFor({state:'visible',timeout:12000});
+      if(await page.locator('.rp-real-history-entry').count()<3)throw Error('Histórico de demonstração vazio');
+      await page.locator('#rp-real-history-period').selectOption('7');
+      await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-'+role+'-historico-mapa.png',animations:'disabled'});
+      await page.locator('.side-link[data-view="overview"]').evaluate(el=>el.click());
+     }
+     if(role==='admin'){
       if(await page.locator('#live-dispatch-form').count())throw Error('Formulário vertical ainda na visão geral');
       await page.locator('[data-action="dispatch-open"]').click();
       const form=page.locator('#dialog #live-dispatch-form');
       await form.waitFor({state:'visible',timeout:12000});
       await form.locator('[data-action="dispatch-next"]').click();
-      if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vistoriador');
-      await form.locator('[name="workerId"]').selectOption({index:1});
+      if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vigia');
+      await form.locator('[name="workerId"]').selectOption('pages-vigia-demo-lucas');
       await form.locator('[data-action="dispatch-next"]').click();
-      await form.locator('[name="address"]').fill('Rua da Vistoria, 123, Divinópolis');
+      await page.waitForFunction(()=>document.querySelectorAll('#rp-dispatch-saved option').length>=2,null,{timeout:12000});
+      await form.locator('#rp-dispatch-saved').selectOption({index:1});
+      await page.waitForFunction(()=>document.querySelector('#rp-dispatch-address')?.value.includes('Praça do Santuário'));
+      await page.locator('#rp-dispatch-map').waitFor({state:'visible'});
+      await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-localizacao-ronda.png',animations:'disabled'});
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
       await form.locator('[data-action="dispatch-next"]').click();
-      if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Rua da Vistoria, 123, Divinópolis').count())
+      if((await form.locator('[data-dispatch-summary="worker"]').innerText()).trim()!=='Lucas Ferreira')throw Error('Revisão não mostrou Lucas Ferreira como vigia atribuído');
+      if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Praça do Santuário, Divinópolis, MG').count())
        throw Error('Revisão perdeu o rascunho');
       const inspector=await page.locator('#dialog').evaluate(el=>{const bounds=e=>{const r=e?.getBoundingClientRect();return r?{height:r.height,top:r.top,bottom:r.bottom}:null};return {classes:el.className,computed:{height:getComputedStyle(el).height,minHeight:getComputedStyle(el).minHeight,maxHeight:getComputedStyle(el).maxHeight,display:getComputedStyle(el).display},dialog:bounds(el),wizard:bounds(el.querySelector('.rp-dispatch-wizard')),form:bounds(el.querySelector('form')),stage:bounds(el.querySelector('[data-dispatch-stage="4"]')),scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}});console.log('DISPATCH_HEIGHT '+JSON.stringify(inspector));
       const geometry=await page.locator('#dialog').boundingBox();
@@ -82,9 +103,27 @@ try{
        throw Error('Voltar perdeu orientações');
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[type="submit"]').click();
-      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.address==='Rua da Vistoria, 123, Divinópolis'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='vistoria'),{timeout:12000});
+      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.workerId==='pages-vigia-demo-lucas'&&x.address==='Praça do Santuário, Divinópolis, MG'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='ronda'),{timeout:12000});
       if(await page.locator('#dialog').evaluate(x=>x.open))throw Error('Janela permaneceu aberta após envio confirmado');
-      console.log('OK: '+target.name+' / Despacho completo com 4 etapas, gravação e modal compacto');
+      console.log('OK: '+target.name+' / Solicitação de ronda em 4 etapas, gravação e modal compacto');
+      await page.locator('.side-link[data-view="configuracoes"]').evaluate(el=>el.click());
+      await page.locator('[data-action="admin-points-open"]').click();
+      const pointsModal=page.locator('#dialog.rp-admin-points-dialog');
+      await pointsModal.waitFor({state:'visible'});
+      await pointsModal.getByText('Ponto Centro (fictício)').waitFor({timeout:12000});
+      await pointsModal.locator('[data-action="admin-points-mode"][data-mode="create"]').click();
+      await pointsModal.locator('[name="name"]').fill('Ponto cadastrado de teste');
+      await pointsModal.locator('[name="address"]').fill('Rua Goiás, 503, Divinópolis, MG');
+      await pointsModal.locator('[data-action="admin-point-search"]').click();
+      await pointsModal.locator('[data-action="admin-point-select"]').first().waitFor({timeout:12000});
+      await pointsModal.locator('[data-action="admin-point-select"]').first().click();
+      await pointsModal.locator('[type="submit"]').click();
+      await pointsModal.getByText('Ponto cadastrado de teste').waitFor({timeout:12000});
+      const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:saved-points')||'[]'));
+      if(!stored.some(x=>x.name==='Ponto cadastrado de teste'&&x.lat===-20.14))throw Error('Endereço cadastrado sem coordenadas');
+      await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-pontos-cadastrados.png',animations:'disabled'});
+      await page.locator('#dialog .dialog-close').click();
+      await page.locator('.side-link[data-view="overview"]').evaluate(el=>el.click());
      }
      if(role==='vistoriador'){
      const map=page.locator('#demo-inspection-map'),bounds=await map.boundingBox();

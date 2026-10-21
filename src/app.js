@@ -1,6 +1,8 @@
 import {decorateTheme} from './theme-shell.js';
 import {createRoutePlanner} from './route-planner.js';
 import {createDispatchWizard} from './dispatch-wizard.js';
+import {createSettingsManager} from './settings-manager.js';
+import {createSavedPointsManager} from './saved-points-admin.js';
 import {routeCanStart} from './route-schedule.js';
 import {DEMO_THREE,seedDemoThree,routeRequest} from './route-demo-mode.js';
 import {liveRequest,liveSession,loginHtml} from './live-client.js';
@@ -95,13 +97,15 @@ const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
-let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null;
+let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null,selectedLiveRouteId='',realHistoryDays=30,realHistoryPage=0,selectedRealHistoryId='';
 const routePlanner=createRoutePlanner({
  getData:()=>({users:liveUsers,routes:liveRoutes,role:user?.role,demo:isPagesTestMode()}),
  api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
  afterSave:async reload=>{if(reload)await refreshLiveOperational();render();}
 });
 const dispatchWizard=createDispatchWizard({dialog:modal,showDialog,getWorkers:()=>liveUsers,request:liveRequest,refresh:refreshLiveOperational,redraw:render,notify});
+const adminSettings=createSettingsManager({dialog:modal,showDialog,api:liveRequest,getUsers:()=>liveUsers,refresh:refreshLiveUsers,render,notify});
+const savedPointsAdmin=createSavedPointsManager({dialog:modal,showDialog,api:liveRequest,notify});
 const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
 function persist(){
  saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
@@ -158,7 +162,7 @@ const ux06RoleTips={
 };
 function notifyRoleView(role){notify('Visão de demonstração: '+ux06RoleTips[role]);}
 function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
-function registerMap(id,route,sessionRef=null,position=null,compact=false,positionVerified=true){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true,standbyClean:id==='mobile-map',positionVerified}))}
+function registerMap(id,route,sessionRef=null,position=null,compact=false,positionVerified=true,trace=[]){const el=document.getElementById(id);if(!el||!route)return;const map=new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true,standbyClean:id==='mobile-map',positionVerified,trace});liveMaps.push(map);return map;}
 
 
 /** MAXVEL-06 · details in modal, fixed viewport and scroll only inside a bounded list. */
@@ -557,6 +561,16 @@ function attachMaps(){
     const history=sessionList().filter(x=>x.name===w.name).slice(0,5);
     history.forEach((item,index)=>registerMap('admin-route-mini-'+index,item.route,item,item.lastFix??item.route.base,true));
    }
+  if(document.getElementById('real-ops-map')){
+   const focus=realMapSelection();registerMap('real-ops-map',focus.route,null,focus.position||focus.route?.base,false,!!focus.position||isPagesTestMode(),focus.track);
+   const rounds=liveRoundRecords(),history=rounds.length?rounds:previewRoundRecords();
+   history.slice(0,4).forEach((r,i)=>{if(r.route)registerMap('real-history-map-'+i,r.route,null,r.track?.at(-1)||r.route.base,true,!!r.track?.length||!!r.simulation,r.track);});
+  }
+  if(document.getElementById('real-history-detail-map')){
+   const all=liveRoundRecords(),source=all.length?all:previewRoundRecords(),eligible=source.filter(r=>realHistoryDays===0||r.startedAt>=Date.now()-realHistoryDays*86400000);
+   const record=eligible.find(r=>r.id===selectedRealHistoryId)||eligible.slice(realHistoryPage*4)[0];
+   if(record?.route)registerMap('real-history-detail-map',record.route,null,record.track?.at(-1)||record.route.base,false,!!record.track?.length||!!record.simulation,record.track);
+  }
   if(document.getElementById('mobile-map')){const assigned=session?.route??assignedRoute();const mapped=assigned??{...DEMO_ROUTE,id:'sem-rota',name:'Mapa da unidade',points:[],legs:[]};registerMap('mobile-map',mapped,session,locationFix??mapped.base,true,!!(assigned||locationFix));}
   if(document.getElementById('demo-inspection-map')){
    const host=document.querySelector('#demo-inspection-map');
@@ -581,6 +595,41 @@ function attachMaps(){
    if(host&&focus)demoCoiRouteMap.mount(host,focus,{demo:true});
   }
  }
+}
+function liveRoundRecords(){
+ const groups=new Map();
+ for(const event of liveEvents){const id=event.round_id||event.roundId;if(!id)continue;
+  if(!groups.has(id))groups.set(id,{id,userId:event.user_id||event.userId,events:[]});
+  const group=groups.get(id);group.events.push(event);
+ }
+ return [...groups.values()].map(r=>{
+  r.events.sort((a,b)=>Number(a.occurred_at||0)-Number(b.occurred_at||0));
+  r.startedAt=r.events.find(e=>e.kind==='patrol_start')?.occurred_at||r.events[0]?.occurred_at||0;
+  r.lastAt=r.events.at(-1)?.occurred_at||0;r.completed=r.events.some(e=>e.kind==='patrol_end');
+  r.checkpoints=r.events.filter(e=>e.kind==='checkpoint').length;
+  r.alerts=r.events.filter(e=>['panic','incident','alert','route_deviation'].includes(e.kind)).length;
+  r.track=r.events.filter(e=>e.lat!=null&&e.lng!=null).map(e=>({lat:Number(e.lat),lng:Number(e.lng)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180);
+  r.worker=liveUsers.find(u=>u.id===r.userId)?.name||'Profissional';
+  r.route=runtimeRoute(liveRoutes.find(x=>x.userId===r.userId));
+  if(!r.route&&r.track.length){const first=r.track[0];r.route={id:r.id,name:'Trajeto GPS registrado',base:{...first,id:'base',name:'Início'},points:r.track.slice(1,26).map((p,i)=>({...p,id:'p'+i,name:'Posição '+(i+1),radius:25})),legs:[]};}
+  return r;
+ }).sort((a,b)=>b.lastAt-a.lastAt).slice(0,12);
+}
+function previewRoundRecords(){
+ if(!isPagesTestMode())return [];
+ return withExampleRondas([],Date.now()).map(s=>{
+  const timeline=(s.timeline||[]).map(item=>({kind:item.kind,occurred_at:item.at,description:item.label}));
+  const checkpoints=(s.checkpoints||[]).filter(p=>p.completedAt).map((p,i)=>({kind:'checkpoint',occurred_at:p.completedAt,description:'Ponto '+(i+1)+' concluído'}));
+  const incidents=(s.incidents||[]).map(p=>({kind:'incident',occurred_at:p.at,description:p.description}));
+  const events=[...timeline,...checkpoints,...incidents].sort((a,b)=>a.occurred_at-b.occurred_at);
+  return {id:s.id,worker:s.name,startedAt:s.startedAt,lastAt:s.finishedAt||s.startedAt,completed:s.status==='completed',
+   checkpoints:checkpoints.length,alerts:(s.notifications?.length||0)+(s.incidents?.length||0),route:s.route,track:[],events,simulation:true};
+ });
+}
+function realMapSelection(){
+ const planned=liveRoutes.find(r=>r.id===selectedLiveRouteId)||liveRoutes[0]||null;
+ const recorded=liveRoundRecords(),latest=planned?recorded.find(r=>r.userId===planned.userId):recorded[0];
+ return {planned,latest,route:runtimeRoute(planned)||latest?.route||(isPagesTestMode()?DEMO_ROUTE:null),position:latest?.track?.at(-1)||null,track:latest?.track||[]};
 }
 function entryScreen(){
  return `<div class="entry-screen product-home"><header class="entry-topnav topnav">${brand()}<nav class="nav-actions">${btn('Explorar '+ic('arrow'),'login','primary small')}${operationalLink}</nav></header><main id="main" class="entry-main"><section class="entry-panel"><div class="entry-eyebrow">${ic('shield')} CENTRAL OPERACIONAL</div><h1>Rondas sob controle.<span> Da operação à supervisão.</span></h1><p>Rotas, equipes, horários e ocorrências em uma plataforma. Conheça as funções no próprio aplicativo.</p><div class="entry-actions">${btn('Explorar demonstração '+ic('arrow'),'login','primary full')}<span>${ic('checkcircle')} Demonstração sem login · na operação real, cada usuário terá senha e painel próprio</span></div><div class="entry-details"><span>Mapa e pontos</span><span>Rondas programadas</span><span>Equipe e supervisão</span><span>GPS, offline e relatórios</span></div></section><aside class="entry-aside"><div class="entry-aside-head"><span class="ops-live-dot"></span> VISÃO OPERACIONAL</div><div class="entry-aside-mark">${ic('map')}</div><div class="entry-aside-stat"><small>Trabalho em campo</small><strong>Ronda · 4 pontos</strong><span>Raio de 25 m · Permanência de 30 s</span></div><div class="entry-aside-footer">Estrutura real da plataforma · registros locais na avaliação</div></aside></main><footer class="entry-footer">Grupo Maxvel <span>·</span> Rondas Pro ${btn('Privacidade','privacy','small')}</footer></div>`;
@@ -691,9 +740,9 @@ function myPatrolHistory(){
  '<section class="schedule-workspace"><div class="schedule-heading"><div><div class="eyebrow">HISTÓRICO INDIVIDUAL</div><h2>'+mine.length+' ronda(s) registradas</h2><p>Resumo primeiro; abra uma execução para ver todos os registros.</p></div></div>'+
  (mine.length?mine.slice(0,50).map(item).join(''):'<p>Nenhuma ronda registrada neste aparelho.</p>')+
  '<p class="map-caption">Dados deste dispositivo. Para mensagens da equipe e histórico central sincronizado, utilize seu acesso autenticado.</p>'+
- '<a class="button" href="./central.html">Ver histórico completo e respostas da equipe</a></section>';
+ (isPagesTestMode()?'<button type="button" class="button" data-action="demo-chat-overlay">Abrir mensagens da equipe</button>':'<a class="button" href="./central.html">Ver histórico completo e respostas da equipe</a>')+'</section>';
 }
-function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'meus-envios':return mySubmissions();case 'overview':return overview();case 'cliente':return demoClientView();case 'vistoriador':return demoInspectorView();case 'rondas':return rondas();case 'chat-interno':return demoChatView();case 'historico-operacional':return demoHistoryView();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
+function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'meus-envios':return mySubmissions();case 'overview':return overview();case 'cliente':return demoClientView();case 'vistoriador':return demoInspectorView();case 'rondas':return rondas();case 'chat-interno':return demoChatView();case 'historico-operacional':return user?.id?realHistoryView():demoHistoryView();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
 /** E7/E8: panes estáveis, sem recontar indicadores quando muda apenas a aba. */
 function dashboardV4(){
@@ -788,13 +837,48 @@ function demoCoiView(){
 function realOverview(){
  const admin=user.role==='admin',reviewer=['admin','coi','operador'].includes(user.role);
  const pending=liveAssignments.filter(d=>!d.completed_at),active=liveAssignments.filter(d=>d.started_at&&!d.completed_at);
- const incidents=liveEvents.filter(e=>['incident','panic','alert'].includes(e.kind));
- const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execucao',active.length],['Eventos',liveEvents.length]];
+ const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execução',active.length],['Eventos',liveEvents.length]];
  const metrics='<div class="ops-metrics">'+rows.map(([label,n])=>'<article class="ops-metric"><strong>'+n+'</strong><h3>'+esc(label)+'</h3></article>').join('')+'</div>';
- const recent=liveEvents.slice(0,30).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
- const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Despacho de vistoria"><div><small>OPERAÇÃO DE CAMPO</small><strong>Despachar vistoria</strong><span>Profissional · destino · instruções</span></div><button type="button" data-action="dispatch-open">Nova vistoria '+ic('arrow')+'</button></section>':'';
- return pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+dispatch+metrics+
- '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento recebido.</p>')+'</div></section>';
+ const recent=liveEvents.slice(0,12).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
+ const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Solicitação de ronda"><div><small>OPERAÇÃO DE CAMPO</small><strong>Solicitar início da ronda</strong><span>Vigia · destino · instruções</span></div><button type="button" data-action="dispatch-open">Solicitar ronda '+ic('arrow')+'</button></section>':'';
+ const focus=realMapSelection();
+ const rounds=liveRoundRecords(),history=rounds.length?rounds:previewRoundRecords();
+ const options=liveRoutes.map(r=>'<option value="'+esc(r.id)+'" '+(focus.planned?.id===r.id?'selected':'')+'>'+esc(r.name)+'</option>').join('');
+ const mapPanel='<section class="rp-operational-geo" aria-label="Mapa operacional">'+
+  '<header><div><small>MONITORAMENTO GEOGRÁFICO</small><h2>Mapa das rondas</h2><p>'+(focus.latest?esc(focus.latest.worker)+' · '+fmt(focus.latest.lastAt):isPagesTestMode()?'Cenário fictício para avaliação':'Aguardando ronda cadastrada')+'</p></div>'+
+  '<button type="button" data-action="center-maps" aria-label="Enquadrar o mapa">'+ic('crosshair')+'</button></header>'+
+  (liveRoutes.length?'<label>Rota acompanhada<select id="rp-live-route-select">'+options+'</select></label>':'')+
+  (focus.route?'<div id="real-ops-map" class="rp-real-monitor-map map-container large" role="region" aria-label="Pontos e percurso da ronda"></div>':'<div class="rp-geo-empty">Cadastre uma rota com endereços para exibir o mapa.</div>')+
+  '<footer><span>'+(focus.position?'Último GPS registrado':isPagesTestMode()?'Mapa e posições ilustrativos':'GPS ainda não recebido')+'</span><span>'+Number(focus.route?.points?.length||0)+' pontos</span></footer></section>';
+ const historic='<section class="rp-geo-history"><header><div><h2>Últimas rondas</h2><button type="button" data-view="historico-operacional">Ver histórico completo ↗</button></div><small>'+history.length+' registro(s)'+(!rounds.length&&isPagesTestMode()?' · cenário fictício':'')+'</small></header>'+
+  (history.length?history.slice(0,4).map((r,i)=>'<article class="rp-geo-history-item"><div class="rp-geo-history-copy"><strong>'+esc(r.worker)+'</strong><small>'+fmt(r.startedAt)+' · '+(r.completed?'Concluída':'Em andamento')+'</small><span>'+r.checkpoints+' ponto(s) · '+r.alerts+' evento(s)</span></div>'+
+   (r.route?'<div id="real-history-map-'+i+'" class="rp-real-history-map map-container" role="region" aria-label="Mapa histórico da ronda de '+esc(r.worker)+'"></div>':'<p>Sem coordenadas registradas.</p>')+
+   '<details><summary>Eventos e histórico</summary><div class="rp-geo-event-list">'+
+   ((r.events||[]).slice(-7).reverse().map(e=>'<p><b>'+esc(e.kind)+'</b> · '+fmt(e.occurred_at)+' · '+esc(e.description||'Registro')+'</p>').join('')||'<p>Cenário de demonstração, sem telemetria real.</p>')+
+   '</div></details></article>').join(''):'<p class="rp-geo-empty">Nenhuma ronda registrada neste ambiente.</p>')+'</section>';
+ return pageTitle(admin?'Administração':'COI · Central operacional','Rondas, equipe e eventos com visualização geográfica.')+dispatch+mapPanel+metrics+historic+
+  '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento real recebido até agora.</p>')+'</div></section>';
+}
+function realHistoryView(){
+ const now=Date.now(),all=liveRoundRecords(),source=all.length?all:previewRoundRecords();
+ const records=source.filter(r=>realHistoryDays===0||r.startedAt>=now-realHistoryDays*86400000);
+ const perPage=4,total=Math.max(1,Math.ceil(records.length/perPage));
+ realHistoryPage=Math.min(realHistoryPage,total-1);
+ const pageRows=records.slice(realHistoryPage*perPage,(realHistoryPage+1)*perPage);
+ const selected=records.find(r=>r.id===selectedRealHistoryId)||pageRows[0]||null;
+ const picker='<label class="rp-history-period">Período<select id="rp-real-history-period">'+
+  [[7,'Últimos 7 dias'],[30,'Últimos 30 dias'],[0,'Todos os registros disponíveis']].map(([days,label])=>'<option value="'+days+'" '+(realHistoryDays===days?'selected':'')+'>'+label+'</option>').join('')+'</select></label>';
+ const list=pageRows.map(r=>'<button type="button" data-action="real-history-select" data-id="'+esc(r.id)+'" class="rp-real-history-entry '+(selected?.id===r.id?'selected':'')+'">'+
+  '<strong>'+esc(r.worker)+'</strong><span>'+fmt(r.startedAt)+' · '+(r.completed?'Concluída':'Em execução')+'</span><small>'+r.checkpoints+' pontos · '+r.alerts+' eventos</small></button>').join('')||'<p>Nenhuma ronda registrada no período.</p>';
+ const controls='<div class="rp-history-page-actions"><button type="button" data-action="real-history-prev" '+(realHistoryPage===0?'disabled':'')+'>Anterior</button><span>Página '+(realHistoryPage+1)+' de '+total+'</span><button type="button" data-action="real-history-next" '+(realHistoryPage>=total-1?'disabled':'')+'>Próximo</button></div>';
+ const record=selected?'<section class="rp-real-history-detail"><header><div><small>RONDA SELECIONADA</small><h2>'+esc(selected.worker)+'</h2><p>'+fmt(selected.startedAt)+' · '+(selected.completed?'Concluída':'Em execução')+'</p></div></header>'+
+  (selected.route?'<div class="map-container large rp-real-history-detail-map" id="real-history-detail-map" role="region" aria-label="Mapa do percurso registrado"></div>':'<p>Sem coordenadas confiáveis para desenhar o percurso.</p>')+
+  '<div class="rp-real-history-stats"><span>'+selected.checkpoints+' pontos visitados</span><span>'+selected.alerts+' eventos</span><span>'+selected.track.length+' posições GPS</span></div>'+
+  '<div class="rp-real-history-timeline"><h3>Linha do tempo</h3>'+((selected.events||[]).length?
+  selected.events.slice(-15).reverse().map(e=>'<div><strong>'+esc(e.kind||'Registro')+'</strong><small>'+fmt(e.occurred_at)+'</small><p>'+esc(e.description||'Sem observação')+'</p></div>').join('') :
+  '<p>Atividade demonstrativa, sem telemetria real.</p>')+'</div></section>':'';
+ return pageTitle('Histórico de rondas','Consulte datas, pontos, eventos e mapas por execução.')+
+  '<div class="rp-real-history-workspace">'+picker+'<section class="rp-real-history-list">'+list+controls+'</section>'+record+'</div>';
 }
 function realRondas(){
  if(!['admin','coi','operador'].includes(user?.role))return pageTitle('Rotas','Área do COI e da Administração.');
@@ -1058,8 +1142,8 @@ function reports(){
  return `<div class="report-page">${pageTitle('Relatório operacional','Registros e indicadores gerados exclusivamente a partir dos dados deste ambiente.',btn(ic('print')+' Imprimir / PDF','print',''))}<div class="report-context-bar"><span>${ic('clock')} ${esc(range)}</span>${tag('Dados locais, sem servidor','neutral')}</div>${kpiCards()}<div class="report-insights-grid"><section class="card report-breakdown"><div class="eyebrow">ANÁLISE DOS REGISTROS</div><h2>Visão da execução</h2><p>Percentuais calculados sobre as rondas e eventos registrados neste navegador.</p><div class="report-progress-list">${ratios.map(item=>{const pct=item.total?Math.round(item.n/item.total*100):0;return `<div class="report-progress-row"><div class="report-progress-label"><strong>${item.label}</strong><span>${item.n} de ${item.total} <b>${pct}%</b></span></div><div class="report-progress-track" role="progressbar" aria-label="${item.label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i class="${item.color}" style="width:${pct}%"></i></div></div>`}).join('')}</div><div class="report-safety-note">${ic('shield')} <span>Indicadores de demonstração. Sem homologação do GPS ou sincronização com equipe real.</span></div></section><section class="card report-events"><div class="card-title"><div><div class="eyebrow">ATIVIDADE DOCUMENTADA</div><h2>Eventos recentes</h2></div>${tag(`${notices.length} avisos`,'neutral')}</div><div class="report-events-list">${notices.slice(0,5).map(notificationRow).join('')||`<div class="reports-empty">${ic('clipboard')}<strong>Nenhum evento registrado</strong><p>Desvios e ocorrências aparecerão aqui com horário e contexto.</p></div>`}</div></section></div><section class="card report-roster"><div class="card-title"><div><div class="eyebrow">HISTÓRICO</div><h2>Rondas registradas</h2></div>${tag(`${all.length} rondas`,'neutral')}</div>${tablePatrols(all)}</section><div class="report-note">${ic('help')} <span>Use “Imprimir / PDF” para salvar uma cópia local. O navegador realiza a impressão; nenhum documento é enviado automaticamente.</span></div></div>`;
 }
 function settings(){
- if(user?.role!=='admin')return pageTitle('Sem permissão','Regras disponíveis somente para Gerência e Administração.');
- return pageTitle('Configurações','Cadastro de profissionais autorizado apenas à Administração.')+'<section class="schedule-workspace"><h2>Cadastro de profissionais</h2><form id="live-create-user-form" class="live-register"><label>Perfil<select name="role"><option value="coi">COI</option><option value="ronda">Vigia / Ronda</option><option value="vistoriador">Vistoriador</option></select></label><label>Nome<input name="name" required minlength="2"></label><label>E-mail<input type="email" name="email" required></label><label>Telefone<input type="tel" name="phone" required></label><label>Usuário (opcional; pode usar e-mail)<input name="username" minlength="3" maxlength="40"></label><label>Senha<input type="password" name="password" required minlength="12" autocomplete="new-password"></label><button type="submit" class="button primary">Cadastrar</button></form><div class="team-list" style="margin-top:16px">'+liveUsers.map(p=>'<div class="team-row"><strong>'+esc(p.name)+'</strong><span>'+esc(p.username||p.email)+' · '+esc(roleName[p.role]||p.role)+'</span></div>').join('')+'</div></section>';
+ if(user?.role!=='admin')return pageTitle('Sem permissão','Configurações restritas à Administração.');
+ return pageTitle('Configurações','Cadastre a equipe e defina os acessos operacionais.')+adminSettings.landing();
 }
 function legacySettings(){
  const options=[
@@ -1431,6 +1515,12 @@ window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status=
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.dataset.action?.startsWith('rp-plan-')){await routePlanner.click(el);return;}if(el.tagName==='A')event.preventDefault();
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(act==='real-history-select'){selectedRealHistoryId=el.dataset.id;render();return;}
+ if(act==='real-history-prev'){realHistoryPage=Math.max(0,realHistoryPage-1);selectedRealHistoryId='';render();return;}
+ if(act==='real-history-next'){realHistoryPage++;selectedRealHistoryId='';render();return;}
+ if(await adminSettings.click(el))return;
+ if(await savedPointsAdmin.click(el))return;
+ if(await dispatchWizard.click(el))return;
  if(act==='dispatch-open'){if(['admin','coi','operador'].includes(user?.role))dispatchWizard.open();return;}
  if(act==='dispatch-next'){dispatchWizard.step(Number(modal.querySelector('#live-dispatch-form')?.dataset.step||1)+1);return;}
  if(act==='dispatch-back'){dispatchWizard.step(Number(modal.querySelector('#live-dispatch-form')?.dataset.step||1)-1);return;}
@@ -1845,9 +1935,16 @@ document.addEventListener('change',e=>{
  }
 });
 document.addEventListener('input',e=>{routePlanner.input(e.target)});
+document.addEventListener('change',e=>{adminSettings.change(e.target);if(e.target.id==='rp-dispatch-saved')dispatchWizard.click(e.target);});
+document.addEventListener('change',e=>{if(e.target.id==='rp-live-route-select'){selectedLiveRouteId=e.target.value;render();}});
+document.addEventListener('change',e=>{if(e.target.id==='rp-real-history-period'){realHistoryDays=Number(e.target.value);realHistoryPage=0;selectedRealHistoryId='';render();}});
+document.addEventListener('input',e=>{savedPointsAdmin.changed(e.target)});
+document.addEventListener('input',e=>{dispatchWizard.changed(e.target)});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
 document.addEventListener('submit',async e=>{
+ if(['live-create-user-form','role-permissions-form'].includes(e.target.id)){e.preventDefault();await adminSettings.submit(e.target);return;}
+ if(e.target.id==='rp-saved-point-form'){e.preventDefault();await savedPointsAdmin.submit(e.target);return;}
   if(e.target.id==='rp-plan-form'){e.preventDefault();await routePlanner.submit(e.target);return;}
  if(e.target.id==='live-login-form'){
   e.preventDefault();const f=new FormData(e.target);e.target.querySelector('button').disabled=true;
@@ -2010,7 +2107,7 @@ const ops=createOperationsUpgrade({
  get:()=>({user,view,session,sessions,programs,operationalSettings,mode,locationFix,
   selectedRoute:session?.route??routeForWatcher(selectedWatcherId)}),
  render,save,persist,notify,showDialog,incidentDialog,alertDialog,
- openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('./central.html#chat');return;}openDemoChatOverlay(true);},
+ openChat:()=>{openDemoChatOverlay(true);},
  closeDialog:()=>modal.close(),
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });

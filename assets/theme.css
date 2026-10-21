@@ -2054,7 +2054,10 @@
 .rp-theme .dashboard .rp-plan-summary>div{min-width:0;display:grid;gap:4px}
 .rp-theme .dashboard .rp-plan-summary small{font-size:11px;color:#b4cada!important}
 .rp-theme .dashboard .rp-plan-summary strong{font-size:12px;overflow-wrap:anywhere}
-.rp-theme .dashboard .rp-plan-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;grid-column:1/-1}
+.rp-theme .dashboard .rp-plan-actions{display:grid;gap:6px;grid-column:1/-1}
+.rp-theme .dashboard .rp-plan-action-context{display:none}
+.rp-theme .dashboard .rp-plan-action-buttons{display:flex;align-items:center;justify-content:flex-end;gap:9px}
+.rp-theme .dashboard .rp-plan-next-mobile{display:none}
 .rp-theme .dashboard .rp-plan-actions button{min-height:45px!important;padding:11px 18px!important;border-radius:8px!important;font-weight:700;font-size:13px;cursor:pointer}
 .rp-theme .dashboard .rp-plan-secondary{border:1px solid #637888!important;background:#1d2a34!important;color:#ecf5f8!important}
 .rp-theme .dashboard .rp-plan-next,.rp-theme .dashboard .rp-plan-save{background:#176f9e!important;border:1px solid #3bb6ec!important;color:#fff!important}
@@ -2076,7 +2079,7 @@
 .rp-theme .dashboard .rp-demo-banner-global{padding:7px 18px;font-size:12px;color:#e9edf4;background:#263542;border-bottom:1px solid #ed1748;line-height:1.35}
 .rp-theme .dashboard .rp-demo-banner-global b{color:#ff7790}
 @media(max-width:760px){
- .rp-theme .dashboard .rp-plan{padding-bottom:56px}
+ .rp-theme .dashboard .rp-plan{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
  .rp-theme .dashboard .rp-plan-heading{padding-bottom:12px}
  .rp-theme .dashboard .rp-plan-heading h1{font-size:24px!important}
  .rp-theme .dashboard .rp-plan-heading p{font-size:12px!important;line-height:1.4}
@@ -2102,9 +2105,22 @@
  .rp-theme .dashboard .rp-plan-summary{grid-template-columns:1fr;gap:9px}
  .rp-theme .dashboard .rp-plan-saved{display:none}
  .rp-theme .dashboard .rp-plan[data-step="1"] [data-part="2"],.rp-theme .dashboard .rp-plan[data-step="1"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="2"]{display:none!important}
- .rp-theme .dashboard .rp-plan-actions{position:sticky;bottom:9px;z-index:550;display:flex;gap:8px;background:#1b2b35f4;padding:9px;border:1px solid #395062;border-radius:9px}
- .rp-theme .dashboard .rp-plan-actions button{padding:9px!important;min-height:42px!important;font-size:12px}
- .rp-theme .dashboard .rp-plan-actions :is(.rp-plan-next,.rp-plan-save){flex:1}
+ .rp-theme .dashboard .rp-plan-actions{
+  position:sticky;bottom:calc(5px + env(safe-area-inset-bottom,0px));
+  z-index:30;display:grid;gap:4px;
+  background:#1d232aef;padding:6px 8px;
+  border:1px solid #5b444b;border-top:2px solid #ba384d;border-radius:9px;
+  box-shadow:0 8px 22px #0007;backdrop-filter:blur(12px)
+ }
+ .rp-theme .dashboard .rp-plan-action-context{display:block;color:#f3b9c3;font-size:9px;line-height:1.1;text-align:right;font-weight:700;letter-spacing:.04em}
+ .rp-theme .dashboard .rp-plan-action-buttons{display:flex;align-items:center;gap:7px;width:100%}
+ .rp-theme .dashboard .rp-plan-next-desktop{display:none}
+ .rp-theme .dashboard .rp-plan-next-mobile{display:inline}
+ .rp-theme .dashboard .rp-plan-secondary{flex:0 0 72px}
+ .rp-theme .dashboard .rp-plan-layout{padding-bottom:16px}
+ .rp-theme .dashboard .rp-plan-map-panel{scroll-margin-bottom:92px}
+ .rp-theme .dashboard .rp-plan-actions button{padding:6px 10px!important;min-height:36px!important;height:36px!important;font-size:11px!important;line-height:1.15!important}
+ .rp-theme .dashboard .rp-plan-actions :is(.rp-plan-next,.rp-plan-save){flex:1 1 auto;min-width:0}
  .rp-theme .dashboard .rp-plan-actions .rp-plan-save[data-mobile-final="hidden"]{display:none!important}
  .rp-theme .dashboard .rp-plan-demo{font-size:11px;padding:8px 10px}
  .rp-theme .dashboard .rp-demo-banner-global{padding:7px 12px;font-size:11px}
@@ -2264,5 +2280,191 @@
   .rp-theme #dialog .rp-dispatch-stage{min-height:0}
   .rp-theme #dialog .rp-dispatch-steps{padding:7px 0}
   .rp-theme #dialog.rp-dispatch-dialog[open]{max-height:calc(100dvh - 14px)!important}
+ }
+}
+
+
+/* Administração: somente duas entradas, conteúdo por etapa e tipografia consistente. */
+@layer rp-layout {
+ .rp-theme .dashboard .rp-config-hub{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin:12px 0 22px}
+ .rp-theme .dashboard .rp-config-choice{display:flex;align-items:center;text-align:left;gap:12px;min-height:94px!important;padding:14px!important;background:#23262c!important;color:#fff!important;border:1px solid #5d555b!important;border-left:3px solid #df4b60!important;border-radius:10px!important;cursor:pointer}
+ .rp-theme .dashboard .rp-config-choice>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:6px;min-width:0}
+ .rp-theme .dashboard .rp-config-choice strong{font-size:16px;color:#fff}
+ .rp-theme .dashboard .rp-config-choice small{font-size:12px;line-height:1.45;color:#c4c5cb}
+ .rp-theme .dashboard .rp-config-symbol{width:37px;height:37px;display:grid;place-items:center;background:#3c2730;color:#ff9dad;border-radius:9px;font-size:21px}
+ .rp-theme .dashboard .rp-config-roster{padding:12px 2px;min-width:0}
+ .rp-theme .dashboard .rp-config-roster>h2{font-size:19px!important}
+ .rp-theme #dialog.rp-admin-user-dialog[open],.rp-theme #dialog.rp-admin-permissions-dialog[open]{
+  display:block!important;position:fixed!important;inset:0!important;margin:auto!important;
+  box-sizing:border-box!important;width:min(460px,calc(100vw - 22px))!important;max-width:min(460px,calc(100vw - 22px))!important;
+  height:max-content!important;min-height:0!important;max-height:calc(100dvh - 20px)!important;overflow-y:auto!important;
+  padding:18px!important;background:#202127!important;color:#f6f6f8!important;
+  border:1px solid #60565c!important;border-top:3px solid #e3475f!important;border-radius:14px!important;
+  box-shadow:0 18px 75px #000b!important;
+ }
+ .rp-theme #dialog .rp-admin-wizard{display:flex;flex-direction:column;gap:10px;min-width:0}
+ .rp-theme #dialog .rp-admin-wizard>header{padding-right:35px}
+ .rp-theme #dialog .rp-admin-wizard>header small{display:block;font-size:10px;font-weight:780;letter-spacing:.12em;color:#ff8697}
+ .rp-theme #dialog .rp-admin-wizard h2{font-size:22px!important;color:#fff!important;margin:7px 0 4px!important}
+ .rp-theme #dialog .rp-admin-wizard header p{font-size:12px!important;color:#bcc1c8!important;margin:0!important}
+ .rp-theme #dialog .rp-admin-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:7px 0 4px}
+ .rp-theme #dialog .rp-admin-progress>span{display:grid;gap:4px;color:#a9abb0;font-size:10px}
+ .rp-theme #dialog .rp-admin-progress b{display:grid;place-items:center;width:30px;height:30px;background:#272930;border:1px solid #64616a;border-radius:8px;color:#dfe0e4;font-size:12px}
+ .rp-theme #dialog .rp-admin-progress [aria-current=step] b{background:#9d283d;border-color:#f16377;color:#fff}
+ .rp-theme #dialog .rp-admin-form{display:grid!important;gap:0!important;margin:0!important;padding:0!important;background:none!important}
+ .rp-theme #dialog .rp-admin-form [data-user-stage]{display:grid;align-content:start;gap:10px;min-height:213px}
+ .rp-theme #dialog .rp-admin-form [data-user-stage][hidden],
+ .rp-theme #dialog .rp-admin-form [data-vehicle-field][hidden],
+ .rp-theme #dialog .rp-admin-form footer [hidden],
+ .rp-theme #dialog .rp-admin-feedback[hidden]{display:none!important}
+ .rp-theme #dialog .rp-admin-wizard h3{font-size:17px!important;line-height:1.3!important;margin:7px 0 3px!important;color:#fff}
+ .rp-theme #dialog .rp-admin-form label{display:grid;gap:5px;color:#e6e6ea;font-size:12px;font-weight:680;margin:0!important}
+ .rp-theme #dialog .rp-admin-form :is(input,select,textarea){box-sizing:border-box;min-height:42px!important;width:100%;max-width:100%;padding:9px 11px!important;
+   font-size:16px!important;background:#151820!important;color:#fff!important;border:1px solid #706974!important;border-radius:7px!important;box-shadow:none!important}
+ .rp-theme #dialog .rp-admin-form label small{color:#b9bac3;font-weight:400}
+ .rp-theme #dialog .rp-admin-form footer,.rp-theme #dialog .rp-permission-options+footer,
+ .rp-theme #dialog #role-permissions-form footer{display:flex;justify-content:flex-end;gap:9px;padding-top:10px;margin-top:4px;border-top:1px solid #4c454c}
+ .rp-theme #dialog .rp-admin-wizard footer button{min-height:42px!important;border:1px solid #8a6971!important;border-radius:8px!important;padding:9px 14px!important;background:#2e2a32!important;color:#fff!important;font-size:13px;font-weight:720}
+ .rp-theme #dialog .rp-admin-wizard footer button:last-child:not([hidden]){background:#a82d44!important;border-color:#db5369!important}
+ .rp-theme #dialog .rp-admin-summary{display:grid;gap:0;margin:0}
+ .rp-theme #dialog .rp-admin-summary>div{display:grid;grid-template-columns:85px minmax(0,1fr);padding:8px 0;border-bottom:1px solid #45414a;gap:8px}
+ .rp-theme #dialog .rp-admin-summary dt{font-size:11px;color:#bdc1c8}.rp-theme #dialog .rp-admin-summary dd{margin:0;font-size:12px;overflow-wrap:anywhere;color:#fff}
+ .rp-theme #dialog .rp-permission-roles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+ .rp-theme #dialog .rp-permission-roles button{font-size:12px;padding:11px 7px;min-height:42px;background:#282b32;color:#fff;border:1px solid #625961;border-radius:7px}
+ .rp-theme #dialog .rp-permission-roles button[aria-selected=true]{border-color:#f05d70;background:#492935}
+ .rp-theme #dialog .rp-permission-options{display:grid;gap:7px;margin:12px 0}
+ .rp-theme #dialog .rp-permission-option{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:45px;padding:9px 11px;border:1px solid #585058;border-radius:7px;color:#f2f0f3;font-size:12px}
+ .rp-theme #dialog .rp-permission-option input{width:20px;height:20px;flex:none;accent-color:#d23c56}
+ .rp-theme #dialog .rp-permission-note{font-size:11px;color:#c3c0c8}
+ .rp-theme #dialog .rp-admin-feedback{padding:8px 11px;background:#522935;border-left:3px solid #f67b90;font-size:12px;color:#fff;margin:7px 0}
+ @media(max-width:430px){
+  .rp-theme .dashboard .rp-config-hub{grid-template-columns:minmax(0,1fr)}
+  .rp-theme .dashboard .rp-config-choice{min-height:78px!important;padding:12px!important}
+  .rp-theme #dialog.rp-admin-user-dialog[open],.rp-theme #dialog.rp-admin-permissions-dialog[open]{padding:15px 12px!important}
+  .rp-theme #dialog .rp-admin-progress small{font-size:9px!important}
+  .rp-theme #dialog .rp-admin-form [data-user-stage]{min-height:192px}
+ }
+ @media(max-height:620px){
+  .rp-theme #dialog .rp-admin-form [data-user-stage]{min-height:0}
+  .rp-theme #dialog .rp-admin-wizard>header p{display:none}
+ }
+}
+
+
+/* MAXVEL | Cadastro geográfico e supervisão de rondas: elementos próprios, sem substituir legado. */
+@layer rp-layout {
+ .rp-theme #dialog .rp-geocode-results{display:grid;gap:5px;max-height:116px;overflow-y:auto;overscroll-behavior:contain}
+ .rp-theme #dialog .rp-geocode-results:empty{display:none}
+ .rp-theme #dialog .rp-geocode-results button{display:block;width:100%;min-height:35px;padding:7px 10px!important;text-align:left;color:#f2f3f5!important;
+  background:#252931!important;border:1px solid #5d555a!important;border-radius:7px!important;font-size:11px!important;line-height:1.4}
+ .rp-theme #dialog #rp-dispatch-map,.rp-theme #dialog #rp-saved-point-map{height:215px;min-height:215px;position:relative;
+  background:#1c2730!important;border:1px solid #605b62;border-radius:8px;overflow:hidden;isolation:isolate}
+ .rp-theme #dialog #rp-dispatch-map .leaflet-container,.rp-theme #dialog #rp-saved-point-map .leaflet-container{width:100%;height:100%}
+ .rp-theme #dialog #rp-dispatch-map .leaflet-pane,.rp-theme #dialog #rp-saved-point-map .leaflet-pane{z-index:1}
+ .rp-theme #dialog #rp-dispatch-map .leaflet-control,.rp-theme #dialog #rp-saved-point-map .leaflet-control{z-index:5}
+ .rp-theme #dialog #rp-dispatch-map-status,.rp-theme #dialog .rp-point-status{font-size:11px!important;line-height:1.4!important;color:#e1d6dc!important}
+ .rp-theme #dialog [data-action=dispatch-geocode],.rp-theme #dialog [data-action=admin-point-search]{min-height:40px!important;
+  border:1px solid #cf5365!important;color:#fff!important;background:#842d41!important;border-radius:7px!important;padding:8px 12px!important;
+  font-size:12px!important;font-weight:720}
+ .rp-theme .dashboard .rp-operational-geo,.rp-theme .dashboard .rp-geo-history{
+  min-width:0;box-sizing:border-box;display:grid;gap:10px;margin:15px 0;padding:14px;
+  border:1px solid #5c5156;border-top:2px solid #e44c62;border-radius:12px;
+  background:linear-gradient(150deg,#252831,#1b232b);color:#f7f7fa}
+ .rp-theme .dashboard .rp-operational-geo>header{display:flex;align-items:center;justify-content:space-between;gap:9px}
+ .rp-theme .dashboard .rp-operational-geo>header small{font-size:10px;letter-spacing:.1em;font-weight:790;color:#f28c9c}
+ .rp-theme .dashboard .rp-operational-geo>header h2,.rp-theme .dashboard .rp-geo-history>header h2{font-size:21px!important;letter-spacing:-.02em;margin:4px 0!important;color:#fff}
+ .rp-theme .dashboard .rp-operational-geo>header p{font-size:12px;color:#c6c8cf;margin:0}
+ .rp-theme .dashboard .rp-operational-geo>header button{display:grid;place-items:center;width:39px;height:39px;min-width:39px;min-height:39px;
+  background:#33282e!important;border:1px solid #a54859!important;color:#fdfdfd!important;border-radius:8px}
+ .rp-theme .dashboard .rp-operational-geo label{display:grid;gap:5px;font-size:12px;color:#c4cbd2}
+ .rp-theme .dashboard .rp-operational-geo select{min-height:41px;padding:8px 11px;font-size:14px;background:#19232b;color:#fff;border:1px solid #73666c;border-radius:7px}
+ .rp-theme .dashboard .rp-real-monitor-map{height:clamp(240px,48vh,415px)!important;min-height:240px!important;position:relative;width:100%;border-radius:9px;overflow:hidden;border:1px solid #454f5a}
+ .rp-theme .dashboard .rp-real-history-map{height:170px!important;min-height:170px!important;position:relative;width:100%;border:1px solid #48434b;border-radius:8px;overflow:hidden}
+ .rp-theme .dashboard .rp-operational-geo>footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;color:#d1d0d5}
+ .rp-theme .dashboard .rp-geo-history>header{display:flex;justify-content:space-between;gap:12px;align-items:center}
+ .rp-theme .dashboard .rp-geo-history>header small{font-size:11px;color:#e0b3be}
+ .rp-theme .dashboard .rp-geo-history{display:block}
+ .rp-theme .dashboard .rp-geo-history-item{display:grid;gap:9px;min-width:0;box-sizing:border-box;padding:12px;
+  border:1px solid #5b525b;border-radius:9px;background:#222731;scroll-snap-align:start}
+ .rp-theme .dashboard .rp-geo-history-copy{display:grid;gap:3px}
+ .rp-theme .dashboard .rp-geo-history-copy strong{font-size:15px;color:#fff}
+ .rp-theme .dashboard .rp-geo-history-copy small,.rp-theme .dashboard .rp-geo-history-copy span{font-size:11px;color:#c6ccd2}
+ .rp-theme .dashboard .rp-geo-history-item details{font-size:11px;color:#f1edf0}
+ .rp-theme .dashboard .rp-geo-history-item summary{padding:7px 0;cursor:pointer;font-weight:700;color:#fff}
+ .rp-theme .dashboard .rp-geo-event-list{max-height:155px;overflow-y:auto}
+ .rp-theme .dashboard .rp-geo-event-list p{margin:5px 0;font-size:11px;color:#caced5}
+ .rp-theme .dashboard .rp-geo-history>article{margin:10px 0}
+ .rp-theme .dashboard .rp-geo-empty{padding:25px 14px;text-align:center;color:#d0c9cf;font-size:13px}
+ .rp-theme #dialog.rp-admin-points-dialog[open]{display:block!important;position:fixed!important;inset:0!important;margin:auto!important;
+  box-sizing:border-box!important;width:min(475px,calc(100vw - 24px))!important;height:max-content!important;
+  max-height:calc(100dvh - 20px)!important;max-width:calc(100vw - 24px)!important;overflow-y:auto!important;
+  padding:15px!important;background:#1c2027!important;color:#fff!important;border:1px solid #63515a!important;
+  border-top:3px solid #dc5066!important;border-radius:12px!important;box-shadow:0 22px 70px #000b!important}
+ .rp-theme #dialog .rp-points-panel{display:grid;gap:10px}
+ .rp-theme #dialog .rp-points-panel>header{padding-right:36px}
+ .rp-theme #dialog .rp-points-panel>header h2{font-size:22px!important;color:#fff!important;margin:4px 0!important}
+ .rp-theme #dialog .rp-points-panel>header p{font-size:12px!important;color:#cdd0d4!important;margin:0!important}
+ .rp-theme #dialog .rp-points-modes{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+ .rp-theme #dialog .rp-points-modes button{min-height:41px;padding:8px!important;border:1px solid #5f555d!important;border-radius:7px!important;color:#fff!important;background:#2a2930!important;font-size:12px!important}
+ .rp-theme #dialog .rp-points-modes [aria-pressed=true]{border-color:#f47689!important;background:#542c39!important}
+ .rp-theme #dialog .rp-points-stage[hidden]{display:none!important}
+ .rp-theme #dialog .rp-points-list{display:grid;gap:7px;max-height:285px;overflow-y:auto}
+ .rp-theme #dialog .rp-point-row{display:flex;align-items:center;gap:8px;justify-content:space-between;border:1px solid #565057;border-radius:8px;padding:10px}
+ .rp-theme #dialog .rp-point-row>span{display:grid;gap:4px;min-width:0}
+ .rp-theme #dialog .rp-point-row strong{font-size:12px;color:#fff}
+ .rp-theme #dialog .rp-point-row small{font-size:11px;color:#c1c4cc}
+ .rp-theme #dialog .rp-point-row button{padding:6px!important;min-height:36px;background:#422933!important;color:#fff!important;border:1px solid #ae5266!important;border-radius:7px}
+ .rp-theme #dialog #rp-saved-point-form{display:grid!important;gap:10px!important;padding:0!important;background:transparent!important}
+ .rp-theme #dialog #rp-saved-point-form label{display:grid;gap:5px;font-size:12px;color:#f2f0f2}
+ .rp-theme #dialog #rp-saved-point-form input{width:100%;min-height:42px;font-size:16px;padding:8px 10px!important;
+  background:#161e25!important;color:#fff!important;border:1px solid #6e626b!important;border-radius:7px!important}
+ .rp-theme #dialog #rp-saved-point-form .rp-save-point{min-height:43px;padding:10px!important;color:#fff!important;background:#a62f46!important;border:1px solid #e06c7b!important;border-radius:7px}
+ .rp-theme #dialog #rp-saved-point-form button:disabled{opacity:.5}
+ @media(max-width:760px){
+  .rp-theme .dashboard .rp-real-monitor-map{height:clamp(265px,42vh,355px)!important}
+  .rp-theme .dashboard .rp-geo-history{padding:12px}
+  .rp-theme .dashboard .rp-geo-history-item{width:100%}
+  .rp-theme .dashboard .rp-operational-geo{margin:12px 0;padding:11px}
+  .rp-theme #dialog #rp-dispatch-map,.rp-theme #dialog #rp-saved-point-map{height:190px;min-height:190px}
+ }
+ @media(max-height:650px){
+  .rp-theme #dialog #rp-dispatch-map,.rp-theme #dialog #rp-saved-point-map{height:145px;min-height:145px}
+ }
+}
+
+
+@layer rp-layout {
+ .rp-theme .dashboard .rp-real-history-workspace{display:grid;grid-template-columns:minmax(245px,310px) minmax(0,1fr);gap:12px;align-items:start}
+ .rp-theme .dashboard .rp-history-period{display:grid;gap:6px;grid-column:1/-1;color:#d9cbd0;font-size:12px}
+ .rp-theme .dashboard .rp-history-period select{width:100%;max-width:360px;min-height:41px;padding:9px 11px;color:#fff;background:#22262e;border:1px solid #605660;border-radius:8px}
+ .rp-theme .dashboard .rp-real-history-list,.rp-theme .dashboard .rp-real-history-detail{min-width:0;padding:12px;border:1px solid #5c5158;border-radius:10px;background:#24262e;box-sizing:border-box}
+ .rp-theme .dashboard .rp-real-history-list{display:grid;gap:7px}
+ .rp-theme .dashboard .rp-real-history-entry{display:grid;gap:4px;width:100%;min-width:0;text-align:left;padding:10px;border:1px solid #57515d;
+  background:#262b33;color:#f5f4f5;border-radius:8px;cursor:pointer}
+ .rp-theme .dashboard .rp-real-history-entry.selected{border-color:#ee6379;background:#452b35}
+ .rp-theme .dashboard .rp-real-history-entry strong{font-size:13px;color:#fff}
+ .rp-theme .dashboard .rp-real-history-entry span,.rp-theme .dashboard .rp-real-history-entry small{font-size:11px;color:#cdd0d7}
+ .rp-theme .dashboard .rp-history-page-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+ .rp-theme .dashboard .rp-history-page-actions span{font-size:11px;color:#e1d6db;white-space:nowrap}
+ .rp-theme .dashboard .rp-history-page-actions button{min-height:36px;padding:7px 9px;border:1px solid #66535d;background:#332e37;color:#fff;border-radius:7px;font-size:11px}
+ .rp-theme .dashboard .rp-history-page-actions button:disabled{opacity:.45}
+ .rp-theme .dashboard .rp-real-history-detail>header small{font-size:10px;letter-spacing:.1em;color:#f29aab}
+ .rp-theme .dashboard .rp-real-history-detail>header h2{font-size:19px;margin:5px 0!important;color:#fff}
+ .rp-theme .dashboard .rp-real-history-detail>header p{font-size:12px;color:#d0ccd3;margin:0 0 9px}
+ .rp-theme .dashboard .rp-real-history-detail-map{height:clamp(230px,38vh,360px)!important;min-height:230px!important;border:1px solid #504d53;border-radius:8px;position:relative;overflow:hidden}
+ .rp-theme .dashboard .rp-real-history-stats{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+ .rp-theme .dashboard .rp-real-history-stats span{padding:6px 8px;border:1px solid #61515d;background:#392c36;color:#f4e8ec;border-radius:6px;font-size:11px}
+ .rp-theme .dashboard .rp-real-history-timeline{max-height:185px;overflow-y:auto;border-top:1px solid #5b5259;padding-top:10px}
+ .rp-theme .dashboard .rp-real-history-timeline h3{font-size:15px!important;color:#fff;margin:0 0 7px}
+ .rp-theme .dashboard .rp-real-history-timeline>div{padding:7px 2px;border-bottom:1px solid #48424b}
+ .rp-theme .dashboard .rp-real-history-timeline strong{font-size:12px;color:#fff}
+ .rp-theme .dashboard .rp-real-history-timeline small{font-size:11px;color:#e6aeb9;margin-left:8px}
+ .rp-theme .dashboard .rp-real-history-timeline p{font-size:11px;color:#d0d1d5;margin:4px 0}
+ .rp-theme .dashboard .rp-geo-history>header>div button{font-size:11px;color:#fff;background:#793144;border:1px solid #c14b62;border-radius:6px;padding:6px 8px}
+ @media(max-width:760px){
+  .rp-theme .dashboard .rp-real-history-workspace{display:flex;flex-direction:column}
+  .rp-theme .dashboard .rp-real-history-workspace>*{width:100%;max-width:100%;box-sizing:border-box}
+  .rp-theme .dashboard .rp-history-period select{max-width:100%}
+  .rp-theme .dashboard .rp-real-history-detail-map{height:275px!important}
  }
 }

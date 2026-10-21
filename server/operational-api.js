@@ -56,6 +56,14 @@ function initialize(){
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='planned_start'))db.exec('ALTER TABLE planned_routes ADD COLUMN planned_start INTEGER');
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='route_schedule'))db.exec("ALTER TABLE planned_routes ADD COLUMN route_schedule TEXT NOT NULL DEFAULT '{}'");
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='phone'))db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='vehicle_type'))db.exec("ALTER TABLE users ADD COLUMN vehicle_type TEXT NOT NULL DEFAULT ''");
+  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='vehicle_plate'))db.exec("ALTER TABLE users ADD COLUMN vehicle_plate TEXT NOT NULL DEFAULT ''");
+  db.exec("CREATE TABLE IF NOT EXISTS role_permissions(role TEXT NOT NULL,module TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,updated_at INTEGER NOT NULL,PRIMARY KEY(role,module))");
+  db.exec('CREATE TABLE IF NOT EXISTS saved_points(id TEXT PRIMARY KEY,name TEXT NOT NULL,address TEXT NOT NULL,latitude REAL NOT NULL,longitude REAL NOT NULL,created_by TEXT NOT NULL,created_at INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_saved_points_active ON saved_points(active,created_at)');
+  const defaults={coi:['rondas','despachos','ocorrencias','mensagens'],ronda:['rondas','mensagens','ocorrencias','vistoria']};
+  const insertPermission=db.prepare('INSERT OR IGNORE INTO role_permissions(role,module,enabled,updated_at) VALUES(?,?,1,?)');
+  for(const [role,modules] of Object.entries(defaults))for(const module of modules)insertPermission.run(role,module,now());
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='username'))db.exec("ALTER TABLE users ADD COLUMN username TEXT");
  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL");
  // Migrações aditivas: vínculos de unidade para segregação segura do acesso cliente.
@@ -192,18 +200,60 @@ export function createOperationalApi(){
    if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
-   if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
+   if(p==='/api/saved-points'&&m==='GET'){
+    if(!['admin','master','coi','operador'].includes(a.role)){resp(res,403,{error:'Pontos disponíveis somente para gestão'});return true;}
+    resp(res,200,{points:db.prepare('SELECT id,name,address,latitude AS lat,longitude AS lng,created_at AS createdAt FROM saved_points WHERE active=1 ORDER BY name COLLATE NOCASE LIMIT 250').all()});return true;
+   }
+   if(p==='/api/saved-points'&&m==='POST'){
+    if(!manager(a)){resp(res,403,{error:'Somente Administração cadastra pontos'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name).slice(0,100),address=clean(d.address).slice(0,350),lat=Number(d.lat),lng=Number(d.lng);
+    if(name.length<2||address.length<5||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180||d.lat==null||d.lng==null){
+     resp(res,422,{error:'Informe nome, endereço e coordenadas válidas'});return true;
+    }
+    const pointId=id();
+    db.prepare('INSERT INTO saved_points(id,name,address,latitude,longitude,created_by,created_at) VALUES(?,?,?,?,?,?,?)').run(pointId,name,address,lat,lng,a.id,now());
+    audit(a,'saved_point.create',pointId);resp(res,201,{id:pointId,name,address,lat,lng});return true;
+   }
+   const savedPointDelete=p.match(/^\/api\/saved-points\/([^/]+)$/);
+   if(savedPointDelete&&m==='DELETE'){
+    if(!manager(a)){resp(res,403,{error:'Somente Administração arquiva pontos'});return true;}
+    const changed=db.prepare('UPDATE saved_points SET active=0 WHERE id=? AND active=1').run(savedPointDelete[1]).changes;
+    if(!changed){resp(res,404,{error:'Ponto não encontrado'});return true;}
+    audit(a,'saved_point.archive',savedPointDelete[1]);resp(res,200,{ok:true});return true;
+   }
+   if(p==='/api/role-permissions'&&m==='GET'){
+     if(!manager(a)){resp(res,403,{error:'Somente Administração consulta permissões'});return true;}
+     const permissions={coi:{},ronda:{}};
+     for(const item of db.prepare('SELECT role,module,enabled FROM role_permissions').all())if(permissions[item.role])permissions[item.role][item.module]=!!item.enabled;
+     resp(res,200,{permissions});return true;
+    }
+    if(p==='/api/role-permissions'&&m==='PUT'){
+     if(!manager(a)){resp(res,403,{error:'Somente Administração altera permissões'});return true;}
+     const d=serialize((await body(req)).toString())||{},valid={coi:['rondas','despachos','ocorrencias','mensagens'],ronda:['rondas','mensagens','ocorrencias','vistoria']};
+     if(!valid[d.role]||!d.modules||typeof d.modules!=='object'||Array.isArray(d.modules)||Object.keys(d.modules).some(k=>!valid[d.role].includes(k)||typeof d.modules[k]!=='boolean')){
+      resp(res,422,{error:'Permissões inválidas'});return true;
+     }
+     const update=db.prepare('INSERT INTO role_permissions(role,module,enabled,updated_at) VALUES(?,?,?,?) ON CONFLICT(role,module) DO UPDATE SET enabled=excluded.enabled,updated_at=excluded.updated_at');
+     db.exec('BEGIN IMMEDIATE');
+     try{for(const module of valid[d.role])update.run(d.role,module,d.modules[module]!==false?1:0,now());db.exec('COMMIT');}
+     catch(error){db.exec('ROLLBACK');throw error;}
+     audit(a,'permission.update',d.role);resp(res,200,{ok:true});return true;
+    }
+    if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,vehicle_type AS vehicleType,vehicle_plate AS vehiclePlate,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100);
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),vehicleType=clean(d.vehicleType)||(d.role==='ronda'?'a_pe':''),vehiclePlate=clean(d.vehiclePlate).slice(0,12);
     if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof d.password!=='string'||d.password.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e senha de 12 caracteres ou mais'});return true;}
-    if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
+    if(clean(d.phone).length>35||!['','a_pe','moto','carro','bicicleta','outro'].includes(vehicleType)||(d.role==='ronda'&&!vehicleType)){
+      resp(res,422,{error:'Telefone ou tipo de veículo inválido'});return true;
+     }
     if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
-    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site||'Grupo Maxvel',phone);
+    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone,vehicle_type,vehicle_plate) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site||'Grupo Maxvel',phone,d.role==='ronda'?vehicleType:'',d.role==='ronda'?vehiclePlate:'');
 
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
    if(p==='/api/routes'&&m==='GET'){
+    if(a.role==='ronda'&&!db.prepare("SELECT enabled FROM role_permissions WHERE role='ronda' AND module='rondas'").get()?.enabled){resp(res,403,{error:'Rondas desabilitadas pela Administração'});return true;}
     if(reviewer(a)&&!operations.allows(a,'rondas')){resp(res,403,{error:'Módulo Rondas desabilitado pelo administrador'});return true;}
     if(a.role==='vistoriador'){resp(res,200,{routes:[]});return true;}
     const sql='SELECT r.*,u.name worker_name FROM planned_routes r JOIN users u ON u.id=r.user_id ';
@@ -259,6 +309,11 @@ export function createOperationalApi(){
     inspection=d.kind==='inspection'?d.details?.criteria:null,
     dispatchId=d.kind==='inspection'?clean(d.details?.dispatchId):'',
     inspectionAssignment=dispatchId?db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria' AND started_at IS NOT NULL AND completed_at IS NULL").get(dispatchId,a.id):null;
+    if(a.role==='ronda'&&!['panic','gps','gps_issue','battery'].includes(d.kind)){
+     const mod=['patrol_start','patrol_end','checkpoint','patrol_incomplete','patrol_interrupted','route_deviation'].includes(d.kind)?'rondas':
+      ['incident','alert','message'].includes(d.kind)?'ocorrencias':null;
+     if(mod&&!db.prepare('SELECT enabled FROM role_permissions WHERE role=? AND module=?').get('ronda',mod)?.enabled){resp(res,403,{error:'Função desabilitada pela Administração'});return true;}
+    }
     if(d.kind==='inspection'&&(a.role!=='vistoriador'||(!a.site&&!inspectionAssignment)||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
      resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
     }

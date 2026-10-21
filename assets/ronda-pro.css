@@ -3035,7 +3035,7 @@ body.simulation-running #toast { top:auto!important; bottom:max(12px,env(safe-ar
 .brand.maxvel-only-brand { display:grid!important; grid-template-columns:minmax(0,1fr) 2px minmax(0,1fr); align-items:center!important; justify-items:center; gap:10px!important; width:220px!important; max-width:100%!important; min-width:0!important; }
 .brand-product,.brand-partner { display:flex; align-items:center; justify-content:center; min-width:0; width:100%; }
 .brand-partner { flex-direction:column; gap:3px; }
-.brand-group { font:500 8px/1 "Exo 2",sans-serif; letter-spacing:.22em; color:var(--mx-secondary); }
+.brand-group { font:600 9px/1 "Exo 2",sans-serif; letter-spacing:.18em; color:#e8eef5; }
 .brand-divider { width:2px; height:36px; background:linear-gradient(180deg,#f4f4f480,#f4f4f4,#f4f4f480); border-radius:2px; }
 .brand .maxvel-real-logo { display:block; width:82px!important; max-width:100%!important; height:auto!important; object-fit:contain; }
 .brand .ronda-pro-wordmark { font-family:"Rajdhani","Exo 2",sans-serif!important; font-size:24px!important; line-height:1!important; letter-spacing:-.02em; white-space:nowrap; }
@@ -3126,7 +3126,7 @@ dialog[open]:has(.ux-access-menu) { animation:rp-drawer-enter 360ms var(--rp-spr
 dialog[open]::backdrop { animation:rp-reveal 260ms ease both!important; }
 dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)!important; transition:none!important; cursor:grabbing; }
 .ops-live-dot,.simulation-signal { background:var(--mx-accent)!important; animation:rp-pulse 2.8s ease-in-out infinite; }
-.ronda-pro-wordmark b,.patrol-map-clock strong { animation:rp-color-pulse 3.6s ease-in-out infinite; }
+.patrol-map-clock strong { animation:rp-color-pulse 3.6s ease-in-out infinite; }
 .button.primary svg { animation:rp-arrow 2.8s ease-in-out infinite; }
 .mobile-mini-meter>span,.progress-bar>span,.report-progress-track i { transition:width 420ms var(--rp-soft)!important; background:var(--mx-action-fill)!important; }
 #toast { transition:opacity 220ms,transform 380ms var(--rp-spring)!important; }

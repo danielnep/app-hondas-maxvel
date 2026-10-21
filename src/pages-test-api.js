@@ -3,7 +3,7 @@
  * Sem servidor: credenciais e registros deste teste sao PUBLICOS/locais ao navegador.
  * Nunca usar estas senhas para acesso real nem confiar em papeis locais como seguranca.
  */
-export const isPagesTestMode = () => typeof location !== 'undefined' && ['danielnep.github.io','ronda-pro-production.up.railway.app'].includes(location.hostname);
+export const isPagesTestMode = () => typeof location !== 'undefined' && ['danielnep.github.io','ronda-pro-production.up.railway.app','ronda-pro-pr103-preview.onrender.com'].includes(location.hostname);
 export const PAGES_TEST_ACCOUNTS=Object.freeze([
  {name:'Administrador',username:'admin',email:'admin@rondapro.local',role:'admin',password:'Admin@Maxvel26!'},
  {name:'Operador COI',username:'coi',email:'coi@rondapro.local',role:'coi',password:'Coi@Maxvel26!'},
@@ -13,7 +13,7 @@ export const PAGES_TEST_ACCOUNTS=Object.freeze([
 const PREFIX='ronda-pro-pages-test-v2:',TOKEN_KEY='rondaspro_api_token';
 const read=(key,defaultValue)=>{try{return JSON.parse(localStorage.getItem(PREFIX+key))??defaultValue}catch{return defaultValue}};
 const store=(key,data)=>localStorage.setItem(PREFIX+key,JSON.stringify(data));
-const identity=a=>({id:'pages-'+a.username,name:a.name,username:a.username,email:a.email,role:a.role,active:1,site:'Grupo Maxvel'});
+const identity=a=>({id:'pages-'+a.username,name:a.name,username:a.username,email:a.email,role:a.role,phone:a.phone||'',vehicleType:a.vehicleType||'',vehiclePlate:a.vehiclePlate||'',active:1,site:'Grupo Maxvel'});
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
 const allUsers=()=>[...PAGES_TEST_ACCOUNTS,...read('extra-users',[])];
 const current=()=>{
@@ -44,16 +44,50 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
    return {stored:true};
   }
  }
+ if(p==='/saved-points'){
+  if(!['admin','coi','operador'].includes(a.role))throw fail('Acesso restrito à gestão.',403);
+  const fixture=[
+   {id:'demo-centro',name:'Ponto Centro (fictício)',address:'Praça do Santuário, Divinópolis, MG',lat:-20.1429,lng:-44.8893},
+   {id:'demo-sao-jose',name:'Ponto São José (fictício)',address:'São José, Divinópolis, MG',lat:-20.1328,lng:-44.8797},
+   {id:'demo-bom-pastor',name:'Ponto Bom Pastor (fictício)',address:'Bom Pastor, Divinópolis, MG',lat:-20.1511,lng:-44.8728}
+  ];
+  const items=read('saved-points',fixture);
+  if(method==='GET')return {points:items};
+  if(method==='POST'){
+   if(a.role!=='admin')throw fail('Somente Administração cadastra pontos.',403);
+   const name=String(data?.name||'').trim(),address=String(data?.address||'').trim(),lat=Number(data?.lat),lng=Number(data?.lng);
+   if(name.length<2||address.length<5||data?.lat==null||data?.lng==null||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)throw fail('Nome, endereço ou coordenadas inválidos.',422);
+   const point={id:newId(),name:name.slice(0,100),address:address.slice(0,350),lat,lng,createdAt:Date.now()};
+   store('saved-points',[...items,point]);return point;
+  }
+ }
+ const pointArchive=p.match(/^\/saved-points\/([^/]+)$/);
+ if(pointArchive&&method==='DELETE'){
+  if(a.role!=='admin')throw fail('Somente Administração arquiva pontos.',403);
+  const items=read('saved-points',[]);
+  if(!items.some(x=>x.id===pointArchive[1]))throw fail('Ponto inexistente.',404);
+  store('saved-points',items.filter(x=>x.id!==pointArchive[1]));return {ok:true};
+ }
+ if(p==='/role-permissions'){
+  if(a.role!=='admin')throw fail('Somente Administração define permissões.',403);
+  const defaults={coi:{rondas:true,despachos:true,ocorrencias:true,mensagens:true},ronda:{rondas:true,mensagens:true,ocorrencias:true,vistoria:true}};
+  if(method==='GET')return {permissions:{coi:{...defaults.coi,...read('permissions-coi',{})},ronda:{...defaults.ronda,...read('permissions-ronda',{})}}};
+  if(method==='PUT'){
+   if(!['coi','ronda'].includes(data?.role)||!data.modules||typeof data.modules!=='object')throw fail('Perfil ou permissões inválidos.',422);
+   const allowed=Object.keys(defaults[data.role]),updates=Object.fromEntries(allowed.map(k=>[k,data.modules[k]!==false]));
+   store('permissions-'+data.role,updates);return {ok:true};
+  }
+ }
  if(p==='/users'){
   if(method==='GET')return {users:allUsers().map(identity)};
   if(method==='POST'){
    if(a.role!=='admin')throw fail('Somente administrador cadastra.',403);
-   const username=String(data?.username??'').trim().toLowerCase();
+   const username=String(data?.username??'').trim().toLowerCase()||String(data?.email||'').trim().toLowerCase().split('@')[0].replace(/[^a-z0-9._-]/g,'').slice(0,30);
    const email=String(data?.email??'').trim().toLowerCase();
    if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||String(data?.password||'').length<12||!['coi','ronda','vistoriador','admin'].includes(data?.role)||String(data?.name||'').trim().length<2)throw fail('Informe nome, usuário, e-mail, perfil e senha com 12 caracteres.',422);
    if(allUsers().some(x=>x.username===username||x.email===email))throw fail('Usuário ou e-mail já cadastrado.',409);
    const users=read('extra-users',[]);
-   users.push({name:String(data.name).trim(),email,username,password:data.password,role:data.role});
+   users.push({name:String(data.name).trim(),email,username:username||email.split('@')[0],password:data.password,role:data.role,phone:String(data.phone||'').slice(0,35),vehicleType:data.role==='ronda'?String(data.vehicleType||'a_pe'):'',vehiclePlate:data.role==='ronda'?String(data.vehiclePlate||'').slice(0,12):''});
    store('extra-users',users);return {id:'pages-'+username};
   }
  }
@@ -69,12 +103,14 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
  }
  if(p==='/dispatches'){
   const rows=read('dispatches',[]);
-  if(method==='GET')return {dispatches:a.role==='vistoriador'?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
+  if(method==='GET')return {dispatches:['ronda','vistoriador'].includes(a.role)?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
   if(method==='POST'){
    const self=a.role==='vistoriador',kind=data?.kind==='inspection'?'vistoria':data?.kind==='ronda'?'ronda':'ronda';
    if(!self&&!['admin','coi'].includes(a.role))throw fail('Sem permissão.',403);
    if(self&&data?.workerId!==user.id)throw fail('Vistoriador cria somente seus atendimentos.',403);
-   if(!allUsers().some(x=>'pages-'+x.username===data?.workerId&&x.active!==false))throw fail('Profissional não encontrado.',422);
+   const assignee=allUsers().find(x=>'pages-'+x.username===data?.workerId&&x.active!==false);
+   if(!assignee)throw fail('Profissional não encontrado.',422);
+   if(!self&&assignee.role!==(kind==='vistoria'?'vistoriador':'ronda'))throw fail('Selecione o profissional do perfil correto.',422);
    const address=String(data?.address||'').trim(),reason=String(data?.reason||'').trim();
    if(address.length<5||reason.length<10)throw fail('Informe local e motivo com pelo menos 10 caracteres.',422);
    const at=Date.now(),item={...data,id:newId(),kind,workerId:data.workerId,worker_id:data.workerId,
@@ -107,11 +143,15 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
  }
  if((p==='/presence'||p==='/presence/off')&&method==='POST')return {ok:true};
  if(p==='/chat/contacts'&&method==='GET')return {contacts:allUsers().filter(x=>x.username!==a.username).map(identity)};
- if(p==='/chat/conversations'&&method==='GET')return {conversations:read('conversations',[]).filter(x=>x.members.includes(user.id))};
+ if(p==='/chat/conversations'&&method==='GET')return {conversations:read('conversations',[]).filter(x=>x.members.includes(user.id)).map(c=>{
+   const others=c.members.filter(id=>id!==user.id).map(id=>allUsers().find(x=>'pages-'+x.username===id)?.name||'Profissional');
+   const messages=read('chat:'+c.id,[]);
+   return {...c,title:c.title||others.join(', ')||'Conversa',unread:0,last:messages.at(-1)||null};
+  })};
  if(p==='/chat/conversations'&&method==='POST'){
   if(!Array.isArray(data?.members)||!data.members.length)throw fail('Selecione um contato.',422);
   const entries=read('conversations',[]);
-  const item={id:newId(),members:[user.id,...data.members],createdAt:Date.now()};
+  const item={id:newId(),members:[...new Set([user.id,...data.members])],createdAt:Date.now()};
   store('conversations',[item,...entries]);return item;
  }
  const chat=p.match(/^\/chat\/conversations\/([^/]+)\/messages$/);
@@ -123,7 +163,7 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
   if(method==='POST'){
    const body=String(data?.body||'').trim();
    if(!body)throw fail('Digite uma mensagem.',422);
-   const message={id:newId(),body,author_id:user.id,createdAt:Date.now()};
+   const message={id:newId(),body,author_id:user.id,author:user.name,created_at:Date.now()};
    store('chat:'+chat[1],[...rows,message]);return message;
   }
  }
