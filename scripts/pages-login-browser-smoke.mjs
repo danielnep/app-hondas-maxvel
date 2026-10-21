@@ -67,12 +67,16 @@ try{
       if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vigia');
       await form.locator('[name="workerId"]').selectOption('pages-vigia-demo-lucas');
       await form.locator('[data-action="dispatch-next"]').click();
-      await form.locator('[name="address"]').fill('Rua da Ronda, 123, Divinópolis');
+      await form.locator('#rp-dispatch-saved option').nth(1).waitFor({timeout:12000});
+      await form.locator('#rp-dispatch-saved').selectOption({index:1});
+      await page.waitForFunction(()=>document.querySelector('#rp-dispatch-address')?.value.includes('Praça do Santuário'));
+      await page.locator('#rp-dispatch-map').waitFor({state:'visible'});
+      await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-localizacao-ronda.png',animations:'disabled'});
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
       await form.locator('[data-action="dispatch-next"]').click();
       if((await form.locator('[data-dispatch-summary="worker"]').innerText()).trim()!=='Lucas Ferreira')throw Error('Revisão não mostrou Lucas Ferreira como vigia atribuído');
-      if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Rua da Ronda, 123, Divinópolis').count())
+      if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Praça do Santuário, Divinópolis, MG').count())
        throw Error('Revisão perdeu o rascunho');
       const inspector=await page.locator('#dialog').evaluate(el=>{const bounds=e=>{const r=e?.getBoundingClientRect();return r?{height:r.height,top:r.top,bottom:r.bottom}:null};return {classes:el.className,computed:{height:getComputedStyle(el).height,minHeight:getComputedStyle(el).minHeight,maxHeight:getComputedStyle(el).maxHeight,display:getComputedStyle(el).display},dialog:bounds(el),wizard:bounds(el.querySelector('.rp-dispatch-wizard')),form:bounds(el.querySelector('form')),stage:bounds(el.querySelector('[data-dispatch-stage="4"]')),scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}});console.log('DISPATCH_HEIGHT '+JSON.stringify(inspector));
       const geometry=await page.locator('#dialog').boundingBox();
@@ -83,7 +87,7 @@ try{
        throw Error('Voltar perdeu orientações');
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[type="submit"]').click();
-      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.workerId==='pages-vigia-demo-lucas'&&x.address==='Rua da Ronda, 123, Divinópolis'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='ronda'),{timeout:12000});
+      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.workerId==='pages-vigia-demo-lucas'&&x.address==='Praça do Santuário, Divinópolis, MG'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='ronda'),{timeout:12000});
       if(await page.locator('#dialog').evaluate(x=>x.open))throw Error('Janela permaneceu aberta após envio confirmado');
       console.log('OK: '+target.name+' / Solicitação de ronda em 4 etapas, gravação e modal compacto');
      }
