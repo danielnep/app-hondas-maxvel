@@ -2,6 +2,7 @@ import {decorateTheme} from './theme-shell.js';
 import {createRoutePlanner} from './route-planner.js';
 import {createDispatchWizard} from './dispatch-wizard.js';
 import {createSettingsManager} from './settings-manager.js';
+import {createSavedPointsManager} from './saved-points-admin.js';
 import {routeCanStart} from './route-schedule.js';
 import {DEMO_THREE,seedDemoThree,routeRequest} from './route-demo-mode.js';
 import {liveRequest,liveSession,loginHtml} from './live-client.js';
@@ -104,6 +105,7 @@ const routePlanner=createRoutePlanner({
 });
 const dispatchWizard=createDispatchWizard({dialog:modal,showDialog,getWorkers:()=>liveUsers,request:liveRequest,refresh:refreshLiveOperational,redraw:render,notify});
 const adminSettings=createSettingsManager({dialog:modal,showDialog,api:liveRequest,getUsers:()=>liveUsers,refresh:refreshLiveUsers,render,notify});
+const savedPointsAdmin=createSavedPointsManager({dialog:modal,showDialog,api:liveRequest,notify});
 const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
 function persist(){
  saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
@@ -1434,6 +1436,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
  if(await adminSettings.click(el))return;
+ if(await savedPointsAdmin.click(el))return;
  if(await dispatchWizard.click(el))return;
  if(act==='dispatch-open'){if(['admin','coi','operador'].includes(user?.role))dispatchWizard.open();return;}
  if(act==='dispatch-next'){dispatchWizard.step(Number(modal.querySelector('#live-dispatch-form')?.dataset.step||1)+1);return;}
@@ -1850,11 +1853,13 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('input',e=>{routePlanner.input(e.target)});
 document.addEventListener('change',e=>{adminSettings.change(e.target);if(e.target.id==='rp-dispatch-saved')dispatchWizard.click(e.target);});
+document.addEventListener('input',e=>{savedPointsAdmin.changed(e.target)});
 document.addEventListener('input',e=>{dispatchWizard.changed(e.target)});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
 document.addEventListener('submit',async e=>{
  if(['live-create-user-form','role-permissions-form'].includes(e.target.id)){e.preventDefault();await adminSettings.submit(e.target);return;}
+ if(e.target.id==='rp-saved-point-form'){e.preventDefault();await savedPointsAdmin.submit(e.target);return;}
   if(e.target.id==='rp-plan-form'){e.preventDefault();await routePlanner.submit(e.target);return;}
  if(e.target.id==='live-login-form'){
   e.preventDefault();const f=new FormData(e.target);e.target.querySelector('button').disabled=true;
