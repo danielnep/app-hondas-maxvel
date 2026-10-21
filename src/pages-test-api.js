@@ -44,6 +44,30 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
    return {stored:true};
   }
  }
+ if(p==='/saved-points'){
+  if(!['admin','coi','operador'].includes(a.role))throw fail('Acesso restrito à gestão.',403);
+  const fixture=[
+   {id:'demo-centro',name:'Ponto Centro (fictício)',address:'Praça do Santuário, Divinópolis, MG',lat:-20.1429,lng:-44.8893},
+   {id:'demo-sao-jose',name:'Ponto São José (fictício)',address:'São José, Divinópolis, MG',lat:-20.1328,lng:-44.8797},
+   {id:'demo-bom-pastor',name:'Ponto Bom Pastor (fictício)',address:'Bom Pastor, Divinópolis, MG',lat:-20.1511,lng:-44.8728}
+  ];
+  const items=read('saved-points',fixture);
+  if(method==='GET')return {points:items};
+  if(method==='POST'){
+   if(a.role!=='admin')throw fail('Somente Administração cadastra pontos.',403);
+   const name=String(data?.name||'').trim(),address=String(data?.address||'').trim(),lat=Number(data?.lat),lng=Number(data?.lng);
+   if(name.length<2||address.length<5||data?.lat==null||data?.lng==null||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)throw fail('Nome, endereço ou coordenadas inválidos.',422);
+   const point={id:newId(),name:name.slice(0,100),address:address.slice(0,350),lat,lng,createdAt:Date.now()};
+   store('saved-points',[...items,point]);return point;
+  }
+ }
+ const pointArchive=p.match(/^\/saved-points\/([^/]+)$/);
+ if(pointArchive&&method==='DELETE'){
+  if(a.role!=='admin')throw fail('Somente Administração arquiva pontos.',403);
+  const items=read('saved-points',[]);
+  if(!items.some(x=>x.id===pointArchive[1]))throw fail('Ponto inexistente.',404);
+  store('saved-points',items.filter(x=>x.id!==pointArchive[1]));return {ok:true};
+ }
  if(p==='/role-permissions'){
   if(a.role!=='admin')throw fail('Somente Administração define permissões.',403);
   const defaults={coi:{rondas:true,despachos:true,ocorrencias:true,mensagens:true},ronda:{rondas:true,mensagens:true,ocorrencias:true,vistoria:true}};
