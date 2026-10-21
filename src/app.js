@@ -97,7 +97,7 @@ const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
-let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null;
+let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null,selectedLiveRouteId='';
 const routePlanner=createRoutePlanner({
  getData:()=>({users:liveUsers,routes:liveRoutes,role:user?.role,demo:isPagesTestMode()}),
  api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
@@ -162,7 +162,7 @@ const ux06RoleTips={
 };
 function notifyRoleView(role){notify('Visão de demonstração: '+ux06RoleTips[role]);}
 function destroyMaps(){for(const m of liveMaps)m?.destroy();liveMaps=[]}
-function registerMap(id,route,sessionRef=null,position=null,compact=false,positionVerified=true){const el=document.getElementById(id);if(!el)return;liveMaps.push(new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true,standbyClean:id==='mobile-map',positionVerified}))}
+function registerMap(id,route,sessionRef=null,position=null,compact=false,positionVerified=true,trace=[]){const el=document.getElementById(id);if(!el||!route)return;const map=new PatrolMap(el,{route,session:sessionRef,position,compact,interactive:true,standbyClean:id==='mobile-map',positionVerified,trace});liveMaps.push(map);return map;}
 
 
 /** MAXVEL-06 · details in modal, fixed viewport and scroll only inside a bounded list. */
@@ -561,6 +561,11 @@ function attachMaps(){
     const history=sessionList().filter(x=>x.name===w.name).slice(0,5);
     history.forEach((item,index)=>registerMap('admin-route-mini-'+index,item.route,item,item.lastFix??item.route.base,true));
    }
+  if(document.getElementById('real-ops-map')){
+   const focus=realMapSelection();registerMap('real-ops-map',focus.route,null,focus.position||focus.route?.base,false,!!focus.position||isPagesTestMode(),focus.track);
+   const rounds=liveRoundRecords(),history=rounds.length?rounds:previewRoundRecords();
+   history.slice(0,4).forEach((r,i)=>{if(r.route)registerMap('real-history-map-'+i,r.route,null,r.track?.at(-1)||r.route.base,true,!!r.track?.length||!!r.simulation,r.track);});
+  }
   if(document.getElementById('mobile-map')){const assigned=session?.route??assignedRoute();const mapped=assigned??{...DEMO_ROUTE,id:'sem-rota',name:'Mapa da unidade',points:[],legs:[]};registerMap('mobile-map',mapped,session,locationFix??mapped.base,true,!!(assigned||locationFix));}
   if(document.getElementById('demo-inspection-map')){
    const host=document.querySelector('#demo-inspection-map');
@@ -585,6 +590,35 @@ function attachMaps(){
    if(host&&focus)demoCoiRouteMap.mount(host,focus,{demo:true});
   }
  }
+}
+function liveRoundRecords(){
+ const groups=new Map();
+ for(const event of liveEvents){const id=event.round_id||event.roundId;if(!id)continue;
+  if(!groups.has(id))groups.set(id,{id,userId:event.user_id||event.userId,events:[]});
+  const group=groups.get(id);group.events.push(event);
+ }
+ return [...groups.values()].map(r=>{
+  r.events.sort((a,b)=>Number(a.occurred_at||0)-Number(b.occurred_at||0));
+  r.startedAt=r.events.find(e=>e.kind==='patrol_start')?.occurred_at||r.events[0]?.occurred_at||0;
+  r.lastAt=r.events.at(-1)?.occurred_at||0;r.completed=r.events.some(e=>e.kind==='patrol_end');
+  r.checkpoints=r.events.filter(e=>e.kind==='checkpoint').length;
+  r.alerts=r.events.filter(e=>['panic','incident','alert','route_deviation'].includes(e.kind)).length;
+  r.track=r.events.map(e=>({lat:Number(e.lat),lng:Number(e.lng)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180);
+  r.worker=liveUsers.find(u=>u.id===r.userId)?.name||'Profissional';
+  r.route=runtimeRoute(liveRoutes.find(x=>x.userId===r.userId));
+  if(!r.route&&r.track.length){const first=r.track[0];r.route={id:r.id,name:'Trajeto GPS registrado',base:{...first,id:'base',name:'Início'},points:r.track.slice(1,26).map((p,i)=>({...p,id:'p'+i,name:'Posição '+(i+1),radius:25})),legs:[]};}
+  return r;
+ }).sort((a,b)=>b.lastAt-a.lastAt).slice(0,12);
+}
+function previewRoundRecords(){
+ if(!isPagesTestMode())return [];
+ return withExampleRondas([],Date.now()).map(s=>({id:s.id,worker:s.name,startedAt:s.startedAt,lastAt:s.finishedAt||s.startedAt,completed:s.status==='completed',
+  checkpoints:s.checkpoints?.filter(p=>p.completedAt).length||0,alerts:(s.notifications?.length||0)+(s.incidents?.length||0),route:s.route,track:[],simulation:true}));
+}
+function realMapSelection(){
+ const planned=liveRoutes.find(r=>r.id===selectedLiveRouteId)||liveRoutes[0]||null;
+ const latest=liveRoundRecords().find(r=>r.userId===planned?.userId)||liveRoundRecords()[0];
+ return {planned,latest,route:runtimeRoute(planned)||latest?.route||(isPagesTestMode()?DEMO_ROUTE:null),position:latest?.track?.at(-1)||null,track:latest?.track||[]};
 }
 function entryScreen(){
  return `<div class="entry-screen product-home"><header class="entry-topnav topnav">${brand()}<nav class="nav-actions">${btn('Explorar '+ic('arrow'),'login','primary small')}${operationalLink}</nav></header><main id="main" class="entry-main"><section class="entry-panel"><div class="entry-eyebrow">${ic('shield')} CENTRAL OPERACIONAL</div><h1>Rondas sob controle.<span> Da operação à supervisão.</span></h1><p>Rotas, equipes, horários e ocorrências em uma plataforma. Conheça as funções no próprio aplicativo.</p><div class="entry-actions">${btn('Explorar demonstração '+ic('arrow'),'login','primary full')}<span>${ic('checkcircle')} Demonstração sem login · na operação real, cada usuário terá senha e painel próprio</span></div><div class="entry-details"><span>Mapa e pontos</span><span>Rondas programadas</span><span>Equipe e supervisão</span><span>GPS, offline e relatórios</span></div></section><aside class="entry-aside"><div class="entry-aside-head"><span class="ops-live-dot"></span> VISÃO OPERACIONAL</div><div class="entry-aside-mark">${ic('map')}</div><div class="entry-aside-stat"><small>Trabalho em campo</small><strong>Ronda · 4 pontos</strong><span>Raio de 25 m · Permanência de 30 s</span></div><div class="entry-aside-footer">Estrutura real da plataforma · registros locais na avaliação</div></aside></main><footer class="entry-footer">Grupo Maxvel <span>·</span> Rondas Pro ${btn('Privacidade','privacy','small')}</footer></div>`;
@@ -1853,6 +1887,7 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('input',e=>{routePlanner.input(e.target)});
 document.addEventListener('change',e=>{adminSettings.change(e.target);if(e.target.id==='rp-dispatch-saved')dispatchWizard.click(e.target);});
+document.addEventListener('change',e=>{if(e.target.id==='rp-live-route-select'){selectedLiveRouteId=e.target.value;render();}});
 document.addEventListener('input',e=>{savedPointsAdmin.changed(e.target)});
 document.addEventListener('input',e=>{dispatchWizard.changed(e.target)});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
