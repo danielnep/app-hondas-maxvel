@@ -38,11 +38,44 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  '<div class="patrol-map-canvas rp-inspection-map-canvas"><div class="map-container mini rp-inspector-map" id="guard-real-map" aria-label="Mapa da ronda em operação real"></div>'+
  '</div>'+
  '<div class="patrol-map-footer"><span data-guard-gps>'+safe(gpsStatus)+'</span><span data-guard-road>Traçado viário disponível com internet</span></div></section>'+
- '<section class="patrol-actions rp-inspection-commands" aria-label="Comandos da ronda">'+
- '<div class="rp-field-quicktools"><button type="button" data-field-tool-torch>Lanterna</button><button type="button" class="rp-urgent" data-field-tool-panic>Pânico</button><button type="button" data-field-tool-alert>Alerta</button><button type="button" data-field-tool-incident>Ocorrência</button><button type="button" data-field-tool-chat>Mensagens</button></div>'+
- '<div class="patrol-action-heading"><strong>'+(current?'Ponto '+(round.index+1)+' de '+total:round?'Retorno à base':'Ronda preparada')+'</strong></div>'+
+ '<section class="patrol-actions rp-inspection-commands rp-guard-quick-panel" data-guard-panel aria-label="Comandos da ronda">'+
+ '<div class="patrol-action-heading rp-guard-panel-heading"><button type="button" class="rp-guard-panel-toggle" data-guard-panel-toggle aria-controls="rp-guard-panel-content" aria-expanded="true" aria-label="Recolher ou expandir controles da ronda"><span><strong>'+(current?'Ponto '+(round.index+1)+' de '+total:round?'Retorno à base':'Ronda preparada')+'</strong><small data-guard-panel-hint>Controles disponíveis · recolhe sozinho</small></span><span class="rp-guard-panel-chevron" aria-hidden="true">⌄</span></button><button type="button" class="rp-guard-panic rp-urgent" data-field-tool-panic aria-label="Acionar pânico">PÂNICO</button></div>'+
+ '<div class="rp-guard-panel-content" id="rp-guard-panel-content" data-guard-panel-content>'+
+ '<div class="rp-field-quicktools"><button type="button" data-field-tool-torch>Lanterna</button><button type="button" data-field-tool-alert>Alerta</button><button type="button" data-field-tool-incident>Ocorrência</button></div>'+
  '<div class="rp-inspection-commands-body"><strong class="rp-inspection-destination">'+safe(current?.name||(!round?'Pronto para iniciar?':'Retorne à base'))+'</strong><p data-guard-timer>'+ (!planned?'O COI enviará a rota para o seu turno.':(round&&round.insideSince!=null?'Permanência em verificação. Aguarde 30 segundos.':'Siga para o próximo ponto indicado no mapa.'))+'</p><small data-guard-distance '+(!planned?'hidden':'')+'>'+safe(Number.isFinite(d)?'Distância '+(current?'ao ponto':'à base')+': '+Math.round(d)+' m':'Aguardando GPS real')+'</small><div class="rp-inspection-primary-actions">'+action+'</div></div>'+
  '<details class="rp-inspection-upcoming"><summary>Ver pontos da ronda <span>'+total+'</span></summary><ol data-guard-stops>'+
  (round?.points||planned?.points||[]).map((p,i)=>'<li class="rp-inspection-stop '+(i===(round?.index||0)?'is-next':'')+'"><span class="rp-stop-order">'+(round&&i<round.index?'✓':i+1)+'</span><div><strong>'+safe(p.name)+'</strong><small>'+safe(i<(round?.index||0)?'Concluído':'Aguardando verificação')+'</small></div></li>').join('')+
- '</ol></details></section></div>';
+ '</ol></details></div></section></div>';
+}
+
+/** Um único painel de ronda: recolhe por inatividade e conserva o pânico visível. */
+let guardPanelTimer=null,guardPanelActive=null;
+export function mountGuardQuickPanel(root){
+ const panel=root?.querySelector?.('[data-guard-panel]');
+ if(guardPanelActive!==panel){clearTimeout(guardPanelTimer);guardPanelActive=panel;}
+ if(!panel||panel.dataset.guardPanelReady)return;
+ panel.dataset.guardPanelReady='true';
+ const button=panel.querySelector('[data-guard-panel-toggle]');
+ const content=panel.querySelector('[data-guard-panel-content]');
+ const hint=panel.querySelector('[data-guard-panel-hint]');
+ if(!button||!content)return;
+ const collapse=collapsed=>{
+  if(collapsed&&panel.contains(document.activeElement)&&document.activeElement!==button)button.focus({preventScroll:true});
+  panel.classList.toggle('is-collapsed',collapsed);
+  content.hidden=collapsed;
+  button.setAttribute('aria-expanded',String(!collapsed));
+  if(hint)hint.textContent=collapsed?'Toque para reabrir':'Controles disponíveis · recolhe sozinho';
+ };
+ const schedule=()=>{
+  clearTimeout(guardPanelTimer);
+  if(panel.classList.contains('is-collapsed'))return;
+  guardPanelTimer=setTimeout(()=>{
+   if(!panel.isConnected)return;
+   if(panel.contains(document.activeElement)||panel.querySelector('details[open]')||document.querySelector('dialog[open]')){schedule();return;}
+   collapse(true);
+  },8000);
+ };
+ button.addEventListener('click',()=>{const next=!panel.classList.contains('is-collapsed');collapse(next);if(!next)schedule();else clearTimeout(guardPanelTimer);});
+ for(const type of ['pointerdown','keydown','focusin','scroll'])panel.addEventListener(type,()=>{if(!panel.classList.contains('is-collapsed'))schedule();},{passive:true});
+ schedule();
 }
