@@ -220,7 +220,10 @@ export function createOperationalApi(){
     const title=clean(d.name).slice(0,120);
     const points=d.points;
     const plannedStart=d.plannedStart==null||d.plannedStart===''?null:Number(d.plannedStart);
-     const rawSchedule=d.schedule&&typeof d.schedule==='object'&&!Array.isArray(d.schedule)?d.schedule:{};
+     const existingRoute=routeMatch?db.prepare('SELECT * FROM planned_routes WHERE id=?').get(routeMatch[1]):null;
+     if(routeMatch&&!existingRoute){resp(res,404,{error:'Rota não encontrada'});return true;}
+     const explicitSchedule=d.schedule&&typeof d.schedule==='object'&&!Array.isArray(d.schedule);
+     const rawSchedule=explicitSchedule?d.schedule:routeMatch?(serialize(existingRoute.route_schedule)||{}):{};
      const kind=['routine','specific'].includes(rawSchedule.kind)?rawSchedule.kind:'routine';
      const recurrence=['once','daily','alternate','weekly'].includes(rawSchedule.recurrence)?rawSchedule.recurrence:'once';
      const hour=typeof rawSchedule.hour==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(rawSchedule.hour)?rawSchedule.hour:'08:00';
@@ -239,11 +242,10 @@ export function createOperationalApi(){
     }
     const safe=points.map(p=>({name:clean(p.name).slice(0,100),address:clean(p.address).slice(0,250),lat:p.lat,lng:p.lng}));
     if(routeMatch){
-     const existing=db.prepare('SELECT * FROM planned_routes WHERE id=?').get(routeMatch[1]);
-     if(!existing){resp(res,404,{error:'Rota não encontrada'});return true;}
+     const scheduleJson=explicitSchedule?JSON.stringify(schedule):existingRoute.route_schedule;
      db.prepare('UPDATE planned_routes SET user_id=?,site=?,name=?,points=?,planned_start=?,route_schedule=?,updated_at=? WHERE id=?')
-      .run(user.id,user.site,title,JSON.stringify(safe),plannedStart,JSON.stringify(schedule),now(),existing.id);
-     audit(a,'route.update',existing.id);resp(res,200,{id:existing.id,updated:true});return true;
+      .run(user.id,user.site,title,JSON.stringify(safe),plannedStart,scheduleJson,now(),existingRoute.id);
+     audit(a,'route.update',existingRoute.id);resp(res,200,{id:existingRoute.id,updated:true});return true;
     }
     const rid=id();
     db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,route_schedule,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)')
