@@ -35,7 +35,7 @@ try{
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rondas-pro-field-notices'))[0].label),'Portão aberto');
   await page.locator('[data-view="meus-envios"]').first().evaluate(el=>el.click());
   await page.locator('[data-action="own-notice-detail"]').first().click();
-  assert.match(await page.locator('#dialog').innerText(),/Aguardando resposta/);
+  assert.match(await page.locator('#dialog').innerText(),/Resposta do COI:/);
   assert.equal(await page.locator('#dialog textarea').count(),0);
   await page.locator('#dialog .dialog-close').click();
   await page.locator('[data-view="minha-ronda"]').first().evaluate(el=>el.click());
