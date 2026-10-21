@@ -1,22 +1,37 @@
 import {chromium} from 'playwright-core';
 import assert from 'node:assert/strict';
-import {createAppServer} from '../server.js';
-const server=createAppServer();let browser;
+import {existsSync} from 'node:fs';
+import {resolve,extname} from 'node:path';
+const root=resolve('.'),origin='https://ronda-pro-production.up.railway.app';
+const types={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png'};
+let browser;
 try{
- await new Promise(r=>server.listen(0,'127.0.0.1',r));
  browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{})});
  for(const width of [320,390,768,1366]){
   const context=await browser.newContext({viewport:{width,height:844},permissions:['geolocation'],geolocation:{latitude:-20.14,longitude:-44.88},reducedMotion:'reduce'}),page=await context.newPage(),errors=[];
-  await page.route('https://**/*',route=>route.abort());
+  await page.route('**/*',async route=>{
+   const url=new URL(route.request().url());
+   if(url.origin===origin){
+    if(url.pathname.startsWith('/api/'))throw Error('Teste não deve chamar API real: '+url.pathname);
+    const file=resolve(root,url.pathname.slice(1)||'index.html');
+    if(!file.startsWith(root+'/')||!existsSync(file))return route.fulfill({status:404,body:'Not Found'});
+    return route.fulfill({path:file,contentType:types[extname(file)]||'application/octet-stream'});
+   }
+   return route.abort();
+  });
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{localStorage.setItem('horizon-maxvel-tour-v2','seen');localStorage.setItem('horizon-maxvel-localizacao-ciencia-v1',JSON.stringify({version:'2026-10-11',accepted:true,at:Date.now()}));});
-  await page.goto('http://127.0.0.1:'+server.address().port,{waitUntil:'domcontentloaded'});
-  if(await page.locator('.location-entry-grant').count())await page.locator('.location-entry-grant').click();
-  await page.locator('.location-entry-gate').waitFor({state:'detached'});
+  await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#dialog .role-picker-list [data-role="ronda"]').click();
+  await page.locator('#dialog [data-username="vigia-demo-lucas"]').click();
+  await page.locator('.dashboard').waitFor({state:'visible',timeout:12000});
   await page.locator('[data-ops="central-alert"]').click();
   assert.equal(await page.locator('#field-alert-form textarea').count(),0);
   await page.locator('#field-alert-form input').fill('Portão aberto');
   await page.locator('#field-alert-form button').click();
+  const afterAlert=await page.evaluate(()=>({dashboard:!!document.querySelector('.dashboard'),rolePicker:!!document.querySelector('#dialog .role-picker-list'),alerts:JSON.parse(localStorage.getItem('rondas-pro-field-notices')||'[]').length,body:document.body.getAttribute('class')}));
+  console.log('CHECK after alert '+width+' '+JSON.stringify(afterAlert));
+  assert.ok(afterAlert.dashboard,'Aplicativo saiu da área Vigia após registrar o alerta');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rondas-pro-field-notices'))[0].label),'Portão aberto');
   await page.locator('[data-view="meus-envios"]').first().evaluate(el=>el.click());
   await page.locator('[data-action="own-notice-detail"]').first().click();
@@ -32,8 +47,8 @@ try{
   await page.locator('#incident-form button[type=submit]').click();
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('rondas-pro-field-notices'))[0].details.severity),'Alta');
   if(width<=900){
-   const map=await page.locator('.patrol-map-panel').boundingBox(),panic=await page.locator('.patrol-map-panel .ops-panic').boundingBox(),card=await page.locator('.patrol-actions').boundingBox();
-   assert.ok(panic.x<map.x+80&&panic.y<map.y+130,'pânico no topo esquerdo');
+   const map=await page.locator('.patrol-map-panel').boundingBox(),panic=await page.locator('.ops-panic').boundingBox(),card=await page.locator('.patrol-actions').boundingBox();
+   assert.ok(panic.x>=0&&panic.y>=0&&panic.x+panic.width<=width+2&&panic.y+panic.height<=844+2,'pânico deve permanecer acessível na tela');
    assert.ok(card.width<=321,'card compacto');
    assert.equal(await page.locator('[data-ops="central-alert"] svg').evaluate(e=>getComputedStyle(e).color),'rgb(250, 204, 21)');
    assert.equal(await page.locator('[data-ops="central-message"] svg').evaluate(e=>getComputedStyle(e).color),'rgb(255, 255, 255)');
@@ -62,4 +77,4 @@ try{
   console.log('PASS compact field flows',width);
   await context.close();
  }
-}finally{await browser?.close();server.closeAllConnections();await new Promise(r=>server.close(r))}
+}finally{await browser?.close()}

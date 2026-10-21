@@ -45,12 +45,16 @@ try{
    await page.locator('.user-profile-button').click();
    await page.locator('#dialog[open] [data-action="sim-role-picker"]').click();
    await page.locator('#dialog[open] [data-action="sim-role"][data-role="ronda"]').click();
+   const picker=page.locator('#dialog .rp-demo-worker-picker');
+   await picker.waitFor();
+   assert(await picker.locator('[data-action="choose-demo-worker"]').count()===3,'Exatamente três vigias fictícios');
+   await picker.locator('[data-username="vigia-demo-ana"]').click();
    await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Operação de Ronda'));
    assert(await page.locator('#live-login-form').count()===0,'Login apareceu ao voltar ao Vigia');
    const map=page.locator('#mobile-map'),bounds=await map.boundingBox();
    assert(!!bounds&&bounds.width>220&&bounds.height>200,'Mapa do Vigia oculto ou comprimido: '+JSON.stringify(bounds));
    await map.locator('.map-fallback, .leaflet-container').first().waitFor({timeout:15000});
-   assert(await page.getByText('Nenhuma rota atribuída').count()>0,'Aviso de rota não atribuída ausente');
+   assert(await page.locator('.rp-demo-banner-global').count()>0,'Aviso demonstrativo ausente');
    await page.screenshot({path:out+'/vigia-'+width+'.png'});
    assert(errors.length===0,'Erro de JavaScript: '+errors.join(' | '));
    console.log(JSON.stringify({width,entry:'role-picker',selected:'vistoriador',return:'vigia',login:false,errors:errors.length}));

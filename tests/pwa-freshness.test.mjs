@@ -21,5 +21,5 @@ test('demo móvel oferece somente cinco áreas e unifica COI com Monitoramento',
  assert.equal((picker.match(/data-role=/g)||[]).length,1,'itens gerados por um único seletor');
  assert.doesNotMatch(picker,/\['coi','Central COI'/);
  assert.match(app,/operador:coiNavigation,coi:coiNavigation/);
- assert.match(picker,/modal\.classList\.add\('role-picker-dialog'\)/);
+ assert.match(picker,/,false,'role-picker-dialog'\);/);
 });

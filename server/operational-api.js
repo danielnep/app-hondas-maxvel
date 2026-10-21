@@ -54,6 +54,7 @@ function initialize(){
  // Migrações aditivas: nunca substituir nem apagar evidências e registros anteriores.
  if(!db.prepare('PRAGMA table_info(media)').all().some(x=>x.name==='evidence_view'))db.exec("ALTER TABLE media ADD COLUMN evidence_view TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='planned_start'))db.exec('ALTER TABLE planned_routes ADD COLUMN planned_start INTEGER');
+ if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='route_schedule'))db.exec("ALTER TABLE planned_routes ADD COLUMN route_schedule TEXT NOT NULL DEFAULT '{}'");
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='phone'))db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='username'))db.exec("ALTER TABLE users ADD COLUMN username TEXT");
  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL");
@@ -209,16 +210,29 @@ export function createOperationalApi(){
     const rows=a.role==='ronda'?db.prepare(sql+'WHERE r.user_id=? ORDER BY r.updated_at DESC').all(a.id):
      a.role==='cliente'?a.site?db.prepare(sql+'WHERE r.site=? ORDER BY r.updated_at DESC').all(a.site):[]:
      reviewer(a)?db.prepare(sql+'ORDER BY r.updated_at DESC LIMIT 1000').all():[];
-    resp(res,200,{routes:rows.map(r=>({id:r.id,userId:r.user_id,workerName:r.worker_name,site:r.site,name:r.name,points:serialize(r.points)||[],plannedStart:r.planned_start||null,createdAt:r.created_at,updatedAt:r.updated_at}))});return true;
+    resp(res,200,{routes:rows.map(r=>({id:r.id,userId:r.user_id,workerName:r.worker_name,site:r.site,name:r.name,points:serialize(r.points)||[],plannedStart:r.planned_start||null,schedule:serialize(r.route_schedule)||null,createdAt:r.created_at,updatedAt:r.updated_at}))});return true;
    }
    const routeMatch=p.match(/^\/api\/routes\/([0-9a-f-]{36})$/i);
    if((p==='/api/routes'&&m==='POST')||(routeMatch&&m==='PUT')){
-    if(!manager(a)){resp(res,403,{error:'Somente administração cria ou altera rotas'});return true;}
+    if(!(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,403,{error:'Somente COI ou Administração configura rotas'});return true;}
     const d=serialize((await body(req)).toString())||{};
     const user=db.prepare("SELECT id,site FROM users WHERE id=? AND role='ronda' AND active=1").get(clean(d.userId));
     const title=clean(d.name).slice(0,120);
     const points=d.points;
     const plannedStart=d.plannedStart==null||d.plannedStart===''?null:Number(d.plannedStart);
+     const existingRoute=routeMatch?db.prepare('SELECT * FROM planned_routes WHERE id=?').get(routeMatch[1]):null;
+     if(routeMatch&&!existingRoute){resp(res,404,{error:'Rota não encontrada'});return true;}
+     const explicitSchedule=d.schedule&&typeof d.schedule==='object'&&!Array.isArray(d.schedule);
+     const rawSchedule=explicitSchedule?d.schedule:routeMatch?(serialize(existingRoute.route_schedule)||{}):{};
+     const kind=['routine','specific'].includes(rawSchedule.kind)?rawSchedule.kind:'routine';
+     const recurrence=['once','daily','alternate','weekly'].includes(rawSchedule.recurrence)?rawSchedule.recurrence:'once';
+     const hour=typeof rawSchedule.hour==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(rawSchedule.hour)?rawSchedule.hour:'08:00';
+     const startDate=typeof rawSchedule.startDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(rawSchedule.startDate)?rawSchedule.startDate:'';
+     const weekdays=Array.isArray(rawSchedule.weekdays)?[...new Set(rawSchedule.weekdays.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[];
+     if(explicitSchedule&&(((recurrence==='once'||recurrence==='alternate')&&!startDate)||(recurrence==='weekly'&&!weekdays.length))){
+      resp(res,422,{error:'Informe uma data de referência ou os dias da semana para o agendamento'});return true;
+     }
+     const schedule={kind,recurrence,hour,startDate,weekdays};
     if(plannedStart!==null&&(!Number.isInteger(plannedStart)||plannedStart<1577836800000||plannedStart>4102444800000)){
      resp(res,422,{error:'Horário de início programado inválido'});return true;
     }
@@ -226,17 +240,16 @@ export function createOperationalApi(){
       !points.every(p=>p&&typeof p==='object'&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&Number.isFinite(p.lng)&&Math.abs(p.lng)<=180&&clean(p.name).length>0&&clean(p.name).length<=100)){
       resp(res,422,{error:'Selecione um vigia com posto e informe nome e 2 a 30 pontos válidos'});return true;
     }
-    const safe=points.map(p=>({name:clean(p.name).slice(0,100),lat:p.lat,lng:p.lng}));
+    const safe=points.map(p=>({name:clean(p.name).slice(0,100),address:clean(p.address).slice(0,250),lat:p.lat,lng:p.lng}));
     if(routeMatch){
-     const existing=db.prepare('SELECT * FROM planned_routes WHERE id=?').get(routeMatch[1]);
-     if(!existing){resp(res,404,{error:'Rota não encontrada'});return true;}
-     db.prepare('UPDATE planned_routes SET user_id=?,site=?,name=?,points=?,planned_start=?,updated_at=? WHERE id=?')
-      .run(user.id,user.site,title,JSON.stringify(safe),plannedStart,now(),existing.id);
-     audit(a,'route.update',existing.id);resp(res,200,{id:existing.id,updated:true});return true;
+     const scheduleJson=explicitSchedule?JSON.stringify(schedule):existingRoute.route_schedule;
+     db.prepare('UPDATE planned_routes SET user_id=?,site=?,name=?,points=?,planned_start=?,route_schedule=?,updated_at=? WHERE id=?')
+      .run(user.id,user.site,title,JSON.stringify(safe),plannedStart,scheduleJson,now(),existingRoute.id);
+     audit(a,'route.update',existingRoute.id);resp(res,200,{id:existingRoute.id,updated:true});return true;
     }
     const rid=id();
-    db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?,?)')
-     .run(rid,user.id,user.site,title,JSON.stringify(safe),plannedStart,now(),now(),a.id);
+    db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,route_schedule,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)')
+     .run(rid,user.id,user.site,title,JSON.stringify(safe),plannedStart,explicitSchedule?JSON.stringify(schedule):'{}',now(),now(),a.id);
     audit(a,'route.create',rid);resp(res,201,{id:rid,created:true});return true;
    }
    if(p==='/api/events'&&m==='POST'){

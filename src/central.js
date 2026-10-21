@@ -5,6 +5,7 @@ import {createActivityHistoryUI} from './activity-history-ui.js';
 import {EVENT_TYPES,typeInfo,isPending,stateLabel} from './treatment-policy.js';
 import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
+import {nextRouteStart} from './route-schedule.js';
 import {openConclusionDialog} from './conclusion-dialog.js';
 import {createOpsCenterUI} from './ops-center-ui.js';
 import {createCoiMonitor} from './coi-monitor.js';
@@ -660,8 +661,9 @@ function routeEstimate(route){
 }
 function clientView(){
  const active=rounds.filter(r=>r.status==='em_andamento'),past=rounds.filter(r=>r.status!=='em_andamento');
- const planned=routes.filter(r=>r.site===account.site&&Number.isFinite(r.plannedStart)&&r.plannedStart>=Date.now()-60000)
-   .sort((a,b)=>a.plannedStart-b.plannedStart)[0]||null;
+ const reference=Date.now();
+  const planned=routes.filter(r=>r.site===account.site).map(r=>({...r,plannedStart:nextRouteStart(r,reference)}))
+    .filter(r=>Number.isFinite(r.plannedStart)).sort((a,b)=>a.plannedStart-b.plannedStart)[0]||null;
  const estimate=routeEstimate(planned);
  const inspections=events.filter(e=>e.kind==='inspection').slice(0,12);
  const item=r=>'<details class="details-toggle rp2-timeline-entry"><summary>'+escape(roundStatus(r))+' · '+clientDate(r.start)+' · '+escape(r.site||account.site)+'</summary>'+
