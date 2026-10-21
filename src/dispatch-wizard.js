@@ -41,6 +41,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   const input=dialog.querySelector('#rp-dispatch-address');
   if(input)input.addEventListener('input',()=>scheduleLocation(input.value));
   dialog.querySelector('#rp-dispatch-add-destination')?.addEventListener('click',addDestination);
+  dialog.querySelector('#rp-dispatch-stops')?.addEventListener('error',event=>{if(event.target?.tagName==='IMG')event.target.hidden=true;},true);
   dialog.querySelector('#rp-dispatch-stops')?.addEventListener('click',event=>{
    const button=event.target.closest('[data-dispatch-remove],[data-dispatch-up],[data-dispatch-down],[data-dispatch-focus]');if(!button)return;
    const index=Number(button.dataset.dispatchRemove??button.dataset.dispatchUp??button.dataset.dispatchDown??button.dataset.dispatchFocus);
@@ -48,7 +49,10 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    if(button.hasAttribute('data-dispatch-remove'))destinations.splice(index,1);
    if(button.hasAttribute('data-dispatch-up')&&index>0)[destinations[index-1],destinations[index]]=[destinations[index],destinations[index-1]];
    if(button.hasAttribute('data-dispatch-down')&&index<destinations.length-1)[destinations[index],destinations[index+1]]=[destinations[index+1],destinations[index]];
-   renderDestinations();void showPreview(destinations[index]||destinations[0]);
+   renderDestinations();
+   const active=locationPoint||destinations[index]||destinations[0];
+   if(active)void showPreview(active);
+   else{clearPreview();const host=dialog.querySelector('#rp-dispatch-preview-map');if(host)host.textContent='Pesquise e confirme o primeiro destino para abrir o mapa.';}
   });
   renderDestinations();
  }
