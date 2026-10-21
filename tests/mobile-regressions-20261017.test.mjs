@@ -56,6 +56,6 @@ test('tela não mantém força de 100dvh nas janelas e evita vermelho em ação 
  assert.match(css,/\.rp-inspection-main-action\{[\s\S]*?background:#edf0f5!important/);
  assert.match(css,/\.rp-inspection-directions/);
  const index=read('index.html'),central=read('central.html');
- assert.match(index,/field\.css\?v=51/);
- assert.match(central,/field\.css\?v=51/);
+ assert.match(index,/field\.css\?v=52/);
+ assert.match(central,/field\.css\?v=52/);
 });
