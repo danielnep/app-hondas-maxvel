@@ -137,8 +137,8 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    notify(getData().demo?'Rota fictícia salva neste navegador. Escolha o Vigia para conferir.':'Rota salva. Ela ficará disponível ao vigia após a próxima sincronização.');
    step=1;points=[];name='';query='';suggestions=[];
    await afterSave(true);
-  }catch(err){notify(err.message||'Não foi possível salvar a rota.');afterSave(false);}
-  finally{saving=false;}
+  }catch(err){notify(err.message||'Não foi possível salvar a rota.');}
+  finally{saving=false;await afterSave(false);}
   return true;
  }
  return {html,mount,dispose,click,change,input,submit};
