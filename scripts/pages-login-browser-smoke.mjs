@@ -75,13 +75,16 @@ try{
        throw Error('Revisão perdeu o rascunho');
       const inspector=await page.locator('#dialog').evaluate(el=>{const bounds=e=>{const r=e?.getBoundingClientRect();return r?{height:r.height,top:r.top,bottom:r.bottom}:null};return {classes:el.className,computed:{height:getComputedStyle(el).height,minHeight:getComputedStyle(el).minHeight,maxHeight:getComputedStyle(el).maxHeight,display:getComputedStyle(el).display},dialog:bounds(el),wizard:bounds(el.querySelector('.rp-dispatch-wizard')),form:bounds(el.querySelector('form')),stage:bounds(el.querySelector('[data-dispatch-stage="4"]')),scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}});console.log('DISPATCH_HEIGHT '+JSON.stringify(inspector));
       const geometry=await page.locator('#dialog').boundingBox();
-      if(!geometry||geometry.width>393||geometry.height>840||geometry.y<0)throw Error('Janela de despacho cortada: '+JSON.stringify(geometry));
+      if(!geometry||geometry.width>393||geometry.height>600||geometry.y<0)throw Error('Janela de despacho excessivamente alta ou cortada: '+JSON.stringify(geometry));
       await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-despacho.png',animations:'disabled'});
       await form.locator('[data-action="dispatch-back"]').click();
       if((await form.getAttribute('data-step'))!=='3'||await form.locator('[name="reason"]').inputValue()!=='Conferir portaria principal e acesso dos visitantes.')
        throw Error('Voltar perdeu orientações');
-      await page.locator('#dialog .dialog-close').click();
-      console.log('OK: '+target.name+' / Administração em quatro etapas e modal sem corte');
+      await form.locator('[data-action="dispatch-next"]').click();
+      await form.locator('[type="submit"]').click();
+      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.address==='Rua da Vistoria, 123, Divinópolis'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='vistoria'),{timeout:12000});
+      if(await page.locator('#dialog').evaluate(x=>x.open))throw Error('Janela permaneceu aberta após envio confirmado');
+      console.log('OK: '+target.name+' / Despacho completo com 4 etapas, gravação e modal compacto');
      }
      if(role==='vistoriador'){
      const map=page.locator('#demo-inspection-map'),bounds=await map.boundingBox();
