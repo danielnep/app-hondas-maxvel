@@ -41,7 +41,8 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  for(const module of MODULES)seed.run(module,now());
  const admin=u=>ADMIN_ROLES.includes(u.role);
  const review=u=>REVIEW_ROLES.includes(u.role);
- const allows=(u,module)=>admin(u)||review(u)&&!!db.prepare('SELECT enabled FROM coi_permissions WHERE module=?').get(module)?.enabled;
+ const allows=(u,module)=>admin(u)||review(u)&&!!db.prepare('SELECT enabled FROM coi_permissions WHERE module=?').get(module)?.enabled&&
+   (u.role!=='coi'||!['rondas','despachos','ocorrencias'].includes(module)||!!db.prepare('SELECT enabled FROM role_permissions WHERE role=? AND module=?').get('coi',module)?.enabled);
  const insert=db.prepare('INSERT INTO notifications(id,user_id,kind,title,body,event_id,dispatch_id,created_at) VALUES(?,?,?,?,?,?,?,?)');
  function notify(roles,kind,title,message,{eventId=null,dispatchId=null,except=[]}={}){
   if(!roles.length)return;
