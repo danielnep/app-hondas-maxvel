@@ -138,7 +138,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
   if(!loading)return true;
   lookupTimer=setTimeout(async()=>{
    try{
-    const url='https://photon.komoot.io/api/?limit=6&lang=pt&q='+encodeURIComponent(query.trim());
+    const url='https://photon.komoot.io/api/?limit=6&lang=default&q='+encodeURIComponent(query.trim());
     const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)});
     if(!response.ok)throw Error('Pesquisa indisponível');
     const data=await response.json();if(serial!==lookupSerial)return;
