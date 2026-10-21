@@ -62,7 +62,7 @@ try{
    check(await page.locator('#dialog .role-picker-list [data-role]').count()===4,'Seletor não contém as quatro áreas');
    await role(page,'ronda',true);
    await page.locator('#mobile-map').waitFor({state:'visible',timeout:12000});
-   check((await page.locator('.user-profile-button').innerText()).includes('Lucas Ferreira'),'Vigia fictício não foi selecionado');
+   check((await page.locator('.user-profile-button').textContent()).includes('Lucas Ferreira'),'Vigia fictício não foi selecionado');
    await screen(page,width,'vigia');
    await role(page,'coi');
    await navigation(page,'rondas');
