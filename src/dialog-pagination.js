@@ -2,7 +2,7 @@
  * Guided flows own their steps; viewport height must never split a form.
  */
 export function installDialogPagination(dialog){
- if(!dialog?.open||dialog.querySelector('.round-wizard,.ux06-sheet')||dialog.classList.contains('guide-dialog')||dialog.classList.contains('role-picker-dialog'))return;
+ if(!dialog?.open||dialog.querySelector('.round-wizard,.ux06-sheet')||dialog.classList.contains('guide-dialog')||dialog.classList.contains('role-picker-dialog')||dialog.classList.contains('rp-dispatch-dialog'))return;
  dialog.classList.add('rp-flow-dialog');
  dialog._flowController?.abort();
  const controller=new AbortController();dialog._flowController=controller;
