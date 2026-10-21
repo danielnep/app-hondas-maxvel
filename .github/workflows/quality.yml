@@ -31,6 +31,8 @@ jobs:
         run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/pages-login-browser-smoke.mjs
       - name: Troca de áreas Vigia e Vistoriador sem login no Railway
         run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/railway-open-area-smoke.mjs
+      - name: Testar a nova configuração de rotas mobile e desktop sem produção
+        run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/route-planner-browser-qa.mjs
       - name: Validar tema, conversas e gestos em ambiente isolado
         run: CHROME_BIN=$(command -v google-chrome || command -v chromium) node scripts/glass-ui-review.mjs
       - name: Capturas da interface
