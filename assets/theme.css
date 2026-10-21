@@ -2156,7 +2156,8 @@
  .rp-theme #dialog.rp-dispatch-dialog[open]{
   display:block!important;box-sizing:border-box;width:min(490px,calc(100vw - 24px))!important;
   max-width:min(490px,calc(100vw - 24px))!important;
-  height:auto!important;min-height:0!important;max-height:calc(100dvh - 24px)!important;
+  position:fixed!important;inset:0!important;margin:auto!important;
+  height:max-content!important;min-height:0!important;max-height:calc(100dvh - 24px)!important;
   padding:22px 22px 19px!important;overflow-y:auto!important;
   overflow-x:hidden!important;overscroll-behavior:contain;
   background:#1e2026!important;color:#f7f8fa!important;
