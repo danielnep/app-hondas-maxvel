@@ -1914,8 +1914,11 @@ dialog :is(.choice,.section-note,.rules li,.guide-pan,.guide-tabs button),.tour-
 .dashboard .app-header .header-actions .help-toggle{display:inline-flex!important;min-width:44px!important;width:44px!important;flex:0 0 44px!important}
 .dashboard .ronda-page .patrol-map-panel{height:clamp(235px,48dvh,380px)!important}}
 @media(max-width:900px) and (max-height:640px){.dashboard .ronda-page .patrol-map-panel{height:clamp(230px,45dvh,355px)!important}}
-@media screen and (max-width:900px){html,body{height:100%!important;max-height:100dvh!important;overflow:hidden!important;overscroll-behavior:none!important}
-#app,.entry-screen,.dashboard,.dashboard .app-shell,.dashboard .shell-main{height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important}
+@media screen and (max-width:900px){/* Somente cockpit de campo tem viewport travada; páginas de gestão precisam rolar. */
+html,body{height:auto!important;min-height:100%!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:auto!important}
+#app,.entry-screen,.dashboard,.dashboard .app-shell,.dashboard .shell-main{height:auto!important;min-height:100dvh!important;max-height:none!important;overflow:visible!important}
+body[data-rp-field="true"]{height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+body[data-rp-field="true"] :is(#app,.dashboard,.dashboard .app-shell,.dashboard .shell-main){height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important}
 .dashboard .app-shell{display:block!important}
 .dashboard .shell-main{display:flex!important;flex-direction:column!important;width:100%!important;min-height:0!important}
 .dashboard .sidebar{display:none!important}
@@ -1933,7 +1936,9 @@ dialog :is(.choice,.section-note,.rules li,.guide-pan,.guide-tabs button),.tour-
 .dashboard .simulation-rolebar .simulation-roles{width:100%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:2px!important}
 .dashboard .simulation-rolebar .simulation-roles button{min-height:40px!important;max-height:40px!important;padding:3px 2px!important;border:0!important;font-size:11px!important}
 .dashboard .simulation-rolebar .simulation-roles button[data-role="admin"]{display:none!important}
-.dashboard .app-content{flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;overflow:hidden!important;padding:3px 8px!important;display:flex!important;flex-direction:column!important;gap:3px!important}
+.dashboard .app-content{flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;padding:3px 8px!important;display:flex!important;flex-direction:column!important;gap:3px!important}
+body[data-rp-field="true"] .dashboard .app-content{overflow:hidden!important}
+body:not([data-rp-field="true"]) .dashboard .app-content:not(.ronda-page){display:block!important;flex:none!important;min-height:calc(100dvh - 110px)!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 .dashboard .app-content .page-title{flex:0 0 auto!important;margin:0!important;padding:3px 1px!important}
 .dashboard .app-content .page-title h1{font-size:16px!important;line-height:1.2!important}
 .dashboard .app-content .page-title p{display:none!important}
@@ -1956,7 +1961,7 @@ dialog :is(.choice,.section-note,.rules li,.guide-pan,.guide-tabs button),.tour-
 .dashboard .ronda-page .patrol-action-heading{min-height:30px!important;max-height:30px!important;height:30px!important;padding:2px 7px!important}
 .dashboard .ronda-page .patrol-action-heading strong{font-size:11px!important}
 .dashboard .ronda-page .patrol-sheet-toggle{min-height:29px!important;height:29px!important;padding:3px 7px!important;border:0!important;font-size:11px!important}
-.dashboard .ronda-page .patrol-action-body{display:block!important;min-height:0!important;height:auto!important;padding:3px 8px 6px!important;overflow:hidden!important}
+.dashboard .ronda-page .patrol-action-body{display:block!important;min-height:0!important;height:auto!important;padding:3px 8px 6px!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important}
 .dashboard .ronda-page .patrol-primary-flow .patrol-stage-intro{padding:0!important;margin:0!important;display:flex!important;align-items:center!important;gap:6px!important;min-height:0!important}
 .dashboard .ronda-page .patrol-primary-flow .patrol-stage-intro h2{font-size:12px!important;margin:0!important;line-height:1.25!important}
 .dashboard .ronda-page .patrol-stage-index{font-size:9px!important;white-space:nowrap!important}
@@ -1993,7 +1998,7 @@ dialog :is(.choice,.section-note,.rules li,.guide-pan,.guide-tabs button),.tour-
 .dashboard .ops-map-stage{flex:1 1 auto!important;min-height:0!important;max-height:none!important}
 .dashboard .ops-map-legend{display:none!important}
 .dashboard .ops-map-corner{font-size:10px!important;padding:4px!important}
-.dashboard .operations-page{display:flex!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;flex-direction:column!important;overflow:hidden!important;gap:4px!important}
+.dashboard .operations-page{display:flex!important;flex:1 1 auto!important;min-height:0!important;width:100%!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important;gap:4px!important}
 .dashboard .operations-page>.page-title,.dashboard .operations-page .ops-topline,
  .dashboard .operations-page .ops-empty-state,.dashboard .operations-page .ops-footer-note,
  .dashboard .operations-page .ops-workspace,.dashboard .operations-page .ops-bottom-grid{display:none!important}
@@ -2005,26 +2010,27 @@ dialog :is(.choice,.section-note,.rules li,.guide-pan,.guide-tabs button),.tour-
 .ux-operations-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;height:36px;flex:0 0 36px}
 .ux-operations-tabs button{border:1px solid var(--mx-line);font-size:11px;font-weight:600;padding:4px 2px}
 .ux-operations-tabs button[aria-selected="true"]{border-bottom:2px solid var(--mx-line)}
-.ux-operations-surface{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
-.ux-operations-surface > [data-ux-pane]{width:100%!important;min-width:0!important;min-height:0!important;max-height:none!important;height:100%!important;flex:1 1 auto!important;overflow:hidden!important}
+.ux-operations-surface{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important}
+.ux-operations-surface > [data-ux-pane]{width:100%!important;min-width:0!important;min-height:0!important;max-height:none!important;height:auto!important;flex:1 1 auto!important;overflow-y:auto!important;overflow-x:hidden!important}
 .ux-operations-surface > [hidden]{display:none!important}
-.dashboard .ops-activity,.dashboard .ops-recent{padding:6px!important;overflow:hidden!important}
-.dashboard .ops-alert-list{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+.dashboard .ops-activity,.dashboard .ops-recent{padding:6px!important;overflow-y:auto!important;overflow-x:hidden!important}
+.dashboard .ops-alert-list{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important}
 .ux-row-pagination{display:flex;align-items:center;justify-content:space-between;gap:7px;flex:0 0 34px;margin:4px 0 0;min-height:34px}
 .ux-row-pagination button{border:1px solid var(--mx-line);padding:2px 12px;min-width:40px;min-height:30px;font-size:16px}
 .ux-row-pagination span{font-size:11px}
 [hidden]{display:none!important}
 .dashboard .page-title+.card,.dashboard .page-title+.grid-two,.dashboard .alerts-command-page,
- .dashboard .schedule-workspace,.dashboard .map-command-page{min-height:0!important;flex:1 1 auto!important;max-height:none!important;overflow:hidden!important}
+ .dashboard .schedule-workspace,.dashboard .map-command-page{min-height:0!important;flex:1 1 auto!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important}
 .dashboard .schedule-workspace{display:flex!important;flex-direction:column!important}
 .dashboard .schedule-row{padding:4px!important;min-height:50px!important}
 .dashboard .schedule-row-tools .button{min-height:29px!important}
-.dashboard .schedule-list{flex:1 1 auto!important;overflow:hidden!important;min-height:0!important}
+.dashboard .schedule-list{flex:1 1 auto!important;overflow-y:auto!important;overflow-x:hidden!important;min-height:0!important}
 .dashboard .schedule-refine{display:none!important}
 .dashboard .schedule-stats{display:none!important}
-.dashboard .alerts-queue-list,.dashboard .timeline,.dashboard .table-wrap{overflow:hidden!important;min-height:0!important}
+.dashboard .alerts-queue-list,.dashboard .timeline{overflow-y:auto!important;overflow-x:hidden!important;min-height:0!important}
+.dashboard .table-wrap{overflow:auto!important;min-height:0!important}
 .dashboard .alerts-queue-list{flex:1 1 auto!important}
-dialog{width:min(96vw,550px)!important;max-width:min(96vw,550px)!important;max-height:calc(100dvh - 24px)!important;overflow:hidden!important;padding:12px 12px 10px!important}
+dialog{width:min(96vw,550px)!important;max-width:min(96vw,550px)!important;max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;padding:12px 12px 10px!important}
 dialog .dialog-close{position:absolute!important;right:6px!important;top:6px!important;z-index:2!important;min-width:34px!important;min-height:34px!important;width:34px!important;height:34px!important}
 dialog h2{font-size:18px!important;line-height:1.23!important;letter-spacing:-.02em!important;margin:3px 37px 5px 0!important}
 dialog p{font-size:11px!important;line-height:1.4!important;margin:3px 0 6px!important}
@@ -2124,12 +2130,12 @@ dialog .rules li p{font-size:10px!important}
 .dashboard .app-content:has(.map-command-page)>.page-title{display:none!important}
 .dashboard .app-content .schedule-switch{flex:0 0 34px!important;min-height:34px!important;height:34px!important;display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:3px!important;margin:1px 0!important}
 .dashboard .app-content .schedule-switch button{min-height:33px!important;height:33px!important;padding:2px 3px!important;font-size:10px!important}
-.dashboard .app-content>.map-command-page{flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:3px}
+.dashboard .app-content>.map-command-page{flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;display:flex!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important;gap:3px}
 .ux-ronda-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;flex:0 0 35px;min-height:35px}
 .ux-ronda-tabs button{border:1px solid var(--mx-line);font-size:11px;padding:3px}
 .ux-ronda-tabs button[aria-selected="true"]{border-bottom:2px solid var(--mx-line)}
-.ux-ronda-stage{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;width:100%!important}
-.ux-ronda-stage>[data-ux-subpage]{flex:1 1 auto!important;min-height:0!important;min-width:0!important;width:100%!important;max-height:none!important;height:100%!important;overflow:hidden!important;margin:0!important}
+.ux-ronda-stage{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;width:100%!important}
+.ux-ronda-stage>[data-ux-subpage]{flex:1 1 auto!important;min-height:0!important;min-width:0!important;width:100%!important;max-height:none!important;height:auto!important;overflow-y:auto!important;overflow-x:hidden!important;margin:0!important}
 .ux-ronda-stage>[hidden]{display:none!important}
 .ux-ronda-stage .map-command-panel{display:flex!important;flex-direction:column!important;padding:5px!important}
 .ux-ronda-stage .map-command-panel .map-command-top{flex:0 0 42px!important;min-height:42px!important;max-height:42px!important;padding:2px!important}
@@ -2143,7 +2149,7 @@ dialog .rules li p{font-size:10px!important}
 .ux-ronda-stage .map-command-panel .map-legend,.ux-ronda-stage .map-command-panel .map-command-disclosure{display:none!important}
 .ux-ronda-stage .map-checkpoint-panel{display:flex!important;flex-direction:column!important;padding:6px!important}
 .ux-ronda-stage .map-checkpoint-panel .map-checkpoint-heading{padding:4px!important}
-.ux-ronda-stage .map-checkpoint-panel .map-point-list{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+.ux-ronda-stage .map-checkpoint-panel .map-point-list{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important}
 .ux-ronda-stage .map-checkpoint-panel .map-point-note{display:none!important}
 .ux-ronda-stage .map-history{display:flex!important;flex-direction:column!important;padding:6px!important}
 .ux-ronda-stage .map-history .table-wrap{flex:1 1 auto!important;min-height:0!important}
