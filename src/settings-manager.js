@@ -9,6 +9,7 @@ export function createSettingsManager({showDialog,dialog,api,getUsers,refresh,re
  const landing=()=>'<section class="rp-config-hub">'+
  '<button type="button" class="rp-config-choice" data-action="admin-add-user"><span class="rp-config-symbol">+</span><span><strong>Adicionar novo usuário</strong><small>Identidade, função, contato e veículo em etapas</small></span><span aria-hidden="true">→</span></button>'+
  '<button type="button" class="rp-config-choice" data-action="admin-permissions"><span class="rp-config-symbol">✓</span><span><strong>Permissões</strong><small>Definir acessos do COI e da Ronda</small></span><span aria-hidden="true">→</span></button>'+
+ '<button type="button" class="rp-config-choice" data-action="admin-points-open"><span class="rp-config-symbol">⌖</span><span><strong>Pontos cadastrados</strong><small>Salvar destinos geográficos para as rondas</small></span><span aria-hidden="true">→</span></button>'+ 
  '</section><section class="rp-config-roster"><h2>Equipe cadastrada</h2><div class="team-list">'+
  getUsers().map(u=>'<div class="team-row"><div><strong>'+safe(u.name)+'</strong><small>'+safe(u.role==='ronda'?'Ronda / Vistoriador':u.role==='coi'?'COI':u.role)+
  (u.vehicleType?' · '+safe(VEHICLES.find(v=>v[0]===u.vehicleType)?.[1]||u.vehicleType):'')+'</small></div><small>'+safe(u.email||u.username)+'</small></div>').join('')+
