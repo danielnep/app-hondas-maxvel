@@ -1,5 +1,6 @@
 import {decorateTheme} from './theme-shell.js';
 import {createRoutePlanner} from './route-planner.js';
+import {createDispatchWizard} from './dispatch-wizard.js';
 import {routeCanStart} from './route-schedule.js';
 import {DEMO_THREE,seedDemoThree,routeRequest} from './route-demo-mode.js';
 import {liveRequest,liveSession,loginHtml} from './live-client.js';
@@ -100,6 +101,7 @@ const routePlanner=createRoutePlanner({
  api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
  afterSave:async reload=>{if(reload)await refreshLiveOperational();render();}
 });
+const dispatchWizard=createDispatchWizard({dialog:modal,showDialog,getWorkers:()=>liveUsers,request:liveRequest,refresh:refreshLiveOperational,redraw:render,notify});
 const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
 function persist(){
  saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
@@ -790,9 +792,9 @@ function realOverview(){
  const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execucao',active.length],['Eventos',liveEvents.length]];
  const metrics='<div class="ops-metrics">'+rows.map(([label,n])=>'<article class="ops-metric"><strong>'+n+'</strong><h3>'+esc(label)+'</h3></article>').join('')+'</div>';
  const recent=liveEvents.slice(0,30).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
- const report=pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+metrics+
+ const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Despacho de vistoria"><div><small>OPERAÇÃO DE CAMPO</small><strong>Despachar vistoria</strong><span>Profissional · destino · instruções</span></div><button type="button" data-action="dispatch-open">Nova vistoria '+ic('arrow')+'</button></section>':'';
+ return pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+dispatch+metrics+
  '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento recebido.</p>')+'</div></section>';
- return report+(reviewer?'<section class="schedule-workspace"><h2>Despachar vistoria</h2><form id="live-dispatch-form" class="live-register"><label>Vistoriador<select name="workerId" required>'+liveUsers.filter(u=>u.role==='vistoriador'&&u.active).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('')+'</select></label><label>Destino / endereco<input name="address" required minlength="5"></label><label>Motivo<textarea name="reason" required minlength="10"></textarea></label><button class="button primary" type="submit">Solicitar vistoria</button></form></section>':'');
 }
 function realRondas(){
  if(!['admin','coi','operador'].includes(user?.role))return pageTitle('Rotas','Área do COI e da Administração.');
@@ -1231,7 +1233,7 @@ function showGuide(forPresentation=false,step=0){
   modal.querySelector('#guide-current-heading')?.focus({preventScroll:true});
  });
 }
-function showDialog(html,wide=false){modal.className=wide?'wide':'';modal.innerHTML=`<button type="button" class="dialog-close" aria-label="Fechar janela" data-action="close-dialog">${ic('close')}</button>${html}`;if(!modal.open)modal.showModal();requestAnimationFrame(()=>installDialogPagination(modal));}
+function showDialog(html,wide=false,dialogClass=''){modal.className=[wide?'wide':'',dialogClass].filter(Boolean).join(' ');modal.style.removeProperty('transform');modal.style.removeProperty('--rp-drag-y');modal.innerHTML=`<button type="button" class="dialog-close" aria-label="Fechar janela" data-action="close-dialog">${ic('close')}</button>${html}`;if(!modal.open)modal.showModal();requestAnimationFrame(()=>installDialogPagination(modal));}
 function privacy(){showDialog(`<div class="eyebrow">PRIVACIDADE E TRANSPARÊNCIA</div><h2>Uso responsável dos dados de ronda</h2><p>Este protótipo guarda nomes informados, horários, coordenadas simuladas ou dados de teste autorizados, desvios, justificativas e ocorrências somente no navegador atual.</p><div class="rules"><li><div><strong>Cartografia</strong><p>Quando online, os mapas carregam imagens do OpenStreetMap. Os pontos de ronda são fictícios; o provedor pode receber informações técnicas da visualização da região do mapa.</p></div></li><li><div><strong>Localização</strong><p>O modo GPS pede autorização do aparelho. No navegador, só funciona enquanto a página estiver ativa; o aplicativo nativo Android pode continuar com um serviço em primeiro plano e notificação visível, conforme permissões e condições do sistema. O serviço não sobrevive a uma parada forçada. Falhas ou imprecisões não são prova de irregularidade.</p></div></li><li><div><strong>Supervisão e alertas</strong><p>O recebimento nesta versão é simulado e local. Nenhum supervisor real recebe automaticamente avisos.</p></div></li><li><div><strong>Próximas etapas</strong><p>Antes do uso operacional: autenticação, infraestrutura, controle de acesso, segurança, política de retenção e documentação LGPD.</p></div></li></div>${btn('Entendi','close-dialog','primary full')}`,true)}
 function trackingIntroduction(){
  const requirements=LOCATION_REQUIREMENTS.map((r,i)=>`<div class="consent-feature"><span>${String(i+1).padStart(2,'0')}</span><div><strong>${esc(r.title)}</strong><p>${esc(r.description)}</p></div></div>`).join('');
@@ -1272,8 +1274,7 @@ function openAreaPicker(){
   const roles=isPagesTestMode()
    ?[['ronda','Vigia','compass'],['coi','COI · Acompanhamento','headset'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']]
    :[['ronda','Vigia','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
-  showDialog(`<div class="eyebrow">ÁREAS DO RONDA PRO · ${isPagesTestMode()?'TESTES':'DEMONSTRAÇÃO'}</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">${isPagesTestMode()?'Escolha livremente uma área de teste. Os dados permanecem neste navegador.':'A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.'}</p>${(isPagesTestMode())?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`);
-  modal.classList.add('role-picker-dialog');
+  showDialog(`<div class="eyebrow">ÁREAS DO RONDA PRO · ${isPagesTestMode()?'TESTES':'DEMONSTRAÇÃO'}</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">${isPagesTestMode()?'Escolha livremente uma área de teste. Os dados permanecem neste navegador.':'A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.'}</p>${(isPagesTestMode())?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`,false,'role-picker-dialog');
 }
 function profileDialog(){
  if(!user)return;
@@ -1430,6 +1431,9 @@ window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status=
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.dataset.action?.startsWith('rp-plan-')){await routePlanner.click(el);return;}if(el.tagName==='A')event.preventDefault();
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(act==='dispatch-open'){if(['admin','coi','operador'].includes(user?.role))dispatchWizard.open();return;}
+ if(act==='dispatch-next'){dispatchWizard.step(Number(modal.querySelector('#live-dispatch-form')?.dataset.step||1)+1);return;}
+ if(act==='dispatch-back'){dispatchWizard.step(Number(modal.querySelector('#live-dispatch-form')?.dataset.step||1)-1);return;}
  if(user?.role==='vistoriador'&&user?.id&&act==='inspector-create'){
   const kind=el.dataset.taskKind==='ronda'?'ronda':'inspection';
   showDialog('<section class="rp-inspector-create"><div class="eyebrow">VISTORIADOR · NOVO REGISTRO</div><h2>'+(kind==='ronda'?'Criar ronda':'Criar vistoria')+'</h2>'+
@@ -1884,11 +1888,7 @@ document.addEventListener('submit',async e=>{
    await refreshLiveOperational();render();notify('Rota salva e atribuida.');
   }catch(error){notify(error.message)}return;
  }
- if(e.target.id==='live-dispatch-form'){
-  e.preventDefault();const d=Object.fromEntries(new FormData(e.target));
-  try{await liveRequest('/dispatches',{method:'POST',data:{...d,kind:'inspection'}});await refreshLiveOperational();render();notify('Vistoria despachada.');}
-  catch(error){notify(error.message)}return;
- }
+ if(e.target.id==='live-dispatch-form'){e.preventDefault();await dispatchWizard.submit(e.target);return;}
  if(e.target.id==='live-inspection-form'){
   e.preventDefault();const data=new FormData(e.target),dispatchId=e.target.dataset.dispatch,button=e.target.querySelector('button');button.disabled=true;
   try{
