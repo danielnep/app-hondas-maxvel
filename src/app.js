@@ -1,4 +1,6 @@
 import {decorateTheme} from './theme-shell.js';
+import {createRoutePlanner} from './route-planner.js';
+import {DEMO_THREE,seedDemoThree,routeRequest} from './route-demo-mode.js';
 import {liveRequest,liveSession,loginHtml} from './live-client.js';
 import {isPagesTestMode,PAGES_TEST_ACCOUNTS} from './pages-test-api.js';
 import {DWELL_MS,requiredDwellMs,RADIUS_METERS,DEMO_ROUTE,accurateFix,canCompletePoint,completePoint,createSession,currentCheckpoint,distanceMeters,finishSession,hasBlock,justifyDeviation,offsetRouteNear,routeLeg,progressPercent,registerIncident,acknowledge,updateLocation,checkInAtPoint} from './domain.js';
@@ -92,6 +94,11 @@ const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
 let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null;
+const routePlanner=createRoutePlanner({
+ getData:()=>({users:liveUsers,routes:liveRoutes,role:user?.role,demo:isPagesTestMode()}),
+ api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
+ afterSave:async reload=>{if(reload)await refreshLiveOperational();render();}
+});
 const liveData=()=>({sessions,programs,selectedWatcherId,operationalSettings});
 function persist(){
  saveState({...liveData(),activeSessionId:session?.status==='active'&&mode==='real'?session.id:null,activeUser:user});
@@ -123,7 +130,7 @@ async function restoreLiveAccount(){
  screen='dashboard';presentation=false;mode='real';session=null;
  view=user.role==='ronda'?'minha-ronda':user.role==='vistoriador'?'vistoriador':'overview';
  await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);
- if(['ronda','vistoriador'].includes(user.role))void liveRequest('/presence',{method:'POST',data:{position:null}}).catch(()=>{});
+ if(['ronda','vistoriador'].includes(user.role)&&!isPagesTestMode())void liveRequest('/presence',{method:'POST',data:{position:null}}).catch(()=>{});
  render();
 }
 function liveLogout(){
@@ -480,7 +487,7 @@ function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRou
  const workspace=document.querySelector('.patrol-workspace');
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900&&!workspace.matches('[data-inspection-cockpit]'))workspace.insertBefore(routeAction,routeMap);
- attachMaps();ops.decorate();
+ attachMaps();if(view==='rondas'&&user?.id)void routePlanner.mount();else routePlanner.dispose();ops.decorate();
  if(user?.role==='vistoriador'&&view==='vistoriador'&&demoInspectionDraft?.id&&!demoWizardAutoId&&demoPendingInspection()?.arrivedAt){demoWizardAutoId=demoInspectionDraft.id;requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());}
  const dash=document.querySelector('.dashboard');
  // Lanterna aparece somente na área operacional, nunca em histórico ou chat.
@@ -493,7 +500,7 @@ function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRou
   if(mapHelp)workspace.append(mapHelp);
  }
  installManager.decorate();uiMotion.enterView();justRendered=Date.now();
- if(user?.role==='ronda'&&view==='minha-ronda'&&screen!=='landing'&&!locationGate.isGranted())locationGate.open({demo:presentation});
+ if(user?.role==='ronda'&&view==='minha-ronda'&&screen!=='landing'&&!isPagesTestMode()&&!locationGate.isGranted())locationGate.open({demo:presentation});
  else if(user?.role!=='ronda'||view!=='minha-ronda')locationGate.close();
 }
 /** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
@@ -571,9 +578,9 @@ function entryScreen(){
 
 function landing(){
  const examples=[['shield','Acompanhamento contínuo','Histórico de etapas e condições da ronda'],['map','Cartografia contextual','Pontos, raio e progresso sobre ruas reais'],['bell','Desvios documentados','Justificativa vinculada à supervisão'],['clipboard','Histórico consultável','Eventos e registros em ordem cronológica']];
- return `<div class="hero product-home"><div class="hero-container"><header class="topnav">${brand()}<nav class="nav-actions" aria-label="Acesso rápido">${btn(ic('help')+' Guia da plataforma','guide','','')} ${btn('Explorar '+ic('arrow'),'login','primary small')}</nav></header><main id="main"><section class="product-hero"><div class="product-hero-copy"><div class="eyebrow">${ic('shield')} HONDAS MAXVEL · OPERAÇÕES EM CAMPO</div><h1>Uma visão completa<br>de cada <span>ronda.</span></h1><p>Acompanhe o trabalho em campo e a supervisão em um só ambiente. Pontos, trajetos, permanência e ocorrências apresentados com clareza, do celular ao computador.</p><div class="hero-buttons">${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}${btn('Explorar sem login','login')}</div><div class="product-benefits"><span>${ic('checkcircle')} Passo a passo para o colaborador</span><span>${ic('checkcircle')} Visão da supervisão</span><span>${ic('checkcircle')} Registros com contexto</span></div><p class="product-fineprint">${ic('help')} Ambiente de avaliação: trajeto, pessoas e alertas ilustrativos. A cartografia é real quando online.</p></div><div class="product-showcase"><div class="showcase-main"><div class="showcase-toolbar"><div class="showcase-title">${ic('map')} <strong>Central de acompanhamento</strong><small>Prévia funcional do mapa</small></div><span class="showcase-status"><i></i> Visualização de rota</span></div><div id="hero-map" class="showcase-map"></div><div class="showcase-map-badge">${ic('pin')} Rota Centro · Divinópolis <span>4 pontos · raio 25 m</span></div><div class="showcase-overlay-stats"><div><small>Próxima verificação</small><strong>Portaria principal</strong></div><span>${ic('crosshair')} 25 m</span></div></div><div class="showcase-detail-grid"><div class="showcase-detail"><span class="showcase-detail-icon">${ic('clock')}</span><span><small>Permanência por ponto</small><strong>30 segundos contínuos</strong></span></div><div class="showcase-detail"><span class="showcase-detail-icon">${ic('bell')}</span><span><small>Desvios de percurso</small><strong>Justificativa e análise</strong></span></div></div><div class="showcase-disclaimer">Mapa OpenStreetMap · cenário operacional fictício</div></div></section><section class="product-capabilities"><div class="capabilities-intro"><div class="eyebrow">UMA PLATAFORMA · QUATRO FRENTES</div><h2>Feita para acompanhar a operação, não para complicá-la.</h2><p>O mesmo processo apresentado de forma específica para quem executa e para quem supervisiona.</p></div><div class="capability-grid">${examples.map(([ico,title,desc],i)=>`<article class="capability"><span class="capability-index">0${i+1}</span><span class="capability-icon">${ic(ico)}</span><h3>${title}</h3><p>${desc}</p></article>`).join('')}</div></section><section class="product-endcap"><div><div class="eyebrow">VEJA O FLUXO COMPLETO</div><h2>Do primeiro ponto ao relatório final.</h2><p>Explore as telas reais da experiência proposta para ronda e supervisão, com cenário operacional interativo.</p></div>${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}</section></main><footer class="hero-foot"><span>Grupo Maxvel | Daniel N. Xavier</span><a href="#" data-action="privacy">Privacidade e requisitos técnicos</a></footer></div></div>`;
+ return `<div class="hero product-home"><div class="hero-container"><header class="topnav">${brand()}<nav class="nav-actions" aria-label="Acesso rápido">${btn(ic('help')+' Guia da plataforma','guide','','')} ${btn('Explorar '+ic('arrow'),'login','primary small')}</nav></header><main id="main"><section class="product-hero"><div class="product-hero-copy"><div class="eyebrow">${ic('shield')} GRUPO MAXVEL · OPERAÇÕES EM CAMPO</div><h1>Uma visão completa<br>de cada <span>ronda.</span></h1><p>Acompanhe o trabalho em campo e a supervisão em um só ambiente. Pontos, trajetos, permanência e ocorrências apresentados com clareza, do celular ao computador.</p><div class="hero-buttons">${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}${btn('Explorar sem login','login')}</div><div class="product-benefits"><span>${ic('checkcircle')} Passo a passo para o colaborador</span><span>${ic('checkcircle')} Visão da supervisão</span><span>${ic('checkcircle')} Registros com contexto</span></div><p class="product-fineprint">${ic('help')} Ambiente de avaliação: trajeto, pessoas e alertas ilustrativos. A cartografia é real quando online.</p></div><div class="product-showcase"><div class="showcase-main"><div class="showcase-toolbar"><div class="showcase-title">${ic('map')} <strong>Central de acompanhamento</strong><small>Prévia funcional do mapa</small></div><span class="showcase-status"><i></i> Visualização de rota</span></div><div id="hero-map" class="showcase-map"></div><div class="showcase-map-badge">${ic('pin')} Rota Centro · Divinópolis <span>4 pontos · raio 25 m</span></div><div class="showcase-overlay-stats"><div><small>Próxima verificação</small><strong>Portaria principal</strong></div><span>${ic('crosshair')} 25 m</span></div></div><div class="showcase-detail-grid"><div class="showcase-detail"><span class="showcase-detail-icon">${ic('clock')}</span><span><small>Permanência por ponto</small><strong>30 segundos contínuos</strong></span></div><div class="showcase-detail"><span class="showcase-detail-icon">${ic('bell')}</span><span><small>Desvios de percurso</small><strong>Justificativa e análise</strong></span></div></div><div class="showcase-disclaimer">Mapa OpenStreetMap · cenário operacional fictício</div></div></section><section class="product-capabilities"><div class="capabilities-intro"><div class="eyebrow">UMA PLATAFORMA · QUATRO FRENTES</div><h2>Feita para acompanhar a operação, não para complicá-la.</h2><p>O mesmo processo apresentado de forma específica para quem executa e para quem supervisiona.</p></div><div class="capability-grid">${examples.map(([ico,title,desc],i)=>`<article class="capability"><span class="capability-index">0${i+1}</span><span class="capability-icon">${ic(ico)}</span><h3>${title}</h3><p>${desc}</p></article>`).join('')}</div></section><section class="product-endcap"><div><div class="eyebrow">VEJA O FLUXO COMPLETO</div><h2>Do primeiro ponto ao relatório final.</h2><p>Explore as telas reais da experiência proposta para ronda e supervisão, com cenário operacional interativo.</p></div>${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}</section></main><footer class="hero-foot"><span>Grupo Maxvel | Daniel N. Xavier</span><a href="#" data-action="privacy">Privacidade e requisitos técnicos</a></footer></div></div>`;
 }
-const coiNavigation=[['overview','COI · Acompanhamento','headset'],['notificacoes','Eventos','bell'],['ocorrencias','Histórico de tratativas','clipboard'],['equipe','Equipe de campo','users']];
+const coiNavigation=[['overview','COI · Acompanhamento','headset'],['rondas','Rotas e rondas','map'],['notificacoes','Eventos','bell'],['ocorrencias','Histórico de tratativas','clipboard'],['equipe','Equipe de campo','users']];
 const allNav={ronda:[['minha-ronda','Minha ronda','compass'],['historico','Meu histórico','clipboard'],['meus-envios','Meus alertas e ocorrências','bell']],operador:coiNavigation,coi:coiNavigation,cliente:[['cliente','Meu acompanhamento','eye']],vistoriador:[['vistoriador','Vistorias e qualidade','clipboard'],['meus-envios','Meus alertas e ocorrências','bell']],admin:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Eventos','bell'],['ocorrencias','Histórico de tratativas','clipboard'],['equipe','Equipe','users'],['relatorios','Relatórios','clipboard'],['configuracoes','Configurações','settings']]};
 for(const items of new Set(Object.values(allNav))){items.push(['chat-interno','Chat interno','message']);if(items.some(e=>e[0]==='overview'))items.push(['historico-operacional','Histórico de rondas','clipboard']);}
 
@@ -647,7 +654,7 @@ function fieldViewContent(){
  return backdrop+'<section class="rp-field-page-overlay" aria-label="Área de trabalho"><button type="button" class="rp-page-back" data-view="'+back+'">← Voltar ao mapa</button>'+content+'</section>';
 }
 function appShell(){const entries=allNav[user.role];let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
- return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Acesso individual autenticado · Grupo Maxvel</span><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("menu")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header><main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ronda Pro · Grupo Maxvel</footer></div></div></div>`}
+ return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Acesso individual autenticado · Grupo Maxvel</span><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("menu")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header>${isPagesTestMode()?'<div class="rp-demo-banner-global"><b>DEMONSTRAÇÃO</b> · Prévia de como o Ronda Pro funcionará. Dados fictícios, armazenados somente neste navegador.</div>':''}<main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ronda Pro · Grupo Maxvel</footer></div></div></div>`}
 function myPatrolHistory(){
  const name=user?.name||'',mine=sessionList().filter(x=>x.name===name),events=ops.allEvents();
  const item=x=>{
@@ -780,11 +787,8 @@ function realOverview(){
  return report+(reviewer?'<section class="schedule-workspace"><h2>Despachar vistoria</h2><form id="live-dispatch-form" class="live-register"><label>Vistoriador<select name="workerId" required>'+liveUsers.filter(u=>u.role==='vistoriador'&&u.active).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('')+'</select></label><label>Destino / endereco<input name="address" required minlength="5"></label><label>Motivo<textarea name="reason" required minlength="10"></textarea></label><button class="button primary" type="submit">Solicitar vistoria</button></form></section>':'');
 }
 function realRondas(){
- if(user?.role!=='admin')return pageTitle('Rotas','Somente administradores cadastram rotas.');
- const rows=liveRoutes.map(r=>'<div class="team-row"><div><strong>'+esc(r.name)+'</strong><small>'+esc(r.workerName||'')+' · '+r.points.length+' pontos</small></div><span>'+esc(r.site||'Grupo Maxvel')+'</span></div>').join('');
- return pageTitle('Rotas e rondas','Cadastro de percursos reais e atribuicao de vigias.')+
- '<section class="schedule-workspace"><h2>Cadastrar rota</h2><form id="live-route-form" class="live-register"><label>Vigia<select name="userId" required>'+liveUsers.filter(u=>u.role==='ronda'&&u.active).map(u=>'<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>').join('')+'</select></label><label>Nome da rota<input name="name" required minlength="3"></label><label>Pontos: um por linha (nome;latitude;longitude)<textarea name="points" required rows="5" placeholder="Portaria;-20.141;-44.881\nEntrada;-20.142;-44.882"></textarea></label><button type="submit" class="button primary">Salvar rota</button></form></section>'+
- '<section class="schedule-workspace"><h2>Rotas cadastradas</h2><div class="team-list">'+(rows||'<p>Nenhuma rota cadastrada.</p>')+'</div></section>';
+ if(!['admin','coi','operador'].includes(user?.role))return pageTitle('Rotas','Área do COI e da Administração.');
+ return routePlanner.html();
 }
 function realInspector(){
  const assigned=liveAssignments.filter(x=>x.worker_id===user?.id),pending=inspectorTaskQueue();
@@ -1250,6 +1254,10 @@ async function activatePagesRole(role){
  liveSession.token='pages-test:'+account.username;
  await restoreLiveAccount();
 }
+function openDemoWorkerPicker(){
+ if(!isPagesTestMode())return;
+ showDialog('<section class="rp-demo-worker-picker"><span class="eyebrow">RONDA PRO · PERFIL VIGIA</span><h2>Escolha o vigia que deseja simular</h2><p>Esta é uma demonstração do funcionamento do aplicativo. Os três nomes são fictícios; não há acompanhamento real nem envio de dados a outros aparelhos.</p><div class="rp-demo-worker-list">'+DEMO_THREE.map((w,i)=>'<button type="button" data-action="choose-demo-worker" data-username="'+esc(w.username)+'"><b>'+(i+1)+'</b><span><strong>'+esc(w.name)+'</strong><small>Abrir aplicativo como este vigia · demonstração</small></span>'+ic('arrow')+'</button>').join('')+'</div></section>',true);
+}
 function openAreaPicker(){
   if(!presentation&&!isPagesTestMode())return;
   const roles=isPagesTestMode()
@@ -1388,7 +1396,7 @@ setInterval(realtimeTick,180);
 setInterval(()=>{if(session?.status==='active')save()},10000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&session?.status==='active'){if(!window.AndroidTracking){session.insideSince=null;const p=currentCheckpoint(session);if(p)session.checkpoints[session.index].dwellMs=0;}movement=null;save();}else if(screen!=='landing'&&session?.status==='active'){syncNativeHistory();render()}});
 window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status==='active'&&mode==='real')syncNativeHistory()});
-async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.tagName==='A')event.preventDefault();
+async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.dataset.action?.startsWith('rp-plan-')){await routePlanner.click(el);return;}if(el.tagName==='A')event.preventDefault();
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
  if(user?.role==='vistoriador'&&user?.id&&act==='inspector-create'){
@@ -1462,9 +1470,20 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='demo-rotation'){if(!session||!simulateRotation(session,session.index)){notify('Etapa indisponível.');return;}save();evidenceDialog();return;}
  if(act==='demo-evidence-confirm'){if(!session||!confirmDemoEvidence(session,session.index)){notify('Complete quatro etapas e giro.');return;}save();modal.close();notify('Exemplo registrado sem câmera e sem sensor.');return;}
  if(act==='sim-role-picker'){openAreaPicker();return;}
+ if(act==='choose-demo-worker'){
+  if(!isPagesTestMode())return;
+  const entry=DEMO_THREE.find(w=>w.username===el.dataset.username);if(!entry)return;
+  modal.close();liveSession.token='pages-test:'+entry.username;
+  selectedWatcherId=DEMO_WATCHERS.find(w=>w.name===entry.name)?.id||'v01';
+  await restoreLiveAccount();return;
+ }
 
 if(act==='sim-role'){
-  if(isPagesTestMode()){modal.close();await activatePagesRole(el.dataset.role);return;}
+  if(isPagesTestMode()){
+    modal.close();
+    if(el.dataset.role==='ronda'){openDemoWorkerPicker();return;}
+    await activatePagesRole(el.dataset.role);return;
+   }
   if(!presentation||!['ronda','operador','coi','cliente','vistoriador','admin'].includes(el.dataset.role))return;
   const name=el.dataset.role==='ronda'?(watcherById(selectedWatcherId)?.name??'Lucas Ferreira'):el.dataset.role==='operador'?'Operador COI · Monitoramento':el.dataset.role==='coi'?'Operador COI':el.dataset.role==='cliente'?'Cliente de exemplo':el.dataset.role==='vistoriador'?'Vistoriador de exemplo':'Administrador';
   user={name,role:el.dataset.role};
@@ -1777,6 +1796,7 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('click',e=>{handleAction(e).catch(err=>{console.error(err);notify('Não foi possível concluir. Tente novamente.');})});
 document.addEventListener('change',e=>{
+  if(routePlanner.change(e.target))return;
  if(e.target.matches('[data-demo-client]')){selectedDemoClientIndex=Math.max(0,Math.min(DEMO_CLIENTS.length-1,Number(e.target.value)||0));render();return;}
  if(e.target.matches('[data-supervisor-watcher]')){const choice=watcherById(e.target.value);if(!choice)return;selectedSupervisedWatcherId=choice.id;render();return;}
   if(e.target.matches('[data-schedule-filter]')){scheduleFilter=e.target.value;schedulePage=0;render();}
@@ -1789,9 +1809,11 @@ document.addEventListener('change',e=>{
   for(const opt of route?.options??[])opt.disabled=!!chosen&&routeById(opt.value)?.unit!==chosen.unit;
  }
 });
+document.addEventListener('input',e=>{routePlanner.input(e.target)});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
 document.addEventListener('submit',async e=>{
+  if(e.target.id==='rp-plan-form'){e.preventDefault();await routePlanner.submit(e.target);return;}
  if(e.target.id==='live-login-form'){
   e.preventDefault();const f=new FormData(e.target);e.target.querySelector('button').disabled=true;
   try{const r=await liveRequest('/login',{method:'POST',data:{email:String(f.get('identifier')||'').trim(),password:String(f.get('password')||'').trim()}});
@@ -1970,5 +1992,5 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  notify('Localização autorizada. Confira sua posição no mapa e toque em Iniciar ronda.');
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
-(async()=>{try{if(isPagesTestMode()){await activatePagesRole('admin');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
+(async()=>{try{seedDemoThree();if(isPagesTestMode()){await activatePagesRole('admin');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
