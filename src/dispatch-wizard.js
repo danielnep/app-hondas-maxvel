@@ -1,14 +1,16 @@
 /** Despacho compacto por etapas. O backend continua sendo a autoridade da operação. */
+import {searchAddress,createPointMap} from './geo-tools.js';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 export function createDispatchWizard({dialog,showDialog,getWorkers,request,refresh,redraw,notify}){
  const names=['Profissional','Destino','Orientações','Revisão'];
  let selectedLocation=null;
- const knownLocations=[
-  {name:'Ponto de apoio · Centro',address:'Praça do Santuário, Divinópolis, MG',lat:-20.1429,lng:-44.8893},
-  {name:'Ponto de apoio · São José',address:'Bairro São José, Divinópolis, MG',lat:-20.1328,lng:-44.8797},
-  {name:'Ponto de apoio · Bom Pastor',address:'Bairro Bom Pastor, Divinópolis, MG',lat:-20.1511,lng:-44.8728}
- ];
- let map=null;
+ let savedPoints=[],results=[],map=null,lookupSerial=0;
+ async function loadPoints(){
+  try{const response=await request('/saved-points');savedPoints=(response.points||[]).filter(p=>Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng)));
+   const node=dialog.querySelector('#rp-dispatch-saved');
+   if(node)node.innerHTML='<option value="">Pesquisar novo endereço</option>'+savedPoints.map((p,i)=>'<option value="'+i+'">'+escape(p.name)+'</option>').join('');
+  }catch{const label=dialog.querySelector('#rp-dispatch-map-status');if(label)label.textContent='Pesquise o endereço; pontos salvos indisponíveis.';}
+ }
  function open(){
   const workers=getWorkers().filter(w=>w.role==='ronda'&&w.active);
   const options=workers.map(w=>'<option value="'+escape(w.id)+'">'+escape(w.name)+'</option>').join('');
@@ -22,8 +24,8 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,request,refre
    '<p>O vigia receberá a solicitação na operação de Ronda.</p></section>'+
    '<section class="rp-dispatch-stage" data-dispatch-stage="2" hidden><span class="rp-dispatch-counter">02 / 04 · DESTINO</span><h3>Onde será a ronda?</h3>'+
    '<label for="rp-dispatch-address">Local ou endereço<input id="rp-dispatch-address" name="address" required minlength="5" maxlength="350" autocomplete="street-address" placeholder="Rua, número, bairro ou referência"></label>'+
-   '<label for="rp-dispatch-saved">Pontos pré-cadastrados<select id="rp-dispatch-saved"><option value="">Pesquisar outro endereço</option>'+knownLocations.map((x,i)=>'<option value="'+i+'">'+escape(x.name)+'</option>').join('')+'</select></label>'+
-   '<button type="button" data-action="dispatch-geocode">Localizar endereço no mapa</button>'+
+   '<label for="rp-dispatch-saved">Pontos pré-cadastrados<select id="rp-dispatch-saved"><option value="">Pesquisar novo endereço</option></select></label>'+
+   '<button type="button" data-action="dispatch-geocode">Localizar endereço no mapa</button><div class="rp-geocode-results" id="rp-dispatch-results" role="group" aria-label="Resultados de endereços"></div>'+
    '<div id="rp-dispatch-map" style="height:215px;min-height:215px;border-radius:8px;overflow:hidden;background:#27303b" role="region" aria-label="Mapa de localização do destino"></div>'+
    '<p id="rp-dispatch-map-status" role="status">Digite um endereço e toque em localizar, ou selecione um ponto cadastrado.</p>'+
    '<p>Confira o marcador antes de continuar.</p></section>'+
@@ -36,7 +38,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,request,refre
    '<footer class="rp-dispatch-actions"><button type="button" class="rp-dispatch-back" data-action="dispatch-back" hidden>Voltar</button>'+
    '<button type="button" class="rp-dispatch-next" data-action="dispatch-next" '+(!workers.length?'disabled':'')+'>Continuar <span aria-hidden="true">→</span></button>'+
    '<button type="submit" class="rp-dispatch-submit" hidden>Solicitar ronda <span aria-hidden="true">✓</span></button></footer></form></section>',false,'rp-dispatch-dialog');
-  selectedLocation=null;map?.remove();map=null;
+  selectedLocation=null;results=[];lookupSerial++;map?.dispose();map=createPointMap(dialog.querySelector('#rp-dispatch-map'));void loadPoints();
   if(!workers.length){const error=dialog.querySelector('.rp-dispatch-error');error.textContent='Cadastre um vigia ativo antes de solicitar a ronda.';error.hidden=false;}
  }
  function step(next){
@@ -65,7 +67,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,request,refre
     const node=form.querySelector('[data-dispatch-summary="'+key+'"]');if(node)node.textContent=String(value||'');
    }
   }
-  if(n===2)setTimeout(()=>map?.invalidateSize(),0);
+  if(n===2&&selectedLocation)requestAnimationFrame(()=>map?.show(selectedLocation).catch(()=>{}));
   form.querySelector('[data-dispatch-stage="'+n+'"] :is(select,input,textarea,h3)')?.focus({preventScroll:true});
  }
  async function submit(form){
@@ -76,9 +78,9 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,request,refre
    if(!field?.checkValidity()){step(index);field.reportValidity();return true;}
   }
   const button=form.querySelector('[type="submit"]');if(button.disabled)return true;
+  if(!selectedLocation){step(2);return true;}
   button.disabled=true;button.textContent='Enviando…';
   const data=Object.fromEntries(new FormData(form));
-  if(!selectedLocation){step(2);return true;}
   data.latitude=selectedLocation.lat;data.longitude=selectedLocation.lng;
   try{
    await request('/dispatches',{method:'POST',data:{...data,kind:'ronda'}});
@@ -90,40 +92,41 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,request,refre
   return true;
  }
  async function locate(){
-  const address=dialog.querySelector('#rp-dispatch-address')?.value.trim(),status=dialog.querySelector('#rp-dispatch-map-status');
-  if(!address||address.length<5){status.textContent='Informe um endereço válido.';return;}
-  selectedLocation=null;status.textContent='Buscando localização…';
+  const address=dialog.querySelector('#rp-dispatch-address')?.value.trim(),status=dialog.querySelector('#rp-dispatch-map-status'),list=dialog.querySelector('#rp-dispatch-results');
+  if(!address||address.length<5){status.textContent='Informe rua, número, cidade ou referência.';return;}
+  const serial=++lookupSerial;selectedLocation=null;status.textContent='Localizando…';list.innerHTML='';
   try{
-   const url=new URL('https://nominatim.openstreetmap.org/search');
-   url.searchParams.set('q',address);url.searchParams.set('format','jsonv2');url.searchParams.set('limit','1');url.searchParams.set('countrycodes','br');
-   const response=await fetch(url,{headers:{Accept:'application/json'}});
-   if(!response.ok)throw new Error('Serviço de endereços indisponível.');
-   const results=await response.json();if(!results.length)throw new Error('Endereço não localizado. Acrescente cidade e estado.');
-   await mark({lat:Number(results[0].lat),lng:Number(results[0].lon)},results[0].display_name);
-  }catch(e){status.textContent=e.message||'Falha ao localizar endereço.';}
+   const matches=await searchAddress(address);if(serial!==lookupSerial||!list.isConnected)return;
+   results=matches;
+   list.innerHTML=matches.map((p,i)=>'<button type="button" data-action="dispatch-select-result" data-index="'+i+'">'+escape(p.address||p.name)+'</button>').join('');
+   status.textContent='Selecione o endereço correto para confirmar o marcador.';
+   if(matches.length===1)await selectPoint(matches[0]);
+  }catch(error){if(serial===lookupSerial)status.textContent=error.message||'Local não encontrado.';}
  }
- async function mark(location,label){
-  const status=dialog.querySelector('#rp-dispatch-map-status'),target=dialog.querySelector('#rp-dispatch-map');
-  if(!Number.isFinite(location.lat)||!Number.isFinite(location.lng))throw Error('Coordenadas inválidas');
-  selectedLocation=location;status.textContent='Local encontrado: '+label;
-  try{
-   const {loadLeaflet}=await import('./map.js'),L=await loadLeaflet();
-   if(!target?.isConnected)return;
-   if(!map){map=L.map(target,{zoomControl:true});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);}
-   map.eachLayer(layer=>{if(layer instanceof L.Marker)map.removeLayer(layer);});
-   L.marker([location.lat,location.lng]).addTo(map).bindPopup(escape(label)).openPopup();
-   map.setView([location.lat,location.lng],16);setTimeout(()=>map?.invalidateSize(),60);
-  }catch(e){status.textContent+=' · Mapa indisponível: '+e.message;}
+ async function selectPoint(p){
+  if(!p||!Number.isFinite(Number(p.lat))||!Number.isFinite(Number(p.lng)))return;
+  const status=dialog.querySelector('#rp-dispatch-map-status');
+  selectedLocation={lat:Number(p.lat),lng:Number(p.lng),name:p.name,address:p.address};
+  dialog.querySelector('#rp-dispatch-address').value=p.address;
+  status.textContent='Ponto confirmado: '+(p.name||p.address);
+  try{await map.show(selectedLocation);}catch(error){status.textContent+=' · Mapa indisponível: '+error.message;}
  }
  async function click(element){
   if(element.dataset.action==='dispatch-geocode'){await locate();return true;}
+  if(element.dataset.action==='dispatch-select-result'){await selectPoint(results[Number(element.dataset.index)]);return true;}
   if(element.id==='rp-dispatch-saved'){
-   const value=element.value;if(value==='')return false;
-   const point=knownLocations[Number(value)];dialog.querySelector('#rp-dispatch-address').value=point.address;
-   await mark(point,point.name);return true;
+   if(element.value!=='')await selectPoint(savedPoints[Number(element.value)]);
+   return true;
   }
   return false;
  }
- function changed(element){if(element.id==='rp-dispatch-address'){selectedLocation=null;const status=dialog.querySelector('#rp-dispatch-map-status');if(status)status.textContent='Endereço alterado. Localize novamente para confirmar o ponto.';}}
+ function changed(element){
+  if(element.id==='rp-dispatch-address'){
+   lookupSerial++;selectedLocation=null;results=[];
+   const list=dialog.querySelector('#rp-dispatch-results'),status=dialog.querySelector('#rp-dispatch-map-status');
+   if(list)list.innerHTML='';
+   if(status)status.textContent='Endereço alterado. Localize novamente para confirmar o ponto.';
+  }
+ }
  return {open,step,submit,click,changed};
 }
