@@ -38,7 +38,7 @@ try{
   await context.route('https://photon.komoot.io/api/**',route=>route.fulfill({
    status:200,contentType:'application/json',
    body:JSON.stringify({features:[{type:'Feature',geometry:{coordinates:[-44.8906,-20.1437]},
-     properties:{name:'Rua da Vistoria',street:'Rua da Vistoria',housenumber:'123',city:'Divinópolis'}}]})
+     properties:{name:'Rua da Ronda',street:'Rua da Ronda',housenumber:'123',city:'Divinópolis'}}]})
   }));
   page.on('pageerror',err=>errors.push(err.message));
   try{
@@ -71,17 +71,17 @@ try{
       const form=page.locator('#dialog #live-dispatch-form');
       await form.waitFor({state:'visible',timeout:12000});
       await form.locator('[data-action="dispatch-next"]').click();
-      if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vistoriador');
+      if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vigia');
       await form.locator('[name="workerId"]').selectOption({index:1});
       await form.locator('[data-action="dispatch-next"]').click();
-      await form.locator('[name="address"]').fill('Rua da Vistoria, 123, Divinópolis');
+      await form.locator('[name="address"]').fill('Rua da Ronda, 123, Divinópolis');
       await form.locator('#rp-dispatch-suggestions [role="option"]').first().waitFor({timeout:12000});
       await form.locator('#rp-dispatch-suggestions [role="option"]').first().click();
       if(!await form.locator('#rp-dispatch-preview-map').count())throw Error('Mapa do destino ausente no celular');
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
       await form.locator('[data-action="dispatch-next"]').click();
-      if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Rua da Vistoria, 123, Divinópolis').count())
+      if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Rua da Ronda, 123, Divinópolis').count())
        throw Error('Revisão perdeu o rascunho');
       const inspector=await page.locator('#dialog').evaluate(el=>{const bounds=e=>{const r=e?.getBoundingClientRect();return r?{height:r.height,top:r.top,bottom:r.bottom}:null};return {classes:el.className,computed:{height:getComputedStyle(el).height,minHeight:getComputedStyle(el).minHeight,maxHeight:getComputedStyle(el).maxHeight,display:getComputedStyle(el).display},dialog:bounds(el),wizard:bounds(el.querySelector('.rp-dispatch-wizard')),form:bounds(el.querySelector('form')),stage:bounds(el.querySelector('[data-dispatch-stage="4"]')),scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}});console.log('DISPATCH_HEIGHT '+JSON.stringify(inspector));
       const geometry=await page.locator('#dialog').boundingBox();
@@ -92,9 +92,9 @@ try{
        throw Error('Voltar perdeu orientações');
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[type="submit"]').click();
-      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.address==='Rua da Vistoria, 123, Divinópolis'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='vistoria'),{timeout:12000});
+      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.address==='Rua da Ronda, 123, Divinópolis'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='ronda'),{timeout:12000});
       if(await page.locator('#dialog').evaluate(x=>x.open))throw Error('Janela permaneceu aberta após envio confirmado');
-      console.log('OK: '+target.name+' / Despacho completo com 4 etapas, gravação e modal compacto');
+      console.log('OK: '+target.name+' / Solicitação de ronda completa em 4 etapas, gravação e modal compacto');
      }
      if(role==='vistoriador'){
      const map=page.locator('#demo-inspection-map'),bounds=await map.boundingBox();
