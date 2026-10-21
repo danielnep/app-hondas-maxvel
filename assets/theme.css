@@ -2273,6 +2273,16 @@
   .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-mini{width:76px}
   .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-label small{max-height:2.6em}
  }
+
+ /* Atribuição multi-ponto no celular do Vigia e painel COI. */
+ #central-root .ops-dispatch-itinerary{margin:8px 0 11px;border:1px solid rgba(125,161,184,.44);background:rgba(31,42,53,.62);border-radius:9px;padding:7px 10px}
+ #central-root .ops-dispatch-itinerary>summary{font-size:12px;cursor:pointer;font-weight:760;color:#f5f9fe;min-height:32px;display:flex;align-items:center}
+ #central-root .ops-dispatch-itinerary ol{list-style:none;display:grid;gap:0;margin:0;padding:0}
+ #central-root .ops-dispatch-itinerary li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:7px;align-items:center;padding:8px 0;border-top:1px solid #687b8952}
+ #central-root .ops-dispatch-itinerary li b{color:#91d9fa;font-size:12px}
+ #central-root .ops-dispatch-itinerary li span{font-size:11px;color:#f1f6fb;overflow-wrap:anywhere}
+ #central-root .ops-dispatch-itinerary li a{font-size:10px;color:#9bdefd;min-height:30px;display:inline-flex;align-items:center}
+ #central-root .ops-dispatch-itinerary>small{font-size:10px;color:#bdcbd7}
  /* Janelas de operacao: vidro fosco legivel, com fundo isolado na camada modal real. */
  .rp-theme #dialog[open]:not(.role-picker-dialog):not(.rp-dispatch-dialog):not(.guide-dialog):not(.ux06-fullscreen){
   background:rgba(24,31,40,.94)!important;color:#f5f8fb!important;
