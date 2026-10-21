@@ -211,7 +211,9 @@ export function createOperationalApi(){
       resp(res,422,{error:'Permissões inválidas'});return true;
      }
      const update=db.prepare('INSERT INTO role_permissions(role,module,enabled,updated_at) VALUES(?,?,?,?) ON CONFLICT(role,module) DO UPDATE SET enabled=excluded.enabled,updated_at=excluded.updated_at');
-     db.transaction(()=>{for(const module of valid[d.role])update.run(d.role,module,d.modules[module]!==false?1:0,now())})();
+     db.exec('BEGIN IMMEDIATE');
+     try{for(const module of valid[d.role])update.run(d.role,module,d.modules[module]!==false?1:0,now());db.exec('COMMIT');}
+     catch(error){db.exec('ROLLBACK');throw error;}
      audit(a,'permission.update',d.role);resp(res,200,{ok:true});return true;
     }
     if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,vehicle_type AS vehicleType,vehicle_plate AS vehiclePlate,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
