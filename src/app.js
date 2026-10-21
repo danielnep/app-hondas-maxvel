@@ -1,5 +1,6 @@
 import {decorateTheme} from './theme-shell.js';
 import {createRoutePlanner} from './route-planner.js';
+import {routeCanStart} from './route-schedule.js';
 import {DEMO_THREE,seedDemoThree,routeRequest} from './route-demo-mode.js';
 import {liveRequest,liveSession,loginHtml} from './live-client.js';
 import {isPagesTestMode,PAGES_TEST_ACCOUNTS} from './pages-test-api.js';
@@ -1304,7 +1305,12 @@ function notificationDialog(id,sid){if(sid==='field'){const rows=localCommunicat
 function detailSession(id){const s=sessions.find(x=>x.id===id);if(!s)return;showDialog(`<div class="eyebrow">DETALHES DE UMA RONDA</div><h2>${esc(s.route.name)}</h2>${tag(s.status==='completed'?'Concluída':'Em andamento',s.status==='completed'?'green':'orange')}<div style="margin:17px 0">${[['Colaborador',s.name],['Início',fmt(s.startedAt)],['Conclusão',fmt(s.finishedAt)],['Pontos',`${s.index} de ${s.route.points.length}`],['Desvios',s.deviations.length],['Ocorrências',s.incidents.length],['Verificações ilustrativas',Object.values(s.evidences??{}).filter(x=>x.confirmedAt).length]].map(([a,b])=>`<div class="detail-pair"><span>${esc(a)}</span><strong>${esc(b)}</strong></div>`).join('')}</div><div id="patrol-detail-map" class="rp-history-map"></div><p class="map-caption">Rota e pontos ilustrativos do cenário. O percurso real é consultado no histórico da central autenticada.</p><h3>Histórico de eventos</h3><div class="timeline" style="margin-top:13px">${s.timeline.map(x=>`<div class="timeline-entry"><strong>${esc(x.label)}</strong><small>${fmt(x.at)}</small></div>`).join('')}</div>${btn('Fechar','close-dialog','primary full')}`,true);const el=document.querySelector("#patrol-detail-map");if(el){const detailMap=new PatrolMap(el,{route:s.route,session:s,position:s.position,compact:true});modal.addEventListener("close",()=>detailMap.destroy(),{once:true});}}
 function pointDialog(index){const route=session?.route??DEMO_ROUTE,p=route.points[index];if(!p)return;const completed=session?.checkpoints[index]?.completedAt;showDialog(`<div class="eyebrow">PONTO ${index+1} · ROTA DEMONSTRATIVA</div><h2>${esc(p.name)}</h2><p>${esc(p.instruction)}</p>${tag(completed?'Concluído':session?.index===index?'Ponto atual':'Pendente',completed?'green':'neutral')}<div style="margin-top:16px">${[['Raio','25 metros'],['Permanência','30 segundos contínuos'],['Sequência',`${index+1} de ${route.points.length}`],['Localização', 'Ilustrativa no modo simulado']].map(([a,b])=>`<div class="detail-pair"><span>${a}</span><strong>${b}</strong></div>`).join('')}</div>${btn('Entendi','close-dialog','primary full')}`)}
 function finishDialog(){showDialog(`<div class="eyebrow">CONFIRMAR CONCLUSÃO</div><h2>Finalizar esta ronda?</h2><p style="font-size:12px">Os quatro pontos já foram concluídos e o retorno à base foi identificado. O registro ficará salvo neste navegador.</p><div class="modal-actions">${btn('Cancelar','close-dialog')}${btn('Finalizar ronda','confirm-finish','primary')}</div>`)}
-async function startSession(){if(!locationGate.isGranted()&&!isPagesTestMode()){locationGate.open({demo:presentation});notify('Ative a localização antes de iniciar a ronda.');return;}const now=Date.now();if(mode==='real'&&!presentation){
+async function startSession(){
+ const planned=liveRoutes.find(r=>r.userId===user?.id);
+ if(user?.role==='ronda'&&planned&&!routeCanStart(planned)){
+  notify('Esta ronda não está programada para o dia ou horário atual. Consulte a programação do COI.');return;
+ }
+ if(!locationGate.isGranted()&&!isPagesTestMode()){locationGate.open({demo:presentation});notify('Ative a localização antes de iniciar a ronda.');return;}const now=Date.now();if(mode==='real'&&!presentation){
  if(!navigator.geolocation){notify('Geolocalização indisponível neste navegador.');return;}
  try{const loc=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
   const f={lat:loc.coords.latitude,lng:loc.coords.longitude,accuracy:loc.coords.accuracy,at:now};
