@@ -71,7 +71,7 @@ export function mountGuardQuickPanel(root){
   if(panel.classList.contains('is-collapsed'))return;
   guardPanelTimer=setTimeout(()=>{
    if(!panel.isConnected)return;
-   if(panel.contains(document.activeElement)||panel.querySelector('details[open]')||document.querySelector('dialog[open]')){schedule();return;}
+   if((panel.contains(document.activeElement)&&document.activeElement!==button)||panel.querySelector('details[open]')||document.querySelector('dialog[open]')){schedule();return;}
    collapse(true);
   },8000);
  };
