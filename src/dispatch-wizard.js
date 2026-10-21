@@ -3,13 +3,15 @@ import {loadLeaflet} from './map.js';
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=>[],request,refresh,redraw,notify}){
  let locationPoint=null,previewMap=null,previewMarker=null,searchController=null,searchTimer=null;
+ dialog.addEventListener('close',()=>clearPreview());
  const names=['Profissional','Destino','Orientações','Revisão'];
  function open(){
+  clearPreview();
   const workers=getWorkers().filter(w=>w.role==='ronda'&&w.active);
   const options=workers.map(w=>'<option value="'+escape(w.id)+'">'+escape(w.name)+'</option>').join('');
   showDialog('<section class="rp-dispatch-wizard" aria-label="Solicitar início de ronda">'+
    '<header class="rp-dispatch-head"><div class="rp-dispatch-kicker"><span>GRUPO MAXVEL</span><span>OPERAÇÃO DE CAMPO</span></div>'+
-   '<h2>Solicitar início de ronda</h2><p>Envie a solicitação em quatro passos. O vigia responsável inicia após recebê-la.</p></header>'+
+   '<h2 id="rp-dispatch-title">Solicitar início de ronda</h2><p>Envie a solicitação em quatro passos. O vigia responsável inicia após recebê-la.</p></header>'+
    '<nav class="rp-dispatch-steps" aria-label="Etapas do despacho">'+names.map((n,i)=>'<span data-dispatch-progress="'+(i+1)+'" '+(i===0?'aria-current="step"':'')+'><b>'+String(i+1).padStart(2,'0')+'</b><small>'+n+'</small></span>').join('')+'</nav>'+
    '<form id="live-dispatch-form" class="rp-dispatch-form" data-step="1" novalidate>'+
    '<section class="rp-dispatch-stage" data-dispatch-stage="1"><span class="rp-dispatch-counter">01 / 04 · EQUIPE</span><h3>Quem fará a ronda?</h3>'+
@@ -31,7 +33,10 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    '<footer class="rp-dispatch-actions"><button type="button" class="rp-dispatch-back" data-action="dispatch-back" hidden>Voltar</button>'+
    '<button type="button" class="rp-dispatch-next" data-action="dispatch-next" '+(!workers.length?'disabled':'')+'>Próximo <span aria-hidden="true">→</span></button>'+
    '<button type="submit" class="rp-dispatch-submit" hidden>Solicitar ronda <span aria-hidden="true">✓</span></button></footer></form></section>',false,'rp-dispatch-dialog');
+  dialog.setAttribute('aria-labelledby','rp-dispatch-title');
+  dialog.setAttribute('aria-modal','true');
   locationPoint=null;
+  dialog.querySelector('#rp-dispatch-worker')?.focus({preventScroll:true});
   if(!workers.length){const error=dialog.querySelector('.rp-dispatch-error');error.textContent='Cadastre um vigia ativo antes de solicitar a ronda.';error.hidden=false;}
   const input=dialog.querySelector('#rp-dispatch-address');
   if(input)input.addEventListener('input',()=>scheduleLocation(input.value));
