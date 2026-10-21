@@ -792,7 +792,7 @@ function realOverview(){
  const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execucao',active.length],['Eventos',liveEvents.length]];
  const metrics='<div class="ops-metrics">'+rows.map(([label,n])=>'<article class="ops-metric"><strong>'+n+'</strong><h3>'+esc(label)+'</h3></article>').join('')+'</div>';
  const recent=liveEvents.slice(0,30).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
- const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Despacho de vistoria"><div><small>OPERAÇÃO DE CAMPO</small><strong>Despachar vistoria</strong><span>Profissional · destino · instruções</span></div><button type="button" data-action="dispatch-open">Nova vistoria '+ic('arrow')+'</button></section>':'';
+ const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Solicitação de ronda"><div><small>OPERAÇÃO DE CAMPO</small><strong>Solicitar início da ronda</strong><span>Vigia · destino · instruções</span></div><button type="button" data-action="dispatch-open">Solicitar ronda '+ic('arrow')+'</button></section>':'';
  return pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+dispatch+metrics+
  '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento recebido.</p>')+'</div></section>';
 }
