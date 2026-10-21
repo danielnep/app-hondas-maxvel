@@ -41,9 +41,10 @@ try{
   try{
    await p.goto(origin+'/',{waitUntil:'domcontentloaded'});
    await p.locator('#dialog .role-picker-list [data-role="coi"]').click();
-   const menu=p.locator('[data-view="rondas"]').first();
-   if(!await menu.isVisible())await p.locator('[data-action="open-mobile-menu"]').click();
-   await menu.click();
+   if(width<=900){
+    await p.locator('[data-action="open-mobile-menu"]').click();
+    await p.locator('#dialog [data-view="rondas"]').click();
+   }else await p.locator('.sidebar [data-view="rondas"]').click();
    await p.locator('#rp-plan').waitFor();
    check((await p.locator('#rp-plan .rp-plan-steps button').count())===3,'Etapas ausentes');
    check((await p.locator('#rp-plan-worker option').count())===3,'Não encontrou exatamente três vigias fictícios');
