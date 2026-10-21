@@ -13,7 +13,10 @@ test('vigia e vistoriador compartilham o mesmo mapa, sem converter ronda em vist
  assert.equal(plan.points[0].name,'Portão principal');
  const planWithoutGps=buildGuardRoute(route,null);assert.equal(planWithoutGps.baseKnown,false,'Sem GPS não se pode afirmar que a base é conhecida');
  const ui=guardCockpit({planned:route});
- for(const tool of ['data-field-tool-torch','data-field-tool-panic','data-field-tool-alert','data-field-tool-incident','data-field-tool-chat'])assert.match(ui,new RegExp(tool));
+ for(const tool of ['data-field-tool-torch','data-field-tool-panic','data-field-tool-alert','data-field-tool-incident'])assert.match(ui,new RegExp(tool));
+ assert.doesNotMatch(ui,/data-field-tool-chat/,'mensagens continuam no chat independente, nao no cartao');
+ assert.match(ui,/data-guard-panel-toggle/);
+ assert.match(ui,/data-guard-panel-content/);
  assert.match(ui,/guard-real-map/);assert.match(ui,/data-guard-start/);
  assert.match(readFileSync(new URL('../src/central.js',import.meta.url),'utf8'),/data-guard-arrive/);
 });
