@@ -24,7 +24,7 @@ test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados'
  for(const role of ['ronda','operador','cliente','vistoriador','admin'])
   assert.ok(picker.includes("['"+role+"',"),'perfil '+role+' disponível no seletor');
  assert.doesNotMatch(picker,/\['coi','Central COI'/,'Não duplicar COI como área independente');
- assert.match(picker,/modal\.classList\.add\('role-picker-dialog'\)/);
+ assert.match(picker,/,false,'role-picker-dialog'\);/);
  assert.match(picker,/\['operador','COI · Acompanhamento','headset'\]/);
  assert.match(picker,/não representa autenticação/);
 });
