@@ -1,12 +1,12 @@
 /* Cache da interface operacional autenticada do Ronda Pro. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v66';
+const CACHE='rondas-pro-interface-v67';
 const CORE=['./assets/theme.css','./src/theme-shell.js','./assets/ronda-pro.css','./assets/central.css','./assets/operational.css','./assets/mobile-critical.css','./assets/field.css','./src/field-inspection-wizard.js','./src/inspection-demo-camera.js','./src/inspection-queue.js','./src/inspection-cockpit.js','./src/inspection-street-route.js','./src/inspection-route-map.js','./src/internal-chat-ui.js','./src/internal-chat-calls.js','./src/activity-history-ui.js',
  './','./index.html','./manifest.webmanifest',
 
  './assets/maxvel-logo.webp',
- './src/app.js','./src/live-client.js','./src/pages-test-api.js','./src/field-torch.js','./src/location-entry-gate.js','./src/media-capture.js','./src/mobile-role-guides.js','./src/soft-polish.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./src/coi-monitor.js','./src/treatment-policy.js','./src/ops-center-ui.js','./central.html',
+ './src/app.js','./src/route-planner.js','./src/route-demo-mode.js','./src/live-client.js','./src/pages-test-api.js','./src/field-torch.js','./src/location-entry-gate.js','./src/media-capture.js','./src/mobile-role-guides.js','./src/soft-polish.js','./src/operations-upgrade.js','./src/install.js','./src/field-intelligence.js','./src/report-xlsx.js','./src/checkpoint-curtain.js','./src/central.js','./src/coi-monitor.js','./src/treatment-policy.js','./src/ops-center-ui.js','./central.html',
  './src/domain.js','./src/map.js','./src/wizard.js',
  './src/demo-scenarios.js','./src/dashboard-insights.js',
  './src/dialog-pagination.js','./src/evidence.js',
