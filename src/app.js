@@ -826,13 +826,27 @@ function demoCoiView(){
 function realOverview(){
  const admin=user.role==='admin',reviewer=['admin','coi','operador'].includes(user.role);
  const pending=liveAssignments.filter(d=>!d.completed_at),active=liveAssignments.filter(d=>d.started_at&&!d.completed_at);
- const incidents=liveEvents.filter(e=>['incident','panic','alert'].includes(e.kind));
- const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execucao',active.length],['Eventos',liveEvents.length]];
+ const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execução',active.length],['Eventos',liveEvents.length]];
  const metrics='<div class="ops-metrics">'+rows.map(([label,n])=>'<article class="ops-metric"><strong>'+n+'</strong><h3>'+esc(label)+'</h3></article>').join('')+'</div>';
- const recent=liveEvents.slice(0,30).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
+ const recent=liveEvents.slice(0,12).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
  const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Solicitação de ronda"><div><small>OPERAÇÃO DE CAMPO</small><strong>Solicitar início da ronda</strong><span>Vigia · destino · instruções</span></div><button type="button" data-action="dispatch-open">Solicitar ronda '+ic('arrow')+'</button></section>':'';
- return pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+dispatch+metrics+
- '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento recebido.</p>')+'</div></section>';
+ const focus=realMapSelection();
+ const rounds=liveRoundRecords(),history=rounds.length?rounds:previewRoundRecords();
+ const options=liveRoutes.map(r=>'<option value="'+esc(r.id)+'" '+(focus.planned?.id===r.id?'selected':'')+'>'+esc(r.name)+'</option>').join('');
+ const mapPanel='<section class="rp-operational-geo" aria-label="Mapa operacional">'+
+  '<header><div><small>MONITORAMENTO GEOGRÁFICO</small><h2>Mapa das rondas</h2><p>'+(focus.latest?esc(focus.latest.worker)+' · '+fmt(focus.latest.lastAt):isPagesTestMode()?'Cenário fictício para avaliação':'Aguardando ronda cadastrada')+'</p></div>'+
+  '<button type="button" data-action="center-maps" aria-label="Enquadrar o mapa">'+ic('crosshair')+'</button></header>'+
+  (liveRoutes.length?'<label>Rota acompanhada<select id="rp-live-route-select">'+options+'</select></label>':'')+
+  (focus.route?'<div id="real-ops-map" class="rp-real-monitor-map map-container large" role="region" aria-label="Pontos e percurso da ronda"></div>':'<div class="rp-geo-empty">Cadastre uma rota com endereços para exibir o mapa.</div>')+
+  '<footer><span>'+(focus.position?'Último GPS registrado':isPagesTestMode()?'Mapa e posições ilustrativos':'GPS ainda não recebido')+'</span><span>'+Number(focus.route?.points?.length||0)+' pontos</span></footer></section>';
+ const historic='<section class="rp-geo-history"><header><h2>Últimas rondas</h2><small>'+history.length+' registro(s)'+(!rounds.length&&isPagesTestMode()?' · cenário fictício':'')+'</small></header>'+
+  (history.length?history.slice(0,4).map((r,i)=>'<article class="rp-geo-history-item"><div class="rp-geo-history-copy"><strong>'+esc(r.worker)+'</strong><small>'+fmt(r.startedAt)+' · '+(r.completed?'Concluída':'Em andamento')+'</small><span>'+r.checkpoints+' ponto(s) · '+r.alerts+' evento(s)</span></div>'+
+   (r.route?'<div id="real-history-map-'+i+'" class="rp-real-history-map map-container" role="region" aria-label="Mapa histórico da ronda de '+esc(r.worker)+'"></div>':'<p>Sem coordenadas registradas.</p>')+
+   '<details><summary>Eventos e histórico</summary><div class="rp-geo-event-list">'+
+   ((r.events||[]).slice(-7).reverse().map(e=>'<p><b>'+esc(e.kind)+'</b> · '+fmt(e.occurred_at)+' · '+esc(e.description||'Registro')+'</p>').join('')||'<p>Cenário de demonstração, sem telemetria real.</p>')+
+   '</div></details></article>').join(''):'<p class="rp-geo-empty">Nenhuma ronda registrada neste ambiente.</p>')+'</section>';
+ return pageTitle(admin?'Administração':'COI · Central operacional','Rondas, equipe e eventos com visualização geográfica.')+dispatch+mapPanel+metrics+historic+
+  '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento real recebido até agora.</p>')+'</div></section>';
 }
 function realRondas(){
  if(!['admin','coi','operador'].includes(user?.role))return pageTitle('Rotas','Área do COI e da Administração.');
