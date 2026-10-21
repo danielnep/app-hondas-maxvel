@@ -2349,3 +2349,85 @@
   .rp-theme #dialog .rp-admin-wizard>header p{display:none}
  }
 }
+
+
+/* MAXVEL | Cadastro geográfico e supervisão de rondas: elementos próprios, sem substituir legado. */
+@layer rp-layout {
+ .rp-theme #dialog .rp-geocode-results{display:grid;gap:5px;max-height:116px;overflow-y:auto;overscroll-behavior:contain}
+ .rp-theme #dialog .rp-geocode-results:empty{display:none}
+ .rp-theme #dialog .rp-geocode-results button{display:block;width:100%;min-height:35px;padding:7px 10px!important;text-align:left;color:#f2f3f5!important;
+  background:#252931!important;border:1px solid #5d555a!important;border-radius:7px!important;font-size:11px!important;line-height:1.4}
+ .rp-theme #dialog #rp-dispatch-map,.rp-theme #dialog #rp-saved-point-map{height:215px;min-height:215px;position:relative;
+  background:#1c2730!important;border:1px solid #605b62;border-radius:8px;overflow:hidden;isolation:isolate}
+ .rp-theme #dialog #rp-dispatch-map .leaflet-container,.rp-theme #dialog #rp-saved-point-map .leaflet-container{width:100%;height:100%}
+ .rp-theme #dialog #rp-dispatch-map .leaflet-pane,.rp-theme #dialog #rp-saved-point-map .leaflet-pane{z-index:1}
+ .rp-theme #dialog #rp-dispatch-map .leaflet-control,.rp-theme #dialog #rp-saved-point-map .leaflet-control{z-index:5}
+ .rp-theme #dialog #rp-dispatch-map-status,.rp-theme #dialog .rp-point-status{font-size:11px!important;line-height:1.4!important;color:#e1d6dc!important}
+ .rp-theme #dialog [data-action=dispatch-geocode],.rp-theme #dialog [data-action=admin-point-search]{min-height:40px!important;
+  border:1px solid #cf5365!important;color:#fff!important;background:#842d41!important;border-radius:7px!important;padding:8px 12px!important;
+  font-size:12px!important;font-weight:720}
+ .rp-theme .dashboard .rp-operational-geo,.rp-theme .dashboard .rp-geo-history{
+  min-width:0;box-sizing:border-box;display:grid;gap:10px;margin:15px 0;padding:14px;
+  border:1px solid #5c5156;border-top:2px solid #e44c62;border-radius:12px;
+  background:linear-gradient(150deg,#252831,#1b232b);color:#f7f7fa}
+ .rp-theme .dashboard .rp-operational-geo>header{display:flex;align-items:center;justify-content:space-between;gap:9px}
+ .rp-theme .dashboard .rp-operational-geo>header small{font-size:10px;letter-spacing:.1em;font-weight:790;color:#f28c9c}
+ .rp-theme .dashboard .rp-operational-geo>header h2,.rp-theme .dashboard .rp-geo-history>header h2{font-size:21px!important;letter-spacing:-.02em;margin:4px 0!important;color:#fff}
+ .rp-theme .dashboard .rp-operational-geo>header p{font-size:12px;color:#c6c8cf;margin:0}
+ .rp-theme .dashboard .rp-operational-geo>header button{display:grid;place-items:center;width:39px;height:39px;min-width:39px;min-height:39px;
+  background:#33282e!important;border:1px solid #a54859!important;color:#fdfdfd!important;border-radius:8px}
+ .rp-theme .dashboard .rp-operational-geo label{display:grid;gap:5px;font-size:12px;color:#c4cbd2}
+ .rp-theme .dashboard .rp-operational-geo select{min-height:41px;padding:8px 11px;font-size:14px;background:#19232b;color:#fff;border:1px solid #73666c;border-radius:7px}
+ .rp-theme .dashboard .rp-real-monitor-map{height:clamp(240px,48vh,415px)!important;min-height:240px!important;position:relative;width:100%;border-radius:9px;overflow:hidden;border:1px solid #454f5a}
+ .rp-theme .dashboard .rp-real-history-map{height:170px!important;min-height:170px!important;position:relative;width:100%;border:1px solid #48434b;border-radius:8px;overflow:hidden}
+ .rp-theme .dashboard .rp-operational-geo>footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;color:#d1d0d5}
+ .rp-theme .dashboard .rp-geo-history>header{display:flex;justify-content:space-between;gap:12px;align-items:center}
+ .rp-theme .dashboard .rp-geo-history>header small{font-size:11px;color:#e0b3be}
+ .rp-theme .dashboard .rp-geo-history{display:block}
+ .rp-theme .dashboard .rp-geo-history-item{display:grid;gap:9px;min-width:0;box-sizing:border-box;padding:12px;
+  border:1px solid #5b525b;border-radius:9px;background:#222731;scroll-snap-align:start}
+ .rp-theme .dashboard .rp-geo-history-copy{display:grid;gap:3px}
+ .rp-theme .dashboard .rp-geo-history-copy strong{font-size:15px;color:#fff}
+ .rp-theme .dashboard .rp-geo-history-copy small,.rp-theme .dashboard .rp-geo-history-copy span{font-size:11px;color:#c6ccd2}
+ .rp-theme .dashboard .rp-geo-history-item details{font-size:11px;color:#f1edf0}
+ .rp-theme .dashboard .rp-geo-history-item summary{padding:7px 0;cursor:pointer;font-weight:700;color:#fff}
+ .rp-theme .dashboard .rp-geo-event-list{max-height:155px;overflow-y:auto}
+ .rp-theme .dashboard .rp-geo-event-list p{margin:5px 0;font-size:11px;color:#caced5}
+ .rp-theme .dashboard .rp-geo-history>article{margin:10px 0}
+ .rp-theme .dashboard .rp-geo-empty{padding:25px 14px;text-align:center;color:#d0c9cf;font-size:13px}
+ .rp-theme #dialog.rp-admin-points-dialog[open]{display:block!important;position:fixed!important;inset:0!important;margin:auto!important;
+  box-sizing:border-box!important;width:min(475px,calc(100vw - 24px))!important;height:max-content!important;
+  max-height:calc(100dvh - 20px)!important;max-width:calc(100vw - 24px)!important;overflow-y:auto!important;
+  padding:15px!important;background:#1c2027!important;color:#fff!important;border:1px solid #63515a!important;
+  border-top:3px solid #dc5066!important;border-radius:12px!important;box-shadow:0 22px 70px #000b!important}
+ .rp-theme #dialog .rp-points-panel{display:grid;gap:10px}
+ .rp-theme #dialog .rp-points-panel>header{padding-right:36px}
+ .rp-theme #dialog .rp-points-panel>header h2{font-size:22px!important;color:#fff!important;margin:4px 0!important}
+ .rp-theme #dialog .rp-points-panel>header p{font-size:12px!important;color:#cdd0d4!important;margin:0!important}
+ .rp-theme #dialog .rp-points-modes{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+ .rp-theme #dialog .rp-points-modes button{min-height:41px;padding:8px!important;border:1px solid #5f555d!important;border-radius:7px!important;color:#fff!important;background:#2a2930!important;font-size:12px!important}
+ .rp-theme #dialog .rp-points-modes [aria-pressed=true]{border-color:#f47689!important;background:#542c39!important}
+ .rp-theme #dialog .rp-points-stage[hidden]{display:none!important}
+ .rp-theme #dialog .rp-points-list{display:grid;gap:7px;max-height:285px;overflow-y:auto}
+ .rp-theme #dialog .rp-point-row{display:flex;align-items:center;gap:8px;justify-content:space-between;border:1px solid #565057;border-radius:8px;padding:10px}
+ .rp-theme #dialog .rp-point-row>span{display:grid;gap:4px;min-width:0}
+ .rp-theme #dialog .rp-point-row strong{font-size:12px;color:#fff}
+ .rp-theme #dialog .rp-point-row small{font-size:11px;color:#c1c4cc}
+ .rp-theme #dialog .rp-point-row button{padding:6px!important;min-height:36px;background:#422933!important;color:#fff!important;border:1px solid #ae5266!important;border-radius:7px}
+ .rp-theme #dialog #rp-saved-point-form{display:grid!important;gap:10px!important;padding:0!important;background:transparent!important}
+ .rp-theme #dialog #rp-saved-point-form label{display:grid;gap:5px;font-size:12px;color:#f2f0f2}
+ .rp-theme #dialog #rp-saved-point-form input{width:100%;min-height:42px;font-size:16px;padding:8px 10px!important;
+  background:#161e25!important;color:#fff!important;border:1px solid #6e626b!important;border-radius:7px!important}
+ .rp-theme #dialog #rp-saved-point-form .rp-save-point{min-height:43px;padding:10px!important;color:#fff!important;background:#a62f46!important;border:1px solid #e06c7b!important;border-radius:7px}
+ .rp-theme #dialog #rp-saved-point-form button:disabled{opacity:.5}
+ @media(max-width:760px){
+  .rp-theme .dashboard .rp-real-monitor-map{height:clamp(265px,42vh,355px)!important}
+  .rp-theme .dashboard .rp-geo-history{padding:12px}
+  .rp-theme .dashboard .rp-geo-history-item{width:100%}
+  .rp-theme .dashboard .rp-operational-geo{margin:12px 0;padding:11px}
+  .rp-theme #dialog #rp-dispatch-map,.rp-theme #dialog #rp-saved-point-map{height:190px;min-height:190px}
+ }
+ @media(max-height:650px){
+  .rp-theme #dialog #rp-dispatch-map,.rp-theme #dialog #rp-saved-point-map{height:145px;min-height:145px}
+ }
+}
