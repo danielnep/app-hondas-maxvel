@@ -47,6 +47,11 @@ test('COI and dispatch geocode address on map, not text-only',async()=>{
  assert.match(ops,/attachInspectorGeocoder\(dialog\)/);
  assert.match(ops,/photon\.komoot\.io/);
  assert.match(dispatch,/rp-dispatch-preview-map/);
- assert.match(dispatch,/latitude:locationPoint\.lat/);
- assert.match(dispatch,/Confirme o endereço selecionando um ponto no mapa/);
+ assert.match(dispatch,/latitude:first\.lat/);
+ assert.match(dispatch,/routePoints:destinations\.map/);
+ assert.match(dispatch,/rp-dispatch-add-destination/);
+ assert.match(dispatch,/rp-dispatch-stops/);
+ assert.match(dispatch,/tile\.openstreetmap\.org/);
+ assert.match(dispatch,/fallbackPreview/);
+ assert.match(dispatch,/Adicione ao menos um destino/);
 });
