@@ -97,7 +97,7 @@ const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
-let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null,selectedLiveRouteId='';
+let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null,selectedLiveRouteId='',realHistoryDays=30,realHistoryPage=0,selectedRealHistoryId='';
 const routePlanner=createRoutePlanner({
  getData:()=>({users:liveUsers,routes:liveRoutes,role:user?.role,demo:isPagesTestMode()}),
  api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
@@ -566,6 +566,11 @@ function attachMaps(){
    const rounds=liveRoundRecords(),history=rounds.length?rounds:previewRoundRecords();
    history.slice(0,4).forEach((r,i)=>{if(r.route)registerMap('real-history-map-'+i,r.route,null,r.track?.at(-1)||r.route.base,true,!!r.track?.length||!!r.simulation,r.track);});
   }
+  if(document.getElementById('real-history-detail-map')){
+   const all=liveRoundRecords(),source=all.length?all:previewRoundRecords(),eligible=source.filter(r=>realHistoryDays===0||r.startedAt>=Date.now()-realHistoryDays*86400000);
+   const record=eligible.find(r=>r.id===selectedRealHistoryId)||eligible.slice(realHistoryPage*4)[0];
+   if(record?.route)registerMap('real-history-detail-map',record.route,null,record.track?.at(-1)||record.route.base,false,!!record.track?.length||!!record.simulation,record.track);
+  }
   if(document.getElementById('mobile-map')){const assigned=session?.route??assignedRoute();const mapped=assigned??{...DEMO_ROUTE,id:'sem-rota',name:'Mapa da unidade',points:[],legs:[]};registerMap('mobile-map',mapped,session,locationFix??mapped.base,true,!!(assigned||locationFix));}
   if(document.getElementById('demo-inspection-map')){
    const host=document.querySelector('#demo-inspection-map');
@@ -731,7 +736,7 @@ function myPatrolHistory(){
  '<p class="map-caption">Dados deste dispositivo. Para mensagens da equipe e histórico central sincronizado, utilize seu acesso autenticado.</p>'+
  (isPagesTestMode()?'<button type="button" class="button" data-action="demo-chat-overlay">Abrir mensagens da equipe</button>':'<a class="button" href="./central.html">Ver histórico completo e respostas da equipe</a>')+'</section>';
 }
-function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'meus-envios':return mySubmissions();case 'overview':return overview();case 'cliente':return demoClientView();case 'vistoriador':return demoInspectorView();case 'rondas':return rondas();case 'chat-interno':return demoChatView();case 'historico-operacional':return demoHistoryView();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
+function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'meus-envios':return mySubmissions();case 'overview':return overview();case 'cliente':return demoClientView();case 'vistoriador':return demoInspectorView();case 'rondas':return rondas();case 'chat-interno':return demoChatView();case 'historico-operacional':return user?.id?realHistoryView():demoHistoryView();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
 /** E7/E8: panes estáveis, sem recontar indicadores quando muda apenas a aba. */
 function dashboardV4(){
@@ -839,7 +844,7 @@ function realOverview(){
   (liveRoutes.length?'<label>Rota acompanhada<select id="rp-live-route-select">'+options+'</select></label>':'')+
   (focus.route?'<div id="real-ops-map" class="rp-real-monitor-map map-container large" role="region" aria-label="Pontos e percurso da ronda"></div>':'<div class="rp-geo-empty">Cadastre uma rota com endereços para exibir o mapa.</div>')+
   '<footer><span>'+(focus.position?'Último GPS registrado':isPagesTestMode()?'Mapa e posições ilustrativos':'GPS ainda não recebido')+'</span><span>'+Number(focus.route?.points?.length||0)+' pontos</span></footer></section>';
- const historic='<section class="rp-geo-history"><header><h2>Últimas rondas</h2><small>'+history.length+' registro(s)'+(!rounds.length&&isPagesTestMode()?' · cenário fictício':'')+'</small></header>'+
+ const historic='<section class="rp-geo-history"><header><div><h2>Últimas rondas</h2><button type="button" data-view="historico-operacional">Ver histórico completo ↗</button></div><small>'+history.length+' registro(s)'+(!rounds.length&&isPagesTestMode()?' · cenário fictício':'')+'</small></header>'+
   (history.length?history.slice(0,4).map((r,i)=>'<article class="rp-geo-history-item"><div class="rp-geo-history-copy"><strong>'+esc(r.worker)+'</strong><small>'+fmt(r.startedAt)+' · '+(r.completed?'Concluída':'Em andamento')+'</small><span>'+r.checkpoints+' ponto(s) · '+r.alerts+' evento(s)</span></div>'+
    (r.route?'<div id="real-history-map-'+i+'" class="rp-real-history-map map-container" role="region" aria-label="Mapa histórico da ronda de '+esc(r.worker)+'"></div>':'<p>Sem coordenadas registradas.</p>')+
    '<details><summary>Eventos e histórico</summary><div class="rp-geo-event-list">'+
@@ -847,6 +852,27 @@ function realOverview(){
    '</div></details></article>').join(''):'<p class="rp-geo-empty">Nenhuma ronda registrada neste ambiente.</p>')+'</section>';
  return pageTitle(admin?'Administração':'COI · Central operacional','Rondas, equipe e eventos com visualização geográfica.')+dispatch+mapPanel+metrics+historic+
   '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento real recebido até agora.</p>')+'</div></section>';
+}
+function realHistoryView(){
+ const now=Date.now(),all=liveRoundRecords(),source=all.length?all:previewRoundRecords();
+ const records=source.filter(r=>realHistoryDays===0||r.startedAt>=now-realHistoryDays*86400000);
+ const perPage=4,total=Math.max(1,Math.ceil(records.length/perPage));
+ realHistoryPage=Math.min(realHistoryPage,total-1);
+ const pageRows=records.slice(realHistoryPage*perPage,(realHistoryPage+1)*perPage);
+ const selected=records.find(r=>r.id===selectedRealHistoryId)||pageRows[0]||null;
+ const picker='<label class="rp-history-period">Período<select id="rp-real-history-period">'+
+  [[7,'Últimos 7 dias'],[30,'Últimos 30 dias'],[0,'Todos os registros disponíveis']].map(([days,label])=>'<option value="'+days+'" '+(realHistoryDays===days?'selected':'')+'>'+label+'</option>').join('')+'</select></label>';
+ const list=pageRows.map(r=>'<button type="button" data-action="real-history-select" data-id="'+esc(r.id)+'" class="rp-real-history-entry '+(selected?.id===r.id?'selected':'')+'">'+
+  '<strong>'+esc(r.worker)+'</strong><span>'+fmt(r.startedAt)+' · '+(r.completed?'Concluída':'Em execução')+'</span><small>'+r.checkpoints+' pontos · '+r.alerts+' eventos</small></button>').join('')||'<p>Nenhuma ronda registrada no período.</p>';
+ const controls='<div class="rp-history-page-actions"><button type="button" data-action="real-history-prev" '+(realHistoryPage===0?'disabled':'')+'>Anterior</button><span>Página '+(realHistoryPage+1)+' de '+total+'</span><button type="button" data-action="real-history-next" '+(realHistoryPage>=total-1?'disabled':'')+'>Próximo</button></div>';
+ const record=selected?'<section class="rp-real-history-detail"><header><div><small>RONDA SELECIONADA</small><h2>'+esc(selected.worker)+'</h2><p>'+fmt(selected.startedAt)+' · '+(selected.completed?'Concluída':'Em execução')+'</p></div></header>'+
+  (selected.route?'<div class="map-container large rp-real-history-detail-map" id="real-history-detail-map" role="region" aria-label="Mapa do percurso registrado"></div>':'<p>Sem coordenadas confiáveis para desenhar o percurso.</p>')+
+  '<div class="rp-real-history-stats"><span>'+selected.checkpoints+' pontos visitados</span><span>'+selected.alerts+' eventos</span><span>'+selected.track.length+' posições GPS</span></div>'+
+  '<div class="rp-real-history-timeline"><h3>Linha do tempo</h3>'+((selected.events||[]).length?
+  selected.events.slice(-15).reverse().map(e=>'<div><strong>'+esc(e.kind||'Registro')+'</strong><small>'+fmt(e.occurred_at)+'</small><p>'+esc(e.description||'Sem observação')+'</p></div>').join('') :
+  '<p>Atividade demonstrativa, sem telemetria real.</p>')+'</div></section>':'';
+ return pageTitle('Histórico de rondas','Consulte datas, pontos, eventos e mapas por execução.')+
+  '<div class="rp-real-history-workspace">'+picker+'<section class="rp-real-history-list">'+list+controls+'</section>'+record+'</div>';
 }
 function realRondas(){
  if(!['admin','coi','operador'].includes(user?.role))return pageTitle('Rotas','Área do COI e da Administração.');
@@ -1483,6 +1509,9 @@ window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status=
 async function handleAction(event){const el=event.target.closest('[data-action],[data-view],[data-v4-watcher]');if(!el||el.disabled)return;if(el.dataset.action?.startsWith('rp-plan-')){await routePlanner.click(el);return;}if(el.tagName==='A')event.preventDefault();
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
+ if(act==='real-history-select'){selectedRealHistoryId=el.dataset.id;render();return;}
+ if(act==='real-history-prev'){realHistoryPage=Math.max(0,realHistoryPage-1);selectedRealHistoryId='';render();return;}
+ if(act==='real-history-next'){realHistoryPage++;selectedRealHistoryId='';render();return;}
  if(await adminSettings.click(el))return;
  if(await savedPointsAdmin.click(el))return;
  if(await dispatchWizard.click(el))return;
@@ -1902,6 +1931,7 @@ document.addEventListener('change',e=>{
 document.addEventListener('input',e=>{routePlanner.input(e.target)});
 document.addEventListener('change',e=>{adminSettings.change(e.target);if(e.target.id==='rp-dispatch-saved')dispatchWizard.click(e.target);});
 document.addEventListener('change',e=>{if(e.target.id==='rp-live-route-select'){selectedLiveRouteId=e.target.value;render();}});
+document.addEventListener('change',e=>{if(e.target.id==='rp-real-history-period'){realHistoryDays=Number(e.target.value);realHistoryPage=0;selectedRealHistoryId='';render();}});
 document.addEventListener('input',e=>{savedPointsAdmin.changed(e.target)});
 document.addEventListener('input',e=>{dispatchWizard.changed(e.target)});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
