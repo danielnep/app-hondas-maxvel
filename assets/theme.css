@@ -1401,6 +1401,15 @@
   .rp-theme[data-rp-field=true] #central-panic {
     display: none !important
   }
+  .rp-theme[data-rp-field=true][data-rp-role=ronda] #central-panic {
+    display:flex!important;
+    position:fixed!important;z-index:6500!important;
+    left:max(12px,env(safe-area-inset-left,0px))!important;
+    right:auto!important;top:calc(148px + env(safe-area-inset-top,0px))!important;bottom:auto!important;
+    width:70px!important;height:70px!important;border-radius:50%!important;transform:none!important;
+  }
+  .rp-theme[data-rp-field=true][data-rp-role=ronda] #central-panic strong {font-size:10px!important}
+
   .rp-theme[data-rp-field=true] .rp-field-quicktools {
     display: flex !important;
     flex-wrap: nowrap !important;
