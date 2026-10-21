@@ -38,7 +38,7 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  '<div class="patrol-map-canvas rp-inspection-map-canvas"><div class="map-container mini rp-inspector-map" id="guard-real-map" aria-label="Mapa da ronda em operação real"></div>'+
  '</div>'+
  '<div class="patrol-map-footer"><span data-guard-gps>'+safe(gpsStatus)+'</span><span data-guard-road>Traçado viário disponível com internet</span></div></section>'+
- '<section class="patrol-actions rp-inspection-commands rp-guard-quick-panel" data-guard-panel aria-label="Comandos da ronda">'+
+ '<section class="patrol-actions rp-inspection-commands rp-guard-quick-panel'+(!planned?' has-no-route':'')+'" data-guard-panel aria-label="Comandos da ronda">'+
  '<div class="patrol-action-heading rp-guard-panel-heading"><button type="button" class="rp-guard-panel-toggle" data-guard-panel-toggle aria-controls="rp-guard-panel-content" aria-expanded="true" aria-label="Recolher ou expandir controles da ronda"><span><strong>'+(current?'Ponto '+(round.index+1)+' de '+total:round?'Retorno à base':planned?'Ronda preparada':'Aguardando rota')+'</strong><small data-guard-panel-hint>Recolhe em 8 s</small></span><span class="rp-guard-panel-chevron" aria-hidden="true">⌄</span></button></div>'+
  '<div class="rp-guard-panel-content" id="rp-guard-panel-content" data-guard-panel-content>'+
  '<div class="rp-field-quicktools"><button type="button" data-field-tool-torch>Lanterna</button><button type="button" data-field-tool-alert>Alerta</button><button type="button" data-field-tool-incident>Ocorrência</button></div>'+
