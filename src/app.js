@@ -1434,6 +1434,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  const nav=el.dataset.view;if(nav){if(!user||!allNav[user.role].find(x=>x[0]===nav))return;if(nav==='chat-interno'&&['ronda','vistoriador'].includes(user.role)){openDemoChatOverlay(true);return;}if(nav==='chat-interno'&&view!==nav)demoChatScreen='list';view=nav;render();window.scrollTo({top:0,behavior:'instant'});return;}
  const act=el.dataset.action;
  if(await adminSettings.click(el))return;
+ if(await dispatchWizard.click(el))return;
  if(act==='dispatch-open'){if(['admin','coi','operador'].includes(user?.role))dispatchWizard.open();return;}
  if(act==='dispatch-next'){dispatchWizard.step(Number(modal.querySelector('#live-dispatch-form')?.dataset.step||1)+1);return;}
  if(act==='dispatch-back'){dispatchWizard.step(Number(modal.querySelector('#live-dispatch-form')?.dataset.step||1)-1);return;}
@@ -1848,7 +1849,8 @@ document.addEventListener('change',e=>{
  }
 });
 document.addEventListener('input',e=>{routePlanner.input(e.target)});
-document.addEventListener('change',e=>{adminSettings.change(e.target)});
+document.addEventListener('change',e=>{adminSettings.change(e.target);if(e.target.id==='rp-dispatch-saved')dispatchWizard.click(e.target);});
+document.addEventListener('input',e=>{dispatchWizard.changed(e.target)});
 modal.addEventListener('change',e=>{if(e.target.id==='declaration-check'){const el=modal.querySelector('[data-action="confirm-start"]');if(el)el.disabled=!e.target.checked}if(e.target.id==='location-intro-check'){const b=modal.querySelector('[data-action="accept-location-notice"]');if(b)b.disabled=!e.target.checked}});
 
 document.addEventListener('submit',async e=>{
