@@ -69,12 +69,14 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
  }
  if(p==='/dispatches'){
   const rows=read('dispatches',[]);
-  if(method==='GET')return {dispatches:a.role==='vistoriador'?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
+  if(method==='GET')return {dispatches:['ronda','vistoriador'].includes(a.role)?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
   if(method==='POST'){
    const self=a.role==='vistoriador',kind=data?.kind==='inspection'?'vistoria':data?.kind==='ronda'?'ronda':'ronda';
    if(!self&&!['admin','coi'].includes(a.role))throw fail('Sem permissão.',403);
    if(self&&data?.workerId!==user.id)throw fail('Vistoriador cria somente seus atendimentos.',403);
-   if(!allUsers().some(x=>'pages-'+x.username===data?.workerId&&x.active!==false))throw fail('Profissional não encontrado.',422);
+   const assignee=allUsers().find(x=>'pages-'+x.username===data?.workerId&&x.active!==false);
+   if(!assignee)throw fail('Profissional não encontrado.',422);
+   if(!self&&assignee.role!==(kind==='vistoria'?'vistoriador':'ronda'))throw fail('Selecione o profissional do perfil correto.',422);
    const address=String(data?.address||'').trim(),reason=String(data?.reason||'').trim();
    if(address.length<5||reason.length<10)throw fail('Informe local e motivo com pelo menos 10 caracteres.',422);
    const at=Date.now(),item={...data,id:newId(),kind,workerId:data.workerId,worker_id:data.workerId,
