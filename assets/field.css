@@ -890,6 +890,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 #central-root .rp-guard-workspace .rp-guard-panel-chevron{font-size:23px;line-height:1;color:#7bd0f7;transition:transform .2s ease}
 #central-root .rp-guard-workspace .rp-guard-quick-panel.is-collapsed .rp-guard-panel-chevron{transform:rotate(180deg)}
 #central-root .rp-guard-workspace .rp-guard-panel-content[hidden]{display:none!important}
+#central-root .rp-guard-workspace .rp-guard-quick-panel.has-no-route .rp-inspection-commands-body{display:none!important}
 #central-root .rp-guard-workspace .rp-guard-quick-panel.is-collapsed{max-height:66px!important;overflow:hidden!important}
 @media(max-width:700px){#central-root .rp-guard-workspace .rp-guard-quick-panel:not(.is-collapsed){max-height:min(260px,34dvh)!important;overflow-y:auto!important}}
 #central-root .rp-guard-workspace .rp-guard-panel-content{min-width:0}
