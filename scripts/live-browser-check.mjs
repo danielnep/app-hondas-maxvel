@@ -63,16 +63,21 @@ try{
 
   if(role==='admin'){
    await page.evaluate(()=>document.querySelector('[data-view="configuracoes"]').click());
+   await page.locator('[data-action="admin-add-user"]').click();
    await page.locator('#live-create-user-form').waitFor();
    if(width===1440){
     await page.locator('#live-create-user-form [name=role]').selectOption('ronda');
     await page.locator('#live-create-user-form [name=name]').fill('Operador Teste Web');
+    await page.locator('#live-create-user-form [data-action=admin-user-next]').click();
     await page.locator('#live-create-user-form [name=email]').fill('operadorteste@browser.invalid');
     await page.locator('#live-create-user-form [name=phone]').fill('37999990000');
     await page.locator('#live-create-user-form [name=username]').fill('testeweb');
+    await page.locator('#live-create-user-form [data-action=admin-user-next]').click();
+    await page.locator('#live-create-user-form [name=vehicleType]').selectOption('moto');
     await page.locator('#live-create-user-form [name=password]').fill(password);
+    await page.locator('#live-create-user-form [data-action=admin-user-next]').click();
     await page.locator('#live-create-user-form button[type=submit]').click();
-    await page.getByText('Profissional cadastrado no banco de dados.').waitFor({timeout:10000});
+    await page.getByText('Profissional cadastrado.').waitFor({timeout:10000});
    }
   }
   await page.screenshot({path:output+'/'+role+'-'+width+'.png',fullPage:true});
