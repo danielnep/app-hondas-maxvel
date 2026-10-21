@@ -28,7 +28,7 @@ export function initialGuardState(route,base,at=Date.now()){
 export function guardCockpit({round=null,planned=null,position=null,gpsStatus='Aguardando sinal GPS'}={}){
  const current=round?.points?.[round.index]||null,total=round?.points?.length||planned?.points?.length||0;
  const focus=current||round?.base||null,d=focus&&position?metersBetween(position,focus):Infinity;
- const action=!planned?'<span class="rp-inspection-ready">Aguardando rota atribuída pelo COE</span>':
+ const action=!planned?'<span class="rp-inspection-ready">Aguardando rota do COI</span>':
  !round?'<button type="button" class="rp-inspection-main-action" data-guard-start>Iniciar ronda · sair da base</button>':
  current?round.insideSince==null?'<button type="button" class="rp-inspection-main-action" data-guard-arrive>Estou aqui</button>':
  '<button type="button" class="rp-inspection-main-action" data-guard-checkpoint>Confirmar ponto após 30 segundos</button>':
@@ -39,10 +39,10 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  '</div>'+
  '<div class="patrol-map-footer"><span data-guard-gps>'+safe(gpsStatus)+'</span><span data-guard-road>Traçado viário disponível com internet</span></div></section>'+
  '<section class="patrol-actions rp-inspection-commands rp-guard-quick-panel" data-guard-panel aria-label="Comandos da ronda">'+
- '<div class="patrol-action-heading rp-guard-panel-heading"><button type="button" class="rp-guard-panel-toggle" data-guard-panel-toggle aria-controls="rp-guard-panel-content" aria-expanded="true" aria-label="Recolher ou expandir controles da ronda"><span><strong>'+(current?'Ponto '+(round.index+1)+' de '+total:round?'Retorno à base':'Ronda preparada')+'</strong><small data-guard-panel-hint>Controles disponíveis · recolhe sozinho</small></span><span class="rp-guard-panel-chevron" aria-hidden="true">⌄</span></button><button type="button" class="rp-guard-panic rp-urgent" data-field-tool-panic aria-label="Acionar pânico">PÂNICO</button></div>'+
+ '<div class="patrol-action-heading rp-guard-panel-heading"><button type="button" class="rp-guard-panel-toggle" data-guard-panel-toggle aria-controls="rp-guard-panel-content" aria-expanded="true" aria-label="Recolher ou expandir controles da ronda"><span><strong>'+(current?'Ponto '+(round.index+1)+' de '+total:round?'Retorno à base':planned?'Ronda preparada':'Aguardando rota')+'</strong><small data-guard-panel-hint>Recolhe em 8 s</small></span><span class="rp-guard-panel-chevron" aria-hidden="true">⌄</span></button></div>'+
  '<div class="rp-guard-panel-content" id="rp-guard-panel-content" data-guard-panel-content>'+
  '<div class="rp-field-quicktools"><button type="button" data-field-tool-torch>Lanterna</button><button type="button" data-field-tool-alert>Alerta</button><button type="button" data-field-tool-incident>Ocorrência</button></div>'+
- '<div class="rp-inspection-commands-body"><strong class="rp-inspection-destination">'+safe(current?.name||(!round?'Pronto para iniciar?':'Retorne à base'))+'</strong><p data-guard-timer>'+ (!planned?'O COI enviará a rota para o seu turno.':(round&&round.insideSince!=null?'Permanência em verificação. Aguarde 30 segundos.':'Siga para o próximo ponto indicado no mapa.'))+'</p><small data-guard-distance '+(!planned?'hidden':'')+'>'+safe(Number.isFinite(d)?'Distância '+(current?'ao ponto':'à base')+': '+Math.round(d)+' m':'Aguardando GPS real')+'</small><div class="rp-inspection-primary-actions">'+action+'</div></div>'+
+ '<div class="rp-inspection-commands-body"><strong class="rp-inspection-destination">'+safe(current?.name||(!planned?'Aguardando rota do COI':!round?'Ronda pronta para iniciar':'Retorne à base'))+'</strong><p data-guard-timer>'+ (!planned?'Você será avisado quando receber o percurso.':(round&&round.insideSince!=null?'Permanência em verificação. Aguarde 30 segundos.':'Siga para o próximo ponto indicado no mapa.'))+'</p><small data-guard-distance '+(!planned?'hidden':'')+'>'+safe(Number.isFinite(d)?'Distância '+(current?'ao ponto':'à base')+': '+Math.round(d)+' m':'Aguardando GPS real')+'</small><div class="rp-inspection-primary-actions">'+action+'</div></div>'+
  '<details class="rp-inspection-upcoming"><summary>Ver pontos da ronda <span>'+total+'</span></summary><ol data-guard-stops>'+
  (round?.points||planned?.points||[]).map((p,i)=>'<li class="rp-inspection-stop '+(i===(round?.index||0)?'is-next':'')+'"><span class="rp-stop-order">'+(round&&i<round.index?'✓':i+1)+'</span><div><strong>'+safe(p.name)+'</strong><small>'+safe(i<(round?.index||0)?'Concluído':'Aguardando verificação')+'</small></div></li>').join('')+
  '</ol></details></div></section></div>';
@@ -64,7 +64,7 @@ export function mountGuardQuickPanel(root){
   panel.classList.toggle('is-collapsed',collapsed);
   content.hidden=collapsed;
   button.setAttribute('aria-expanded',String(!collapsed));
-  if(hint)hint.textContent=collapsed?'Toque para reabrir':'Controles disponíveis · recolhe sozinho';
+  if(hint)hint.textContent=collapsed?'Toque para reabrir':'Recolhe em 8 s';
  };
  const schedule=()=>{
   clearTimeout(guardPanelTimer);
