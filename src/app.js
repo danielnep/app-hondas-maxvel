@@ -89,7 +89,27 @@ let selectedWatcherId=persisted?.selectedWatcherId||'v01',selectedSupervisedWatc
 let user=null,screen='landing',view='overview',presentation=false,guideStage=0,presentationName='Lucas Ferreira',mode='simulation',session=null;
 let priorSimulation=null;
 let wizardController=null;
-let patrolSheetCollapsed=true;
+let patrolSheetCollapsed=true,patrolCompactTimer=null;
+const PATROL_PANEL_IDLE_MS=8000;
+function setPatrolCompact(minimized){
+ const panel=document.querySelector('.dashboard .ronda-page .patrol-workspace:not([data-inspection-cockpit])');
+ if(!panel)return;
+ const toggle=panel.querySelector('[data-action="toggle-patrol-compact"]'),body=panel.querySelector('#patrol-action-body');
+ if(minimized&&body?.contains(document.activeElement))toggle?.focus({preventScroll:true});
+ panel.classList.toggle('sheet-auto-minimized',minimized);
+ if(toggle){toggle.textContent=minimized?'Abrir controles':'Recolher';toggle.setAttribute('aria-expanded',String(!minimized));}
+}
+function schedulePatrolCompact(){
+ clearTimeout(patrolCompactTimer);
+ const panel=document.querySelector('.dashboard .ronda-page .patrol-workspace:not([data-inspection-cockpit])');
+ if(!panel||panel.classList.contains('sheet-auto-minimized')||document.hidden)return;
+ patrolCompactTimer=setTimeout(()=>{
+  if(!panel.isConnected)return;
+  if(modal.open||panel.querySelector('#patrol-action-body :focus')||panel.querySelector('#patrol-action-body details[open]')){schedulePatrolCompact();return;}
+  setPatrolCompact(true);
+ },PATROL_PANEL_IDLE_MS);
+}
+
 let nativeTracking=false,locationFix=null,deviceWatch=null,movement=null,liveMaps=[],toastTimer=null,renderNumber=0,justRendered=0,tabFilter='all',contextWarning='';
 const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
@@ -484,7 +504,7 @@ function startDemoInspectorGps(){
   }
  },()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:12000});
 }
-function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!((isPagesTestMode())&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
+function render(){clearTimeout(patrolCompactTimer);if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRouteMap.destroy();demoInspectorMap=null;if(user?.role!=='ronda'||view!=='minha-ronda'||(session&&hasBlock(session)))curtain?.close();destroyMaps();renderNumber++;if(!((isPagesTestMode())&&modal.open&&modal.classList.contains('role-picker-dialog')))modal.close?.();document.body.classList.toggle('simulation-running',presentation);
  if(false&&presentation&&!localStorage.getItem('rondas-pro-demo-history-edited')&&['admin','operador','coi','cliente','vistoriador'].includes(user?.role)){
   const seeded=withExampleRondas(sessions);
   if(seeded!==sessions){sessions=seeded;persist();}
@@ -497,6 +517,7 @@ function render(){if(!user){root.innerHTML=loginHtml(brand());return;}demoCoiRou
  const workspace=document.querySelector('.patrol-workspace');
  const routeMap=workspace?.querySelector('.patrol-map-panel'),routeAction=workspace?.querySelector('.patrol-actions');
  if(routeMap&&routeAction&&window.innerWidth<=900&&!workspace.matches('[data-inspection-cockpit]'))workspace.insertBefore(routeAction,routeMap);
+ if(user?.role==='ronda'&&view==='minha-ronda'&&workspace){const controls=workspace.querySelector('.patrol-actions');for(const evt of ['pointerdown','focusin','keydown','scroll'])controls?.addEventListener(evt,schedulePatrolCompact,{passive:true});schedulePatrolCompact();}
  attachMaps();if(view==='rondas'&&user?.id)void routePlanner.mount();else routePlanner.dispose();ops.decorate();
  if(user?.role==='vistoriador'&&view==='vistoriador'&&demoInspectionDraft?.id&&!demoWizardAutoId&&demoPendingInspection()?.arrivedAt){demoWizardAutoId=demoInspectionDraft.id;requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());}
  const dash=document.querySelector('.dashboard');
@@ -1168,8 +1189,8 @@ function phoneContent(){
    <div class="patrol-map-footer"><span>${mode==='real'?'GPS autorizado':'Localização simulada'}</span><span data-live="coords">${locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)}`:'Aguardando início'}</span></div>
   </section>
   <section class="patrol-actions" aria-label="Ação principal da ronda">
-    <div class="patrol-action-heading"><strong>${ic('compass')} ${esc(state)}</strong><button type="button" class="patrol-sheet-toggle" data-action="toggle-patrol-sheet" aria-controls="patrol-action-content" aria-expanded="${!patrolSheetCollapsed}">${patrolSheetCollapsed?'Mais opções':'Menos opções'}</button></div>
-    <div class="patrol-action-body">
+    <div class="patrol-action-heading"><strong>${ic('compass')} ${esc(state)}</strong><div class="patrol-heading-tools"><button type="button" class="patrol-compact-toggle" data-action="toggle-patrol-compact" aria-controls="patrol-action-body" aria-expanded="true">Recolher</button><button type="button" class="patrol-sheet-toggle" data-action="toggle-patrol-sheet" aria-controls="patrol-action-content" aria-expanded="${!patrolSheetCollapsed}">${patrolSheetCollapsed?'Mais opções':'Menos opções'}</button></div></div>
+    <div class="patrol-action-body" id="patrol-action-body">
       <div class="patrol-primary-flow">${noRoute?'<div class="patrol-stage-intro"><h2>Nenhuma rota atribuída</h2><p>A Administração precisa cadastrar e atribuir uma rota antes de iniciar a ronda. O mapa permanece disponível.</p></div>':patrolActionContent()}</div>
       <div id="patrol-action-content" class="patrol-extra-flow">
        <div class="patrol-extra-label">Ferramentas e informações</div>
@@ -1798,6 +1819,7 @@ if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch((
  }
  if(act==='demo-treatment-tab'){if(!canReviewDemo())return;demoTreatmentTab=el.dataset.kind;render();return;}
 
+ if(act==='toggle-patrol-compact'){const panel=document.querySelector('.dashboard .ronda-page .patrol-workspace');if(panel){const reopening=panel.classList.contains('sheet-auto-minimized');setPatrolCompact(!reopening);if(reopening)schedulePatrolCompact();else clearTimeout(patrolCompactTimer);}return;}
  if(act==='toggle-patrol-sheet'){
   if(window.innerWidth<=900){
    const tools=document.querySelector('.patrol-extra-flow');
