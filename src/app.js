@@ -603,7 +603,7 @@ function liveRoundRecords(){
   r.lastAt=r.events.at(-1)?.occurred_at||0;r.completed=r.events.some(e=>e.kind==='patrol_end');
   r.checkpoints=r.events.filter(e=>e.kind==='checkpoint').length;
   r.alerts=r.events.filter(e=>['panic','incident','alert','route_deviation'].includes(e.kind)).length;
-  r.track=r.events.map(e=>({lat:Number(e.lat),lng:Number(e.lng)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180);
+  r.track=r.events.filter(e=>e.lat!=null&&e.lng!=null).map(e=>({lat:Number(e.lat),lng:Number(e.lng)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180);
   r.worker=liveUsers.find(u=>u.id===r.userId)?.name||'Profissional';
   r.route=runtimeRoute(liveRoutes.find(x=>x.userId===r.userId));
   if(!r.route&&r.track.length){const first=r.track[0];r.route={id:r.id,name:'Trajeto GPS registrado',base:{...first,id:'base',name:'Início'},points:r.track.slice(1,26).map((p,i)=>({...p,id:'p'+i,name:'Posição '+(i+1),radius:25})),legs:[]};}
@@ -617,7 +617,7 @@ function previewRoundRecords(){
 }
 function realMapSelection(){
  const planned=liveRoutes.find(r=>r.id===selectedLiveRouteId)||liveRoutes[0]||null;
- const latest=liveRoundRecords().find(r=>r.userId===planned?.userId)||liveRoundRecords()[0];
+ const recorded=liveRoundRecords(),latest=planned?recorded.find(r=>r.userId===planned.userId):recorded[0];
  return {planned,latest,route:runtimeRoute(planned)||latest?.route||(isPagesTestMode()?DEMO_ROUTE:null),position:latest?.track?.at(-1)||null,track:latest?.track||[]};
 }
 function entryScreen(){
