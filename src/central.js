@@ -462,7 +462,7 @@ function mountOperationalMap(){
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
- const panel=coi.render({account,rounds,events,routes,users,...ops.monitoringData()});
+ const panel=coi.render({account,rounds,events,routes,users,demo:location.hostname.includes('github.io'),...ops.monitoringData()});
  return '<div class="rp-coi-request-strip"><div><strong>Vistorias de campo</strong><span>Solicite vistorias sob demanda ou de rotina, com destino e orientações.</span></div><button type="button" class="primary" data-inspection-queue>Solicitar vistoria ↗</button></div>'+panel;
 }
 function monitorRows(rows){
