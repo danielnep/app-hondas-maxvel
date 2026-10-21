@@ -15,7 +15,7 @@ test('vigia e vistoriador compartilham o mesmo mapa, sem converter ronda em vist
  const ui=guardCockpit({planned:route});
  for(const tool of ['data-field-tool-torch','data-field-tool-alert','data-field-tool-incident'])assert.match(ui,new RegExp(tool));
  assert.doesNotMatch(ui,/data-field-tool-chat|data-field-tool-panic/,'mensagens e pânico ficam nos controles externos do Vigia');
- assert.match(readFileSync(new URL('../src/central.js',import.meta.url),'utf8'),/id=\\"central-panic\\"/);
+ assert.match(readFileSync(new URL('../src/central.js',import.meta.url),'utf8'),/id="central-panic"/);
  assert.match(ui,/data-guard-panel-toggle/);
  assert.match(ui,/data-guard-panel-content/);
  assert.match(ui,/guard-real-map/);assert.match(ui,/data-guard-start/);
