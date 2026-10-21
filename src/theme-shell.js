@@ -60,7 +60,7 @@ export function decorateTheme(role,name=''){
   const commands=$('.patrol-actions',workspace);
   if(commands&&!controls){controls=document.createElement('section');controls.className='rp-field-controls';controls.setAttribute('aria-label',role==='ronda'?'Controles da ronda':'Controles da vistoria');commands.before(controls);controls.append(commands);}
   const communication=$('.patrol-communication-bar')||$('.rp-inspection-map-actions',workspace)||$('.rp-field-quicktools',workspace);
-  if(controls&&communication&&communication.parentElement!==controls)controls.append(communication);
+  if(controls&&communication&&communication.parentElement!==controls&&!communication.closest('[data-guard-panel-content]'))controls.append(communication);
   if(controls){
    const owner=workspace.parentElement;
    if(owner?.matches('.rp-guard-workspace,.rp-inspector-workspace')){
