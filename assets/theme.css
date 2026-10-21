@@ -2127,3 +2127,141 @@
 .rp-theme #dialog .rp-demo-worker-list button strong{font-size:15px}
 .rp-theme #dialog .rp-demo-worker-list button small{font-size:11px;color:#adc6d7!important}
 .rp-theme #dialog .rp-demo-worker-list .icon-svg{width:20px;height:20px;color:#48bafa}
+
+
+/* Despacho de vistoria: fluxo por etapas, compacto e integrado à identidade Maxvel. */
+@layer rp-layout {
+ .rp-theme .dashboard .rp-dispatch-launch{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin:13px 0 18px;padding:15px 18px;min-width:0;
+  background:linear-gradient(110deg,rgba(34,28,32,.95),rgba(28,32,38,.88))!important;
+  border:1px solid #60565c!important;border-left:3px solid #f03b53!important;
+  border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.13);
+ }
+ .rp-theme .dashboard .rp-dispatch-launch>div{display:flex;flex-direction:column;min-width:0;gap:3px}
+ .rp-theme .dashboard .rp-dispatch-launch small{font-size:9px!important;letter-spacing:.13em;color:#ff7487!important;font-weight:800}
+ .rp-theme .dashboard .rp-dispatch-launch strong{font-size:19px;line-height:1.25;color:#f8fafc;font-weight:780}
+ .rp-theme .dashboard .rp-dispatch-launch span{font-size:11px;color:#b7bdc6}
+ .rp-theme .dashboard .rp-dispatch-launch button{
+  flex:none;display:inline-flex;align-items:center;gap:10px;justify-content:center;
+  min-height:43px!important;padding:9px 14px!important;border:1px solid #c74356!important;
+  background:#a6243b!important;color:#fff!important;border-radius:8px!important;
+  font-size:12px;font-weight:800;cursor:pointer;
+ }
+ .rp-theme .dashboard .rp-dispatch-launch button svg{width:17px;height:17px}
+ .rp-theme .dashboard .rp-dispatch-launch button:focus-visible,
+ .rp-theme #dialog.rp-dispatch-dialog :is(button,select,input,textarea):focus-visible{
+  outline:2px solid #fff!important;outline-offset:3px
+ }
+ .rp-theme #dialog.rp-dispatch-dialog[open]{
+  display:block!important;box-sizing:border-box;width:min(490px,calc(100vw - 24px))!important;
+  max-width:min(490px,calc(100vw - 24px))!important;
+  height:auto!important;min-height:0!important;max-height:calc(100dvh - 24px)!important;
+  padding:22px 22px 19px!important;overflow-y:auto!important;
+  overflow-x:hidden!important;overscroll-behavior:contain;
+  background:#1e2026!important;color:#f7f8fa!important;
+  border:1px solid #575057!important;border-top:3px solid #f03850!important;
+  border-radius:16px!important;box-shadow:0 28px 90px #000c!important;
+ }
+ .rp-theme #dialog.rp-dispatch-dialog .dialog-close{
+  position:absolute!important;top:14px!important;right:13px!important;
+  display:grid!important;place-items:center!important;width:36px!important;height:36px!important;
+  min-width:36px!important;min-height:36px!important;border-radius:8px!important;
+  border:1px solid #5b5960!important;background:#2b2c34!important;color:#fff!important;z-index:2!important;
+ }
+ .rp-theme #dialog .rp-dispatch-wizard{display:flex;flex-direction:column;gap:0;min-width:0}
+ .rp-theme #dialog .rp-dispatch-kicker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  font-size:9px;letter-spacing:.08em;font-weight:800;color:#d6ccd0}
+ .rp-theme #dialog .rp-dispatch-kicker span:first-child{color:#ff647a}
+ .rp-theme #dialog .rp-dispatch-kicker span+span:before{content:"/";padding-right:8px;color:#64616b}
+ .rp-theme #dialog .rp-dispatch-head h2{
+  color:#fff!important;font-size:clamp(22px,5.8vw,27px)!important;
+  letter-spacing:-.035em!important;line-height:1.12!important;margin:13px 42px 7px 0!important;
+  font-weight:790!important;padding:0!important;
+ }
+ .rp-theme #dialog .rp-dispatch-head p{font-size:12px!important;line-height:1.45!important;
+  color:#bec0c7!important;max-width:340px;margin:0!important}
+ .rp-theme #dialog .rp-dispatch-steps{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;
+  padding:13px 0 14px;border-bottom:1px solid #434047;margin-bottom:14px;
+ }
+ .rp-theme #dialog .rp-dispatch-steps>span{display:grid;gap:5px;min-width:0;color:#a9a7af}
+ .rp-theme #dialog .rp-dispatch-steps b{
+  display:grid;place-items:center;width:31px;height:31px;border:1px solid #5e5a62;
+  border-radius:8px;background:#25252c;font-size:11px;color:#dbdbe0;font-weight:750;
+ }
+ .rp-theme #dialog .rp-dispatch-steps small{font-size:10px!important;line-height:1.2;color:inherit!important;white-space:nowrap}
+ .rp-theme #dialog .rp-dispatch-steps [aria-current="step"]{color:#fff}
+ .rp-theme #dialog .rp-dispatch-steps [aria-current="step"] b{border-color:#ee5267;background:#a9273f;color:#fff}
+ .rp-theme #dialog .rp-dispatch-steps .is-complete b{border-color:#b44758;background:#37252d;color:#ff9baa}
+ .rp-theme #dialog .rp-dispatch-form{display:flex!important;flex-direction:column!important;min-height:0!important;
+  gap:0!important;margin:0!important;padding:0!important;width:100%;background:transparent!important}
+ .rp-theme #dialog .rp-dispatch-stage{min-height:178px;min-width:0;display:flex;flex-direction:column;
+  align-items:stretch;gap:8px;overflow-wrap:anywhere}
+ .rp-theme #dialog .rp-dispatch-stage[hidden],
+ .rp-theme #dialog .rp-dispatch-actions [hidden],.rp-theme #dialog .rp-dispatch-error[hidden]{display:none!important}
+ .rp-theme #dialog .rp-dispatch-counter{font-weight:850;font-size:10px;letter-spacing:.12em;color:#ff7587}
+ .rp-theme #dialog .rp-dispatch-stage h3{font-size:17px!important;line-height:1.25!important;
+  margin:0 0 5px!important;font-weight:780!important;color:#f7f7fb!important}
+ .rp-theme #dialog .rp-dispatch-stage label{display:grid;gap:7px;font-size:12px;font-weight:730;
+  color:#f3f2f5;margin:0!important}
+ .rp-theme #dialog .rp-dispatch-stage :is(input,select,textarea){
+  box-sizing:border-box;width:100%;max-width:100%;min-height:44px!important;
+  padding:10px 12px!important;background:#15171d!important;color:#fbfbfd!important;
+  border:1px solid #706771!important;border-radius:8px!important;
+  font-size:16px!important;line-height:1.35!important;box-shadow:none!important;
+ }
+ .rp-theme #dialog .rp-dispatch-stage textarea{height:92px!important;min-height:92px!important;
+  max-height:92px!important;resize:none!important}
+ .rp-theme #dialog .rp-dispatch-stage [aria-invalid="true"]{border-color:#ff7e90!important}
+ .rp-theme #dialog .rp-dispatch-stage>p{font-size:11px!important;line-height:1.4!important;
+  color:#b6b7bf!important;margin:3px 0 0!important}
+ .rp-theme #dialog .rp-dispatch-review{display:grid;gap:0;margin:0;max-height:none}
+ .rp-theme #dialog .rp-dispatch-review>div{display:grid;grid-template-columns:85px minmax(0,1fr);
+  gap:12px;padding:8px 0;border-bottom:1px solid #474047}
+ .rp-theme #dialog .rp-dispatch-review dt{font-size:11px;color:#c8aab0}
+ .rp-theme #dialog .rp-dispatch-review dd{font-size:12px;line-height:1.3;color:#fff;font-weight:650;
+  margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:66px;overflow:auto}
+ .rp-theme #dialog .rp-dispatch-error{font-size:12px;color:#ffc0c9;line-height:1.45;
+  border-left:3px solid #f03850;background:#442631;padding:8px 10px;margin:5px 0!important}
+ .rp-theme #dialog .rp-dispatch-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;
+  padding:14px 0 0!important;margin:7px 0 0!important;border-top:1px solid #48434a}
+ .rp-theme #dialog .rp-dispatch-actions button{min-height:43px!important;padding:9px 13px!important;
+  border-radius:8px!important;font-size:12px!important;font-weight:790!important;cursor:pointer}
+ .rp-theme #dialog .rp-dispatch-back{margin-right:auto;background:#27272d!important;color:#fff!important;border:1px solid #6e676e!important}
+ .rp-theme #dialog :is(.rp-dispatch-next,.rp-dispatch-submit){background:#b72c43!important;color:#fff!important;
+  border:1px solid #e0546a!important}
+ .rp-theme #dialog .rp-dispatch-actions button:disabled{opacity:.55;cursor:not-allowed}
+ /* Modal de áreas permanece visível sobre o desfoque, inclusive após abrir outro diálogo. */
+ .rp-theme #dialog.role-picker-dialog[open]{
+  display:block!important;position:fixed!important;inset:0!important;margin:auto!important;
+  box-sizing:border-box!important;opacity:1!important;visibility:visible!important;transform:none!important;
+  width:min(440px,calc(100vw - 26px))!important;max-width:min(440px,calc(100vw - 26px))!important;
+  height:max-content!important;min-height:0!important;max-height:calc(100dvh - 26px)!important;
+  overflow:auto!important;padding:20px!important;border:1px solid #66575f!important;
+  border-top:3px solid #f03850!important;border-radius:14px!important;
+  background:#202229!important;color:#fff!important;box-shadow:0 24px 80px #000c!important;
+ }
+ .rp-theme #dialog.role-picker-dialog .role-picker-list{display:grid!important;gap:7px}
+ .rp-theme #dialog.role-picker-dialog .role-picker-list button{
+  background:#282a31!important;color:#fff!important;border:1px solid #615a63!important;
+  border-radius:8px!important;min-height:51px!important}
+ .rp-theme #dialog.role-picker-dialog .role-picker-list button[aria-pressed="true"]{
+  border-color:#ef5066!important;background:#3c2933!important}
+ @media(max-width:420px){
+  .rp-theme .dashboard .rp-dispatch-launch{padding:12px!important;gap:8px;margin:10px 0 14px}
+  .rp-theme .dashboard .rp-dispatch-launch strong{font-size:15px}
+  .rp-theme .dashboard .rp-dispatch-launch span{font-size:10px}
+  .rp-theme .dashboard .rp-dispatch-launch button{font-size:11px!important;padding:8px 9px!important;gap:5px}
+  .rp-theme #dialog.rp-dispatch-dialog[open]{padding:16px 13px!important}
+  .rp-theme #dialog .rp-dispatch-steps{gap:3px}
+  .rp-theme #dialog .rp-dispatch-steps small{font-size:9px!important}
+  .rp-theme #dialog .rp-dispatch-stage{min-height:171px}
+  .rp-theme #dialog .rp-dispatch-review>div{grid-template-columns:73px minmax(0,1fr);gap:7px}
+ }
+ @media(max-height:550px){
+  .rp-theme #dialog .rp-dispatch-stage{min-height:0}
+  .rp-theme #dialog .rp-dispatch-steps{padding:7px 0}
+  .rp-theme #dialog.rp-dispatch-dialog[open]{max-height:calc(100dvh - 14px)!important}
+ }
+}
