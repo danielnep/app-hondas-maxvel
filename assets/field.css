@@ -889,9 +889,9 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 #central-root .rp-guard-workspace .rp-guard-panel-toggle small{font-size:10px;color:#bbd2e1}
 #central-root .rp-guard-workspace .rp-guard-panel-chevron{font-size:23px;line-height:1;color:#7bd0f7;transition:transform .2s ease}
 #central-root .rp-guard-workspace .rp-guard-quick-panel.is-collapsed .rp-guard-panel-chevron{transform:rotate(180deg)}
-#central-root .rp-guard-workspace .rp-guard-panic{flex:none;min-width:70px;min-height:44px;border:1px solid #e96b7d;border-radius:10px;background:rgba(149,25,48,.9);color:white;font-weight:850;letter-spacing:.04em}
 #central-root .rp-guard-workspace .rp-guard-panel-content[hidden]{display:none!important}
 #central-root .rp-guard-workspace .rp-guard-quick-panel.is-collapsed{max-height:66px!important;overflow:hidden!important}
+@media(max-width:700px){#central-root .rp-guard-workspace .rp-guard-quick-panel:not(.is-collapsed){max-height:min(260px,34dvh)!important;overflow-y:auto!important}}
 #central-root .rp-guard-workspace .rp-guard-panel-content{min-width:0}
 #central-root .rp-guard-workspace .rp-guard-panel-content .rp-field-quicktools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:7px 10px;background:rgba(21,29,38,.69)}
 #central-root .rp-guard-workspace .rp-guard-panel-content .rp-field-quicktools button{min-height:40px!important;padding:7px 4px!important;font-size:11px;border-radius:8px!important;background:rgba(33,45,59,.82)!important}
