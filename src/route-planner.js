@@ -7,7 +7,7 @@ import {loadLeaflet} from './map.js';
 export function createRoutePlanner({getData,api,afterSave,notify}){
  const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let step=1,points=[],kind='routine',recurrence='daily',hour='08:00',startDate='',weekdays=[1,2,3,4,5],workerId='',name='',suggestions=[],query='',loading=false,lookupTimer=null,lookupSerial=0,map=null,mapSeq=0,saving=false;
- const watcherList=()=>getData().users.filter(u=>u.role==='ronda'&&u.active!==0&&(!getData().demo||u.demo===true));
+ const watcherList=()=>getData().users.filter(u=>u.role==='ronda'&&u.active!==0&&(!getData().demo||String(u.username||'').startsWith('vigia-demo-')));
  const roleOk=()=>['admin','coi','operador','master'].includes(getData().role);
  const week=['D','S','T','Q','Q','S','S'];
  const weekLabel=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
