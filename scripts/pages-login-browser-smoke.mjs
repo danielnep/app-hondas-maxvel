@@ -73,6 +73,7 @@ try{
       await form.locator('[data-action="dispatch-next"]').click();
       if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Rua da Vistoria, 123, Divinópolis').count())
        throw Error('Revisão perdeu o rascunho');
+      const inspector=await page.locator('#dialog').evaluate(el=>{const bounds=e=>{const r=e?.getBoundingClientRect();return r?{height:r.height,top:r.top,bottom:r.bottom}:null};return {classes:el.className,computed:{height:getComputedStyle(el).height,minHeight:getComputedStyle(el).minHeight,maxHeight:getComputedStyle(el).maxHeight,display:getComputedStyle(el).display},dialog:bounds(el),wizard:bounds(el.querySelector('.rp-dispatch-wizard')),form:bounds(el.querySelector('form')),stage:bounds(el.querySelector('[data-dispatch-stage="4"]')),scrollHeight:el.scrollHeight,clientHeight:el.clientHeight}});console.log('DISPATCH_HEIGHT '+JSON.stringify(inspector));
       const geometry=await page.locator('#dialog').boundingBox();
       if(!geometry||geometry.width>393||geometry.height>840||geometry.y<0)throw Error('Janela de despacho cortada: '+JSON.stringify(geometry));
       await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-despacho.png',animations:'disabled'});
