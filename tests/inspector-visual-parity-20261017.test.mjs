@@ -58,11 +58,11 @@ test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
  assert.match(index,new RegExp('sw\\.js\\?v='+version));
  assert.match(sw,new RegExp('rondas-pro-interface-v'+version));
  for(const page of [index,central]){
-  assert.match(page,/field\.css\?v=51/);
+  assert.match(page,/field\.css\?v=52/);
  }
 });
 
 test('minimapa da Administração contém camadas Leaflet dentro de sua própria área',()=>{
  assert.ok(demoStyles.includes('.demo-mini-route-map{position:relative;isolation:isolate;overflow:hidden;height:206px'));
- assert.ok(index.includes('ronda-pro.css?v=52'));
+ assert.ok(index.includes('ronda-pro.css?v=53'));
 });
