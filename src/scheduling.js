@@ -28,7 +28,7 @@ export function routeForWatcher(watcherId,routeId){
  const variant=idx%4;
  const base=structuredClone(DEMO_ROUTE);
  const angle=(variant*33+group*17)*Math.PI/180;
- const scale=0.92+(idx%3)*0.09;
+ const scale=27+(idx%3)*7; // cerca de quilômetros entre pontos; cenário fictício de deslocamento operacional
  const cos=Math.cos(angle),sin=Math.sin(angle);
  const latitudeScale=Math.cos(base.base.lat*Math.PI/180);
  const spread=variant*0.00064,shift=group*0.00014;
