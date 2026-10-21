@@ -67,7 +67,7 @@ try{
       if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vigia');
       await form.locator('[name="workerId"]').selectOption('pages-vigia-demo-lucas');
       await form.locator('[data-action="dispatch-next"]').click();
-      await form.locator('#rp-dispatch-saved option').nth(1).waitFor({timeout:12000});
+      await page.waitForFunction(()=>document.querySelectorAll('#rp-dispatch-saved option').length>=2,null,{timeout:12000});
       await form.locator('#rp-dispatch-saved').selectOption({index:1});
       await page.waitForFunction(()=>document.querySelector('#rp-dispatch-address')?.value.includes('Praça do Santuário'));
       await page.locator('#rp-dispatch-map').waitFor({state:'visible'});
