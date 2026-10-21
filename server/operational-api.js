@@ -216,7 +216,7 @@ export function createOperationalApi(){
     }
     if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,vehicle_type AS vehicleType,vehicle_plate AS vehiclePlate,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),vehicleType=clean(d.vehicleType),vehiclePlate=clean(d.vehiclePlate).slice(0,12);
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),vehicleType=clean(d.vehicleType)||(d.role==='ronda'?'a_pe':''),vehiclePlate=clean(d.vehiclePlate).slice(0,12);
     if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof d.password!=='string'||d.password.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e senha de 12 caracteres ou mais'});return true;}
     if(clean(d.phone).length>35||!['','a_pe','moto','carro','bicicleta','outro'].includes(vehicleType)||(d.role==='ronda'&&!vehicleType)){
       resp(res,422,{error:'Telefone ou tipo de veículo inválido'});return true;
