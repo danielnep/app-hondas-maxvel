@@ -223,7 +223,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
   if(!this.instance){if(!this.destroyed){this.pendingFocus=index;return true;}return false;}
   this.pendingFocus=null;
   this.instance.invalidateSize(false);
-  this.instance.flyTo(latlng(p),Math.max(17,Math.min(18,this.instance.getZoom())),{animate:true,duration:0.4});
+  if(this.session?.mode==='simulation'&&this.route.points.length>1){this.fit();}else this.instance.flyTo(latlng(p),Math.max(17,Math.min(18,this.instance.getZoom())),{animate:true,duration:0.4});
   this.pointMarkers[index+1]?.openPopup();
   return true;
  }
