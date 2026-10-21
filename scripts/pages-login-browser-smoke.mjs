@@ -33,6 +33,13 @@ try{
    if(!filepath.startsWith(root+'/')||!existsSync(filepath))return route.fulfill({status:404,body:'Not Found'});
    return route.fulfill({path:filepath,contentType:types[extname(filepath)]||'application/octet-stream'});
   });
+  // Deterministic geocoding fixture: the UI must pick a real map coordinate,
+  // not silently accept text as a geographic destination.
+  await context.route('https://photon.komoot.io/api/**',route=>route.fulfill({
+   status:200,contentType:'application/json',
+   body:JSON.stringify({features:[{type:'Feature',geometry:{coordinates:[-44.8906,-20.1437]},
+     properties:{name:'Rua da Vistoria',street:'Rua da Vistoria',housenumber:'123',city:'Divinópolis'}}]})
+  }));
   page.on('pageerror',err=>errors.push(err.message));
   try{
    await page.goto(target.url,{waitUntil:'domcontentloaded'});
@@ -68,6 +75,9 @@ try{
       await form.locator('[name="workerId"]').selectOption({index:1});
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="address"]').fill('Rua da Vistoria, 123, Divinópolis');
+      await form.locator('#rp-dispatch-suggestions [role="option"]').first().waitFor({timeout:12000});
+      await form.locator('#rp-dispatch-suggestions [role="option"]').first().click();
+      if(!await form.locator('#rp-dispatch-preview-map').count())throw Error('Mapa do destino ausente no celular');
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
       await form.locator('[data-action="dispatch-next"]').click();

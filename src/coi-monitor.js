@@ -1,5 +1,5 @@
 /* Rondas Pro · COI: pessoas, acompanhamento, evidências e situação.
- * Não há página de mapa. O mapa pertence a cada ronda/vistoria, contextualizado.
+ * Mapas de rondas e vistorias são visíveis no celular e no computador.
  * Tudo é obtido da API autenticada, sem simular pessoas em produção.
  */
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -21,7 +21,7 @@ export function createCoiMonitor(){
  function copy(data){snapshot=data}
  function render(data){
   snapshot=data;targets.clear();
-  const {account,rounds=[],events=[],routes=[],users=[],availability=[],dispatches=[]}=data;
+  const {account,rounds=[],events=[],routes=[],users=[],availability=[],dispatches=[],demo=false}=data;
   const isAdmin=['admin','master'].includes(account?.role),who=new Map(users.map(u=>[u.id,u]));
   const online=new Map(availability.map(a=>[a.id,a]));
   const latest=(rounds||[]).slice().sort((a,b)=>(b.start||0)-(a.start||0));
@@ -36,10 +36,11 @@ export function createCoiMonitor(){
   const tools='<nav class="coi3-actions" aria-label="Tarefas da central"><button type="button" data-page="treatments" class="coi3-action-urgent"><span aria-hidden="true">◉</span> Tratativas '+(queue.length?'('+queue.length+')':'')+'</button><button type="button" data-page="notifications">Notificações</button><button type="button" data-page="dispatches">Despachar equipe</button></nav>';
   const tabs='<div class="coi3-tabs" role="group" aria-label="Tipo de acompanhamento"><button type="button" data-coi-tab="rondas" aria-pressed="'+(tab==='rondas')+'" class="'+(tab==='rondas'?'is-active':'')+'">Rondas <span>'+latest.length+'</span></button><button type="button" data-coi-tab="vistorias" aria-pressed="'+(tab==='vistorias')+'" class="'+(tab==='vistorias'?'is-active':'')+'">Vistorias <span>'+(inspections.length+currentInspections.length)+'</span></button></div>';
   const location=({id,point,at,route=[],name,kind})=>{
-   if(!coords(point))return '<div class="coi3-map-empty">Sem coordenadas recebidas. O mapa aparecerá quando o aparelho enviar uma posição válida.</div>';
-   const fresh=recent(at),key=kind+':'+id;
+   const knownRoute=route.filter(coords);
+   if(!coords(point)&&!knownRoute.length)return '<div class="coi3-map-empty">Sem GPS e sem percurso cadastrado. Não há localização verificável para mostrar.</div>';
+   const fresh=coords(point)&&recent(at),key=kind+':'+id;
    targets.set(key,{point,at,route,name,kind});
-   return '<div class="coi3-location"><div class="coi3-map" data-coi-map="'+esc(key)+'" aria-label="Mapa da '+(kind==='round'?'ronda':'vistoria')+' '+esc(name)+'"></div><div class="coi3-position-status"><span class="'+(fresh?'coi3-fresh':'')+'">'+(fresh?'● GPS recente':'● Última posição conhecida')+'</span><span>'+time(at)+'</span></div></div>';
+   return '<div class="coi3-location"><div class="coi3-map" data-coi-map="'+esc(key)+'" aria-label="Mapa da '+(kind==='round'?'ronda':'vistoria')+' '+esc(name)+'"></div><div class="coi3-position-status"><span class="'+(fresh?'coi3-fresh':'')+'">'+(!coords(point)?'● Percurso previsto, sem GPS do profissional':fresh?'● GPS recente':'● Última posição conhecida')+'</span><span>'+(!coords(point)?'Aguardando posição':time(at))+'</span></div></div>';
   };
   const roundCard=r=>{
    const u=who.get(r.userId),person=online.get(r.userId),route=routes.find(x=>x.id===r.routeId)||routes.find(x=>x.user_id===r.userId||x.userId===r.userId);
@@ -64,15 +65,26 @@ export function createCoiMonitor(){
   const view=tab==='rondas'?
    (latest.length?'<div class="coi3-record-stack">'+latest.slice(0,16).map(roundCard).join('')+'</div>':'<div class="coi3-empty">Nenhuma ronda sincronizada. Consulte a equipe e as rotas atribuídas.</div>'):
    ((currentInspections.length||inspections.length)?'<div class="coi3-record-stack">'+currentInspections.slice(0,12).map(d=>inspectionCard(d,null)).join('')+inspections.filter(e=>!inspectorSeen.has(e.user_id)||!currentInspections.some(d=>d.worker_id===e.user_id&&e.occurred_at>=d.started_at)).slice(0,18).map(e=>inspectionCard(null,e)).join('')+'</div>':'<div class="coi3-empty">Nenhuma vistoria recebida. Solicite um vistoriador em Despachar equipe.</div>');
+
+  const previewRoutes=demo?routes.filter(route=>Array.isArray(route.points)&&route.points.some(coords)).slice(0,3):[];
+  const showcase=demo?'<section class="coi3-demo-preview"><header><div><strong>Prévia dos percursos cadastrados</strong><p>Ilustração das rotas previstas. Nenhum deslocamento fictício é apresentado como ronda realizada.</p></div><span>DEMONSTRAÇÃO</span></header>'+
+   (previewRoutes.length?'<div class="coi3-record-stack">'+previewRoutes.map((route,i)=>{
+    const ordered=route.points.filter(coords);
+    return '<article class="coi3-record coi3-demo-route"><h3>'+esc(route.name||'Percurso '+(i+1))+'</h3>'+
+     '<ol>'+ordered.slice(0,8).map(p=>'<li>'+esc(p.name||p.address||'Ponto cadastrado')+'</li>').join('')+'</ol>'+
+     location({id:'demonstracao-'+(route.id||i),point:null,at:null,route:ordered,name:'Percurso demonstrativo',kind:'round'})+'</article>';
+   }).join('')+'</div>':'<p class="coi3-empty">Comece cadastrando pontos em Rotas e rondas. O mapa previsto aparecerá aqui, inclusive no celular.</p>')+
+   '</section>':'';
+
   const queueUI='<section class="coi3-secondary"><header><h2>Comunicação que exige resposta</h2><button type="button" data-page="treatments">Abrir tratativas →</button></header><div class="coi3-alert-list">'+(queue.length?queue.slice(0,5).map(e=>'<button type="button" data-event="'+esc(e.id)+'" class="coi3-alert '+(e.kind==='panic'?'is-panic':'')+'"><strong>'+esc(label[e.kind]||e.kind)+'</strong><span>'+esc(e.description||'Sem descrição')+'</span><small>'+time(e.occurred_at)+' · '+esc(e.site||'Sem posto')+'</small></button>').join(''):'<p class="coi3-empty">Nenhuma pendência de comunicação aberta.</p>')+'</div></section>';
-  const body='<section class="coi3-app">'+header+metrics+tools+'<section class="coi3-section"><header class="coi3-section-header"><div><h2>Equipe em acompanhamento</h2><p>Selecione a atividade para ver os registros e a localização disponível de cada profissional.</p></div></header>'+tabs+view+'</section>'+queueUI+'<p class="coi3-footnote">As posições são recebidas mediante permissão GPS do aparelho. Sem leitura recente, o ponto permanece identificado como histórico, nunca como localização ao vivo.</p></section>';
+  const body='<section class="coi3-app">'+header+metrics+tools+'<section class="coi3-section"><header class="coi3-section-header"><div><h2>Equipe em acompanhamento</h2><p>Selecione a atividade para ver os registros e a localização disponível de cada profissional.</p></div></header>'+tabs+view+showcase+'</section>'+queueUI+'<p class="coi3-footnote">As posições são recebidas mediante permissão GPS do aparelho. Sem leitura recente, o ponto permanece identificado como histórico, nunca como localização ao vivo.</p></section>';
   return body;
  }
  function mount(){
   const L=globalThis.L;if(!L)return;
   for(const el of document.querySelectorAll('[data-coi-map]')){
    const entry=targets.get(el.dataset.coiMap);
-   if(!entry||!coords(entry.point))continue;
+   if(!entry||(!coords(entry.point)&&!entry.route.some(coords)))continue;
    const map=L.map(el,{zoomControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,attributionControl:true});
    maps.push({key:el.dataset.coiMap,map});
    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
@@ -82,9 +94,9 @@ export function createCoiMonitor(){
    if(path.length>1)L.polyline(path,{color:'#38bdf8',weight:3,opacity:.88,interactive:false}).addTo(map);
    for(const p of entry.route.filter(coords))L.circleMarker([p.lat,p.lng],{radius:3,color:'#f4f4f5',fillColor:'#38bdf8',fillOpacity:1,weight:1,interactive:false}).addTo(map);
    const live=recent(entry.at);
-   const dot=L.circleMarker([entry.point.lat,entry.point.lng],{radius:8,color:'#fff',weight:2,fillColor:live?'#10b981':'#f7cb35',fillOpacity:1,interactive:false}).addTo(map);
+   const dot=coords(entry.point)?L.circleMarker([entry.point.lat,entry.point.lng],{radius:8,color:'#fff',weight:2,fillColor:live?'#10b981':'#f7cb35',fillOpacity:1,interactive:false}).addTo(map):null;
    const prior=previous.get(el.dataset.coiMap);
-   if(prior&&coords(prior)&&live&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&Math.abs(prior.lat-entry.point.lat)+Math.abs(prior.lng-entry.point.lng)<.02){
+   if(dot&&prior&&coords(prior)&&live&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&Math.abs(prior.lat-entry.point.lat)+Math.abs(prior.lng-entry.point.lng)<.02){
     const start=performance.now(),duration=1200;
     const animate=t=>{
      if(!el.isConnected)return;
@@ -95,9 +107,10 @@ export function createCoiMonitor(){
     };
     requestAnimationFrame(animate);
    }
-   previous.set(el.dataset.coiMap,{lat:entry.point.lat,lng:entry.point.lng});
-   if(path.length>1)map.fitBounds([...path,[entry.point.lat,entry.point.lng]],{padding:[19,19],maxZoom:15,animate:false});
-   else map.setView([entry.point.lat,entry.point.lng],15,{animate:false});
+   if(coords(entry.point))previous.set(el.dataset.coiMap,{lat:entry.point.lat,lng:entry.point.lng});
+   const bounds=coords(entry.point)?[...path,[entry.point.lat,entry.point.lng]]:path;
+   if(bounds.length>1)map.fitBounds(bounds,{padding:[19,19],maxZoom:15,animate:false});
+   else map.setView(bounds[0],15,{animate:false});
    setTimeout(()=>{if(el.isConnected)map.invalidateSize()},90);
   }
  }

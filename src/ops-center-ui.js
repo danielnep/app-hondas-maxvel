@@ -159,7 +159,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  '<label>Tipo de vistoria<select name="inspectionType"><option value="demand">Vistoria pontual</option><option value="routine">Vistoria de rotina</option></select></label>'+
  '<label>Destino cadastrado (opcional)<select name="destinationId"><option value="">Informar outro endereço</option>'+
  destinations.filter(d=>d.active).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.client_name+' · '+d.address)+'</option>').join('')+
- '</select></label><label>Ou digite o endereço completo<input name="address" minlength="5" maxlength="350" autocomplete="street-address" placeholder="Rua, número, bairro, cidade e referência"></label>'+
+ '</select></label><label>Ou digite o endereço completo<input name="address" minlength="5" maxlength="350" autocomplete="street-address" placeholder="Rua, número, bairro, cidade e referência"></label><div id="ops-inspection-address-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados"></div>'+
  '<div class="rp-inspection-route-editor"><div><strong>Trajeto determinado pelo COI</strong><small>Marque obrigatoriamente o destino no mapa e adicione passagens, se necessário. Sem ponto geográfico, não há como colocar o chamado no circuito.</small></div><div class="rp-route-controls"><button type="button" data-ops-map-mode="destination">Definir destino</button><button type="button" data-ops-map-mode="waypoint">Adicionar passagem</button><button type="button" data-ops-map-clear>Limpar rota</button></div><div id="ops-inspection-plan-map" class="rp-plan-map" role="application" aria-label="Selecionar pontos no mapa"></div><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="routePoints" value="[]"><p class="rp-route-status" data-ops-route-status>Toque no mapa para definir destino.</p></div>'+
  '<label>Justificativa e instruções da vistoria<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a inspeção solicitada"></textarea></label>'+
  '<div class="ops-dispatch-actions"><button type="button" data-ops-close-inspector>Cancelar</button><button class="primary" type="submit">Enviar vistoriador</button></div></form></dialog></section>'+
@@ -209,6 +209,72 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">ADMINISTRAÇÃO · CONTROLES</div><h1>Permissões do COI</h1><p class="muted">O painel COI e Monitoramento representa a mesma equipe. Cada módulo é habilitado de fábrica e pode ser alterado individualmente. O servidor também verifica a autorização.</p></div></header>'+
    '<section class="surface"><h2>Módulos de operação</h2><div class="permission-list">'+permissionRows()+'</div></section></section>';
  }
+
+ function attachInspectorGeocoder(dialog){
+  if(dialog._geocoderAttached)return;
+  dialog._geocoderAttached=true;
+  const address=dialog.querySelector('#ops-inspector-form [name="address"]');
+  const selector=dialog.querySelector('#ops-inspector-form [name="destinationId"]');
+  const host=dialog.querySelector('#ops-inspection-address-suggestions');
+  if(!address||!selector||!host)return;
+  let timer=null,controller=null;
+  function mark(point){
+   if(!Number.isFinite(point.lat)||!Number.isFinite(point.lng))return;
+   const map=dialog._inspectionMap;
+   if(map){
+    dialog.dataset.routeMode='destination';
+    map.setView([point.lat,point.lng],16,{animate:false});
+    map.fire('click',{latlng:window.L.latLng(point.lat,point.lng)});
+   }
+   address.value=point.address;
+   host.replaceChildren();
+  }
+  selector.addEventListener('change',()=>{
+   const saved=destinations.find(p=>p.id===selector.value);
+   if(!saved)return;
+   address.value=saved.address;
+   if(saved.latitude!=null&&saved.longitude!=null)mark({address:saved.address,lat:Number(saved.latitude),lng:Number(saved.longitude)});
+   else address.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  address.addEventListener('input',()=>{
+   clearTimeout(timer);controller?.abort();
+   const text=address.value.trim();
+   host.replaceChildren();
+   dialog.querySelector('[name="latitude"]').value='';
+   dialog.querySelector('[name="longitude"]').value='';
+   const previous=dialog._inspectorPins?.find(x=>x.kind==='destination');
+   previous?.marker.remove();
+   dialog._inspectorPins=(dialog._inspectorPins||[]).filter(x=>x.kind!=='destination');
+   if(text.length<5)return;
+   const status=dialog.querySelector('[data-ops-route-status]');
+   if(status)status.textContent='Procurando endereço no mapa...';
+   timer=setTimeout(async()=>{
+    controller=new AbortController();
+    try{
+     const response=await fetch('https://photon.komoot.io/api/?lang=pt&limit=6&q='+encodeURIComponent(text),{signal:controller.signal});
+     if(!response.ok)throw Error('busca indisponível');
+     const result=await response.json();
+     if(controller.signal.aborted)return;
+     const points=(result.features||[]).map(f=>{
+      const p=f.properties||{},c=f.geometry?.coordinates||[];
+      return {name:String(p.name||p.street||'Local'),address:[p.street,p.housenumber,p.city,p.state].filter(Boolean).join(', ')||String(p.name||text),
+       lat:Number(c[1]),lng:Number(c[0])};
+     }).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+     for(const point of points){
+      const button=document.createElement('button');button.type='button';button.setAttribute('role','option');
+      const title=document.createElement('strong');title.textContent=point.name;
+      const desc=document.createElement('small');desc.textContent=point.address;
+      button.append(title,desc);button.addEventListener('click',()=>mark(point));host.append(button);
+     }
+     if(points.length){
+      dialog._inspectionMap?.setView([points[0].lat,points[0].lng],15,{animate:false});
+      if(status)status.textContent='Endereço localizado. Toque no resultado correto para marcar o destino.';
+     }else if(status)status.textContent='Não encontrei o endereço. Informe rua, número, bairro e cidade.';
+    }catch(e){if(!controller.signal.aborted&&status)status.textContent='Busca indisponível. Você pode marcar o destino tocando no mapa.';}
+   },650);
+  });
+ }
+
  async function click(target){
   if(target.hasAttribute('data-ops-more')){
    if(!nextCursor)return true;
@@ -246,6 +312,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
      }
     });setTimeout(()=>map.invalidateSize(),100);
    }
+   attachInspectorGeocoder(dialog);
    dialog.querySelector('[name="destinationId"]').focus();return true;
   }
   if(target.dataset.opsMapMode){const dialog=document.querySelector('#ops-inspector-modal');if(dialog)dialog.dataset.routeMode=target.dataset.opsMapMode;return true;}

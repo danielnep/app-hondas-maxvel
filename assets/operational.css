@@ -1054,6 +1054,13 @@ body:has(#central-root) main{max-width:1600px}
 #central-root .coi3-alert span{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 #central-root .coi3-alert small{font-size:10px;color:#b8b8bf}
 #central-root .coi3-footnote{color:#a1a1aa;border-left:2px solid #38bdf8;padding:10px 12px;font-size:11px;line-height:1.5;margin-top:15px}
+#central-root .coi3-demo-preview{margin-top:20px;padding:16px;border:1px dashed #52616d;border-radius:12px;background:#141b22}
+#central-root .coi3-demo-preview header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+#central-root .coi3-demo-preview header strong{font-size:15px;color:#f5f5f7}
+#central-root .coi3-demo-preview header p{font-size:12px;color:#b2c2d0;line-height:1.5;margin:5px 0 0}
+#central-root .coi3-demo-preview header>span{font-size:10px;color:#f1c889;border:1px solid #866b45;border-radius:5px;padding:6px}
+#central-root .coi3-demo-route ol{font-size:12px;color:#d3dce5;line-height:1.65;padding-left:18px}
+#central-root .coi3-demo-route li{margin-bottom:4px}
 #central-root .coi3-treatments{gap:15px}
 #central-root .coi3-treatments .coi3-heading{margin-bottom:0}
 #central-root .coi3-treat-stats{grid-template-columns:repeat(3,minmax(0,1fr));margin:4px 0 0}
@@ -1088,7 +1095,7 @@ body:has(#central-root) main{max-width:1600px}
  #central-root .coi3-section{padding:12px}
  #central-root .coi3-tabs{width:100%}
  #central-root .coi3-tabs button{flex:1;min-width:0;padding:9px 13px}
- #central-root .coi3-map{height:181px}
+ #central-root .coi3-map{height:260px}
  #central-root .coi3-treatment-row{flex-wrap:wrap}
  #central-root .coi3-treatment-badge{margin-left:46px}
  #central-root .coi3-treat-stats{grid-template-columns:repeat(3,minmax(0,1fr))}

@@ -7,6 +7,15 @@ import {loadLeaflet} from './map.js';
 export function createRoutePlanner({getData,api,afterSave,notify}){
  const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let step=1,points=[],kind='routine',recurrence='daily',hour='08:00',startDate='',weekdays=[1,2,3,4,5],workerId='',name='',suggestions=[],query='',loading=false,lookupTimer=null,lookupSerial=0,map=null,mapSeq=0,saving=false;
+ const preRegistered=()=>{
+  const known=new Map();
+  for(const route of getData().routes||[])for(const point of route.points||[]){
+   if(!safePoint(point))continue;
+   const key=(point.address||point.name).toLocaleLowerCase('pt-BR').trim();
+   if(!known.has(key))known.set(key,{...point,address:String(point.address||point.name)});
+  }
+  return [...known.values()].slice(0,40);
+ };
  const watcherList=()=>getData().users.filter(u=>u.role==='ronda'&&u.active!==0&&(!getData().demo||String(u.username||'').startsWith('vigia-demo-')));
  const roleOk=()=>['admin','coi','operador','master'].includes(getData().role);
  const week=['D','S','T','Q','Q','S','S'];
@@ -30,7 +39,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    '<h2>Definir os endereços</h2><div class="rp-plan-type"><button type="button" data-action="rp-plan-kind" data-kind="routine" class="'+(kind==='routine'?'selected':'')+'" aria-pressed="'+(kind==='routine')+'"><strong>Ronda de rotina</strong><small>Sequência fixa de endereços</small></button><button type="button" data-action="rp-plan-kind" data-kind="specific" class="'+(kind==='specific'?'selected':'')+'" aria-pressed="'+(kind==='specific')+'"><strong>Ronda específica / aleatória</strong><small>Ronda pontual ou extraordinária</small></button></div>'+
    field('Vigia responsável','<select id="rp-plan-worker" name="userId" required>'+people.map(w=>'<option value="'+escape(w.id)+'" '+(w.id===workerId?'selected':'')+'>'+escape(w.name)+'</option>').join('')+'</select>')+
    field('Nome da rota','<input id="rp-plan-name" name="routeName" maxlength="120" minlength="3" placeholder="Ex.: Ronda do turno noturno" value="'+escape(name)+'" required>')+
-   '<label class="rp-plan-field"><span>Adicionar endereço ou empresa</span><input id="rp-plan-query" autocomplete="off" placeholder="Pesquisar empresa, local ou endereço" value="'+escape(query)+'" aria-autocomplete="list" aria-controls="rp-plan-suggestions"></label>'+
+   '<label class="rp-plan-field"><span>Pesquisar endereço ou ponto cadastrado</span><input id="rp-plan-query" autocomplete="off" placeholder="Pesquisar empresa, local ou endereço" value="'+escape(query)+'" aria-autocomplete="list" aria-controls="rp-plan-suggestions"></label>'+
    '<div id="rp-plan-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados">'+(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml()+'</div>'+
    '<div class="rp-plan-stop-head"><h3>Pontos da rota ('+points.length+')</h3>'+(points.length?'<button type="button" data-action="rp-plan-clear">Limpar</button>':'')+'</div>'+
    '<div class="rp-plan-stops">'+(positions||'<p class="rp-plan-empty">Busque e selecione ao menos dois endereços para criar a rota.</p>')+'</div></section></div>'+
@@ -45,7 +54,17 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    '<div class="rp-plan-actions"><button type="button" class="rp-plan-secondary" data-action="rp-plan-back" '+(step===1?'disabled':'')+'>Voltar</button><button type="button" class="rp-plan-next" data-action="rp-plan-next" '+(step===3?'hidden':'')+'>Próximo: '+(step===1?'Agendamento':'Revisão')+' →</button><button type="submit" class="rp-plan-save" '+(step!==3?'data-mobile-final="hidden"':'')+' '+(!people.length||saving?'disabled':'')+'>'+(saving?'Salvando…':getData().demo?'Salvar demonstração':'Salvar e disponibilizar ao vigia')+'</button></div></form>'+
    '<section class="rp-plan-saved"><h2>Rotas cadastradas</h2>'+(getData().routes.length?getData().routes.slice(0,5).map(r=>'<div class="rp-plan-saved-row"><strong>'+escape(r.name)+'</strong><small>'+escape(r.workerName||people.find(w=>w.id===r.userId)?.name||'Vigia')+' · '+r.points.length+' endereços</small></div>').join(''):'<p>Nenhuma rota cadastrada.</p>')+'</section></section>';
  }
- function suggestionsHtml(){return suggestions.map((p,i)=>'<button type="button" role="option" data-action="rp-plan-pick" data-index="'+i+'"><strong>'+escape(p.name)+'</strong><small>'+escape(p.address)+'</small></button>').join('');}
+ function visibleSuggestions(){
+  const all=preRegistered();
+  const q=query.trim().toLocaleLowerCase('pt-BR');
+  const registered=q?all.filter(p=>(p.name+' '+p.address).toLocaleLowerCase('pt-BR').includes(q)):all.slice(0,6);
+  return [...registered.slice(0,6),...suggestions].slice(0,10);
+ }
+ function suggestionsHtml(){
+  const items=visibleSuggestions();
+  return (items.length?'<p class="rp-plan-caption">'+(query.trim()?'Confira o local e toque para adicionar ao mapa.':'Pontos já cadastrados · toque para adicionar')+'</p>':'')+
+   items.map((p,i)=>'<button type="button" role="option" data-action="rp-plan-pick" data-index="'+i+'"><strong>'+escape(p.name)+'</strong><small>'+escape(p.address)+'</small></button>').join('');
+ }
  function replaceSuggestions(){const host=document.getElementById('rp-plan-suggestions');if(host)host.innerHTML=(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml();}
  function clearMap(){if(map){try{map.remove()}catch{}map=null;}}
  async function mount(){
@@ -66,6 +85,13 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
     }
     points.length===1?map.setView(line[0],15):map.fitBounds(L.latLngBounds(line).pad(.25),{maxZoom:16});
    }else map.setView([-19.92,-43.94],7);
+   // Preview the search result on the cartography BEFORE the user saves a point.
+   const preview=query.trim()?visibleSuggestions()[0]:null;
+   if(preview&&safePoint(preview)){
+    L.circleMarker([preview.lat,preview.lng],{radius:9,color:'#fff',fillColor:'#43b3ec',fillOpacity:.85})
+     .addTo(map).bindTooltip('Endereço encontrado · confirme o ponto');
+    if(!points.length)map.setView([preview.lat,preview.lng],15,{animate:false});
+   }
    setTimeout(()=>{if(map&&host.isConnected)map.invalidateSize()},100);
   }catch{if(current===mapSeq&&host.isConnected)host.innerHTML='<span>Mapa temporariamente indisponível. Os endereços permanecem salvos na lista.</span>';}
  }
@@ -85,7 +111,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
  }
  async function click(el){
   const act=el.dataset.action;if(!act?.startsWith('rp-plan-'))return false;
-  if(act==='rp-plan-pick'){const p=suggestions[Number(el.dataset.index)];if(p&&points.length<30&&safePoint(p)){points.push(p);query='';suggestions=[];changed();}else notify('Limite de 30 pontos por rota.');return true;}
+  if(act==='rp-plan-pick'){const p=visibleSuggestions()[Number(el.dataset.index)];if(p&&points.length<30&&safePoint(p)){points.push(p);query='';suggestions=[];changed();}else notify('Limite de 30 pontos por rota.');return true;}
   if(act==='rp-plan-kind'){kind=el.dataset.kind==='specific'?'specific':'routine';changed();return true;}
   if(act==='rp-plan-remove'){points.splice(Number(el.dataset.index),1);changed();return true;}
   if(act==='rp-plan-clear'){points=[];changed();return true;}
@@ -122,7 +148,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
      return {name:String(p.name||p.street||'Local').slice(0,100),address:label||'Endereço identificado no mapa',lat:Number(c[1]),lng:Number(c[0])};
     }).filter(safePoint);
    }catch{if(serial===lookupSerial){suggestions=[];notify('A busca de endereços está indisponível. Confira sua conexão e tente novamente.');}}
-   if(serial===lookupSerial){loading=false;replaceSuggestions();}
+   if(serial===lookupSerial){loading=false;replaceSuggestions();void mount();}
   },650);
   return true;
  }
