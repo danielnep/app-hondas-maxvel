@@ -26,9 +26,15 @@ export function createPointMap(host){
   const lat=Number(point?.lat),lng=Number(point?.lng);
   if(!valid(lat,lng))throw Error('Coordenadas inválidas.');
   const thisSeq=++seq;
+  const placeholder=document.createElement('div');
+  placeholder.className='rp-geo-map-fallback';
+  placeholder.innerHTML='<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="43" r="30" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="1.5"/><circle cx="50" cy="43" r="18" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.5"/><path d="M50 22c-12 0-22 9-22 22 0 16 22 37 22 37s22-21 22-37c0-13-10-22-22-22zm0 16a7 7 0 1 1 0 14 7 7 0 0 1 0-14z" fill="#ef536d"/></svg><strong>Ponto geográfico encontrado</strong><small>Carregando cartografia…</small>';
+  placeholder.querySelector('small').textContent=lat.toFixed(5)+', '+lng.toFixed(5)+' · aguardando mapa online';
+  host.replaceChildren(placeholder);
   const L=await loadLeaflet();
   if(disposed||thisSeq!==seq||!host.isConnected)return;
   if(!map){
+   host.replaceChildren();
    map=L.map(host,{zoomControl:true,scrollWheelZoom:false});
    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
   }
