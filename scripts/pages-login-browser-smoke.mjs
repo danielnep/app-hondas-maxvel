@@ -42,9 +42,13 @@ try{
    if(await page.locator('#live-login-form').count())throw Error('Login visível em '+target.name);
    for(const [index,[role,view,label]] of roles.entries()){
     if(index>0){
-     await page.locator('.user-profile-button').click();
-     await page.locator('#dialog [data-action="sim-role-picker"]').click();
-    }
+      await page.locator('.user-profile-button').click();
+      await page.locator('#dialog [data-action="sim-role-picker"]').click();
+      const picker=page.locator('#dialog.role-picker-dialog[open]');
+      const geom=await picker.evaluate(el=>({modal:el.matches(':modal'),rect:el.getBoundingClientRect().toJSON(),buttons:el.querySelectorAll('.role-picker-list button').length}));
+      if(!await picker.locator('.role-picker-list').isVisible()||!geom.modal||geom.rect.width<200||geom.rect.height<150||geom.buttons!==4)
+       throw Error('Trocar área abriu só o fundo desfocado: '+JSON.stringify(geom));
+     }
     await page.locator('#dialog [data-action="sim-role"][data-role="'+role+'"]').click();
     if(role==='ronda'){
      const picker=page.locator('#dialog .rp-demo-worker-picker');
@@ -55,22 +59,30 @@ try{
     await page.waitForFunction(({view,label})=>document.querySelector('.dashboard:not(.simulation-mode)')&&document.querySelector('.side-link.active')?.dataset.view===view&&document.querySelector('.user-profile-button small')?.textContent.trim()===label,{view,label},{timeout:15000});
     if(await page.locator('#live-login-form').count())throw Error('Login reapareceu após troca de área: '+role);
     if(role==='admin'){
-     const form=page.locator('#live-dispatch-form');
-     await form.waitFor({timeout:12000});
-     const collision=await form.evaluate(form=>{
-      const labels=[...form.querySelectorAll(':scope > label')],rects=labels.map(x=>x.getBoundingClientRect());
-      const intersects=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top))>4;
-      const maxRight=form.getBoundingClientRect().right;
-      return rects.some((a,i)=>a.width<200||a.right>maxRight+3||rects.some((b,j)=>i!==j&&intersects(a,b)))||labels.some(x=>{
-       const control=x.querySelector('input,textarea,select');
-       const a=x.getBoundingClientRect(),b=control?.getBoundingClientRect();
-       return !b||b.left<a.left-3||b.right>a.right+3||b.top<a.top+4;
-      });
-     });
-     if(collision)throw Error('Campos do formulário de despachar vistoria continuam sobrepostos');
-     console.log('OK: '+target.name+' / Administração com formulário sem sobreposição');
-    }
-    if(role==='vistoriador'){
+      if(await page.locator('#live-dispatch-form').count())throw Error('Formulário vertical ainda na visão geral');
+      await page.locator('[data-action="dispatch-open"]').click();
+      const form=page.locator('#dialog #live-dispatch-form');
+      await form.waitFor({state:'visible',timeout:12000});
+      await form.locator('[data-action="dispatch-next"]').click();
+      if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vistoriador');
+      await form.locator('[name="workerId"]').selectOption({index:1});
+      await form.locator('[data-action="dispatch-next"]').click();
+      await form.locator('[name="address"]').fill('Rua da Vistoria, 123, Divinópolis');
+      await form.locator('[data-action="dispatch-next"]').click();
+      await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
+      await form.locator('[data-action="dispatch-next"]').click();
+      if((await form.getAttribute('data-step'))!=='4'||!await form.getByText('Rua da Vistoria, 123, Divinópolis').count())
+       throw Error('Revisão perdeu o rascunho');
+      const geometry=await page.locator('#dialog').boundingBox();
+      if(!geometry||geometry.width>393||geometry.height>840||geometry.y<0)throw Error('Janela de despacho cortada: '+JSON.stringify(geometry));
+      await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-despacho.png',animations:'disabled'});
+      await form.locator('[data-action="dispatch-back"]').click();
+      if((await form.getAttribute('data-step'))!=='3'||await form.locator('[name="reason"]').inputValue()!=='Conferir portaria principal e acesso dos visitantes.')
+       throw Error('Voltar perdeu orientações');
+      await page.locator('#dialog .dialog-close').click();
+      console.log('OK: '+target.name+' / Administração em quatro etapas e modal sem corte');
+     }
+     if(role==='vistoriador'){
      const map=page.locator('#demo-inspection-map'),bounds=await map.boundingBox();
      if(!bounds||bounds.width<220||bounds.height<200)throw Error('Mapa do Vistoriador oculto: '+JSON.stringify(bounds));
      await map.locator('.map-fallback, .leaflet-container').first().waitFor({timeout:12000});
