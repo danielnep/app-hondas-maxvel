@@ -119,6 +119,13 @@ function runtimeRoute(raw){
   points:coords.map((p,i)=>({id:'p'+(i+1),name:p.name,instruction:p.name,lat:p.lat,lng:p.lng,radius:RADIUS_METERS})),legs:[]};
 }
 const assignedRoute=()=>runtimeRoute(liveRoutes.find(r=>r.userId===user?.id));
+const assignedSchedule=()=>liveRoutes.find(r=>r.userId===user?.id)?.schedule||null;
+function scheduleDescription(schedule){
+ if(!schedule)return '';
+ const terms={once:'Uma vez',daily:'Todo dia',alternate:'Dia sim, dia não',weekly:'Dias específicos'};
+ const suffix=schedule.recurrence==='once'||schedule.recurrence==='alternate'?schedule.startDate?' · a partir de '+new Date(schedule.startDate+'T12:00:00').toLocaleDateString('pt-BR'):'' : '';
+ return (terms[schedule.recurrence]||'Agendamento')+' às '+(schedule.hour||'08:00')+suffix;
+}
 async function restoreLiveAccount(){
  const a=(await liveRequest('/me')).user;
  user={id:a.id,name:a.name,email:a.email,username:a.username||'',role:a.role==='master'?'admin':a.role};
@@ -1153,7 +1160,7 @@ function phoneContent(){
  return `<div class="patrol-workspace${patrolSheetCollapsed?' sheet-collapsed':''}">
   <div class="patrol-statusline">${phoneTelemetry()}</div>
   <section class="patrol-map-panel" aria-label="Mapa da ronda">
-   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(noRoute?'Mapa da unidade':route.name)}${window.innerWidth>900?helpButton('map','mapa e pontos'):''}</strong><small>${noRoute?'Aguardando rota atribuída · mapa disponível':esc(state)+' · '+(s?Math.floor(progress)+'%':route.points.length+' pontos previstos')+' · '+(mode==='simulation'?'Demonstração':'GPS do aparelho')}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
+   <header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>${esc(noRoute?'Mapa da unidade':route.name)}${window.innerWidth>900?helpButton('map','mapa e pontos'):''}</strong><small>${noRoute?'Aguardando rota atribuída · mapa disponível':esc(state)+' · '+(s?Math.floor(progress)+'%':route.points.length+' pontos previstos')+' · '+(isPagesTestMode()?'Demonstração':mode==='simulation'?'Simulação':'GPS do aparelho')+(assignedSchedule()?' · '+esc(scheduleDescription(assignedSchedule())):'')}</small></div>${patrolMapClock()}<button type="button" data-action="center-maps" title="Enquadrar rota" aria-label="Enquadrar rota e pontos">${ic('crosshair')}</button></header>
    <div class="patrol-map-canvas"><div id="mobile-map" class="map-container mini"></div>${window.innerWidth<=900?`<button type="button" class="ux06-map-help" data-action="feature-help" data-topic="map" aria-label="Ajuda sobre mapa">${ic("help")}</button>`:""}</div>
    <div class="patrol-map-footer"><span>${mode==='real'?'GPS autorizado':'Localização simulada'}</span><span data-live="coords">${locationFix?`${locationFix.lat.toFixed(5)}, ${locationFix.lng.toFixed(5)}`:'Aguardando início'}</span></div>
   </section>
@@ -1394,6 +1401,23 @@ function realtimeTick(){if(!session||session.status!=='active'||document.hidden)
  if(mode==='simulation'){if(movement){const f=interpolated(movement);locationFix={lat:f.lat,lng:f.lng,accuracy:5,at:Date.now()};if(f.finished){movement=null;save();render();}}else if(locationFix)locationFix.at=Date.now();}
  processPosition();}
 setInterval(realtimeTick,180);
+/* O servidor continua sendo a fonte da operação real. Consulta curta e isolada
+ * permite que o vigia veja uma rota nova sem recarregar ou interromper a ronda.
+ * O modo Pages lê exclusivamente seu armazenamento local de teste. */
+let routePollBusy=false;
+setInterval(async()=>{
+ if(routePollBusy||!user?.id||document.hidden||user.role!=='ronda'||session?.status==='active')return;
+ routePollBusy=true;
+ const viewer=user.id;
+ try{
+  const latest=(await liveRequest('/routes')).routes||[];
+  if(user?.id!==viewer)return;
+  const was=JSON.stringify(liveRoutes.map(r=>[r.id,r.updatedAt,r.name,r.points?.length,r.schedule]));
+  const now=JSON.stringify(latest.map(r=>[r.id,r.updatedAt,r.name,r.points?.length,r.schedule]));
+  if(now!==was){liveRoutes=latest;if(view==='minha-ronda')render();}
+ }catch{/* Sem conexão: manter a rota já recebida e tentar novamente. */}
+ finally{routePollBusy=false;}
+},5000);
 setInterval(()=>{if(session?.status==='active')save()},10000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&session?.status==='active'){if(!window.AndroidTracking){session.insideSince=null;const p=currentCheckpoint(session);if(p)session.checkpoints[session.index].dwellMs=0;}movement=null;save();}else if(screen!=='landing'&&session?.status==='active'){syncNativeHistory();render()}});
 window.addEventListener('focus',()=>{if(window.AndroidTracking&&session?.status==='active'&&mode==='real')syncNativeHistory()});
