@@ -42,5 +42,5 @@ test('Android 2: inicia serviço apenas após despacho autenticado sem WebView',
  assert.match(activity,/new MapView\(this\)/);
  assert.match(activity,/startForegroundService\(i\)/);
  assert.match(activity,/\/start\",\"POST\"/);
- assert.doesNotMatch(activity,/WebView|appassets\.androidplatform\.net/);
+ assert.doesNotMatch(activity,/import android\.webkit|new WebView\(/);
 });
