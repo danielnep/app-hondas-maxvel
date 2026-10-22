@@ -79,7 +79,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   if(!worker)return false;
   const frequency=schedule?.recurrence==='daily'?'Diariamente':schedule?.recurrence==='once'?'Ronda pontual':'Ronda programada';
   const text=frequency+' · '+clean(schedule?.hour||'08:00')+' · '+clean(name).slice(0,120);
-  insert.run(id(),worker.id,'dispatch','Nova ronda programada',text,null,null,now());
+  insert.run(id(),worker.id,'notice','Nova ronda programada',text,null,null,now());
   announce(worker.id);
   return true;
  }
