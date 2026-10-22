@@ -2283,6 +2283,17 @@
  #central-root .ops-dispatch-itinerary li span{font-size:11px;color:#f1f6fb;overflow-wrap:anywhere}
  #central-root .ops-dispatch-itinerary li a{font-size:10px;color:#9bdefd;min-height:30px;display:inline-flex;align-items:center}
  #central-root .ops-dispatch-itinerary>small{font-size:10px;color:#bdcbd7}
+
+ /* Programação de ronda: horário e frequência sem alongar o modal no celular. */
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-schedule-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-items:end}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-schedule-fields label{display:grid;gap:5px;min-width:0;font-size:11px}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-schedule-fields #rp-dispatch-date-field{grid-column:1/-1}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-schedule-fields #rp-dispatch-date-field[hidden]{display:none!important}
+ .rp-theme .rp-route-delivery,#central-root .rp-route-delivery{padding:12px 14px;background:rgba(25,47,51,.87);color:#eef9fe;border:1px solid #648796;border-left:3px solid #f33b57;border-radius:9px;display:grid;gap:5px}
+ .rp-theme .rp-route-delivery strong{font-size:14px}
+ .rp-theme .rp-route-delivery p{margin:0;font-size:12px}
+ .rp-theme .rp-route-delivery small{font-size:11px;color:#c9d8e3}
+ @media(max-width:380px){.rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-schedule-fields{grid-template-columns:1fr}}
  /* Janelas de operacao: vidro fosco legivel, com fundo isolado na camada modal real. */
  .rp-theme #dialog[open]:not(.role-picker-dialog):not(.rp-dispatch-dialog):not(.guide-dialog):not(.ux06-fullscreen){
   background:rgba(24,31,40,.94)!important;color:#f5f8fb!important;
