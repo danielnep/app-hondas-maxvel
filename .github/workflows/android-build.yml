@@ -34,6 +34,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Instalar dependências dos testes
+        run: npm ci --ignore-scripts
       - name: Validar sintaxe e testes operacionais
         run: |
           npm run check
