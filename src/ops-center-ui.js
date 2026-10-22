@@ -151,30 +151,9 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    '<label>Endereço ou ponto específico<input name="address" required minlength="5" maxlength="350" placeholder="Rua, número, local ou referência" autocomplete="street-address"></label>'+
    '<label class="ops-reason">Motivo do despacho <span class="ops-required">Obrigatório</span><textarea name="reason" required minlength="10" maxlength="1000" placeholder="Explique o que ocorreu e o que deve ser verificado"></textarea></label>'+
    '<div class="ops-dispatch-actions"><button type="button" data-ops-close-dispatch>Cancelar</button><button class="primary" type="submit">Registrar despacho e notificar</button></div></form></dialog>'+
-   '<section class="surface ops-inspector-section"><h2>Solicitar vistoria</h2><p class="muted">É possível adicionar novas visitas ao circuito de um vistoriador que já esteja em atendimento. O aplicativo organiza as próximas pelo ponto mais próximo, preservando a vistoria em andamento.</p>'+
- '<div class="ops-worker-list">'+(inspectors.length?inspectors.map(w=>'<button type="button" class="ops-worker-row ops-worker-select" data-ops-select-inspector="'+esc(w.id)+'" '+
- (!['Disponível','Em vistoria'].includes(w.status)?'disabled':'')+'><b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.status==='Disponível'?'ready':'off')+'">'+esc(w.status)+'</span><small>Última atividade: '+stamp(w.last_seen)+'</small></button>').join(''):'<p class="empty">Nenhum vistoriador cadastrado.</p>')+'</div>'+
- '<dialog id="ops-inspector-modal" class="ops-dispatch-modal"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESTINO AUTORIZADO</div><h2>Solicitar vistoria</h2><p id="ops-inspector-name" class="muted"></p></div><button type="button" data-ops-close-inspector aria-label="Fechar">✕</button></div>'+
- '<form id="ops-inspector-form" class="ops-dispatch-form"><input type="hidden" name="workerId"><input type="hidden" name="kind" value="inspection">'+
- '<label>Tipo de vistoria<select name="inspectionType"><option value="demand">Vistoria pontual</option><option value="routine">Vistoria de rotina</option></select></label>'+
- '<label>Destino cadastrado (opcional)<select name="destinationId"><option value="">Informar outro endereço</option>'+
- destinations.filter(d=>d.active).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.client_name+' · '+d.address)+'</option>').join('')+
- '</select></label><label>Ou digite o endereço completo<input name="address" minlength="5" maxlength="350" autocomplete="street-address" placeholder="Rua, número, bairro, cidade e referência"></label><div id="ops-inspection-address-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados"></div>'+
- '<div class="rp-inspection-route-editor"><div><strong>Trajeto determinado pelo COI</strong><small>Marque obrigatoriamente o destino no mapa e adicione passagens, se necessário. Sem ponto geográfico, não há como colocar o chamado no circuito.</small></div><div class="rp-route-controls"><button type="button" data-ops-map-mode="destination">Definir destino</button><button type="button" data-ops-map-mode="waypoint">Adicionar passagem</button><button type="button" data-ops-map-clear>Limpar rota</button></div><div id="ops-inspection-plan-map" class="rp-plan-map" role="application" aria-label="Selecionar pontos no mapa"></div><input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="routePoints" value="[]"><p class="rp-route-status" data-ops-route-status>Toque no mapa para definir destino.</p></div>'+
- '<label>Justificativa e instruções da vistoria<textarea name="reason" minlength="10" maxlength="1000" required placeholder="Descreva a inspeção solicitada"></textarea></label>'+
- '<div class="ops-dispatch-actions"><button type="button" data-ops-close-inspector>Cancelar</button><button class="primary" type="submit">Enviar vistoriador</button></div></form></dialog></section>'+
- (manager()?'<section class="surface"><h2>Clientes autorizados para vistoria</h2>'+
- '<form id="ops-destination-form" class="stack"><div class="grid">'+
- '<label>Nome da empresa<input name="clientName" required minlength="2" maxlength="130"></label>'+
- '<label>Nome do responsável<input name="contactName" maxlength="100"></label>'+
- '<label>Telefone<input name="phone" maxlength="35" type="tel"></label>'+
- '<label>E-mail<input name="email" maxlength="160" type="email"></label>'+
- '<label>Endereço completo<input name="address" required minlength="5" maxlength="350"></label></div>'+
- '<button type="submit" class="primary">Cadastrar cliente / posto</button></form>'+
- '<p class="muted">'+destinations.length+' local(is) cadastrado(s) para despacho</p></section>':'')+
  '<section class="surface rp-coe-communications"><h2>Alertas e comunicados para a equipe de campo</h2><p class="muted">O aviso chega somente aos profissionais selecionados. Mensagens de conversa devem ser enviadas pelo Chat interno, não pelo sino.</p>'+
  '<form id="coi-field-notice-form" class="stack"><label>Profissional destinatário<select name="workerId" required><option value="">Selecionar profissional</option>'+
- [...availability,...inspectors].map(w=>'<option value="'+esc(w.id)+'">'+esc(w.name)+' · '+esc(w.role==='vistoriador'?'Vistoriador':w.role==='ronda'?'Vigia':w.status)+'</option>').join('')+
+ availability.map(w=>'<option value="'+esc(w.id)+'">'+esc(w.name)+' · Agente de ronda</option>').join('')+
  '</select></label><label>Categoria<select name="kind"><option value="notice">Comunicado operacional</option><option value="alert">Alerta de segurança</option></select></label>'+
  '<label>Assunto<input name="title" minlength="3" maxlength="100" required placeholder="Ex.: Atenção à entrada lateral"></label>'+
  '<label>Orientações<textarea name="message" minlength="8" maxlength="650" required placeholder="Descreva o que foi observado e a providência solicitada"></textarea></label>'+
