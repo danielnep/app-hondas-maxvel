@@ -155,7 +155,7 @@ export function createOperationalApi(){
   let status='unconfigured',error=null;
   if(emails.length&&process.env.RESEND_API_KEY&&process.env.RONDA_PRO_EMAIL_FROM){
    try{
-    const payload={from:process.env.RONDA_PRO_EMAIL_FROM,to:emails,subject:template.subject||'[Rondas Pro] '+template.title,
+    const payload={from:process.env.RONDA_PRO_EMAIL_FROM,to:emails,subject:template.subject||'[Ronda Pro] '+template.title,
      text:[template.message||template.title,record.description,new Date(record.occurred_at).toISOString(),
        record.lat==null?'GPS indisponível':record.lat+', '+record.lng,
        record.battery==null?'Bateria não informada':'Bateria '+record.battery+'%'].join('\n')};
