@@ -34,7 +34,7 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  current?round.insideSince==null?'<button type="button" class="rp-inspection-main-action" data-guard-arrive>Estou aqui</button>':
  '<button type="button" class="rp-inspection-main-action" data-guard-checkpoint>Confirmar ponto após 30 segundos</button>':
  '<button type="button" class="rp-inspection-main-action" data-guard-finish>Cheguei à base · concluir ronda</button>';
- return '<div class="patrol-workspace rp-inspection-cockpit rp-guard-cockpit" data-guard-cockpit>'+
+ return '<div class="patrol-workspace rp-inspection-cockpit rp-guard-cockpit" data-guard-cockpit data-plan-id="'+safe(round?.routeId||planned?.id||'')+'">'+
  '<section class="patrol-map-panel rp-inspection-map-panel"><header class="patrol-map-heading"><div class="patrol-map-heading-copy"><strong>'+safe(round?.routeName||planned?.name||'Minha ronda')+'</strong><small>Ronda · '+(round?.index||0)+' de '+total+' pontos</small></div><button type="button" class="rp-inspection-map-fit" data-guard-fit aria-label="Enquadrar percurso">⌖</button></header>'+
  '<div class="patrol-map-canvas rp-inspection-map-canvas"><div class="map-container mini rp-inspector-map" id="guard-real-map" aria-label="Mapa da ronda em operação real"></div>'+
  '</div>'+
