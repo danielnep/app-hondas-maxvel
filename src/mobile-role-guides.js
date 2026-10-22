@@ -1,5 +1,5 @@
 /**
- * Rondas Pro / Grupo Maxvel. Guias demonstrativos atualizados em 14-10-2026.
+ * Ronda Pro / Grupo Maxvel. Guias demonstrativos atualizados em 14-10-2026.
  * Estes textos descrevem os acessos de avaliação, NÃO provam integração operacional.
  */
 const guide=(title,subtitle,sections)=>Object.freeze({
