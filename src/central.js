@@ -283,6 +283,11 @@ async function syncOperational({remote=false}={}){
     const feedback=document.querySelector('[data-live-treatment-state]');if(feedback)feedback.textContent=result.event.status==='resolvida'?'Este registro foi concluído em outra sessão. O texto em edição foi preservado.':result.event.treatment_owner?'Atendimento: '+result.event.treatment_owner:'';
    }
   }else if(selected?.event&&!review()){const result=await api('/activity/events/'+encodeURIComponent(selected.event.id));selected={event:result.event};if(!document.querySelector('#send-message textarea')?.value.trim()||!isPending(result.event))render();else void loadMessages(result.event.id);}
+  else if(account.role==='ronda'&&!guardRound&&page==='dashboard'){
+   const assigned=guardPlannedRoute();
+   const visibleId=document.querySelector('[data-guard-cockpit]')?.dataset.planId||'';
+   if(String(assigned?.id||'')!==visibleId){render();flash('Nova ronda recebida do COI.');}
+  }
   else if(page==='inspections'&&account.role==='vistoriador'){refreshInspectorStops();}
   else if(page==='history'){const result=await api('/events?limit=500');events=result.events||[];render();}
   else if(page==='treatments'&&review()){await readTreatmentRows();render();}
