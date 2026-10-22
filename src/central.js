@@ -310,7 +310,7 @@ function treatmentActions(e){
 function loginView(error=''){
  decorateTheme('');
  roleTag.textContent='';exit.hidden=true;
- root.innerHTML='<form id="central-login" class="login"><h1>Ronda Pro · Grupo Maxvel</h1><p>Acesso operacional</p>'+
+ root.innerHTML='<form id="central-login" class="login"><h1>Acessar a Central</h1><p>Grupo Maxvel · Acesso operacional</p>'+
   (error?'<p class="flag">'+escape(error)+'</p>':'')+
   '<label>Usuário ou e-mail<input name="email" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>'+
   '<label>Senha<input type="password" name="password" autocomplete="current-password" required minlength="10"></label>'+

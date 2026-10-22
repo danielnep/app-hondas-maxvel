@@ -2329,4 +2329,83 @@
   .rp-theme #dialog .rp-dispatch-steps{padding:7px 0}
   .rp-theme #dialog.rp-dispatch-dialog[open]{max-height:calc(100dvh - 14px)!important}
  }
+
+
+  body.rp-theme {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+  }
+
+  /* SECTION: MAXVEL LOGIN VIEWPORT 20261022
+     Isolate auth styling: never stretch the login background only to the
+     document content height or leak login geometry into operational pages. */
+  body.rp-theme:has(#central-login) {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: radial-gradient(ellipse at 82% 12%, #293846 0%, transparent 57%),
+      radial-gradient(ellipse at 12% 94%, #292127 0%, transparent 50%),
+      #151c24 !important;
+  }
+  body.rp-theme:has(#central-login) > header.top {
+    flex: 0 0 auto !important;
+  }
+  body.rp-theme:has(#central-login) > main#conteudo {
+    flex: 1 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: clamp(18px, 4vh, 38px) 16px !important;
+    margin: 0 !important;
+  }
+  body.rp-theme:has(#central-login) #central-root {
+    width: 100% !important;
+    max-width: 410px !important;
+    min-width: 0 !important;
+  }
+  body.rp-theme #central-login {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: clamp(20px, 5vw, 28px) !important;
+    gap: 13px !important;
+    border-radius: 12px !important;
+  }
+  body.rp-theme #central-login h1 {
+    font-size: clamp(21px, 4.7vw, 25px) !important;
+    line-height: 1.18 !important;
+    margin: 0 !important;
+    letter-spacing: -.025em !important;
+  }
+  body.rp-theme #central-login p {
+    margin: 0 0 3px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+  body.rp-theme #central-login label {
+    gap: 7px !important;
+    font-size: 13px !important;
+    font-weight: 650 !important;
+  }
+  body.rp-theme #central-login input {
+    min-height: 48px !important;
+    padding: 11px 12px !important;
+    font-size: 16px !important;
+  }
+  body.rp-theme #central-login button.primary {
+    min-height: 48px !important;
+    font-size: 15px !important;
+    margin-top: 3px !important;
+  }
+  @media (max-height: 620px) {
+    body.rp-theme:has(#central-login) > main#conteudo {
+      place-items: start center !important;
+      padding-top: 14px !important;
+      padding-bottom: 24px !important;
+    }
+  }
+
 }
