@@ -1,4 +1,5 @@
 import {loadLeaflet} from './map.js';
+import {fetchRoadItinerary} from './inspection-street-route.js';
 
 /** Responsividade da proposta aprovada: endereço -> agendamento -> revisão.
  * O endereço informado vira coordenadas SOMENTE após seleção de resultado de geocodificação.
@@ -6,7 +7,7 @@ import {loadLeaflet} from './map.js';
  */
 export function createRoutePlanner({getData,api,afterSave,notify}){
  const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let step=1,points=[],kind='routine',recurrence='daily',hour='08:00',startDate='',weekdays=[1,2,3,4,5],workerId='',name='',suggestions=[],query='',loading=false,lookupTimer=null,lookupSerial=0,map=null,mapSeq=0,saving=false;
+ let step=1,points=[],kind='routine',recurrence='daily',hour='08:00',startDate='',weekdays=[1,2,3,4,5],workerId='',name='',suggestions=[],query='',loading=false,lookupTimer=null,lookupSerial=0,map=null,mapSeq=0,roadController=null,saving=false;
  const preRegistered=()=>{
   const known=new Map();
   for(const route of getData().routes||[])for(const point of route.points||[]){
@@ -43,7 +44,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    '<div id="rp-plan-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados">'+(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml()+'</div>'+
    '<div class="rp-plan-stop-head"><h3>Pontos da rota ('+points.length+')</h3>'+(points.length?'<button type="button" data-action="rp-plan-clear">Limpar</button>':'')+'</div>'+
    '<div class="rp-plan-stops">'+(positions||'<p class="rp-plan-empty">Busque e selecione ao menos dois endereços para criar a rota.</p>')+'</div></section></div>'+
-   '<div class="rp-plan-right"><section class="rp-plan-panel rp-plan-map-panel" data-part="1"><h2>Visualização da rota</h2><div id="rp-plan-map" class="rp-plan-map" role="img" aria-label="Mapa dos endereços da rota"><span>Adicione endereços para visualizar os pontos.</span></div>'+footer+'</section>'+
+   '<div class="rp-plan-right"><section class="rp-plan-panel rp-plan-map-panel" data-part="1"><h2>Visualização da rota</h2><div id="rp-plan-map" class="rp-plan-map" role="img" aria-label="Mapa dos endereços da rota"><span>Adicione endereços para visualizar os pontos.</span></div><p id="rp-plan-road-status" role="status" aria-live="polite" class="rp-plan-caption">Inclua dois endereços para calcular o percurso pelas ruas.</p>'+footer+'</section>'+
    '<section class="rp-plan-panel rp-plan-schedule" data-part="2"><h2>Agendamento</h2><div class="rp-plan-fields">'+field('Horário de início','<input id="rp-plan-hour" type="time" name="hour" value="'+escape(hour)+'" required>')+
    field('Recorrência','<select id="rp-plan-repeat" name="recurrence">'+Object.entries(repeatLabels).map(([key,val])=>'<option value="'+key+'" '+(recurrence===key?'selected':'')+'>'+val+'</option>').join('')+'</select>')+
    (['once','alternate'].includes(recurrence)?field(recurrence==='once'?'Data da ronda':'Data de referência','<input id="rp-plan-date" type="date" name="startDate" value="'+escape(startDate)+'" required>'):'')+'</div>'+
@@ -66,7 +67,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    items.map((p,i)=>'<button type="button" role="option" data-action="rp-plan-pick" data-index="'+i+'"><strong>'+escape(p.name)+'</strong><small>'+escape(p.address)+'</small></button>').join('');
  }
  function replaceSuggestions(){const host=document.getElementById('rp-plan-suggestions');if(host)host.innerHTML=(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml();}
- function clearMap(){if(map){try{map.remove()}catch{}map=null;}}
+ function clearMap(){roadController?.abort();roadController=null;if(map){try{map.remove()}catch{}map=null;}}
  async function mount(){
   const host=document.getElementById('rp-plan-map');if(!host)return;
   const current=++mapSeq;clearMap();
@@ -77,7 +78,6 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
    if(points.length){
     const line=points.map(p=>[p.lat,p.lng]);
-    L.polyline(line,{weight:4,color:'#38bdf8',dashArray:'7 6'}).addTo(map);
     for(let i=0;i<points.length;i++){
      const p=points[i];
      const marker=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'rp-plan-pin',html:'<span>'+(i+1)+'</span>',iconSize:[31,34],iconAnchor:[15,32]})});
@@ -93,6 +93,21 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
     if(!points.length)map.setView([preview.lat,preview.lng],15,{animate:false});
    }
    setTimeout(()=>{if(map&&host.isConnected)map.invalidateSize()},100);
+   const status=document.getElementById('rp-plan-road-status');
+   if(points.length>=2){
+    if(status)status.textContent='Calculando rota pelas ruas…';
+    const controller=new AbortController();roadController=controller;
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    try{
+     const road=await fetchRoadItinerary(points,{signal:controller.signal});
+     if(current!==mapSeq||controller.signal.aborted||!map||!host.isConnected)return;
+     L.polyline(road.path.map(p=>[p.lat,p.lng]),{weight:5,color:'#38bdf8',opacity:1,lineJoin:'round'}).addTo(map);
+     map.fitBounds(L.latLngBounds(road.path.map(p=>[p.lat,p.lng])).pad(.17),{maxZoom:16,animate:false});
+     if(status)status.textContent='Percurso por ruas: '+(road.distanceMeters/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+' km · aproximadamente '+Math.max(1,Math.round(road.durationSeconds/60))+' min de deslocamento.';
+    }catch{
+     if(current===mapSeq&&status)status.textContent=controller.signal.aborted?'Tempo de cálculo esgotado; pontos visíveis sem traçado viário.':'Serviço de rotas indisponível: destinos visíveis, sem traçado viário confirmado.';
+    }finally{clearTimeout(timeout);if(roadController===controller)roadController=null;}
+   }else if(status)status.textContent='Inclua dois endereços para calcular o percurso pelas ruas.';
   }catch{if(current===mapSeq&&host.isConnected)host.innerHTML='<span>Mapa temporariamente indisponível. Os endereços permanecem salvos na lista.</span>';}
  }
  function dispose(){lookupSerial++;clearTimeout(lookupTimer);mapSeq++;clearMap();}
