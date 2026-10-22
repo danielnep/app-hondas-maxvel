@@ -51,7 +51,7 @@ export function inspectionCockpit({queue=[],mapId,mode='real',position=null,base
    '<nav class="rp-inspection-map-actions" aria-label="Comunicação de campo">'+
     '<button type="button" data-field-tool-alert>'+svg('alert')+'<span>Enviar alerta</span></button>'+
     '<button type="button" data-field-tool-incident>'+svg('incident')+'<span>Registrar<br>ocorrência</span></button>'+
-    '<button type="button" data-field-tool-chat>'+svg('chat')+'<span>Enviar<br>mensagem</span></button>'+
+    
    '</nav>'+
   '</div>'+
   '<div class="patrol-map-footer rp-inspection-status-readout" aria-live="polite"><span data-inspection-gps-state>'+(gpsActive?'GPS acompanhando':'GPS não iniciado')+'</span><span data-inspection-road-state>Preparando percurso…</span></div>'+
