@@ -1,5 +1,5 @@
 /**
- * Rondas Pro · câmera, vídeo e gravação de voz sem selecionar arquivo manualmente.
+ * Ronda Pro · câmera, vídeo e gravação de voz sem selecionar arquivo manualmente.
  * Nenhum envio é feito antes de o usuário anexar a evidência ao registro.
  */
 const glyph={
