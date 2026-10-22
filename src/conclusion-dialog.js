@@ -9,7 +9,7 @@ export function openConclusionDialog({title='Concluir análise',eventLabel='',ac
  pane.setAttribute('role','dialog');pane.setAttribute('aria-modal','true');
  pane.setAttribute('aria-label','Conclusão obrigatória');
  pane.innerHTML='<div class="conclusion-frost"></div><form class="conclusion-dialog" novalidate>'+
-  '<span class="conclusion-eyebrow">RONDAS PRO · REGISTRO DE TRATAMENTO</span>'+
+  '<span class="conclusion-eyebrow">RONDA PRO · REGISTRO DE TRATAMENTO</span>'+
   '<h2></h2><p class="conclusion-subtitle"></p>'+
   '<p data-responsible></p>'+
   (requireAcknowledgement?'<label class="check-label"><input type="checkbox" data-ack required> Conferi este alerta</label>':'')+
