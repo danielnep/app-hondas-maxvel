@@ -8,6 +8,8 @@ export const PAGES_TEST_ACCOUNTS=Object.freeze([
  {name:'Administrador',username:'admin',email:'admin@rondapro.local',role:'admin',password:'Admin@Maxvel26!'},
  {name:'Operador COI',username:'coi',email:'coi@rondapro.local',role:'coi',password:'Coi@Maxvel26!'},
  {name:'Agente de ronda',username:'vigia',email:'vigia@rondapro.local',role:'ronda',password:'Vigia@Maxvel26!'},
+ // Conta legada invisível na interface, apenas para validar dados antigos de vistoria.
+ {name:'Conta legada',username:'vistoriador',email:'vistoriador@rondapro.local',role:'vistoriador',password:'Vistoria@Maxvel26!'},
 ]);
 const PREFIX='ronda-pro-pages-test-v2:',TOKEN_KEY='rondaspro_api_token';
 const read=(key,defaultValue)=>{try{return JSON.parse(localStorage.getItem(PREFIX+key))??defaultValue}catch{return defaultValue}};
@@ -44,12 +46,12 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
   }
  }
  if(p==='/users'){
-  if(method==='GET')return {users:allUsers().map(identity)};
+  if(method==='GET')return {users:allUsers().filter(x=>x.role!=='vistoriador').map(identity)};
   if(method==='POST'){
    if(a.role!=='admin')throw fail('Somente administrador cadastra.',403);
    const username=String(data?.username??'').trim().toLowerCase();
    const email=String(data?.email??'').trim().toLowerCase();
-   if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||String(data?.password||'').length<12||!['coi','ronda','vistoriador','admin'].includes(data?.role)||String(data?.name||'').trim().length<2)throw fail('Informe nome, usuário, e-mail, perfil e senha com 12 caracteres.',422);
+   if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||String(data?.password||'').length<12||!['coi','ronda','admin'].includes(data?.role)||String(data?.name||'').trim().length<2)throw fail('Informe nome, usuário, e-mail, perfil e senha com 12 caracteres.',422);
    if(allUsers().some(x=>x.username===username||x.email===email))throw fail('Usuário ou e-mail já cadastrado.',409);
    const users=read('extra-users',[]);
    users.push({name:String(data.name).trim(),email,username,password:data.password,role:data.role});
