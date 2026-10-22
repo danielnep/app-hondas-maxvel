@@ -76,7 +76,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
     private long insideSince=0,lastNavRequest=0,lastFollow=0;
     private JSONArray roadGeometry;
     private String nextInstruction="";
-    private final Runnable refresh=new Runnable(){@Override public void run(){if(!isFinishing()&&NativeApi.token(MainActivity.this).length()>0)loadDispatches(false);handler.postDelayed(this,25000);}};
+    private final Runnable refresh=new Runnable(){@Override public void run(){if(!isFinishing()&&NativeApi.token(MainActivity.this).length()>0){announcePresence();loadDispatches(false);}handler.postDelayed(this,25000);}};
 
     private static class Destination{
         final double lat,lng;
@@ -188,6 +188,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
         checkButton.setOnClickListener(v->checkin());
         setContentView(frame);
         requestLocation();
+        announcePresence();
         handler.removeCallbacks(refresh);handler.postDelayed(refresh,25000);
     }
     private Bitmap makeArrow(){
@@ -214,6 +215,22 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
                 NativeApi.logout(this);showLogin();
             }else notice(error.getMessage());
         });}});
+    }
+    /** O COI distribui rondas somente quando o agente consta disponível no backend. */
+    private void announcePresence(){
+        if(NativeApi.token(this).isEmpty())return;
+        final Location last=fix;
+        io.execute(()->{
+            try{
+                JSONObject body=new JSONObject();
+                if(last!=null&&last.hasAccuracy()&&last.getAccuracy()<=90&&
+                   Math.abs(System.currentTimeMillis()-last.getTime())<30000){
+                    body.put("position",new JSONObject().put("lat",last.getLatitude())
+                        .put("lng",last.getLongitude()).put("accuracy",last.getAccuracy()));
+                }
+                NativeApi.call(this,"/api/presence","POST",body);
+            }catch(Exception ignored){ /* ausência temporária de rede: próximo heartbeat refaz */ }
+        });
     }
     private void loadDispatches(boolean showPicker){
         request("/api/dispatches","GET",null,response->{
