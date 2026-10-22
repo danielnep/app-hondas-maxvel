@@ -31,7 +31,7 @@ final class NativeApi {
         int status=conn.getResponseCode();
         InputStream input=status>=400?conn.getErrorStream():conn.getInputStream();
         String raw="";
-        if(input!=null){try(InputStream in=input){raw=new String(in.readAllBytes(),StandardCharsets.UTF_8);}}
+        if(input!=null){try(InputStream in=input){java.io.ByteArrayOutputStream buffer=new java.io.ByteArrayOutputStream();byte[] bytes=new byte[4096];int n;while((n=in.read(bytes))!=-1)buffer.write(bytes,0,n);raw=buffer.toString("UTF-8");}}
         conn.disconnect();
         JSONObject json=raw.isEmpty()?new JSONObject():new JSONObject(raw);
         if(status>=400)throw new ApiException(status,json.optString("error","Erro do servidor: "+status));
