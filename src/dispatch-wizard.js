@@ -5,40 +5,43 @@ const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=>[],request,refresh,redraw,notify}){
  let locationPoint=null,destinations=[],previewMap=null,previewLayers=[],previewEpoch=0,routeController=null,searchController=null,searchTimer=null;
  dialog.addEventListener('close',()=>clearPreview());
- const names=['Profissional','Destino','Orientações','Revisão'];
+ const names=['Agente','Destinos','Programação','Revisão'];
  function open(){
   clearPreview();destinations=[];locationPoint=null;
   const workers=getWorkers().filter(w=>w.role==='ronda'&&w.active);
   const options=workers.map(w=>'<option value="'+escape(w.id)+'">'+escape(w.name)+'</option>').join('');
   showDialog('<section class="rp-dispatch-wizard" aria-label="Solicitar início de ronda">'+
    '<header class="rp-dispatch-head"><div class="rp-dispatch-kicker"><span>GRUPO MAXVEL</span><span>OPERAÇÃO DE CAMPO</span></div>'+
-   '<h2 id="rp-dispatch-title">Solicitar início de ronda</h2><p>Envie a solicitação em quatro passos. O vigia responsável inicia após recebê-la.</p></header>'+
+   '<h2 id="rp-dispatch-title">Programar ronda</h2><p>Defina destinos, horário e agente de ronda em quatro passos.</p></header>'+
    '<nav class="rp-dispatch-steps" aria-label="Etapas do despacho">'+names.map((n,i)=>'<span data-dispatch-progress="'+(i+1)+'" '+(i===0?'aria-current="step"':'')+'><b>'+String(i+1).padStart(2,'0')+'</b><small>'+n+'</small></span>').join('')+'</nav>'+
    '<form id="live-dispatch-form" class="rp-dispatch-form" data-step="1" novalidate>'+
    '<section class="rp-dispatch-stage" data-dispatch-stage="1"><span class="rp-dispatch-counter">01 / 04 · EQUIPE</span><h3>Quem fará a ronda?</h3>'+
-   '<label for="rp-dispatch-worker">Vigia responsável<select id="rp-dispatch-worker" name="workerId" required><option value="">Selecione o profissional</option>'+options+'</select></label>'+
-   '<p>O vigia receberá a solicitação na área de Ronda.</p></section>'+
-   '<section class="rp-dispatch-stage" data-dispatch-stage="2" hidden><span class="rp-dispatch-counter">02 / 04 · DESTINOS</span><h3>Por quais lugares o vigia passará?</h3>'+
+   '<label for="rp-dispatch-worker">Agente de ronda<select id="rp-dispatch-worker" name="workerId" required><option value="auto">Próximo agente disponível</option>'+options+'</select></label>'+
+   '<p>Na escolha automática, o sistema atribui a ronda ao próximo agente online e livre.</p></section>'+
+   '<section class="rp-dispatch-stage" data-dispatch-stage="2" hidden><span class="rp-dispatch-counter">02 / 04 · DESTINOS</span><h3>Quais lugares serão visitados?</h3>'+
    '<label for="rp-dispatch-address">Pesquisar próximo destino<input id="rp-dispatch-address" name="address" minlength="5" maxlength="350" autocomplete="off" placeholder="Rua, número, bairro e cidade"></label>'+
    '<div id="rp-dispatch-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Locais encontrados"></div>'+
    '<div id="rp-dispatch-preview-map" class="rp-plan-map" aria-label="Mapa dos destinos da ronda">O mapa mostrará os endereços escolhidos.</div>'+ '<p id="rp-dispatch-route-status" class="rp-dispatch-road-status" role="status" aria-live="polite">Ao incluir dois destinos, calcularemos o percurso pelas ruas.</p>'+
-   '<p id="rp-dispatch-location-status" class="rp-dispatch-location-status" role="status" aria-live="polite">Pesquise um endereço, selecione o resultado e confira no mapa.</p>'+ '<button type="button" id="rp-dispatch-add-destination" class="rp-dispatch-add" disabled>+ Adicionar destino</button>'+ '<div class="rp-dispatch-stops-heading"><strong>Destinos da ronda (<span id="rp-dispatch-stop-count">0</span>/12)</strong><small>Na ordem em que o vigia deverá visitar</small></div>'+ '<ol id="rp-dispatch-stops" class="rp-dispatch-stops" aria-label="Destinos confirmados"></ol>'+
+   '<p id="rp-dispatch-location-status" class="rp-dispatch-location-status" role="status" aria-live="polite">Pesquise um endereço, selecione o resultado e confira no mapa.</p>'+ '<button type="button" id="rp-dispatch-add-destination" class="rp-dispatch-add" disabled>+ Adicionar destino</button>'+ '<div class="rp-dispatch-stops-heading"><strong>Destinos da ronda (<span id="rp-dispatch-stop-count">0</span>/12)</strong><small>Na ordem em que o agente deverá visitar</small></div>'+ '<ol id="rp-dispatch-stops" class="rp-dispatch-stops" aria-label="Destinos confirmados"></ol>'+
    '<input type="hidden" name="latitude"><input type="hidden" name="longitude">'+
    '<p>Confira o marcador e toque em Adicionar destino. Você pode incluir até 12 locais.</p></section>'+
-   '<section class="rp-dispatch-stage" data-dispatch-stage="3" hidden><span class="rp-dispatch-counter">03 / 04 · INSTRUÇÕES</span><h3>Quais são as orientações para a ronda?</h3>'+
+   '<section class="rp-dispatch-stage" data-dispatch-stage="3" hidden><span class="rp-dispatch-counter">03 / 04 · PROGRAMAÇÃO</span><h3>Quando a ronda acontecerá?</h3>'+ '<div class="rp-dispatch-schedule-fields"><label for="rp-dispatch-recurrence">Frequência<select id="rp-dispatch-recurrence" name="recurrence"><option value="once">Pontual · uma vez</option><option value="daily">Todos os dias</option></select></label><label for="rp-dispatch-hour">Horário<input id="rp-dispatch-hour" type="time" name="hour" value="08:00" required></label><label for="rp-dispatch-date" id="rp-dispatch-date-field">Data<input id="rp-dispatch-date" name="startDate" type="date" required></label></div>'+
    '<label for="rp-dispatch-reason">Motivo e orientações<textarea id="rp-dispatch-reason" name="reason" required minlength="10" maxlength="1000" rows="3" placeholder="Descreva o motivo e as orientações para a ronda"></textarea></label>'+
    '<p>Instruções objetivas deixam o atendimento mais rápido.</p></section>'+
    '<section class="rp-dispatch-stage" data-dispatch-stage="4" hidden><span class="rp-dispatch-counter">04 / 04 · CONFERÊNCIA</span><h3>Revise a solicitação</h3>'+
-   '<dl class="rp-dispatch-review"><div><dt>Vigia</dt><dd data-dispatch-summary="worker"></dd></div><div><dt>Destinos</dt><dd data-dispatch-summary="address"></dd></div><div><dt>Instruções</dt><dd data-dispatch-summary="reason"></dd></div></dl></section>'+
+   '<dl class="rp-dispatch-review"><div><dt>Agente</dt><dd data-dispatch-summary="worker"></dd></div><div><dt>Quando</dt><dd data-dispatch-summary="schedule"></dd></div><div><dt>Destinos</dt><dd data-dispatch-summary="address"></dd></div><div><dt>Instruções</dt><dd data-dispatch-summary="reason"></dd></div></dl></section>'+
    '<p class="rp-dispatch-error" role="alert" hidden></p>'+
    '<footer class="rp-dispatch-actions"><button type="button" class="rp-dispatch-back" data-action="dispatch-back" hidden>Voltar</button>'+
-   '<button type="button" class="rp-dispatch-next" data-action="dispatch-next" '+(!workers.length?'disabled':'')+'>Próximo <span aria-hidden="true">→</span></button>'+
+   '<button type="button" class="rp-dispatch-next" data-action="dispatch-next">Próximo <span aria-hidden="true">→</span></button>'+
    '<button type="submit" class="rp-dispatch-submit" hidden>Solicitar ronda <span aria-hidden="true">✓</span></button></footer></form></section>',false,'rp-dispatch-dialog');
   dialog.setAttribute('aria-labelledby','rp-dispatch-title');
   dialog.setAttribute('aria-modal','true');
   locationPoint=null;
   dialog.querySelector('#rp-dispatch-worker')?.focus({preventScroll:true});
-  if(!workers.length){const error=dialog.querySelector('.rp-dispatch-error');error.textContent='Cadastre um vigia ativo antes de solicitar a ronda.';error.hidden=false;}
+  if(!workers.length){const status=dialog.querySelector('.rp-dispatch-error');status.textContent='Nenhum agente cadastrado. Cadastre um agente para habilitar a atribuição.';status.hidden=false;}
+  const recurrence=dialog.querySelector('#rp-dispatch-recurrence');
+  const date=dialog.querySelector('#rp-dispatch-date');if(date)date.value=new Date().toLocaleDateString('en-CA');
+  recurrence?.addEventListener('change',()=>{const once=recurrence.value==='once',label=dialog.querySelector('#rp-dispatch-date-field');if(label)label.hidden=!once;if(date)date.required=once;});
   const input=dialog.querySelector('#rp-dispatch-address');
   if(input)input.addEventListener('input',()=>scheduleLocation(input.value));
   dialog.querySelector('#rp-dispatch-add-destination')?.addEventListener('click',addDestination);
@@ -242,7 +245,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   if(n===4){
    const worker=form.querySelector('[name="workerId"]');
    const payload=new FormData(form);
-   for(const [key,value] of [['worker',worker.selectedOptions[0]?.textContent],['address',destinations.map((p,i)=>(i+1)+'. '+p.address).join('\n')],['reason',payload.get('reason')]]){
+   for(const [key,value] of [['worker',worker.selectedOptions[0]?.textContent],['schedule',(payload.get('recurrence')==='daily'?'Todos os dias':'Pontual · '+payload.get('startDate'))+' às '+payload.get('hour')],['address',destinations.map((p,i)=>(i+1)+'. '+p.address).join('\n')],['reason',payload.get('reason')]]){
     const node=form.querySelector('[data-dispatch-summary="'+key+'"]');if(node)node.textContent=String(value||'');
    }
   }
@@ -251,10 +254,10 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
  async function submit(form){
   if(form.id!=='live-dispatch-form')return false;
   if(form.dataset.step!=='4')return true;
-  for(const [index,key] of [[1,'workerId'],[2,'address'],[3,'reason']]){
+  for(const [index,key] of [[1,'workerId'],[2,'address'],[3,'reason'],[3,'hour'],[3,'startDate']]){
    const field=form.elements.namedItem(key);
    if(key==='address'){if(!destinations.length){step(2);notify('Adicione ao menos um destino.');return true;}continue;}
-   if(!field?.checkValidity()){step(index);field.reportValidity();return true;}
+   if(field?.required&&!field.checkValidity()){step(index);field.reportValidity();return true;}
   }
   const button=form.querySelector('[type="submit"]');if(button.disabled)return true;
   button.disabled=true;button.textContent='Enviando…';
@@ -262,8 +265,10 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   if(!destinations.length){step(2);notify('Adicione ao menos um destino pela pesquisa e pelo mapa.');button.disabled=false;button.textContent='Solicitar ronda ✓';return true;}
   try{
    const first=destinations[0];
-   await request('/dispatches',{method:'POST',data:{...data,address:first.address,latitude:first.lat,longitude:first.lng,routePoints:destinations.map(p=>({lat:p.lat,lng:p.lng,label:p.address.slice(0,70)})),kind:'ronda'}});
-   dialog.close();clearPreview();await refresh();redraw();notify('Ronda enviada ao vigia com '+destinations.length+' '+(destinations.length===1?'destino':'destinos')+' confirmados.');
+   const when={kind:'specific',recurrence:data.recurrence==='daily'?'daily':'once',hour:data.hour,startDate:data.recurrence==='daily'?'':data.startDate,weekdays:[]};
+   const created=await request('/routes',{method:'POST',data:{userId:data.workerId,name:'Ronda · '+first.address.slice(0,70),points:destinations.map(p=>({name:p.name||p.address,address:p.address,lat:p.lat,lng:p.lng})),schedule:when}});
+   if(created?.assignedTo&&created.assignedTo!==data.workerId)notify('Ronda atribuída automaticamente ao agente disponível.');
+   dialog.close();clearPreview();await refresh();redraw();notify('Ronda programada: '+destinations.length+' '+(destinations.length===1?'destino':'destinos')+'. Aviso enviado ao agente responsável.');
   }catch(error){
    button.disabled=false;button.textContent='Solicitar ronda ✓';
    const message=form.querySelector('.rp-dispatch-error');message.textContent=error.message||'Não foi possível despachar.';message.hidden=false;notify(message.textContent);
