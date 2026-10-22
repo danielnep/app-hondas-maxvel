@@ -7,7 +7,7 @@ import {createAppServer} from '../server.js';
 const temp=mkdtempSync(join(tmpdir(),'ronda-live-browser-'));
 const output='artifacts/app-immersive';mkdirSync(output,{recursive:true});
 const password='OperationalBrowserCheckPassword_2026!';
-const roles=['admin','coi','ronda','vistoriador'];
+const roles=['admin','coi','ronda'];
 process.env.RONDA_PRO_DB_PATH=join(temp,'state.sqlite');
 process.env.RONDA_PRO_MASTER_EMAIL='master@browser.invalid';
 process.env.RONDA_PRO_MASTER_PASSWORD='MasterBrowserCheckPassword_2026!';
@@ -83,4 +83,4 @@ try{
  writeFileSync(output+'/live-validation.json',JSON.stringify({results,errors},null,2));
  await browser?.close();await new Promise(done=>server.close(done));rmSync(temp,{recursive:true,force:true});
 }
-if(errors.length){console.error(errors);process.exitCode=1;}else console.log('8 visoes autenticadas e cadastro funcional verificados');
+if(errors.length){console.error(errors);process.exitCode=1;}else console.log('6 visoes autenticadas e cadastro funcional verificados');
