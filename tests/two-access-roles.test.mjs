@@ -12,8 +12,8 @@ const range=(source,start,end)=>{
 
 test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados',()=>{
  const nav=range(app,'const allNav=','\nconst roleName=');
- for(const role of ['ronda','operador','coi','cliente','vistoriador','admin'])assert.match(nav,new RegExp(role+':'));
- assert.match(app,/const coiNavigation=\[\['overview','COI · Acompanhamento','headset'\]/);
+ for(const role of ['ronda','operador','coi','cliente','admin'])assert.match(nav,new RegExp(role+':'));
+ assert.doesNotMatch(nav,/vistoriador:/);assert.match(app,/const coiNavigation=\[\['overview','COI · Acompanhamento','headset'\]/);
  assert.match(nav,/operador:coiNavigation,coi:coiNavigation/);
  for(const obsolete of ['supervisor','gestor'])assert.doesNotMatch(nav,new RegExp(obsolete+':'));
  assert.doesNotMatch(app,/function loginDialog\(\)/,'A demonstração não deve exibir formulário de acesso');
@@ -21,7 +21,7 @@ test('menu demonstrativo exibe cinco áreas, com COI e Monitoramento unificados'
  assert.match(app,/if\(act==='login'\)\{beginSimulation\(/,'O primeiro acesso abre a demonstração diretamente');
  const picker=range(app,"function openAreaPicker(){","function profileDialog(){");
  assert.match(app,/if\(act==='sim-role-picker'\)\{openAreaPicker\(\);return;\}/);
- for(const role of ['ronda','operador','cliente','vistoriador','admin'])
+ for(const role of ['ronda','operador','cliente','admin'])
   assert.ok(picker.includes("['"+role+"',"),'perfil '+role+' disponível no seletor');
  assert.doesNotMatch(picker,/\['coi','Central COI'/,'Não duplicar COI como área independente');
  assert.match(picker,/,false,'role-picker-dialog'\);/);
