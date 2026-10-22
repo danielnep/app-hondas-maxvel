@@ -12,7 +12,7 @@ on:
       - 'central.html'
       - '.github/workflows/android-build.yml'
   push:
-    branches: [main, maxvel-06-ux-mobile]
+    branches: [main, maxvel-06-ux-mobile, native-vps-navigation-20261022]
     paths:
       - 'android/**'
       - 'src/**'
