@@ -8,11 +8,11 @@ const theme=readStyles('application');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const gradle=readFileSync(new URL('../android/app/build.gradle',import.meta.url),'utf8');
 
-test('tema web permanece e Android usa renderização de mapa nativa',()=>{
+test('tema web permanece e APK Android traz a interface Glass embarcada',()=>{
  assert.ok(existsSync(new URL('../assets/ronda-pro.css',import.meta.url)));
  assert.match(html,/assets\/ronda-pro\.css/);
- assert.match(gradle,/org\.maplibre\.gl:android-sdk/);
- assert.doesNotMatch(gradle,/generated\/web-assets|assets\/\*\*/);
+ assert.match(gradle,/embedGlassFrontend/);
+ assert.match(gradle,/assets\/\*\*/);
 });
 
 test('menu pelo topo preserva acesso a todas as áreas do papel e ao perfil',()=>{

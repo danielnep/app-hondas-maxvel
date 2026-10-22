@@ -1340,7 +1340,7 @@ async function startSession(){
   const route=assignedRoute();if(!route){notify('Nenhuma rota real atribuida. Solicite cadastro da rota.');return;}route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode};
  session=createSession(user?.name??presentationName,route,now,'real');session.requiresManualCheckin=true;session.evidenceEnabled=operationalSettings.evidenceEnabled;locationFix=f;
-  try{window.AndroidTracking?.startTracking()}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
+  try{window.AndroidTracking?.startTracking(session.id)}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
   deviceWatch=navigator.geolocation.watchPosition(pos=>{
    const f={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:Date.now()};
    locationFix=f;

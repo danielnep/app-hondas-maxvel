@@ -1,0 +1,49 @@
+/* Entra somente no bundle Android: interface offline com o MESMO frontend Glass web. */
+(function(){
+ 'use strict';
+ window.__RONDA_ANDROID_BUNDLE__=true;
+ const bridge=window.RondaOffline;
+ const originalFetch=window.fetch.bind(window);
+ let online=navigator.onLine;
+ function badge(){
+  let b=document.getElementById('rp-android-connectivity');
+  if(!b){b=document.createElement('output');b.id='rp-android-connectivity';b.setAttribute('role','status');b.style.cssText='position:fixed;top:max(8px,env(safe-area-inset-top));right:12px;z-index:99999;padding:7px 11px;border-radius:999px;background:#111a20e8;color:#f2f5f7;font:600 12px system-ui;box-shadow:0 5px 18px #0005;pointer-events:none';document.body.append(b);}
+  let pending=0;try{pending=bridge.pending()}catch{}
+  b.textContent=(online?'Sincronizado':'Offline')+(pending?' · '+pending+' pendente(s)':'');b.style.background=online?'#122a2899':'#7d3b16ee';
+ }
+ async function jsonRequest(input,options={}){
+  const url=new URL(typeof input==='string'?input:input.url,location.href);
+  const method=String(options.method||'GET').toUpperCase();
+  if(url.origin!==location.origin||!url.pathname.startsWith('/api/'))return originalFetch(input,options);
+  const path=url.pathname.slice('/api'.length)+url.search;
+  const headers=new Headers(options.headers||{});
+  const token=(headers.get('Authorization')||'').replace(/^Bearer\s+/i,'');
+  try{
+   if(!navigator.onLine)throw new TypeError('offline');
+   const response=await originalFetch(input,options);
+   if(response.ok&&method==='GET'){
+    try{bridge.cache(path,token,await response.clone().text());}catch{}
+   }
+   online=true;badge();try{bridge.flush();}catch{}
+   return response;
+  }catch(error){
+   if(error.name==='AbortError')throw error;
+   online=false;badge();
+   if(method==='GET'){
+    let saved='';try{saved=bridge.read(path,token);}catch{}
+    if(saved)return new Response(saved,{status:200,headers:{'Content-Type':'application/json','X-Ronda-Offline':'cache'}});
+    return new Response(JSON.stringify({error:'Sem conexão e sem dados locais para esta tela.'}),{status:503,headers:{'Content-Type':'application/json'}});
+   }
+   let receipt='';try{receipt=bridge.queue(method,path,token,typeof options.body==='string'?options.body:'');}catch{}
+   let json;try{json=JSON.parse(receipt);}catch{json={error:'Falha ao guardar operação offline.'};}
+   if(json.error)return new Response(JSON.stringify(json),{status:503,headers:{'Content-Type':'application/json'}});
+   badge();return new Response(receipt,{status:202,headers:{'Content-Type':'application/json','X-Ronda-Offline':'outbox'}});
+  }
+ }
+ window.fetch=jsonRequest;
+ window.addEventListener('online',()=>{online=true;try{bridge.flush();}catch{}badge();});
+ window.addEventListener('offline',()=>{online=false;badge();});
+ window.addEventListener('rondapro:native-location',event=>{const item=event.detail;window.__rondaNativeFix=item;});
+ window.addEventListener('rondapro:native-heading',event=>{window.__rondaNativeHeading=event.detail?.heading;});
+ document.addEventListener('DOMContentLoaded',()=>{badge();});
+})();

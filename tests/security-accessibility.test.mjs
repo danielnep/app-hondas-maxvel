@@ -33,14 +33,12 @@ test('aplicativo Android declara rastreamento transparente com encerramento vis�
  assert.match(service,/onDestroy/);
 });
 
-test('Android 2: inicia serviço apenas após despacho autenticado sem WebView',()=>{
+test('APK Android liga GPS nativo a uma ronda autenticada e abre Glass UI embarcada',()=>{
  assert.match(web,/mode==='real'&&!presentation/);
- assert.match(web,/if\(presentation&&act==='mode-real'\)/);
- assert.match(web,/AndroidTracking\?\.startTracking\(\)/);
+ assert.match(web,/AndroidTracking\?\.startTracking\(session\.id\)/);
  assert.match(web,/AndroidTracking\?\.stopTracking\(\)/);
- assert.match(web,/O navegador não acompanha sua posição depois de fechado/);
- assert.match(activity,/new MapView\(this\)/);
- assert.match(activity,/startForegroundService\(i\)/);
- assert.match(activity,/\/start\",\"POST\"/);
- assert.doesNotMatch(activity,/import android\.webkit|new WebView\(/);
+ assert.match(activity,/new WebView\(this\)/);
+ assert.match(activity,/startForegroundService\(intent\)/);
+ assert.match(activity,/getAssets\(\)\.open\(local\)/);
+ assert.match(activity,/NativeApi\.token/);
 });

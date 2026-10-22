@@ -16,7 +16,15 @@ export function loadLeaflet(){
  leafletPromise=new Promise((resolve,reject)=>{
   const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.async=true;s.crossOrigin='anonymous';
   const timer=setTimeout(()=>reject(new Error('Mapa online indisponível')),9000);
-  s.onload=()=>{clearTimeout(timer);window.L?resolve(window.L):reject(new Error('Biblioteca cartográfica indisponível'));};
+  s.onload=()=>{
+   clearTimeout(timer);
+   if(!window.L){reject(new Error('Biblioteca cartográfica indisponível'));return;}
+   if(!window.__RONDA_ANDROID_BUNDLE__){resolve(window.L);return;}
+   const rotate=document.createElement('script');rotate.src='./assets/vendor/leaflet/leaflet-rotate.js';
+   rotate.onload=()=>resolve(window.L);
+   rotate.onerror=()=>resolve(window.L); // never block the offline map if compass plugin is unavailable
+   document.head.appendChild(rotate);
+  };
   s.onerror=()=>{clearTimeout(timer);reject(new Error('Falha ao carregar mapa'));};
   document.head.appendChild(s);
  }).catch(err=>{leafletPromise=null;throw err});
@@ -56,6 +64,12 @@ export class PatrolMap{
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;this.standbyClean=standbyClean;
   this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.positionVerified=positionVerified;this.tracePositions=positionVerified?[this.position]:[];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
   this.streetPath=null;this.streetRequest=null;this.streetEpoch=0;this.onStreetRoute=onStreetRoute;
+  this.lastHeading=null;this.lastNavigationAt=0;
+  this.headingListener=event=>{
+   const value=Number(event.detail?.heading);
+   if(Number.isFinite(value)&&value>=0&&value<=360){this.lastHeading=value;this.followNavigation();}
+  };
+  if(globalThis.window?.__RONDA_ANDROID_BUNDLE__)window.addEventListener('rondapro:native-heading',this.headingListener);
   this.showFallback();this.setup();if(this.route.inspectionMode||this.route.roadRouting)this.loadStreetPath();
  }
  fallbackViewport(){return this.route.inspectionMode?{width:Math.max(300,this.container?.clientWidth||680),height:Math.max(320,this.container?.clientHeight||360)}:null}
@@ -72,7 +86,7 @@ export class PatrolMap{
    mount.style.cssText='position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .2s ease';
    this.container.appendChild(mount);this.liveLayer=mount;
   }else this.container.innerHTML='';
-  const m=L.map(mount,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});this.instance=m;
+  const m=L.map(mount,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,rotate:!!window.__RONDA_ANDROID_BUNDLE__,touchRotate:true});this.instance=m;
   if(typeof this.onMapClick==='function')m.on('click',event=>this.onMapClick({lat:event.latlng.lat,lng:event.latlng.lng}));
   const credit='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
   // CARTO can return an HTTP-200 image saying API KEY REQUIRED, which tileerror cannot detect.
@@ -205,8 +219,32 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
    return;
   }
   if(this.instance){if(indexWas!==session?.index||statusWas!==session?.status)this.refreshGeometry();
-   else{this.positionMarker?.setLatLng(latlng(this.position));this.accuracyCircle?.setLatLng(latlng(this.position));this.accuracyCircle?.setRadius(Math.max(3,Number(this.position.accuracy)||8));this.updateTrace();}}
+   else{this.positionMarker?.setLatLng(latlng(this.position));this.accuracyCircle?.setLatLng(latlng(this.position));this.accuracyCircle?.setRadius(Math.max(3,Number(this.position.accuracy)||8));this.updateTrace();}this.followNavigation();}
   else{const holder=this.container?.querySelector('.map-fallback');if(holder)holder.innerHTML=fallbackSVG(this.route,session,this.position,!this.standbyClean||!!session,this.positionVerified,this.fallbackViewport());}
+ }
+ followNavigation(){
+  if(!window.__RONDA_ANDROID_BUNDLE__||!this.instance||this.destroyed||this.session?.status!=='active'||!this.positionVerified)return;
+  if(!this.position||!Number.isFinite(this.position.lat)||!Number.isFinite(this.position.lng))return;
+  const now=Date.now();if(now-this.lastNavigationAt<750)return;this.lastNavigationAt=now;
+  const map=this.instance;
+  map.panTo(latlng(this.position),{animate:true,duration:.5});
+  if(map.getZoom()<16)map.setZoom(17,{animate:false});
+  if(Number.isFinite(this.lastHeading)){
+   if(typeof map.setHeading==='function')map.setHeading(this.lastHeading,{ease:.22,deadzone:1});
+   else if(typeof map.setBearing==='function')map.setBearing(-this.lastHeading);
+  }
+  const next=this.route.points?.[Math.max(0,this.session.index||0)];
+  if(!next||!Number.isFinite(this.lastHeading))return;
+  const from=this.position;
+  const deltaLon=(next.lng-from.lng)*Math.PI/180;
+  const lat1=from.lat*Math.PI/180,lat2=next.lat*Math.PI/180;
+  const destination=(Math.atan2(Math.sin(deltaLon)*Math.cos(lat2),Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(deltaLon))*180/Math.PI+360)%360;
+  const difference=((destination-this.lastHeading+540)%360)-180;
+  const instruction=Math.abs(difference)>145?'Sentido contrário':Math.abs(difference)<27?'Direção correta':difference>0?'Vire à direita':'Vire à esquerda';
+  let note=this.container.querySelector('.ronda-native-heading-note');
+  if(!note){note=document.createElement('output');note.className='ronda-native-heading-note';note.setAttribute('role','status');
+   note.style.cssText='position:absolute;bottom:15px;left:15px;z-index:600;padding:10px 13px;border:1px solid #ffffff25;border-radius:12px;background:#111a21ed;color:#f5f8fc;font:650 13px system-ui;pointer-events:none';this.container.append(note);}
+  note.textContent=instruction+' · '+Math.abs(Math.round(difference))+'°';
  }
  updateTrace(){
   if(!this.position||!Number.isFinite(this.position.lat)||!Number.isFinite(this.position.lng))return;
@@ -235,7 +273,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
  fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds((this.route.inspectionMode||this.route.roadRouting)&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],this.mapViewPadding());}
  invalidate(){this.instance?.invalidateSize(false)}
  destroy(){
-  this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();
+  this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();if(this.headingListener&&typeof window!=='undefined')window.removeEventListener?.('rondapro:native-heading',this.headingListener);
   clearTimeout(this.tileFallbackTimer);
   const map=this.instance;this.instance=null;
   if(map){try{map.stop();map.off();map.remove();}catch{}}

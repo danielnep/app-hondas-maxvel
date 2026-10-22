@@ -2,503 +2,220 @@ package br.com.horizon.maxvel;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.hardware.GeomagneticField;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.SystemClock;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
+import android.view.WindowInsets;
+import android.webkit.GeolocationPermissions;
+import android.webkit.JavascriptInterface;
+import android.webkit.MimeTypeMap;
+import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Toast;
-import org.json.JSONArray;
 import org.json.JSONObject;
-import java.util.ArrayList;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.HttpURLConnection;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.maplibre.android.MapLibre;
-import org.maplibre.android.camera.CameraPosition;
-import org.maplibre.android.camera.CameraUpdateFactory;
-import org.maplibre.android.geometry.LatLng;
-import org.maplibre.android.maps.MapView;
-import org.maplibre.android.maps.MapLibreMap;
-import org.maplibre.android.maps.Style;
-import org.maplibre.android.style.layers.CircleLayer;
-import org.maplibre.android.style.layers.LineLayer;
-import org.maplibre.android.style.layers.SymbolLayer;
-import org.maplibre.android.style.layers.PropertyFactory;
-import org.maplibre.android.style.sources.GeoJsonSource;
 
-/** Interface 100% Android Views + mapa nativo. Nada de WebView, HTML ou simulação. */
-public class MainActivity extends Activity implements LocationListener,SensorEventListener {
-    private static final int LOCATION_PERMISSION=31,TORCH_PERMISSION=33;
-    private boolean torchOn=false;private String torchId;
-    private static final int DARK=0xff17191d,RED=0xffdf343c,WHITE=0xfff2f4f6;
-    private final ExecutorService io=Executors.newSingleThreadExecutor();
-    private final Handler handler=new Handler(Looper.getMainLooper());
-    private LocationManager locationManager;
+/** APK Android REAL: a interface Glass aprovada vem embutida em /assets/app, nao de um site remoto. */
+public final class MainActivity extends Activity implements SensorEventListener,LocationListener {
+    private static final String ORIGIN="https://maxvel.hzsys.tech";
+    private static final int LOCATION=201,CAMERA=202,FILES=203;
+    private final ExecutorService background=Executors.newSingleThreadExecutor();
+    private WebView web;
+    private NativeOfflineStore offline;
+    private LocationManager locations;
     private SensorManager sensors;
-    private Sensor rotationSensor;
-    private Location fix;
-    private float compass=0;
-    private MapView mapView;
-    private MapLibreMap map;
-    private TextView title,status,steps,checkpoint;
-    private Button startButton,checkButton;
-    private boolean following=true,started=false;
-    private JSONObject selected;
-    private final ArrayList<Destination> points=new ArrayList<>();
-    private int next=0;
-    private long insideSince=0,lastNavRequest=0,lastFollow=0;
-    private JSONArray roadGeometry;
-    private String nextInstruction="";
-    private final Runnable refresh=new Runnable(){@Override public void run(){if(!isFinishing()&&NativeApi.token(MainActivity.this).length()>0){announcePresence();loadDispatches(false);}handler.postDelayed(this,25000);}};
+    private Sensor rotation;
+    private Location lastFix;
+    private String torchId;
+    private CameraManager cameras;
+    private boolean torchOn=false;
+    private long lastCompassEvent=0;
+    private PermissionRequest pendingCamera;
+    private ValueCallback<Uri[]> fileRequest;
+    private final Bridge bridge=new Bridge();
 
-    private static class Destination{
-        final double lat,lng;
-        final String name;
-        Destination(double la,double lo,String text){lat=la;lng=lo;name=text;}
-    }
-    private interface Result{void done(JSONObject response)throws Exception;}
-    @Override public void onCreate(Bundle bundle){
-        super.onCreate(bundle);
-        getWindow().setStatusBarColor(DARK);getWindow().setNavigationBarColor(DARK);
-        locationManager=(LocationManager)getSystemService(LOCATION_SERVICE);
+    @Override public void onCreate(Bundle state){
+        super.onCreate(state);
+        getWindow().setStatusBarColor(0xff14181e);
+        getWindow().setNavigationBarColor(0xff14181e);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+        locations=(LocationManager)getSystemService(LOCATION_SERVICE);
         sensors=(SensorManager)getSystemService(SENSOR_SERVICE);
-        rotationSensor=sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        MapLibre.getInstance(this);
-        if(NativeApi.token(this).isEmpty())showLogin();
-        else request("/api/me","GET",null,json->{
-            String role=json.getJSONObject("user").optString("role");
-            if(!role.equals("ronda"))throw new IllegalStateException("Entre com uma conta de Agente de Ronda.");
-            showMap(bundle);loadDispatches(true);
+        cameras=(CameraManager)getSystemService(CAMERA_SERVICE);
+        rotation=sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        offline=new NativeOfflineStore(this);
+        web=new WebView(this);web.setBackgroundColor(0xff161b21);
+        web.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        web.setOnApplyWindowInsetsListener((view,insets)->{
+            int top,bottom;
+            if(Build.VERSION.SDK_INT>=30){android.graphics.Insets safe=insets.getInsets(WindowInsets.Type.systemBars());top=safe.top;bottom=safe.bottom;}
+            else{top=insets.getSystemWindowInsetTop();bottom=insets.getSystemWindowInsetBottom();}
+            view.setPadding(0,top,0,bottom);
+            return insets;
         });
-    }
-    private TextView text(String value,int size,int color){
-        TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setPadding(dp(14),dp(12),dp(14),dp(12));return t;
-    }
-    private int dp(int value){return Math.round(getResources().getDisplayMetrics().density*value);}
-    private Button button(String label){
-        Button b=new Button(this);b.setText(label);b.setTextColor(WHITE);b.setAllCaps(false);
-        b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(RED));
-        return b;
-    }
-    private void showLogin(){
-        LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setBackgroundColor(DARK);l.setPadding(dp(24),dp(48),dp(24),dp(16));
-        l.addView(text("RONDAS PRO  ·  MAXVEL",24,WHITE));
-        l.addView(text("Acesso operacional do Agente de Ronda",15,0xffa8b1bc));
-        EditText username=new EditText(this);username.setSingleLine();username.setTextColor(WHITE);username.setHintTextColor(0xffaab0bc);username.setHint("Usuário");username.setInputType(1);
-        EditText pass=new EditText(this);pass.setSingleLine();pass.setTextColor(WHITE);pass.setHintTextColor(0xffaab0bc);pass.setHint("Senha");pass.setInputType(129);
-        l.addView(username);l.addView(pass);
-        Button enter=button("Entrar");l.addView(enter);
-        enter.setOnClickListener(v->{
-            if(username.getText().length()==0||pass.getText().length()==0){notice("Informe usuário e senha.");return;}
-            try{
-                JSONObject payload=new JSONObject().put("email",username.getText().toString().trim()).put("password",pass.getText().toString());
-                io.execute(()->{
-                    try{
-                        JSONObject data=NativeApi.call(this,"/api/login","POST",payload);
-                        String role=data.getJSONObject("user").optString("role");
-                        if(!role.equals("ronda")){runOnUiThread(()->notice("Use uma conta de Agente de Ronda."));return;}
-                        NativeApi.saveLogin(this,data.getString("token"),username.getText().toString().trim());
-                        runOnUiThread(()->{showMap(null);loadDispatches(true);});
-                    }catch(Exception error){runOnUiThread(()->notice(error.getMessage()));}
-                });
-            }catch(Exception e){notice(e.getMessage());}
-        });
-        setContentView(l);
-    }
-    private void showMap(Bundle state){
-        FrameLayout frame=new FrameLayout(this);frame.setBackgroundColor(DARK);
-        mapView=new MapView(this);frame.addView(mapView,new FrameLayout.LayoutParams(-1,-1));
-        mapView.onCreate(state);
-        mapView.getMapAsync(m->{
-            map=m;
-            map.setStyle(new Style.Builder().fromUri("https://tiles.openfreemap.org/styles/liberty"),style->{
-                style.addImage("ronda-arrow",makeArrow());
-                style.addSource(new GeoJsonSource("ronda-position",geoPoint(0,0)));
-                style.addLayer(new SymbolLayer("ronda-person","ronda-position").withProperties(
-                    PropertyFactory.iconImage("ronda-arrow"),PropertyFactory.iconAllowOverlap(true),
-                    PropertyFactory.iconIgnorePlacement(true),PropertyFactory.iconRotate(0f)));
-                style.addSource(new GeoJsonSource("ronda-next",geoPoint(0,0)));
-                style.addLayer(new CircleLayer("ronda-target","ronda-next").withProperties(
-                    PropertyFactory.circleColor(RED),PropertyFactory.circleRadius(10f),
-                    PropertyFactory.circleStrokeWidth(3f),PropertyFactory.circleStrokeColor(WHITE)));
-                style.addSource(new GeoJsonSource("ronda-road",emptyLine()));
-                style.addLayer(new LineLayer("ronda-street","ronda-road").withProperties(
-                    PropertyFactory.lineColor(0xff168eff),PropertyFactory.lineWidth(7f),
-                    PropertyFactory.lineOpacity(.92f)));
-                if(fix!=null)updateLocationView();
-                else map.moveCamera(CameraUpdateFactory.newCameraPosition(
-                    new CameraPosition.Builder().target(new LatLng(-20.140, -44.885)).zoom(13).build()));
-                updateDestination();
-            });
-        });
-        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.VERTICAL);top.setBackgroundColor(0xea16191e);
-        title=text("MAXVEL  ·  AGENTE DE RONDA",16,WHITE);
-        status=text("Buscando rondas atribuídas…",13,0xffdbe3eb);
-        top.addView(title);top.addView(status);
-        FrameLayout.LayoutParams pTop=new FrameLayout.LayoutParams(-1,-2,Gravity.TOP);frame.addView(top,pTop);
-        LinearLayout bottom=new LinearLayout(this);bottom.setOrientation(LinearLayout.VERTICAL);bottom.setPadding(dp(9),dp(8),dp(9),dp(15));bottom.setBackgroundColor(0xf3191c20);
-        steps=text("Selecione uma ronda atribuída no COI.",15,WHITE);
-        checkpoint=text("GPS aguardando localização.",13,0xffbfcad3);
-        bottom.addView(steps);bottom.addView(checkpoint);
-        LinearLayout actions=new LinearLayout(this);
-        Button select=button("Rondas"),recenter=button("Centralizar"),incident=button("Ocorrência"),torch=button("Lanterna");
-        actions.addView(select,new LinearLayout.LayoutParams(0,dp(48),1));
-        actions.addView(recenter,new LinearLayout.LayoutParams(0,dp(48),1));
-        actions.addView(incident,new LinearLayout.LayoutParams(0,dp(48),1));
-        actions.addView(torch,new LinearLayout.LayoutParams(0,dp(48),1));
-        bottom.addView(actions);
-        LinearLayout active=new LinearLayout(this);
-        startButton=button("Iniciar rota");checkButton=button("Estou aqui");
-        active.addView(startButton,new LinearLayout.LayoutParams(0,dp(53),1));
-        active.addView(checkButton,new LinearLayout.LayoutParams(0,dp(53),1));
-        bottom.addView(active);
-        FrameLayout.LayoutParams pBottom=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);frame.addView(bottom,pBottom);
-        select.setOnClickListener(v->loadDispatches(true));
-        recenter.setOnClickListener(v->{following=true;updateLocationView();});
-        incident.setOnClickListener(v->incidentDialog());
-        torch.setOnClickListener(v->toggleTorch());
-        startButton.setOnClickListener(v->{if(started)finishPatrol();else startPatrol();});
-        checkButton.setOnClickListener(v->checkin());
-        setContentView(frame);
-        requestLocation();
-        announcePresence();
-        handler.removeCallbacks(refresh);handler.postDelayed(refresh,25000);
-    }
-    private Bitmap makeArrow(){
-        Bitmap bitmap=Bitmap.createBitmap(112,112,Bitmap.Config.ARGB_8888);
-        Canvas c=new Canvas(bitmap);Paint p=new Paint(3);
-        p.setColor(0xff132d45);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(9f);
-        Path path=new Path();path.moveTo(56,7);path.lineTo(100,101);path.lineTo(56,83);path.lineTo(12,101);path.close();c.drawPath(path,p);
-        p.setColor(0xff208fff);p.setStyle(Paint.Style.FILL);c.drawPath(path,p);
-        return bitmap;
-    }
-    private String geoPoint(double lat,double lng){
-        return "{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"Point\",\"coordinates\":["+lng+","+lat+"]}}";
-    }
-    private String emptyLine(){return "{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":[]}}";}
-    private void updateSource(String source,String json){
-        if(map==null||map.getStyle()==null)return;
-        GeoJsonSource s=map.getStyle().getSourceAs(source);if(s!=null)s.setGeoJson(json);
-    }
-    private void request(String path,String method,JSONObject data,Result success){
-        io.execute(()->{try{JSONObject json=NativeApi.call(this,path,method,data);runOnUiThread(()->{
-            try{success.done(json);}catch(Exception e){notice(e.getMessage());}
-        });}catch(Exception error){runOnUiThread(()->{
-            if(error instanceof NativeApi.ApiException&&((NativeApi.ApiException)error).status==401){
-                NativeApi.logout(this);showLogin();
-            }else notice(error.getMessage());
-        });}});
-    }
-    /** O COI distribui rondas somente quando o agente consta disponível no backend. */
-    private void announcePresence(){
-        if(NativeApi.token(this).isEmpty())return;
-        final Location last=fix;
-        io.execute(()->{
-            try{
-                JSONObject body=new JSONObject();
-                if(last!=null&&last.hasAccuracy()&&last.getAccuracy()<=90&&
-                   Math.abs(System.currentTimeMillis()-last.getTime())<30000){
-                    body.put("position",new JSONObject().put("lat",last.getLatitude())
-                        .put("lng",last.getLongitude()).put("accuracy",last.getAccuracy()));
-                }
-                NativeApi.call(this,"/api/presence","POST",body);
-            }catch(Exception ignored){ /* ausência temporária de rede: próximo heartbeat refaz */ }
-        });
-    }
-    private void loadDispatches(boolean showPicker){
-        request("/api/dispatches","GET",null,response->{
-            JSONArray array=response.optJSONArray("dispatches");
-            if(array==null)return;
-            ArrayList<JSONObject> rows=new ArrayList<>();
-            for(int i=0;i<array.length();i++){
-                JSONObject item=array.optJSONObject(i);
-                if(item!=null&&"ronda".equals(item.optString("kind"))&&item.isNull("completed_at"))rows.add(item);
-            }
-            if(rows.isEmpty()){if(selected==null)status.setText("Nenhuma ronda pendente atribuída.");return;}
-            if(showPicker||selected==null){
-                String[] names=new String[rows.size()];
-                for(int i=0;i<rows.size();i++)names[i]=(i+1)+". "+rows.get(i).optString("address","Ronda")+
-                    (rows.get(i).isNull("started_at")?" · Pendente":" · Em andamento");
-                new AlertDialog.Builder(this).setTitle("Rondas recebidas do COI").setItems(names,(dialog,which)->choose(rows.get(which))).setNegativeButton("Fechar",null).show();
-            }else{
-                for(JSONObject row:rows)if(row.optString("id").equals(selected.optString("id"))){selected=row;break;}
-            }
-        });
-    }
-    private void choose(JSONObject item){
-        if(started&&!item.optString("id").equals(selected==null?"":selected.optString("id"))){
-            notice("Conclua a ronda em andamento primeiro.");return;
-        }
-        selected=item;points.clear();next=0;insideSince=0;roadGeometry=null;
-        try{
-            Object raw=item.opt("route_points");
-            JSONArray route=raw instanceof JSONArray?(JSONArray)raw:new JSONArray(item.optString("route_points","[]"));
-            for(int i=0;i<route.length();i++){
-                JSONObject pt=route.optJSONObject(i);
-                if(pt!=null&&pt.has("lat")&&pt.has("lng"))
-                    points.add(new Destination(pt.getDouble("lat"),pt.getDouble("lng"),pt.optString("label","Ponto "+(i+1))));
-            }
-            if(points.isEmpty()&&!item.isNull("latitude")&&!item.isNull("longitude"))
-                points.add(new Destination(item.getDouble("latitude"),item.getDouble("longitude"),item.optString("address","Destino")));
-            if(points.isEmpty()){notice("O COI não cadastrou coordenadas para esta rota.");startButton.setEnabled(false);return;}
-            startButton.setEnabled(true);
-            started=!item.isNull("started_at")&&item.optLong("started_at")>0;
-            startButton.setText(started?"Concluir ronda":"Iniciar rota");
-            if(started)startNativeTracking();
-            status.setText(points.size()+" destino(s)  ·  "+item.optString("address"));
-            updateDestination();
-            if(fix!=null)routeToNext();
-        }catch(Exception e){notice("Rota inválida: "+e.getMessage());}
-    }
-    private void startPatrol(){
-        if(selected==null||points.isEmpty()){notice("Selecione uma rota real do COI.");return;}
-        if(!hasLocation()){requestLocation();return;}
-        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},32);notice("Conceda as notificações para acompanhar a ronda.");return;}
-        if(fix==null||System.currentTimeMillis()-fix.getTime()>30000){notice("Aguardando sinal GPS atual.");return;}
-        request("/api/dispatches/"+selected.optString("id")+"/start","POST",new JSONObject(),data->{
-            started=true;startButton.setText("Concluir ronda");startNativeTracking();routeToNext();
-            notice("Ronda iniciada. Rastreamento ativo na notificação.");
-        });
-    }
-    private void startNativeTracking(){
-        if(!hasLocation())return;
-        Intent i=new Intent(this,PatrolLocationService.class);
-        i.setAction(PatrolLocationService.START);i.putExtra("roundId",selected.optString("id"));
-        try{startForegroundService(i);}catch(Exception e){notice("Não foi possível ativar o GPS persistente.");}
-    }
-    private void finishPatrol(){
-        if(!started||selected==null)return;
-        if(next<points.size()){notice("Confirme todos os pontos antes de concluir.");return;}
-        try{
-            JSONObject payload=new JSONObject().put("note","Ronda concluída nos pontos previstos.");
-            request("/api/dispatches/"+selected.optString("id")+"/complete","POST",payload,data->{
-                stopService(new Intent(this,PatrolLocationService.class));
-                started=false;selected=null;points.clear();next=0;insideSince=0;roadGeometry=null;
-                startButton.setText("Iniciar rota");status.setText("Ronda concluída.");
-                updateSource("ronda-road",emptyLine());updateDestination();loadDispatches(true);
-            });
-        }catch(Exception e){notice(e.getMessage());}
-    }
-    private void checkin(){
-        if(!started||next>=points.size()||fix==null){notice("Inicie a ronda e aguarde o GPS.");return;}
-        if(fix.getAccuracy()>35||System.currentTimeMillis()-fix.getTime()>12000){
-            notice("GPS sem precisão suficiente para confirmar presença.");return;
-        }
-        Destination p=points.get(next);float[] distance=new float[1];
-        Location.distanceBetween(fix.getLatitude(),fix.getLongitude(),p.lat,p.lng,distance);
-        if(distance[0]>35){notice("Aproxime-se do destino. Distância: "+Math.round(distance[0])+" m.");return;}
-        long dwell=insideSince==0?0:SystemClock.elapsedRealtime()-insideSince;
-        if(dwell<30000){notice("Permaneça no ponto por mais "+Math.max(1,(30000-dwell+999)/1000)+" s.");return;}
-        try{
-            JSONObject payload=new JSONObject().put("id",java.util.UUID.randomUUID().toString())
-                .put("kind","checkpoint").put("roundId",selected.optString("id"))
-                .put("occurredAt",System.currentTimeMillis())
-                .put("description","Ponto "+(next+1)+" de "+points.size()+": "+p.name)
-                .put("details",new JSONObject().put("pointIndex",next).put("dispatchId",selected.optString("id")))
-                .put("position",new JSONObject().put("lat",fix.getLatitude()).put("lng",fix.getLongitude()).put("accuracy",fix.getAccuracy()));
-            checkButton.setEnabled(false);
-            request("/api/events","POST",payload,data->{
-                next++;insideSince=0;checkButton.setEnabled(true);
-                updateDestination();
-                if(next<points.size())routeToNext();
-                else{updateSource("ronda-road",emptyLine());steps.setText("Todos os pontos confirmados. Conclua a ronda.");}
-            });
-        }catch(Exception e){checkButton.setEnabled(true);notice(e.getMessage());}
-    }
-    private void toggleTorch(){
-        if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[]{Manifest.permission.CAMERA},TORCH_PERMISSION);return;
-        }
-        try{
-            CameraManager camera=(CameraManager)getSystemService(CAMERA_SERVICE);
-            if(torchId==null){
-                for(String id:camera.getCameraIdList()){
-                    CameraCharacteristics info=camera.getCameraCharacteristics(id);
-                    Boolean flash=info.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
-                    Integer facing=info.get(CameraCharacteristics.LENS_FACING);
-                    if(Boolean.TRUE.equals(flash)&&facing!=null&&facing==CameraCharacteristics.LENS_FACING_BACK){torchId=id;break;}
-                }
-            }
-            if(torchId==null){notice("Lanterna indisponível neste aparelho.");return;}
-            camera.setTorchMode(torchId,!torchOn);torchOn=!torchOn;
-        }catch(Exception e){notice("Não foi possível ligar a lanterna.");}
-    }
-    private void switchOffTorch(){
-        if(!torchOn)return;
-        try{((CameraManager)getSystemService(CAMERA_SERVICE)).setTorchMode(torchId,false);}catch(Exception ignored){}
-        torchOn=false;
-    }
-    private void incidentDialog(){
-        if(!started){notice("Inicie uma ronda para registrar ocorrências.");return;}
-        EditText input=new EditText(this);input.setHint("Descreva a ocorrência");input.setMinLines(3);
-        new AlertDialog.Builder(this).setTitle("Nova ocorrência").setView(input).setPositiveButton("Enviar ao COI",(d,w)->{
-            String message=input.getText().toString().trim();if(message.length()<10){notice("Descreva a ocorrência com mais detalhes.");return;}
-            try{JSONObject obj=new JSONObject().put("id",java.util.UUID.randomUUID().toString()).put("kind","incident")
-                .put("roundId",selected.optString("id")).put("occurredAt",System.currentTimeMillis()).put("description",message);
-                if(fix!=null)obj.put("position",new JSONObject().put("lat",fix.getLatitude()).put("lng",fix.getLongitude()).put("accuracy",fix.getAccuracy()));
-                request("/api/events","POST",obj,data->notice("Ocorrência enviada ao COI."));
-            }catch(Exception e){notice(e.getMessage());}
-        }).setNegativeButton("Cancelar",null).show();
-    }
-    private void updateDestination(){
-        if(steps==null)return;
-        if(next>=points.size()){steps.setText(started?"Todos os pontos confirmados.":"Selecione uma ronda.");updateSource("ronda-next",geoPoint(0,0));return;}
-        Destination p=points.get(next);
-        updateSource("ronda-next",geoPoint(p.lat,p.lng));
-        steps.setText((next+1)+"/"+points.size()+"  ·  "+p.name+(nextInstruction.isEmpty()?"":"\n"+nextInstruction));
-    }
-    private void routeToNext(){
-        if(fix==null||next>=points.size())return;
-        Destination p=points.get(next);
-        lastNavRequest=SystemClock.elapsedRealtime();
-        double lat=fix.getLatitude(),lng=fix.getLongitude();
-        io.execute(()->{
-            try{
-                String url="https://routing.openstreetmap.de/routed-car/route/v1/driving/"+
-                    lng+","+lat+";"+p.lng+","+p.lat+"?overview=full&geometries=geojson&steps=true";
-                java.net.HttpURLConnection conn=(java.net.HttpURLConnection)new java.net.URL(url).openConnection();
-                conn.setConnectTimeout(9000);conn.setReadTimeout(16000);
-                conn.setRequestProperty("User-Agent","RondaPro-Maxvel-Android/2");
-                if(conn.getResponseCode()!=200)throw new IllegalStateException("Roteador indisponível");
-                String response;
-                try(java.io.InputStream in=conn.getInputStream()){
-                    java.io.ByteArrayOutputStream buf=new java.io.ByteArrayOutputStream();
-                    byte[] bytes=new byte[8192];int n;while((n=in.read(bytes))!=-1)buf.write(bytes,0,n);
-                    response=buf.toString("UTF-8");
-                }
-                JSONObject route=new JSONObject(response).getJSONArray("routes").getJSONObject(0);
-                JSONArray geometry=route.getJSONObject("geometry").getJSONArray("coordinates");
-                double meters=route.optDouble("distance"),mins=route.optDouble("duration")/60.0;
-                String instruction=Math.round(meters)+" m pela via · "+Math.max(1,Math.round(mins))+" min (estimado)";
-                JSONArray legs=route.optJSONArray("legs");
-                if(legs!=null&&legs.length()>0){
-                    JSONArray navSteps=legs.getJSONObject(0).optJSONArray("steps");
-                    if(navSteps!=null&&navSteps.length()>0){
-                        JSONObject first=navSteps.getJSONObject(0);
-                        String road=first.optString("name");
-                        if(!road.isEmpty())instruction="Siga por "+road+" · "+Math.round(meters)+" m";
+        WebSettings settings=web.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setGeolocationEnabled(true);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        web.addJavascriptInterface(offline,"RondaOffline");
+        web.addJavascriptInterface(bridge,"AndroidTracking");
+        web.setWebViewClient(new WebViewClient(){
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+                Uri uri=request.getUrl();String host=uri.getHost(),path=uri.getPath();
+                if(host==null||path==null)return null;
+                if(host.equals("maxvel.hzsys.tech")&&"https".equals(uri.getScheme())){
+                    if(path.startsWith("/api/"))return null; // autenticação e dados continuam na VPS
+                    String local=null;
+                    if(path.startsWith("/app/"))local="app/"+path.substring(5);
+                    else if(path.startsWith("/assets/")||path.startsWith("/src/"))local="app"+path;
+                    else if(path.equals("/index.html")||path.equals("/central.html")||path.equals("/manifest.webmanifest"))local="app"+path;
+                    if(local!=null&&!local.contains("..")){
+                        try{
+                            String ext=local.substring(local.lastIndexOf('.')+1).toLowerCase(Locale.ROOT);
+                            String type=ext.equals("js")?"application/javascript":ext.equals("css")?"text/css":ext.equals("html")?"text/html":ext.equals("svg")?"image/svg+xml":ext.equals("webp")?"image/webp":ext.equals("png")?"image/png":ext.equals("woff2")?"font/woff2":ext.equals("json")||ext.equals("webmanifest")?"application/json":"application/octet-stream";
+                            InputStream stream=getAssets().open(local);
+                            WebResourceResponse response=new WebResourceResponse(type,"UTF-8",stream);
+                            response.setResponseHeaders(Collections.singletonMap("Cache-Control","no-store"));
+                            return response;
+                        }catch(Exception error){return new WebResourceResponse("text/plain","UTF-8",404,"Not Found",Collections.emptyMap(),new java.io.ByteArrayInputStream(new byte[0]));}
                     }
                 }
-                final String navInstruction=instruction;
-                runOnUiThread(()->{
-                    if(next>=points.size()||p!=points.get(next))return;
-                    roadGeometry=geometry;nextInstruction=navInstruction;
-                    String geo="{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":"+geometry+"}}";
-                    updateSource("ronda-road",geo);updateDestination();
-                });
-            }catch(Exception e){runOnUiThread(()->{
-                updateSource("ronda-road",emptyLine());
-                nextInstruction="Trajeto pelas ruas indisponível. Verifique a conexão.";
-                updateDestination();
-            });}
+                return null;
+            }
+            @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
+                Uri uri=request.getUrl();
+                if("maxvel.hzsys.tech".equals(uri.getHost())&&"https".equals(uri.getScheme()))return false;
+                try{startActivity(new Intent(Intent.ACTION_VIEW,uri));}catch(Exception e){Toast.makeText(MainActivity.this,"Link indisponível",Toast.LENGTH_SHORT).show();}
+                return true;
+            }
         });
+        web.setWebChromeClient(new WebChromeClient(){
+            @Override public void onGeolocationPermissionsShowPrompt(String origin,GeolocationPermissions.Callback callback){
+                boolean allowed=ORIGIN.equals(origin)&&checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;
+                callback.invoke(origin,allowed,false);
+                if(!allowed)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION);
+            }
+            @Override public void onPermissionRequest(PermissionRequest request){
+                if(!ORIGIN.equals(request.getOrigin().toString())){request.deny();return;}
+                for(String resource:request.getResources())if(PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)){
+                    if(checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED){request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});return;}
+                    pendingCamera=request;requestPermissions(new String[]{Manifest.permission.CAMERA},CAMERA);return;
+                }
+                request.deny();
+            }
+            @Override public boolean onShowFileChooser(WebView view,ValueCallback<Uri[]> callback,FileChooserParams params){
+                if(fileRequest!=null)fileRequest.onReceiveValue(null);
+                fileRequest=callback;
+                try{startActivityForResult(params.createIntent(),FILES);return true;}
+                catch(Exception e){fileRequest=null;callback.onReceiveValue(null);return false;}
+            }
+        });
+        setContentView(web);
+        web.loadUrl(ORIGIN+"/app/index.html");
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},204);
+        if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION);
     }
-    private boolean hasLocation(){
-        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;
-    }
-    private void requestLocation(){
-        if(!hasLocation()){
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION_PERMISSION);
-            return;
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){
+        super.onRequestPermissionsResult(request,permissions,results);
+        if(request==CAMERA&&pendingCamera!=null){
+            PermissionRequest saved=pendingCamera;pendingCamera=null;
+            if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)saved.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
+            else saved.deny();
         }
-        try{
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,1500,1,this,Looper.getMainLooper());
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,3500,3,this,Looper.getMainLooper());
-        }catch(Exception e){notice("Ative a localização do aparelho.");}
+        if(request==LOCATION&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)trackLocation();
     }
-    @Override public void onRequestPermissionsResult(int code,String[] p,int[] result){
-        super.onRequestPermissionsResult(code,p,result);
-        if(code==LOCATION_PERMISSION&&hasLocation())requestLocation();
-        else if(code==LOCATION_PERMISSION)notice("A localização precisa é necessária durante a ronda.");
-        if(code==TORCH_PERMISSION&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)toggleTorch();
+    @Override protected void onActivityResult(int request,int result,Intent data){
+        super.onActivityResult(request,result,data);
+        if(request==FILES&&fileRequest!=null){fileRequest.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result,data));fileRequest=null;}
     }
-    @Override public void onLocationChanged(Location loc){
-        if(!loc.hasAccuracy()||loc.getAccuracy()>90)return;
-        if(fix!=null&&loc.getTime()+1500<fix.getTime())return;
-        fix=loc;
-        if(next<points.size()&&started){
-            Destination dest=points.get(next);float[] m=new float[1];
-            Location.distanceBetween(loc.getLatitude(),loc.getLongitude(),dest.lat,dest.lng,m);
-            if(loc.getAccuracy()<=35&&System.currentTimeMillis()-loc.getTime()<=12000&&m[0]<=35){
-                if(insideSince==0)insideSince=SystemClock.elapsedRealtime();
-            }else insideSince=0;
-            checkpoint.setText("Distância: "+Math.round(m[0])+" m · GPS ±"+Math.round(loc.getAccuracy())+
-                " m · Permanência "+(insideSince==0?0:Math.min(30,(SystemClock.elapsedRealtime()-insideSince)/1000))+"/30 s");
-            if(roadGeometry!=null&&m[0]>90&&SystemClock.elapsedRealtime()-lastNavRequest>90000)routeToNext();
-        }else if(checkpoint!=null)checkpoint.setText("GPS ±"+Math.round(loc.getAccuracy())+" m · Aguardando destino");
-        updateLocationView();
+    private void trackLocation(){
+        if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;
+        try{locations.requestLocationUpdates(LocationManager.GPS_PROVIDER,1500,1f,this);locations.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,3000,3f,this);}catch(Exception ignored){}
     }
-    private void updateLocationView(){
-        if(map==null||fix==null||map.getStyle()==null)return;
-        updateSource("ronda-position",geoPoint(fix.getLatitude(),fix.getLongitude()));
-        float head=heading();
-        SymbolLayer layer=map.getStyle().getLayerAs("ronda-person");
-        if(layer!=null)layer.setProperties(PropertyFactory.iconRotate(head));
-        if(following&&SystemClock.elapsedRealtime()-lastFollow>1300){
-            lastFollow=SystemClock.elapsedRealtime();
-            map.animateCamera(CameraUpdateFactory.newCameraPosition(new CameraPosition.Builder()
-                .target(new LatLng(fix.getLatitude(),fix.getLongitude()))
-                .zoom(started?17.7:16).tilt(started?50:15).bearing(started?head:0).build()),900);
-        }
+    private void js(String javascript){if(web!=null)web.post(()->web.evaluateJavascript(javascript,null));}
+    private void event(String name,JSONObject data){js("window.dispatchEvent(new CustomEvent("+JSONObject.quote(name)+",{detail:"+data.toString()+"}));");}
+    @Override public void onLocationChanged(Location fix){
+        lastFix=fix;JSONObject pos=new JSONObject();
+        try{pos.put("lat",fix.getLatitude()).put("lng",fix.getLongitude()).put("accuracy",fix.getAccuracy()).put("speed",fix.hasSpeed()?fix.getSpeed():0);pos.put("at",fix.getTime());if(fix.hasBearing())pos.put("bearing",fix.getBearing());}catch(Exception ignored){}
+        event("rondapro:native-location",pos);
     }
-    private float heading(){
-        if(fix!=null&&fix.hasBearing()&&fix.hasSpeed()&&fix.getSpeed()>2.4f)return fix.getBearing();
-        return compass;
-    }
-    @Override public void onSensorChanged(SensorEvent event){
-        if(event.sensor.getType()!=Sensor.TYPE_ROTATION_VECTOR)return;
-        float[] matrix=new float[9],orientation=new float[3];
-        SensorManager.getRotationMatrixFromVector(matrix,event.values);
-        SensorManager.getOrientation(matrix,orientation);
-        float magnetic=(float)Math.toDegrees(orientation[0]);
-        if(fix!=null){
-            GeomagneticField field=new GeomagneticField((float)fix.getLatitude(),(float)fix.getLongitude(),
-                (float)fix.getAltitude(),fix.getTime());
-            magnetic+=field.getDeclination();
-        }
-        compass=(magnetic+360f)%360f;
+    @Override public void onSensorChanged(SensorEvent sensor){
+        if(sensor.sensor.getType()!=Sensor.TYPE_ROTATION_VECTOR)return;
+        if(android.os.SystemClock.elapsedRealtime()-lastCompassEvent<350)return;
+        lastCompassEvent=android.os.SystemClock.elapsedRealtime();
+        float[] matrix=new float[9],angles=new float[3];
+        SensorManager.getRotationMatrixFromVector(matrix,sensor.values);
+        SensorManager.getOrientation(matrix,angles);
+        float magnetic=(float)Math.toDegrees(angles[0]);float declination=0;
+        if(lastFix!=null){GeomagneticField field=new GeomagneticField((float)lastFix.getLatitude(),(float)lastFix.getLongitude(),(float)lastFix.getAltitude(),System.currentTimeMillis());declination=field.getDeclination();}
+        float heading=((magnetic+declination)%360+360)%360;
+        if(lastFix!=null&&lastFix.hasBearing()&&lastFix.getSpeed()>2.2f)heading=lastFix.getBearing();
+        JSONObject data=new JSONObject();try{data.put("heading",Math.round(heading*10)/10.0);data.put("source",lastFix!=null&&lastFix.hasBearing()&&lastFix.getSpeed()>2.2f?"gps":"compass");}catch(Exception ignored){}
+        event("rondapro:native-heading",data);
     }
     @Override public void onAccuracyChanged(Sensor sensor,int accuracy){}
-    private void notice(String message){if(message!=null)Toast.makeText(this,message,Toast.LENGTH_LONG).show();}
-    @Override protected void onStart(){super.onStart();if(mapView!=null)mapView.onStart();}
-    @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();
-        if(rotationSensor!=null)sensors.registerListener(this,rotationSensor,SensorManager.SENSOR_DELAY_GAME);
-        if(mapView!=null&&hasLocation())requestLocation();}
-    @Override protected void onPause(){switchOffTorch();if(mapView!=null)mapView.onPause();sensors.unregisterListener(this);super.onPause();}
-    @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
-    @Override protected void onDestroy(){
-        handler.removeCallbacks(refresh);if(locationManager!=null)locationManager.removeUpdates(this);
-        if(mapView!=null)mapView.onDestroy();io.shutdownNow();super.onDestroy();
+    private void torch(boolean enabled,String id){
+        JSONObject response=new JSONObject();
+        try{
+            if(torchId==null){for(String candidate:cameras.getCameraIdList()){
+                CameraCharacteristics data=cameras.getCameraCharacteristics(candidate);
+                Boolean flash=data.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                Integer facing=data.get(CameraCharacteristics.LENS_FACING);
+                if(Boolean.TRUE.equals(flash)&&facing!=null&&facing==CameraCharacteristics.LENS_FACING_BACK){torchId=candidate;break;}
+            }}
+            if(torchId==null)throw new IllegalStateException("Flash traseiro indisponível");
+            cameras.setTorchMode(torchId,enabled);torchOn=enabled;
+            response.put("enabled",enabled);
+        }catch(Exception error){try{response.put("enabled",false);response.put("error","torch-unavailable");}catch(Exception ignored){}}
+        try{response.put("requestId",id);}catch(Exception ignored){}
+        event("rondas-native-torch-result",response);
     }
-    @Override public void onLowMemory(){super.onLowMemory();if(mapView!=null)mapView.onLowMemory();}
-    @Override protected void onSaveInstanceState(Bundle out){
-        super.onSaveInstanceState(out);if(mapView!=null)mapView.onSaveInstanceState(out);
+    private final class Bridge{
+        @JavascriptInterface public void rememberToken(String token){if(token!=null&&token.length()>10)NativeApi.saveLogin(MainActivity.this,token,"agente");}
+        @JavascriptInterface public void forgetToken(){NativeApi.logout(MainActivity.this);}
+        @JavascriptInterface public void startTracking(String roundId){
+            if(roundId==null||roundId.length()<8||NativeApi.token(MainActivity.this).isEmpty())return;
+            Intent intent=new Intent(MainActivity.this,PatrolLocationService.class).setAction(PatrolLocationService.START).putExtra("roundId",roundId);
+            try{startForegroundService(intent);}catch(Exception error){js("console.warn('GPS nativo ainda sem permissão')");}
+        }
+        @JavascriptInterface public void stopTracking(){stopService(new Intent(MainActivity.this,PatrolLocationService.class));}
+        @JavascriptInterface public void setTorchEnabled(boolean enabled,String requestId){runOnUiThread(()->torch(enabled,requestId));}
     }
+    @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();trackLocation();if(rotation!=null)sensors.registerListener(this,rotation,SensorManager.SENSOR_DELAY_UI);if(offline!=null)offline.flush();}
+    @Override protected void onPause(){if(torchOn)torch(false,"");sensors.unregisterListener(this);if(locations!=null)locations.removeUpdates(this);if(web!=null)web.onPause();super.onPause();}
+    @Override protected void onDestroy(){if(fileRequest!=null)fileRequest.onReceiveValue(null);if(web!=null){web.removeJavascriptInterface("AndroidTracking");web.removeJavascriptInterface("RondaOffline");web.destroy();web=null;}if(offline!=null)offline.shutdown();background.shutdown();super.onDestroy();}
+    @Override public void onBackPressed(){if(web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
 }
