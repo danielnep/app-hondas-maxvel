@@ -75,13 +75,14 @@ test('Não mantém flash ativo após troca de perfil',async()=>{
  ui.dashboard.dataset.torchRole='admin';torch.decorate();
  assert.equal(torch.isOn(),false);assert.equal(off,1);
 });
-test('Android: ponte de torch, permissão e desligamento em pausa existem',()=>{
+test('Android nativo: lanterna usa câmera traseira, permissão e desligamento em pausa',()=>{
  const java=readFileSync(new URL('../android/app/src/main/java/br/com/horizon/maxvel/MainActivity.java',import.meta.url),'utf8');
- assert.match(java,/setTorchEnabled\(boolean enabled,String requestId\)/);
- assert.match(java,/CameraManager\.class|\(CameraManager\)getSystemService\(CAMERA_SERVICE\)/);
- assert.match(java,/manager\.setTorchMode\(torchCameraId,enabled\)/);
+ assert.match(java,/toggleTorch\(\)/);
+ assert.match(java,/\(CameraManager\)getSystemService\(CAMERA_SERVICE\)/);
+ assert.match(java,/setTorchMode\(torchId,!torchOn\)/);
  assert.match(java,/onPause\(\)/);
- assert.match(java,/TORCH_PERMISSION_REQUEST/);
+ assert.match(java,/TORCH_PERMISSION/);
+ assert.match(java,/switchOffTorch\(\)/);
 });
 
 test('Lanterna do ponto utiliza o controlador compartilhado, sem segunda sessão de câmera',()=>{
