@@ -4,7 +4,7 @@ Cinco fontes canônicas, editadas diretamente. `index.html`: `ronda-pro.css` →
 
 Validação: `npm ci`, `npm run check:styles`, `npm run check`, `npm test`. [Inventário, defeitos corrigidos e limites da auditoria](docs/HIGIENIZACAO-CSS-20261017.md).
 
-# Rondas Pro · Grupo Maxvel
+# Ronda Pro · Grupo Maxvel
 
 ## Eventos, chat interno e histórico — 15/10/2026
 
@@ -14,7 +14,7 @@ A central autenticada recebe chat privado com recibos de entrega/leitura, exclus
 
 **Acessos atuais:** somente **Administração** (todas as funções gerenciais e relatórios) e **Operação de Ronda** (execução e registros, sem telas ou atalhos de relatório).
 
-Uma ramificação de trabalho acrescenta ao Rondas Pro: botão de pânico sempre acessível ao vigia, alerta local com vigia e horário, acesso ao discador 190 mediante confirmação, escolha administrativa **GPS / QR / GPS + QR**, registro de ocorrências com foto, áudio e vídeo, armazenamento offline em **IndexedDB** e rotas/esquemas disponíveis localmente, **relatório inteligente** e exportação configurável **HTML, CSV, JSON**, exclusivamente na página **Relatórios** da Administração.
+Uma ramificação de trabalho acrescenta ao Ronda Pro: botão de pânico sempre acessível ao vigia, alerta local com vigia e horário, acesso ao discador 190 mediante confirmação, escolha administrativa **GPS / QR / GPS + QR**, registro de ocorrências com foto, áudio e vídeo, armazenamento offline em **IndexedDB** e rotas/esquemas disponíveis localmente, **relatório inteligente** e exportação configurável **HTML, CSV, JSON**, exclusivamente na página **Relatórios** da Administração.
 
 A identidade Maxvel e as regras antigas de GPS (raio 25 m, permanência 30 s, sequência) são preservadas quando o modo configurado é GPS. O Android já tinha SQLite/serviço de localização nativo; a Web usa cache das páginas após primeira conexão. **A demonstração não envia notificações ou dados entre aparelhos, não possui servidor multiusuário e não faz sincronização remota real.** Os registros offline ficam em fila local aguardando integração. Salvar o mapa significa salvar geometria/esquema SVG, não cartografia de ruas offline. O GPS em segundo plano e os recursos multimídia variam conforme permissões e dispositivo.
 
@@ -23,9 +23,9 @@ A identidade Maxvel e as regras antigas de GPS (raio 25 m, permanência 30 s, se
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com logo original do Grupo Maxvel, fundo preto, superfícies cinza muito escuro e detalhes celeste/violeta, supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
-## Implantação do Rondas Pro no Railway
+## Implantação do Ronda Pro no Railway
 
-Aplicação preparada para usar a branch `main` deste repositório, incluindo as correções integradas da PR #30. Nome do projeto: **App Rondas Pro**. Nome do serviço: `rondas-pro`. A criação do serviço e a publicação precisam ser confirmadas no Railway; esta preparação não significa que já exista uma implantação ativa.
+Aplicação preparada para usar a branch `main` deste repositório, incluindo as correções integradas da PR #30. Nome do projeto: **App Ronda Pro**. Nome do serviço: `rondas-pro`. A criação do serviço e a publicação precisam ser confirmadas no Railway; esta preparação não significa que já exista uma implantação ativa.
 
 Configuração do serviço: runtime **Node.js 24**, comando de início `npm start`, healthcheck `/health` e domínio público HTTPS gerado pelo Railway. O ambiente usa a `PORT` definida pela plataforma e não requer chave de API para a cartografia OpenStreetMap.
 
@@ -39,7 +39,7 @@ A identidade pública é exclusivamente **Grupo Maxvel**. A versão 07 suaviza o
 
 Referência visual: [Horizon — Como trabalhamos](https://horizonsolucoes.com/#metodo), inspecionada em 13/10/2026. Exo 2 no corpo e Rajdhani nos títulos e na marca; base preto/branco, azul mais nítido, violeta profundo e vermelho Maxvel nos avisos. As superfícies substituem as bordas repetidas.
 
-O topo distribui **Rondas Pro | Grupo + logo original Maxvel** em duas regiões alinhadas ao centro. Entradas usam fade e deslocamento, painéis têm elasticidade, botões respondem ao toque, e os indicadores pulsam suavemente. No celular, arrastar o título de uma janela para baixo acompanha o dedo; o painel volta elasticamente ou fecha após um arrasto maior. Todos os botões de fechar continuam disponíveis. A preferência de movimento reduzido desativa as animações. O módulo `src/ui-motion.js` não altera GPS, tempo de permanência, dados ou regras da ronda.
+O topo distribui **Ronda Pro | Grupo + logo original Maxvel** em duas regiões alinhadas ao centro. Entradas usam fade e deslocamento, painéis têm elasticidade, botões respondem ao toque, e os indicadores pulsam suavemente. No celular, arrastar o título de uma janela para baixo acompanha o dedo; o painel volta elasticamente ou fecha após um arrasto maior. Todos os botões de fechar continuam disponíveis. A preferência de movimento reduzido desativa as animações. O módulo `src/ui-motion.js` não altera GPS, tempo de permanência, dados ou regras da ronda.
 
 ## Revisão 09 · preto, celeste e cantos suaves
 
@@ -47,7 +47,7 @@ A revisão visual de 13/10/2026 substitui os controles totalmente retos e os det
 
 ## Revisão 08 · marca real e consistência visual
 
-A interface utiliza a imagem original fornecida da Maxvel ao lado do nome **Rondas Pro**. A navegação móvel foi transferida para o menu no cabeçalho, sem barra inferior. Painéis, botões, campos e janelas têm cantos retos; apenas as geocercas e os marcadores geográficos mantêm círculos. Um único CSS compilado (`assets/ronda-pro.css`) preserva a estrutura dos componentes e aplica uma paleta grafite/vermelho. O gerador histórico foi retirado: as cinco fontes CSS atuais são editadas diretamente. Consulte [a auditoria CSS atual](docs/HIGIENIZACAO-CSS-20261017.md).
+A interface utiliza a imagem original fornecida da Maxvel ao lado do nome **Ronda Pro**. A navegação móvel foi transferida para o menu no cabeçalho, sem barra inferior. Painéis, botões, campos e janelas têm cantos retos; apenas as geocercas e os marcadores geográficos mantêm círculos. Um único CSS compilado (`assets/ronda-pro.css`) preserva a estrutura dos componentes e aplica uma paleta grafite/vermelho. O gerador histórico foi retirado: as cinco fontes CSS atuais são editadas diretamente. Consulte [a auditoria CSS atual](docs/HIGIENIZACAO-CSS-20261017.md).
 
 O mapa começa com OpenStreetMap e aplica a aparência escura aos tiles. A fonte anterior podia devolver uma imagem HTTP 200 contendo “API KEY REQUIRED”, sem disparar `tileerror`. Falhas reais de carregamento mantêm a rota esquemática identificada.
 
