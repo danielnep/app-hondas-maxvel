@@ -22,6 +22,10 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import androidx.webkit.WebViewAssetLoader;
 import org.json.JSONObject;
 
@@ -49,6 +53,37 @@ public class MainActivity extends Activity {
 
     private boolean hasLocation(){return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED ||checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED;}
 
+    // O piloto inclui as telas atualizadas e usa a API autenticada no mesmo host.
+    // Isso evita servir a versão demonstrativa enquanto o deploy web aguarda liberação.
+    private WebResourceResponse operationalAsset(Uri uri) {
+        if (uri==null||!"https".equalsIgnoreCase(uri.getScheme())||!REAL_APP_HOST.equalsIgnoreCase(uri.getHost())) return null;
+        final String path=uri.getPath();
+        if(path==null||(!"/central.html".equals(path)&&!path.startsWith("/src/")&&!path.startsWith("/assets/")))return null;
+        if(path.contains("..")||path.contains("\\\\")||path.contains("//"))return blockedAsset();
+        String mime="application/octet-stream";
+        if(path.endsWith(".html"))mime="text/html";
+        else if(path.endsWith(".js"))mime="text/javascript";
+        else if(path.endsWith(".css"))mime="text/css";
+        else if(path.endsWith(".svg"))mime="image/svg+xml";
+        else if(path.endsWith(".webp"))mime="image/webp";
+        else if(path.endsWith(".png"))mime="image/png";
+        else if(path.endsWith(".jpg")||path.endsWith(".jpeg"))mime="image/jpeg";
+        else if(path.endsWith(".woff2"))mime="font/woff2";
+        else if(path.endsWith(".woff"))mime="font/woff";
+        else if(path.endsWith(".json"))mime="application/json";
+        try{
+            InputStream body=getAssets().open("site"+path);
+            return new WebResourceResponse(mime, mime.startsWith("text/")||mime.equals("application/json")?"UTF-8":null,body);
+        }catch(IOException e){return blockedAsset();}
+    }
+
+    private WebResourceResponse blockedAsset(){
+        WebResourceResponse error=new WebResourceResponse("text/plain","UTF-8",
+            new ByteArrayInputStream("Recurso operacional nao incluido no APK.".getBytes(StandardCharsets.UTF_8)));
+        error.setStatusCodeAndReasonPhrase(404,"Not Found");
+        return error;
+    }
+
     private boolean trustedAppOrigin(Uri uri){
         return uri!=null&&"https".equalsIgnoreCase(uri.getScheme())&&
             (TRUSTED_HOST.equalsIgnoreCase(uri.getHost())||REAL_APP_HOST.equalsIgnoreCase(uri.getHost()));
@@ -65,7 +100,10 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);
         webView.addJavascriptInterface(new NativeBridge(),"AndroidTracking");
         webView.setWebViewClient(new WebViewClient(){
-            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return assets.shouldInterceptRequest(request.getUrl());}
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+                WebResourceResponse embedded=operationalAsset(request.getUrl());
+                return embedded!=null?embedded:assets.shouldInterceptRequest(request.getUrl());
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
                 Uri u=request.getUrl();if(trustedAppOrigin(u))return false;
                 if(request.isForMainFrame()){
