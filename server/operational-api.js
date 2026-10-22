@@ -74,12 +74,33 @@ function initialize(){
   let seeds=[];try{seeds=JSON.parse(process.env.RONDA_PRO_INITIAL_ACCOUNTS)}catch{throw new Error('RONDA_PRO_INITIAL_ACCOUNTS invalido')}
   if(!Array.isArray(seeds))throw new Error('Contas iniciais invalidas');
   for(const a of seeds){
-   const username=clean(a.username).toLowerCase(),email=clean(a.email).toLowerCase(),password=a.password,role=a.role;
-   if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||!['admin','coi','ronda','vistoriador'].includes(role)||typeof password!=='string'||password.length<12)throw new Error('Conta inicial invalida');
+   const username=clean(a.username).toLowerCase(),email=clean(a.email).toLowerCase(),password=process.env.RONDA_PRO_PILOT_PASSWORD||a.password,role=a.role;
+   if(!/^[a-z0-9._-]{3,40}$/.test(username)||!email.includes('@')||!['admin','coi','ronda','vistoriador'].includes(role)||typeof password!=='string'||password.length<(process.env.RONDA_PRO_PILOT_PASSWORD?10:12))throw new Error('Conta inicial invalida');
    if(db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE OR email=?').get(username,email))continue;
    const salt=randomBytes(16).toString('hex');
    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,phone,site,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
     .run(id(),email,username,clean(a.name)||role,role,salt,authHash(password,salt),'',clean(a.phone),'Grupo Maxvel',now());
+  }
+ }
+ // Senha compartilhada autorizada exclusivamente para o piloto: migração única e atômica por revisão.
+ // Nunca colocar a senha no repositório ou reprocessar no reinício sem mudar a revisão.
+ const pilotPassword=process.env.RONDA_PRO_PILOT_PASSWORD,pilotRevision=clean(process.env.RONDA_PRO_PILOT_PASSWORD_REVISION);
+ if(pilotPassword){
+  if(typeof pilotPassword!=='string'||pilotPassword.length<10||!pilotRevision)throw new Error('Configuracao da senha do piloto invalida');
+  db.exec('CREATE TABLE IF NOT EXISTS operational_config(key TEXT PRIMARY KEY,value TEXT NOT NULL)');
+  const previous=db.prepare("SELECT value FROM operational_config WHERE key='pilot_password_revision'").get();
+  if(previous?.value!==pilotRevision){
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    const update=db.prepare('UPDATE users SET salt=?,password_hash=? WHERE id=?');
+    for(const u of db.prepare('SELECT id FROM users').all()){
+     const salt=randomBytes(16).toString('hex');
+     update.run(salt,authHash(pilotPassword,salt),u.id);
+    }
+    db.prepare('DELETE FROM tokens').run();
+    db.prepare("INSERT INTO operational_config(key,value) VALUES('pilot_password_revision',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(pilotRevision);
+    db.exec('COMMIT');
+   }catch(error){db.exec('ROLLBACK');throw error}
   }
  }
  const insert=db.prepare('INSERT OR IGNORE INTO templates(id,title,trigger,priority,enabled,cooldown_min) VALUES(?,?,?,?,?,?)');
@@ -194,12 +215,12 @@ export function createOperationalApi(){
    if(await operations.handle(req,res,a,p,m))return true;
    if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100);
-    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof d.password!=='string'||d.password.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e senha de 12 caracteres ou mais'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),newPassword=process.env.RONDA_PRO_PILOT_PASSWORD||d.password;
+    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof newPassword!=='string'||newPassword.length<(process.env.RONDA_PRO_PILOT_PASSWORD?10:12)||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e uma senha válida'});return true;}
     if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
     if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
-    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(d.password,salt),'',now(),site||'Grupo Maxvel',phone);
+    db.prepare('INSERT INTO users(id,email,username,name,role,salt,password_hash,description,created_at,site,phone) VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(uid,email,username,name,d.role,salt,authHash(newPassword,salt),'',now(),site||'Grupo Maxvel',phone);
 
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
