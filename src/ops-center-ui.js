@@ -2,7 +2,7 @@ import {typeInfo,EVENT_TYPES} from './treatment-policy.js';
 /* UI da central COI: notificações, despachos e permissões com dados do servidor. */
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const stamp=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'Não informado';
-const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e vigias',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
+const labels={mapa:'Mapa e painel de monitoramento',rondas:'Consulta a rondas e agentes de ronda',despachos:'Despacho sob demanda',ocorrencias:'Tratamento de ocorrências',alertas:'Alertas e e-mails',relatorios:'Relatórios e exportações'};
 const activeKinds=new Set([...Object.keys(EVENT_TYPES),'field_alert','notice','panic','incident','alert','gps_issue','route_deviation','patrol_incomplete','patrol_interrupted','forwarded','dispatch','inspection']);
 export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  let notifications=[],dispatches=[],modules=[],availability=[],inspectors=[],destinations=[],current=null,seen=new Set(),lastReminder=0,initialized=false,streamController=null,attention=0,unreadTotal=0,notificationTotal=0,nextCursor=null,treatmentSummary={total:0,categories:[]},refreshing=null,generation=0;
@@ -140,13 +140,13 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
 
  function dispatchesView({users,rounds,events}){
   const guards=availability.map(w=>({...w,dispatchStatus:w.status,lastActivity:w.last_seen}));
-  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">COI · DESPACHO SOB DEMANDA</div><h1>Disponibilidade e direcionamento</h1><p class="muted">Selecione um vigia disponível para abrir o despacho. Status exige atividade recente sincronizada, não basta cadastro ativo.</p></div>'+badge()+'</header>'+
-   '<section class="surface"><h2>Vigias</h2><p class="muted">Toque no profissional para informar destino e justificativa. A administração recebe o registro automaticamente.</p>'+
+  return '<section class="stack"><header class="toolbar"><div><div class="eyebrow">COI · DESPACHO SOB DEMANDA</div><h1>Disponibilidade e direcionamento</h1><p class="muted">Selecione um agente de ronda disponível para abrir o despacho. Status exige atividade recente sincronizada, não basta cadastro ativo.</p></div>'+badge()+'</header>'+
+   '<section class="surface"><h2>Agentes de ronda</h2><p class="muted">Toque no profissional para informar destino e justificativa. A administração recebe o registro automaticamente.</p>'+
    '<div class="ops-worker-list">'+guards.map(w=>
     '<button type="button" class="ops-worker-row ops-worker-select" data-ops-select-worker="'+esc(w.id)+'" '+(w.dispatchStatus!=='Disponível'?'disabled':'')+' aria-label="Despachar '+esc(w.name)+' · '+esc(w.dispatchStatus)+'">'+
     '<b>'+esc(w.name)+'</b><span class="ops-worker-status '+(w.dispatchStatus==='Disponível'?'ready':w.dispatchStatus==='Em ronda'?'busy':'off')+'">'+w.dispatchStatus+'</span>'+
     '<small>'+esc(w.site||'Posto não definido')+' · Última atividade: '+stamp(w.lastActivity)+'</small></button>').join('')+'</div></section>'+
-   '<dialog id="ops-dispatch-modal" class="ops-dispatch-modal" aria-labelledby="ops-dispatch-heading"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESPACHO OPERACIONAL</div><h2 id="ops-dispatch-heading">Direcionar vigia</h2><p id="ops-dispatch-worker-label" class="muted">Selecione um vigia</p></div><button type="button" data-ops-close-dispatch aria-label="Fechar">✕</button></div>'+
+   '<dialog id="ops-dispatch-modal" class="ops-dispatch-modal" aria-labelledby="ops-dispatch-heading"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESPACHO OPERACIONAL</div><h2 id="ops-dispatch-heading">Direcionar agente de ronda</h2><p id="ops-dispatch-worker-label" class="muted">Selecione um agente de ronda</p></div><button type="button" data-ops-close-dispatch aria-label="Fechar">✕</button></div>'+
    '<form id="ops-dispatch-form" class="ops-dispatch-form"><input type="hidden" name="workerId" required>'+
    '<label>Endereço ou ponto específico<input name="address" required minlength="5" maxlength="350" placeholder="Rua, número, local ou referência" autocomplete="street-address"></label>'+
    '<label class="ops-reason">Motivo do despacho <span class="ops-required">Obrigatório</span><textarea name="reason" required minlength="10" maxlength="1000" placeholder="Explique o que ocorreu e o que deve ser verificado"></textarea></label>'+
@@ -179,7 +179,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
     (!d.acknowledged_at?'<button type="button" data-ops-ack="'+esc(d.id)+'">Confirmar recebimento</button>':'')+
     (!d.started_at?'<button type="button" class="ops-start-button" data-ops-start="'+esc(d.id)+'">Iniciar atendimento</button>':
      (d.kind==='vistoria'?'<button type="button" class="ops-finish-button" data-ops-page="inspections">Abrir checklist da vistoria</button>':'<button type="button" class="ops-finish-button" data-ops-finish="'+esc(d.id)+'">Concluir atendimento</button>'))+'</div>':'';
-   return '<article class="ops-dispatch-line"><div><b>'+esc(d.worker||'Vigia')+'</b><span class="pill '+(d.completed_at?'ok':d.started_at?'warning':'')+'">'+label+'</span></div>'+
+   return '<article class="ops-dispatch-line"><div><b>'+esc(d.worker||'Agente de ronda')+'</b><span class="pill '+(d.completed_at?'ok':d.started_at?'warning':'')+'">'+label+'</span></div>'+
     '<strong>'+esc(d.address)+'</strong><p>'+esc(d.reason)+'</p>'+dispatchStops(d)+'<a class="ops-destination-link" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(d.address)+'">Abrir endereço no mapa ↗</a><small>Enviado '+stamp(d.created_at)+' · Operador: '+esc(d.author||'Não informado')+'</small>'+
     (d.started_at?'<small>Iniciado '+stamp(d.started_at)+'</small>':'')+
     (d.completed_at?'<small>Concluído '+stamp(d.completed_at)+' · '+esc(d.completion_note||'')+'</small>':'')+actions+'</article>';
@@ -315,7 +315,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    const dialog=document.querySelector('#ops-dispatch-modal');
    if(!dialog)return true;
    dialog.querySelector('[name="workerId"]').value=target.dataset.opsSelectWorker;
-   dialog.querySelector('#ops-dispatch-worker-label').textContent=target.querySelector('b')?.textContent||'Vigia selecionado';
+   dialog.querySelector('#ops-dispatch-worker-label').textContent=target.querySelector('b')?.textContent||'Agente de ronda selecionado';
    dialog.showModal();
    dialog.querySelector('[name="address"]').focus();
    return true;
@@ -388,7 +388,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   const data=Object.fromEntries(new FormData(form));
   await api('/dispatches',{method:'POST',data});
   document.querySelector('#ops-dispatch-modal')?.close();
-  flash('Despacho registrado. Vigia e administração notificados.');
+  flash('Despacho registrado. Agente de ronda e administração notificados.');
   await refresh(current,false);openNotice({page:'dispatches'});return true;
  }
  async function change(input){
