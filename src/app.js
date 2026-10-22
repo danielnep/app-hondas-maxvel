@@ -2050,4 +2050,15 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
 (async()=>{try{seedDemoThree();if(isPagesTestMode()){await activatePagesRole('admin');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
+// Atualização de atribuições sem logout. Nunca reconstruir o painel durante uma ronda ativa.
+setInterval(async()=>{
+ if(user?.role!=='ronda'||screen!=='dashboard'||document.hidden||session?.status==='active')return;
+ const previous=liveRoutes.map(r=>r.id).join('|'),unread=liveRouteNotices.filter(n=>!n.read_at).length;
+ try{
+  await refreshLiveOperational();
+  if(previous!==liveRoutes.map(r=>r.id).join('|')||unread!==liveRouteNotices.filter(n=>!n.read_at).length){
+   render();notify('Programação de ronda atualizada.');
+  }
+ }catch{}
+},15000);
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
