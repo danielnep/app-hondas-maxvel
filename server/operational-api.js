@@ -31,7 +31,7 @@ const presets=[
 ];
 function initialize(){
  const file=process.env.RONDA_PRO_DB_PATH,email=clean(process.env.RONDA_PRO_MASTER_EMAIL).toLowerCase(),pass=process.env.RONDA_PRO_MASTER_PASSWORD;
- if(!file||!email||!pass||pass.length<12)return null;
+ if(!file||!email||!pass||pass.length<(process.env.RONDA_PRO_PILOT_PASSWORD?10:12))return null;
  const path=resolve(file);mkdirSync(dirname(path),{recursive:true});
  const db=new DatabaseSync(path);db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
  const ddl=[
