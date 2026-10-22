@@ -14,7 +14,7 @@ export function createLocationEntryGate({onGranted=()=>{},onUnavailable=()=>{}}=
   root=document.createElement('section');root.className='location-entry-gate';root.setAttribute('role','dialog');
   root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Localização necessária para executar a ronda');
   root.innerHTML='<div class="location-entry-shade"></div><div class="location-entry-panel">'+
-    '<div class="rp2-gate-brand"><img src="./assets/maxvel-logo.webp" alt="Maxvel" width="116" height="36"><span>RONDAS PRO · LOCALIZAÇÃO</span></div>'+
+    '<div class="rp2-gate-brand"><img src="./assets/maxvel-logo.webp" alt="Maxvel" width="116" height="36"><span>RONDA PRO · LOCALIZAÇÃO</span></div>'+
     '<span class="location-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>'+
     '<h2>Ative sua localização</h2>'+
     '<p>Para confirmar a chegada e o tempo em cada ponto, precisamos da localização do aparelho. Comunicação de emergência continua disponível sem GPS.</p>'+
