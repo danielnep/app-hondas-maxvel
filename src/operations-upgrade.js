@@ -1,6 +1,6 @@
 import {evidenceButtons,createMediaCapture} from './media-capture.js';
 import {isPagesTestMode} from './pages-test-api.js';
-/** Rondas Pro: ampliação aditiva da demonstração operacional.
+/** Ronda Pro: ampliação aditiva da demonstração operacional.
  * Persistência em IndexedDB no dispositivo; em Android o trajeto também usa SQLite nativo.
  * Sem API de produção, "pendente de envio" nunca significa entregue remotamente.
  */
@@ -72,7 +72,7 @@ export function patrolInsights(sessions=[],programs=[]){
 export function buildReportData(context,sections=['resumo','rondas','pontos','ocorrencias','alertas','coordenadas','programacao'],events=[]){
  const sessions=[...(context.sessions??[])].sort((a,b)=>b.startedAt-a.startedAt);
  const insight=patrolInsights(sessions,context.programs??[]);
- const result={titulo:'Rondas Pro · Relatório operacional',geradoEm:new Date().toISOString(),ambiente:'Demonstração local, sem sincronização remota',secoes:sections};
+ const result={titulo:'Ronda Pro · Relatório operacional',geradoEm:new Date().toISOString(),ambiente:'Demonstração local, sem sincronização remota',secoes:sections};
  if(sections.includes('resumo'))result.resumo=insight;
  if(sections.includes('rondas'))result.rondas=sessions.map(s=>({id:s.id,responsavel:s.name,rota:s.route?.name,inicio:s.startedAt,fim:s.finishedAt,status:s.status,pontosConcluidos:s.index,totalPontos:s.route?.points?.length??0,modo:s.mode}));
  if(sections.includes('pontos'))result.pontos=sessions.flatMap(s=>(s.checkpoints??[]).map((p,i)=>({ronda:s.id,nome:s.route?.points?.[i]?.name,indice:i+1,concluidoEm:p.completedAt,permanenciaMs:p.dwellMs,qrValidadoEm:p.qrVerifiedAt??null})));
@@ -92,7 +92,7 @@ export function reportCSV(report){
 }
 export function reportHTML(report){
  const sections=Object.entries(report).map(([key,value])=>'<section><h2>'+safe(key)+'</h2><pre>'+safe(JSON.stringify(value,null,2))+'</pre></section>').join('');
- return '<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório · Rondas Pro</title><style>body{font:14px system-ui;margin:32px;color:#192230}h1{color:#136995}section{break-inside:avoid;border-top:1px solid #ccc;margin-top:18px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 monospace}@media print{body{margin:12mm}}</style></head><body><h1>Rondas Pro · Grupo Maxvel</h1><p>Relatório demonstrativo. Gerado em '+safe(nowText(Date.now()))+'. Dados locais de teste, sem validação operacional de campo.</p>'+sections+'</body></html>';
+ return '<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório · Ronda Pro</title><style>body{font:14px system-ui;margin:32px;color:#192230}h1{color:#136995}section{break-inside:avoid;border-top:1px solid #ccc;margin-top:18px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 monospace}@media print{body{margin:12mm}}</style></head><body><h1>Ronda Pro · Grupo Maxvel</h1><p>Relatório demonstrativo. Gerado em '+safe(nowText(Date.now()))+'. Dados locais de teste, sem validação operacional de campo.</p>'+sections+'</body></html>';
 }
 function download(content,name,type){
  const url=URL.createObjectURL(new Blob([content],{type}));
@@ -312,7 +312,7 @@ export function createOperationsUpgrade(api){
  function customerView(){
   const all=current().sessions.slice().sort((a,b)=>b.startedAt-a.startedAt);
   const active=all.find(s=>s.status==='active'),recent=all.slice(0,12);
-  return '<div class="ops-client"><div class="page-title"><div><div class="eyebrow">RONDAS PRO · CLIENTE</div><h1>Acompanhe o serviço</h1><p>Veja execução, últimos registros e evidências da sua unidade neste cenário de avaliação.</p></div></div>'+
+  return '<div class="ops-client"><div class="page-title"><div><div class="eyebrow">RONDA PRO · CLIENTE</div><h1>Acompanhe o serviço</h1><p>Veja execução, últimos registros e evidências da sua unidade neste cenário de avaliação.</p></div></div>'+
    statusBanner()+
    section('Serviço acompanhado',active?'<p><strong>Ronda em execução:</strong> '+safe(active.route.name)+' · '+safe(active.name)+'</p><p>Etapa '+active.index+' de '+active.route.points.length+' · última posição '+(active.lastFix?safe(nowText(active.lastFix.at)):'indisponível')+'</p>':'<p>Nenhuma execução em tempo real neste navegador. Consulte o último registro abaixo.</p>')+
    section('Rondas e histórico',recent.length?'<div class="ops-client-list">'+recent.map(s=>'<div><strong>'+safe(s.route.name)+'</strong><span>'+safe(s.name)+' · '+safe(nowText(s.startedAt))+'</span><small>'+safe(s.status==='completed'?'Concluída':'Em andamento')+' · '+s.index+'/'+s.route.points.length+' pontos · '+s.incidents.length+' ocorrência(s)</small></div>').join('')+'</div>':'<p>Sem registros realizados.</p>')+
