@@ -64,7 +64,8 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
   if(method==='POST'){
    if(a.role!=='admin')throw fail('Somente administração cria rotas.',403);
    if(!data?.userId||!Array.isArray(data?.points)||!data.points.length)throw fail('Informe o agente e pelo menos um destino.',422);
-   const userId=data.userId==='auto'?'pages-vigia':data.userId;
+   const candidate=allUsers().find(x=>x.role==='ronda'&&x.username.startsWith('vigia-demo-'))||allUsers().find(x=>x.role==='ronda');
+   const userId=data.userId==='auto'?'pages-'+candidate?.username:data.userId;
    if(!allUsers().some(x=>x.role==='ronda'&&'pages-'+x.username===userId))throw fail('Agente de ronda não encontrado.',422);
    const entry={...data,userId,id:newId(),createdAt:Date.now(),updatedAt:Date.now(),site:'Grupo Maxvel'};
    store('routes',[...rows,entry]);
