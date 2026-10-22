@@ -4,7 +4,7 @@
 /* Canonical stylesheet. Edit here; no legacy generator. */
 
 /* SECTION: maxvel-premium-system-20261014 */
-/* Rondas Pro | Maxvel Premium Dark • arquitetura visual transversal • 14/10/2026
+/* Ronda Pro | Maxvel Premium Dark • arquitetura visual transversal • 14/10/2026
    Escopo: aplicativo de demonstração, COI autenticado, vistoria, cliente e administração.
    Preserva motor de rondas, cores de comunicação e o cockpit anteriormente aprovado.
    Regra: uma área principal de trabalho; overlays para tarefas momentâneas. */
@@ -664,7 +664,7 @@ body:has(#central-root) main{max-width:1600px}
   .checkpoint-curtain .checkpoint-view-action{transition:none}
 }
 
-/* ── RONDAS PRO 2.0 · design de tarefas ───────────────────────────────
+/* ── RONDA PRO 2.0 · design de tarefas ───────────────────────────────
  * Camada única de acabamento no stylesheet transversal existente.
  * Reaproveita tokens Maxvel e não substitui cores oficiais/semânticas.
  * Perfil / contexto / ação / confirmação; mobile é composição própria.
@@ -931,7 +931,7 @@ body:has(#central-root) main{max-width:1600px}
   }
 }
 
-/* Rondas Pro 2.0 · entrada GPS: ícone vetorial e assinatura Maxvel */
+/* Ronda Pro 2.0 · entrada GPS: ícone vetorial e assinatura Maxvel */
 .location-entry-gate .location-entry-panel{
   background:var(--mxp-canvas)!important;
   border:1px solid var(--mxp-rule-strong)!important;
@@ -980,7 +980,7 @@ body:has(#central-root) main{max-width:1600px}
 }
 
 /* SECTION: coi-operations-v3 */
-/* Rondas Pro 3 · COI centrado em pessoas, comunicação e tratativas.
+/* Ronda Pro 3 · COI centrado em pessoas, comunicação e tratativas.
  * Escopo central autenticada; fundo zinc e vermelho Maxvel preservados.
  */
 #central-root .coi3-app,#central-root .coi3-treatments{--coi3-bg:#09090b;--coi3-panel:#131316;--coi3-edge:#37373f;--coi3-text:#f5f5f6;--coi3-muted:#a1a1aa;--coi3-red:#f5223d;--coi3-cyan:#38bdf8;color:var(--coi3-text);min-width:0}
