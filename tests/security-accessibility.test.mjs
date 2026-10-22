@@ -33,13 +33,14 @@ test('aplicativo Android declara rastreamento transparente com encerramento vis�
  assert.match(service,/onDestroy/);
 });
 
-test('ponte nativa só inicia serviço ao acionar a ronda real',()=>{
+test('Android 2: inicia serviço apenas após despacho autenticado sem WebView',()=>{
  assert.match(web,/mode==='real'&&!presentation/);
  assert.match(web,/if\(presentation&&act==='mode-real'\)/);
  assert.match(web,/AndroidTracking\?\.startTracking\(\)/);
  assert.match(web,/AndroidTracking\?\.stopTracking\(\)/);
  assert.match(web,/O navegador não acompanha sua posição depois de fechado/);
- assert.match(activity,/appassets\.androidplatform\.net/);
- assert.match(activity,/setAllowFileAccess\(false\)/);
- assert.match(activity,/setAllowContentAccess\(false\)/);
+ assert.match(activity,/new MapView\(this\)/);
+ assert.match(activity,/startForegroundService\(i\)/);
+ assert.match(activity,/\/start\",\"POST\"/);
+ assert.doesNotMatch(activity,/WebView|appassets\.androidplatform\.net/);
 });
