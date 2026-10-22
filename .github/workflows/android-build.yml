@@ -1,4 +1,4 @@
-name: Android APK de teste
+name: Ronda Pro Maxvel | APK operacional de teste
 on:
   workflow_dispatch:
   pull_request:
@@ -8,6 +8,8 @@ on:
       - 'src/**'
       - 'assets/**'
       - 'index.html'
+      - 'central.html'
+      - 'central.html'
       - '.github/workflows/android-build.yml'
   push:
     branches: [main, maxvel-06-ux-mobile]
@@ -50,6 +52,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: hondas-maxvel-debug-apk
+          name: ronda-pro-maxvel-piloto-1.1.0
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
