@@ -67,7 +67,8 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
    const candidate=allUsers().find(x=>x.role==='ronda'&&x.username.startsWith('vigia-demo-'))||allUsers().find(x=>x.role==='ronda');
    const userId=data.userId==='auto'?'pages-'+candidate?.username:data.userId;
    if(!allUsers().some(x=>x.role==='ronda'&&'pages-'+x.username===userId))throw fail('Agente de ronda não encontrado.',422);
-   const entry={...data,userId,id:newId(),createdAt:Date.now(),updatedAt:Date.now(),site:'Grupo Maxvel'};
+   const worker=allUsers().find(x=>'pages-'+x.username===userId);
+   const entry={...data,userId,workerName:worker?.name||'Agente de ronda',id:newId(),createdAt:Date.now(),updatedAt:Date.now(),site:'Grupo Maxvel'};
    store('routes',[...rows,entry]);
    const notice={id:newId(),user_id:userId,kind:'notice',title:'Nova ronda programada',body:entry.name+' · '+(entry.schedule?.hour||'08:00'),created_at:Date.now(),read_at:null};
    store('notifications',[notice,...read('notifications',[])]);
