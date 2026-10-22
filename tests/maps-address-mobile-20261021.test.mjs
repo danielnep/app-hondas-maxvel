@@ -47,8 +47,8 @@ test('COI and dispatch geocode address on map, not text-only',async()=>{
  assert.match(ops,/attachInspectorGeocoder\(dialog\)/);
  assert.match(ops,/photon\.komoot\.io/);
  assert.match(dispatch,/rp-dispatch-preview-map/);
- assert.match(dispatch,/latitude:first\.lat/);
- assert.match(dispatch,/routePoints:destinations\.map/);
+ assert.match(dispatch,/userId:data\.workerId/);
+ assert.match(dispatch,/points:destinations\.map/);
  assert.match(dispatch,/rp-dispatch-add-destination/);
  assert.match(dispatch,/rp-dispatch-stops/);
  assert.match(dispatch,/tile\.openstreetmap\.org/);

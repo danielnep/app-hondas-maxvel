@@ -6,7 +6,7 @@ import {mobileGuideFor} from '../src/mobile-role-guides.js';
 const read=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
 test('os perfis recebem guias móveis completos sem confundir avaliação com dados reais',()=>{
- for(const role of ['ronda','operador','coi','admin','cliente','vistoriador']){
+ for(const role of ['ronda','operador','coi','admin','cliente']){
   const guide=mobileGuideFor(role);
   assert.ok(guide.title&&guide.subtitle);
   assert.equal(guide.stages.length,5);
@@ -29,7 +29,7 @@ test('Operadores recebem orientações de monitoramento sem prometer GPS remoto 
  const guide=mobileGuideFor('operador');
  assert.match(guide.stages.map(x=>x.title).join(' '),/central|rondas|alertas|ocorrências|limites/i);
  const text=guide.stages.map(x=>x.body).join(' ');
- for(const term of [/monitoramento/i,/alertas/i,/ocorrências/i,/vigia/i,/localização|sinal|GPS/i,/autenticad/i])
+ for(const term of [/monitoramento/i,/alertas/i,/ocorrências/i,/agente de ronda/i,/localização|sinal|GPS/i,/autenticad/i])
   assert.match(text,term);
 });
 

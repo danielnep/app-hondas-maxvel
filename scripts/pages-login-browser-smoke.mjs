@@ -13,8 +13,7 @@ const types={'.html':'text/html','.js':'application/javascript','.css':'text/css
 const roles=[
  ['admin','overview','Administração'],
  ['coi','overview','COI · Acompanhamento'],
- ['vistoriador','vistoriador','Vistoriador'],
- ['ronda','minha-ronda','Operação de Ronda']
+ ['ronda','minha-ronda','Agente de ronda']
 ];
 let browser;
 mkdirSync('artifacts/pages-browser-login',{recursive:true});
@@ -52,7 +51,7 @@ try{
    await page.goto(target.url,{waitUntil:'domcontentloaded'});
    await page.locator('#dialog .role-picker-list [data-role="ronda"]').waitFor({timeout:15000});
    const visibleRoles=await page.locator('#dialog .role-picker-list [data-action="sim-role"]').count();
-   if(visibleRoles!==4)throw Error(target.name+': seletor mostrou '+visibleRoles+' áreas, esperado 4');
+   if(visibleRoles!==3)throw Error(target.name+': seletor mostrou '+visibleRoles+' áreas, esperado 3');
    if(await page.locator('#live-login-form').count())throw Error('Login visível em '+target.name);
    for(const [index,[role,view,label]] of roles.entries()){
     if(index>0){
@@ -60,7 +59,7 @@ try{
       await page.locator('#dialog [data-action="sim-role-picker"]').click();
       const picker=page.locator('#dialog.role-picker-dialog[open]');
       const geom=await picker.evaluate(el=>({modal:el.matches(':modal'),rect:el.getBoundingClientRect().toJSON(),buttons:el.querySelectorAll('.role-picker-list button').length}));
-      if(!await picker.locator('.role-picker-list').isVisible()||!geom.modal||geom.rect.width<200||geom.rect.height<150||geom.buttons!==4)
+      if(!await picker.locator('.role-picker-list').isVisible()||!geom.modal||geom.rect.width<200||geom.rect.height<150||geom.buttons!==3)
        throw Error('Trocar área abriu só o fundo desfocado: '+JSON.stringify(geom));
      }
     await page.locator('#dialog [data-action="sim-role"][data-role="'+role+'"]').click();
@@ -77,9 +76,7 @@ try{
       await page.locator('[data-action="dispatch-open"]').click();
       const form=page.locator('#dialog #live-dispatch-form');
       await form.waitFor({state:'visible',timeout:12000});
-      await form.locator('[data-action="dispatch-next"]').click();
-      if((await form.getAttribute('data-step'))!=='1')throw Error('Avançou sem vigia');
-      await form.locator('[name="workerId"]').selectOption({index:1});
+      if(await form.locator('[name="workerId"]').inputValue()!=='auto')throw Error('Agente disponível não é padrão');
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="address"]').fill('Rua da Ronda, 123, Divinópolis');
       await form.locator('#rp-dispatch-suggestions [role="option"]').first().waitFor({timeout:12000});
@@ -100,6 +97,8 @@ try{
       if((await form.locator('#rp-dispatch-preview-map .leaflet-overlay-pane path').count())<1)throw Error('Geometria viária não desenhada no mapa');
       await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-destinos.png',animations:'disabled'});
       await form.locator('[data-action="dispatch-next"]').click();
+      await form.locator('[name="recurrence"]').selectOption('daily');
+      await form.locator('[name="hour"]').fill('08:35');
       await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
       await form.locator('[data-action="dispatch-next"]').click();
       if((await form.getAttribute('data-step'))!=='4')throw Error('Revisão não abriu');
@@ -114,47 +113,17 @@ try{
        throw Error('Voltar perdeu orientações');
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[type="submit"]').click();
-      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:dispatches')||'[]').some(x=>x.address==='Rua da Ronda, 123, Divinópolis'&&x.reason==='Conferir portaria principal e acesso dos visitantes.'&&x.kind==='ronda'&&x.route_points?.length===2&&x.route_points[1].label.includes('Avenida Central')),{timeout:12000});
+      await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ronda-pro-pages-test-v2:routes')||'[]').some(x=>x.points?.length===2&&x.schedule?.recurrence==='daily'&&x.schedule?.hour==='08:35'&&x.points[1].address.includes('Avenida Central')&&x.userId?.includes('vigia-demo')),{timeout:12000});
       if(await page.locator('#dialog').evaluate(x=>x.open))throw Error('Janela permaneceu aberta após envio confirmado');
-      console.log('OK: '+target.name+' / Solicitação de ronda completa em 4 etapas, gravação e modal compacto');
+      console.log('OK: '+target.name+' / Dois destinos diários, hora e agente automático');
      }
-     if(role==='vistoriador'){
-     const map=page.locator('#demo-inspection-map'),bounds=await map.boundingBox();
-     if(!bounds||bounds.width<220||bounds.height<200)throw Error('Mapa do Vistoriador oculto: '+JSON.stringify(bounds));
-     await map.locator('.map-fallback, .leaflet-container').first().waitFor({timeout:12000});
-     console.log('OK: '+target.name+' / Vistoriador com mapa ('+Math.round(bounds.width)+'x'+Math.round(bounds.height)+')');
-     const create=async(kind,address,reason,points='')=>{
-      await page.locator('[data-action="inspector-create"][data-task-kind="'+kind+'"]').click();
-      const form=page.locator('#dialog #inspector-create-form');
-      await form.locator('[name="address"]').fill(address);
-      await form.locator('[name="reason"]').fill(reason);
-      if(points)await form.locator('[name="points"]').fill(points);
-      await form.locator('button[type="submit"]').click();
-      await form.waitFor({state:'hidden',timeout:12000});
-     };
-     await create('ronda','Ronda externa ponto A','Revisão de acesso e iluminação perimetral','Portaria;-20.14020;-44.88366\nEstacionamento;-20.14052;-44.88338');
-     await page.locator('#inspector-latest-round-map .map-fallback, #inspector-latest-round-map .leaflet-container').first().waitFor({timeout:12000});
-     if(!await page.locator('.rp-inspector-records').getByText('Ronda externa ponto A').count())throw Error('Ronda recém-criada não aparece nas últimas rondas');
-     await page.locator('[data-action="live-inspection-start"]').first().click();
-     await page.locator('[data-action="inspector-round-finish"]').first().click();
-     const finishForm=page.locator('#dialog #inspector-finish-round-form');
-     await finishForm.locator('[name="note"]').fill('Ronda concluída sem anormalidades nos acessos.');
-     await finishForm.locator('button[type="submit"]').click();
-     await finishForm.waitFor({state:'hidden',timeout:12000});
-     await create('inspection','Vistoria de acesso lateral','Inspecionar acesso lateral e condições da porta.');
-     if(!await page.locator('.rp-inspector-records').getByText('Vistoria de acesso lateral').count())throw Error('Vistoria recém-criada não aparece nas últimas vistorias');
-     await page.locator('[data-action="inspector-history-all"]').first().click();
-     const history=page.locator('[data-inspection-history-dialog][open]');
-     await history.waitFor({timeout:12000});
-     if(!await history.getByText('Ronda externa ponto A').count()||!await history.getByText('Vistoria de acesso lateral').count())throw Error('Histórico completo não mostra ambas as atividades');
-     await history.locator('[data-inspection-modal-close]').click();
-     console.log('OK: '+target.name+' / Vistoriador criou ronda com pontos, iniciou, concluiu, criou vistoria e consultou ambos históricos');
-    }
-    if(role==='ronda'){
+     if(role==='ronda'){
      const map=page.locator('#mobile-map'),bounds=await map.boundingBox();
      if(!bounds||bounds.width<220||bounds.height<200)throw Error('Mapa do Vigia não está visível: '+JSON.stringify(bounds));
      await map.locator('.map-fallback, .leaflet-container').first().waitFor({timeout:15000});
      if(!(await page.locator('.rp-demo-banner-global').count()))throw Error('Aviso de demonstração ausente');
+     await page.locator('.rp-route-delivery').waitFor({timeout:12000});
+     if(!await page.locator('.rp-route-delivery').getByText('08:35').count())throw Error('Ronda programada não chegou ao agente');
      console.log('OK: '+target.name+' / Vigia mostra mapa sem rota ('+Math.round(bounds.width)+'x'+Math.round(bounds.height)+')');
     }
     await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-'+role+'.png'});

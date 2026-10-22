@@ -6,7 +6,7 @@ import {createActivityHistoryUI} from './activity-history-ui.js';
 import {EVENT_TYPES,typeInfo,isPending,stateLabel} from './treatment-policy.js';
 import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
-import {nextRouteStart} from './route-schedule.js';
+import {nextRouteStart,routeCanStart} from './route-schedule.js';
 import {openConclusionDialog} from './conclusion-dialog.js';
 import {createOpsCenterUI} from './ops-center-ui.js';
 import {createCoiMonitor} from './coi-monitor.js';
@@ -153,7 +153,7 @@ const chat=createInternalChatUI({api,flash,getAccount:()=>account,navigate:next=
 const calls=createChatCalls({api,flash,chat,getAccount:()=>account});
 const activity=createActivityHistoryUI({api,flash,openEvent:async id=>{await openEvent(id,'activity-history')}});
 let latestActivity='';
-const roles={ronda:'Vigia',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
+const roles={ronda:'Agente de ronda',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 const torch=createFieldTorch({notify:flash});
 const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[],inspectorSubmission=null;
@@ -256,6 +256,11 @@ async function syncOperational({remote=false}={}){
     const feedback=document.querySelector('[data-live-treatment-state]');if(feedback)feedback.textContent=result.event.status==='resolvida'?'Este registro foi concluído em outra sessão. O texto em edição foi preservado.':result.event.treatment_owner?'Atendimento: '+result.event.treatment_owner:'';
    }
   }else if(selected?.event&&!review()){const result=await api('/activity/events/'+encodeURIComponent(selected.event.id));selected={event:result.event};if(!document.querySelector('#send-message textarea')?.value.trim()||!isPending(result.event))render();else void loadMessages(result.event.id);}
+  else if(account.role==='ronda'&&page==='dashboard'){
+   const fresh=(await api('/routes')).routes||[],prior=routes.map(r=>r.id).join('|');
+   routes=fresh;
+   if(fresh.map(r=>r.id).join('|')!==prior){mySummary=(await api('/my-summary').catch(()=>mySummary));render();flash('Nova ronda recebida. Confira sua programação.');}
+  }
   else if(page==='inspections'&&account.role==='vistoriador'){refreshInspectorStops();}
   else if(page==='history'){const result=await api('/events?limit=500');events=result.events||[];render();}
   else if(page==='treatments'&&review()){await readTreatmentRows();render();}
@@ -326,12 +331,13 @@ async function load(){
 }
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por agente','⌖'],['events','Ocorrências','!'],['team','Agentes de ronda','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por agente de ronda','⌖'],['events','Ocorrências','!'],['team','Agentes de ronda','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por agente de ronda','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por agente de ronda','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
- vistoriador:[['history','Meus alertas e ocorrências','▤'],['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Eventos','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
+ 
+
 };
 for(const entries of Object.values(roleMenus)){entries.push(['chat','Chat interno','✉']);if(!entries.some(e=>e[0]==='activity-history'))entries.push(['activity-history','Histórico de rondas','▤']);}
 
@@ -341,8 +347,7 @@ const rp2Priority={
  coi:['monitor','treatments','notifications','dispatches'],
  admin:['dashboard','monitor','treatments','notifications'],
  master:['dashboard','monitor','treatments','notifications'],
- cliente:['client'],
- vistoriador:['inspections','dispatches','notifications','send']
+ cliente:['client']
 };
 const rp2GlyphPaths={
  dashboard:'<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
@@ -396,10 +401,11 @@ function dashboardView(){
 }
 function ownDashboard(){
  const planned=guardPlannedRoute();const map=guardCockpit({round:guardRound,planned,position:guardFix,gpsStatus:guardWatch!=null?'GPS em acompanhamento':'Aguardando GPS'});
+ const programmed=planned&&!guardRound?'<div class="rp-route-delivery" role="status"><strong>Ronda recebida · '+escape(planned.name)+'</strong><p>'+escape(planned.schedule?.recurrence==='daily'?'Todos os dias':planned.schedule?.recurrence==='once'?'Ronda pontual':'Programação')+' · '+escape(planned.schedule?.hour||'A definir')+'</p><small>'+planned.points.length+' destinos atribuídos a você</small></div>':'';
  const mine=mySummary||{},all=mine.rounds||rounds,activity=events.filter(e=>e.kind!=='gps'&&e.kind!=='battery');
  const open=activity.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
  const latest=all.find(r=>r.status==='em_andamento')||all[0];
- return '<section class="stack rp-guard-workspace">'+map+'<div class="toolbar"><div><div class="eyebrow">ACESSO DO VIGIA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
+ return '<section class="stack rp-guard-workspace">'+map+programmed+'<div class="toolbar"><div><div class="eyebrow">ACESSO DO AGENTE DE RONDA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
  composeActionButtons(false)+'<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','message','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
  '<section class="surface"><div class="toolbar"><h2>Minha execução mais recente</h2><button data-page="history">Histórico completo</button></div>'+
  (latest?'<div class="detail-grid">'+[['Início',fmt(latest.start)],['Estado',latest.status.replaceAll('_',' ')],['Percorrido',latest.km.toFixed(2)+' km'],['Tempo em trajeto',latest.minutes==null?'Sem registro':latest.minutes+' min'],['Alertas',latest.alerts],['Pânico',latest.panics],['Bateria',latest.lastBattery==null?'Não informada':latest.lastBattery+'%']].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>':'<div class="empty">Nenhuma ronda real sincronizada para sua conta.</div>')+
@@ -457,14 +463,14 @@ function mountOperationalMap(){
  if(track.length>1)L.polyline(track.map(x=>[x.lat,x.lng]),{color:'#10b981',weight:3,opacity:.8,dashArray:'6 5'}).addTo(map);
  const pos=active?.lastFix;
  if(pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)){
-  L.circleMarker([pos.lat,pos.lng],{radius:9,color:'#fff',weight:2,fillColor:'#10b981',fillOpacity:1}).bindTooltip('Último GPS: '+escape(worker?.name||'Vigia')).addTo(map);bounds.push([pos.lat,pos.lng]);
+  L.circleMarker([pos.lat,pos.lng],{radius:9,color:'#fff',weight:2,fillColor:'#10b981',fillOpacity:1}).bindTooltip('Último GPS: '+escape(worker?.name||'Agente de ronda')).addTo(map);bounds.push([pos.lat,pos.lng]);
  }
  if(bounds.length)map.fitBounds(bounds,{padding:[35,35],maxZoom:17});else map.setView([-20.145,-44.89],12);
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
  const panel=coi.render({account,rounds,events,routes,users,demo:isPagesTestMode(),...ops.monitoringData()});
- return '<div class="rp-coi-request-strip"><div><strong>Vistorias de campo</strong><span>Solicite vistorias sob demanda ou de rotina, com destino e orientações.</span></div><button type="button" class="primary" data-inspection-queue>Solicitar vistoria ↗</button></div>'+panel;
+ return panel;
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -543,7 +549,7 @@ function eventsView(){
  '<div class="occurrence-filters">'+
  '<label>Situação<select data-occ-filter="status"><option value="pending" '+option('pending','status')+'>Pendentes</option><option value="resolved" '+option('resolved','status')+'>Tratadas</option><option value="forwarded" '+option('forwarded','status')+'>Encaminhadas</option><option value="all" '+option('all','status')+'>Todas</option></select></label>'+
  '<label>Tipo<select data-occ-filter="kind"><option value="all">Todos</option>'+['incident','panic','alert','route_deviation','gps_issue'].map(k=>'<option value="'+k+'" '+option(k,'kind')+'>'+escape(friendly[k])+'</option>').join('')+'</select></label>'+
- '<label>Quem registrou<select data-occ-filter="worker"><option value="all">Todos os vigias</option>'+workerOptions+'</select></label>'+
+ '<label>Quem registrou<select data-occ-filter="worker"><option value="all">Todos os agentes de ronda</option>'+workerOptions+'</select></label>'+
  '<label>Quem concluiu<select data-occ-filter="reviewer"><option value="all">Toda a equipe</option>'+reviewerOptions+'</select></label>'+
  '<label>De<input type="date" data-occ-filter="dateFrom" value="'+escape(occurrenceFilters.dateFrom)+'"></label>'+
  '<label>Até<input type="date" data-occ-filter="dateTo" value="'+escape(occurrenceFilters.dateTo)+'"></label>'+
@@ -553,7 +559,7 @@ function eventsView(){
 }
 function teamView(){
  return '<section class="stack"><h1>Equipe e indicadores individuais</h1><div class="surface"><div class="list">'+(dashboard?.team||[]).map(w=>'<button data-person="'+id(w.id)+'" class="list-item"><span><b>'+escape(w.name)+'</b><small>'+escape(w.description||'Descrição pendente')+'</small></span><span>'+Number(w.events||0)+' eventos · '+Number(w.panics||0)+' acionamentos</span></button>').join('')+'</div></div>'+
- (privileged()?'<form id="new-user" class="surface"><h2>Cadastrar membro da equipe</h2><p class="muted">Informe a descrição da supervisão sobre o vigia no cadastro. A descrição será armazenada no banco.</p><div class="grid"><label>Nome<input required name="name" minlength="2"></label><label>E-mail<input required type="email" name="email"></label><label>Perfil<select name="role"><option value="ronda">Vigia</option><option value="operador">Equipe interna</option><option value="coi">COI</option><option value="vistoriador">Vistoriador</option><option value="cliente">Cliente (consulta)</option><option value="admin">Administrador</option>'+(account.role==='master'?'<option value="master">Master</option>':'')+'</select></label><label>Telefone<input type="tel" name="phone" maxlength="35"></label><label>Local/posto vinculado<input name="site" maxlength="100" placeholder="Ex.: Unidade Centro"></label><label>Senha inicial (12+ caracteres)<input required name="password" minlength="12" type="password"></label></div><label>Descrição do supervisor sobre o colaborador<textarea name="description" placeholder="Resumo factual das atribuições, posto e orientações de acompanhamento" minlength="10"></textarea></label><button class="primary">Cadastrar</button></form>':'')+'</section>';
+ (privileged()?'<form id="new-user" class="surface"><h2>Cadastrar membro da equipe</h2><p class="muted">Informe a descrição da supervisão sobre o agente de ronda no cadastro. A descrição será armazenada no banco.</p><div class="grid"><label>Nome<input required name="name" minlength="2"></label><label>E-mail<input required type="email" name="email"></label><label>Perfil<select name="role"><option value="ronda">Agente de ronda</option><option value="operador">Equipe interna</option><option value="coi">COI</option><option value="cliente">Cliente (consulta)</option><option value="admin">Administrador</option>'+(account.role==='master'?'<option value="master">Master</option>':'')+'</select></label><label>Telefone<input type="tel" name="phone" maxlength="35"></label><label>Local/posto vinculado<input name="site" maxlength="100" placeholder="Ex.: Unidade Centro"></label><label>Senha inicial (12+ caracteres)<input required name="password" minlength="12" type="password"></label></div><label>Descrição do supervisor sobre o colaborador<textarea name="description" placeholder="Resumo factual das atribuições, posto e orientações de acompanhamento" minlength="10"></textarea></label><button class="primary">Cadastrar</button></form>':'')+'</section>';
 }
 function personView(pid){
  const w=users.find(x=>x.id===pid),mine=events.filter(e=>e.user_id===pid);
@@ -600,7 +606,7 @@ function eventView(e){
  (!isPending(e)||account.role==='cliente'||review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'':'<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form>')+'</section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
  (!isPending(e)||account.role==='cliente'?'<p class="muted">Consulta do registro. Use o Chat interno para conversar com a equipe.</p>':review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'<p class="muted">Assuma a tratativa disponível para registrar respostas. Concluídas ficam somente para consulta.</p>':'<form id="send-message" data-event-id="'+escape(e.id)+'" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
- (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · vigia pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
+ (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · agente de ronda pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
  '<button class="primary">Enviar resposta</button></div></form>')+'</section>'+
  '<details class="details-toggle"><summary>Dados técnicos completos</summary><div class="surface"><div class="detail-grid">'+
  [['Recebido no servidor',fmt(e.received_at)],['Precisão GPS',e.accuracy==null?'Não informada':e.accuracy+' m'],['Coordenadas',e.lat==null?'Indisponíveis':e.lat+', '+e.lng],['Ronda',e.round_id||'Sem vínculo'],['Arquivos associados',details]].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div></div></details></section>';
@@ -615,12 +621,12 @@ function routeCheck(r){
 const roundStatus=r=>({em_andamento:'Em andamento',concluida:'Concluída',incompleta:'Incompleta',interrompida:'Interrompida',sem_inicio:'Sem início'})[r.status]||String(r.status||'Pendente').replaceAll('_',' ');
 const guideByRole={
  ronda:[['Primeiro acesso','Confirme seu posto, faça a verificação do GPS e consulte os próximos pontos.'],['Execução','Siga a sequência obrigatória de pontos e registre evidências conforme solicitado.'],['Comunicação','Alertas, ocorrências e pânico ficam na área de comunicação com a central.'],['Histórico','Consulte suas rondas e os eventos sincronizados com data e hora.']],
- operador:[['Acompanhamento','Confira rondas ativas e concluídas, local, posição, GPS e bateria.'],['Ocorrências','Priorize avisos críticos e registre providências. Baixa precisão GPS não significa desvio comprovado.'],['Histórico','Abra cada vigia para consultar rondas anteriores.']],
- coi:[['Visão COI','Monitore simultaneamente rondas e vigias e abra os detalhes de cada execução.'],['Rotas por colaborador','Selecione o vigia e acompanhe cada rota em uma linha com mapa e detalhes. Crie novas rotas marcando pontos na ordem, com o posto vinculado.'],['Prioridades','Acompanhe pânicos, rondas incompletas e ocorrências em análise.'],['Histórico','Consulte últimos registros, mapa e horários disponíveis.'],['Tratamento','Registre respostas gerais e internas autorizadas na ocorrência.']],
- admin:[['Visão geral','Indicadores, prioridades, nome da unidade e operações registradas.'],['Rotas por colaborador','Selecione o vigia, consulte mapa e detalhes em linhas, veja rondas em andamento e histórico e crie rotas novas marcando os pontos no mapa.'],['Monitoramento','Abra o mapa, estado do GPS, vigias e últimas rondas.'],['Pessoas e locais','Cadastre os perfis e associe clientes, vigias e vistoriadores aos postos.'],['Tratamento','Analise ocorrências com histórico e mensagens.'],['Relatórios','Exporte XLSX, JSON e CSV, além de conversas em PDF.']],
- cliente:[['Local monitorado','O acesso mostra apenas rondas da unidade autorizada à sua conta.'],['Em andamento','Veja o status atual e última posição registrada do vigia.'],['Histórico','Consulte as últimas rondas finalizadas ou pendentes do local.'],['Limites','A atualização depende de dados recebidos. O perfil não administra equipes nem ocorrências.']],
+ operador:[['Acompanhamento','Confira rondas ativas e concluídas, local, posição, GPS e bateria.'],['Ocorrências','Priorize avisos críticos e registre providências. Baixa precisão GPS não significa desvio comprovado.'],['Histórico','Abra cada agente de ronda para consultar rondas anteriores.']],
+ coi:[['Visão COI','Monitore simultaneamente rondas e agentes de ronda e abra os detalhes de cada execução.'],['Rotas por colaborador','Selecione o agente de ronda e acompanhe cada rota em uma linha com mapa e detalhes. Crie novas rotas marcando pontos na ordem, com o posto vinculado.'],['Prioridades','Acompanhe pânicos, rondas incompletas e ocorrências em análise.'],['Histórico','Consulte últimos registros, mapa e horários disponíveis.'],['Tratamento','Registre respostas gerais e internas autorizadas na ocorrência.']],
+ admin:[['Visão geral','Indicadores, prioridades, nome da unidade e operações registradas.'],['Rotas por colaborador','Selecione o agente de ronda, consulte mapa e detalhes em linhas, veja rondas em andamento e histórico e crie rotas novas marcando os pontos no mapa.'],['Monitoramento','Abra o mapa, estado do GPS, agentes de ronda e últimas rondas.'],['Pessoas e locais','Cadastre os perfis e associe clientes, agentes de ronda e profissionais aos postos.'],['Tratamento','Analise ocorrências com histórico e mensagens.'],['Relatórios','Exporte XLSX, JSON e CSV, além de conversas em PDF.']],
+ cliente:[['Local monitorado','O acesso mostra apenas rondas da unidade autorizada à sua conta.'],['Em andamento','Veja o status atual e última posição registrada do agente de ronda.'],['Histórico','Consulte as últimas rondas finalizadas ou pendentes do local.'],['Limites','A atualização depende de dados recebidos. O perfil não administra equipes nem ocorrências.']],
  vistoriador:[['Posto','Confira o local atribuído à conta antes de iniciar a vistoria.'],['Critérios','Verifique acessos, estrutura, equipamentos e sinalização.'],['Qualidade','O indicador resulta dos quatro critérios atendidos e não classifica colaboradores.'],['Histórico','Revise os registros datados e as observações.']],
- master:[['Gestão','Acompanhe indicadores, rondas e ocorrências.'],['Rotas','Na Administração > Rotas por vigia, acompanhe o histórico e cadastre novas rotas no mapa.'],['Acesso','Gerencie colaboradores, perfis e vinculações por local.'],['Registros','Utilize a auditoria e os relatórios disponíveis.']]
+ master:[['Gestão','Acompanhe indicadores, rondas e ocorrências.'],['Rotas','Na Administração > Rotas por agente de ronda, acompanhe o histórico e cadastre novas rotas no mapa.'],['Acesso','Gerencie colaboradores, perfis e vinculações por local.'],['Registros','Utilize a auditoria e os relatórios disponíveis.']]
 };
 function firstAccessGuide(){
  // Field roles use a full-screen operational map; onboarding stays in the Guide page, never behind field controls.
@@ -897,7 +903,8 @@ document.addEventListener('click',async e=>{
   if(target.hasAttribute('data-guard-fit')){guardMap?.fit();return;}
   if(target.hasAttribute('data-guard-start')){
    if(account?.role!=='ronda'||guardRound)return;
-   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COE.');
+   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COI.');
+   if(!routeCanStart(planned))throw Error('Ronda programada para outro horário. Consulte o aviso da programação.');
    const fix=await guardRequireGps(),route=buildGuardRoute(planned,fix);if(!route?.points?.length)throw Error('Rota sem coordenadas.');
    const state=initialGuardState(route,fix);target.disabled=true;
    try{
@@ -988,7 +995,7 @@ document.addEventListener('click',async e=>{
   if(target.id==='panic-send'){
    target.disabled=true;
    try{
-    await api('/events',{method:'POST',data:{kind:'panic',occurredAt:Date.now(),description:'Botão de pânico acionado pelo vigia',...await eventTelemetry()}});
+    await api('/events',{method:'POST',data:{kind:'panic',occurredAt:Date.now(),description:'Botão de pânico acionado pelo agente de ronda',...await eventTelemetry()}});
     document.querySelector('#central-panic-dialog')?.close();await load();flash('Pânico registrado no servidor da central.');
    }finally{if(target.isConnected)target.disabled=false}
    return;

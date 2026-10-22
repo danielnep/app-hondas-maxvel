@@ -16,7 +16,7 @@ test('Ronda usa cartao compacto independente; chat permanece na interface de vis
  assert.match(read('src/theme-shell.js'),/communication\.closest\('\[data-guard-panel-content\]'\)/);
  assert.match(html,/data-field-tool-incident/);
  assert.doesNotMatch(html,/data-field-tool-chat/);
- assert.match(inspectionCockpit({queue:[],mapId:'inspection-map'}),/data-field-tool-chat/);
+ assert.doesNotMatch(inspectionCockpit({queue:[],mapId:'inspection-map'}),/data-field-tool-chat/);
  assert.match(read('src/central.js'),/mountGuardQuickPanel\(root\)/);
 });
 test('inatividade recolhe controles, acionador restaura e foco impede fechamento',()=>{
@@ -65,10 +65,10 @@ test('overlay real do despacho mantem campos navegaveis, glass fosco e versoes n
  assert.match(wizard,/name="workerId"/);
  assert.match(wizard,/name="address"/);
  assert.match(wizard,/name="reason"/);
- assert.match(wizard,/kind:'ronda'/);
+ assert.match(wizard,/recurrence:.*daily/);
  assert.match(theme,/rp-dispatch-dialog\[open\]/);
  assert.match(theme,/rgba\(23,30,39,\.94\)/);
  assert.match(field,/\.rp-guard-quick-panel\.is-collapsed/);
- assert.match(index,/theme\.css\?v=61/);
- assert.match(index,/app\.js\?v=76/);
+ assert.match(index,/theme\.css\?v=62/);
+ assert.match(index,/app\.js\?v=77/);
 });

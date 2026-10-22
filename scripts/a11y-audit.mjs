@@ -9,7 +9,7 @@ const require=createRequire(import.meta.url);
 const axePath=require.resolve('axe-core/axe.min.js');
 const folder='artifacts/accessibility',temp=mkdtempSync(join(tmpdir(),'ronda-access-'));
 mkdirSync(folder,{recursive:true});
-const roles=['admin','coi','ronda','vistoriador'];
+const roles=['admin','coi','ronda'];
 const secret='AccessibilityRunnerPassword_2026!';
 const initial=roles.map(role=>({name:role.toUpperCase(),email:role+'@audit.local',username:role,password:secret,role}));
 process.env.RONDA_PRO_DB_PATH=join(temp,'ronda.sqlite');
@@ -47,4 +47,4 @@ try{
  await new Promise(ok=>server.close(ok));
  rmSync(temp,{recursive:true,force:true});
 }
-if(failures.length){console.error(failures.join('\n'));process.exitCode=1;}else console.log('8 revisoes WCAG dos perfis autenticados sem erros graves');
+if(failures.length){console.error(failures.join('\n'));process.exitCode=1;}else console.log('6 revisoes WCAG dos perfis autenticados sem erros graves');

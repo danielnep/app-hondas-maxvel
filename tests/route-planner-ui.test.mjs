@@ -48,14 +48,15 @@ test('COI grava rota de teste no navegador, nunca na API real',async()=>{
  sessionStorage.setItem('rondaspro_api_token','pages-test:coi');
  let remote=0;
  const payload={userId:'pages-vigia-demo-lucas',name:'Perímetro',points:[{name:'Portaria',lat:-20.14,lng:-44.88},{name:'Entrada',lat:-20.15,lng:-44.89}],schedule:{kind:'routine',recurrence:'alternate',hour:'08:00',startDate:'2026-10-20'}};
- await routeRequest('/routes',{method:'POST',data:payload},async()=>{remote++;return{}},'coi');
- assert.equal(remote,0);
+ await routeRequest('/routes',{method:'POST',data:payload},async(path,options)=>{remote++;return pagesTestRequest(path,options)},'coi');
+ assert.equal(remote,1,'COI usa o mesmo endpoint da Administração para registrar e avisar');
  const rows=(await pagesTestRequest('/routes')).routes;
  assert.equal(rows.length,1);
  assert.equal(rows[0].workerName,'Lucas Ferreira');
  assert.equal(rows[0].schedule.recurrence,'alternate');
  sessionStorage.setItem('rondaspro_api_token','pages-test:vigia-demo-lucas');
  assert.equal((await pagesTestRequest('/routes')).routes.length,1);
+ assert.ok((await pagesTestRequest('/notifications')).notifications.some(n=>n.title==='Nova ronda programada'));
  sessionStorage.setItem('rondaspro_api_token','pages-test:vigia-demo-ana');
  assert.equal((await pagesTestRequest('/routes')).routes.length,0);
 });

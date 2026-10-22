@@ -55,6 +55,7 @@ function initialize(){
  if(!db.prepare('PRAGMA table_info(media)').all().some(x=>x.name==='evidence_view'))db.exec("ALTER TABLE media ADD COLUMN evidence_view TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='planned_start'))db.exec('ALTER TABLE planned_routes ADD COLUMN planned_start INTEGER');
  if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='route_schedule'))db.exec("ALTER TABLE planned_routes ADD COLUMN route_schedule TEXT NOT NULL DEFAULT '{}'");
+ if(!db.prepare('PRAGMA table_info(planned_routes)').all().some(x=>x.name==='instructions'))db.exec("ALTER TABLE planned_routes ADD COLUMN instructions TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='phone'))db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
  if(!db.prepare('PRAGMA table_info(users)').all().some(x=>x.name==='username'))db.exec("ALTER TABLE users ADD COLUMN username TEXT");
  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL");
@@ -204,19 +205,23 @@ export function createOperationalApi(){
     audit(a,'user.create',uid);resp(res,201,{id:uid});return true;
    }
    if(p==='/api/routes'&&m==='GET'){
+    if(a.role==='ronda')operations.dispatchAutoRoutes();
     if(reviewer(a)&&!operations.allows(a,'rondas')){resp(res,403,{error:'Módulo Rondas desabilitado pelo administrador'});return true;}
     if(a.role==='vistoriador'){resp(res,200,{routes:[]});return true;}
     const sql='SELECT r.*,u.name worker_name FROM planned_routes r JOIN users u ON u.id=r.user_id ';
     const rows=a.role==='ronda'?db.prepare(sql+'WHERE r.user_id=? ORDER BY r.updated_at DESC').all(a.id):
      a.role==='cliente'?a.site?db.prepare(sql+'WHERE r.site=? ORDER BY r.updated_at DESC').all(a.site):[]:
      reviewer(a)?db.prepare(sql+'ORDER BY r.updated_at DESC LIMIT 1000').all():[];
-    resp(res,200,{routes:rows.map(r=>({id:r.id,userId:r.user_id,workerName:r.worker_name,site:r.site,name:r.name,points:serialize(r.points)||[],plannedStart:r.planned_start||null,schedule:serialize(r.route_schedule)||null,createdAt:r.created_at,updatedAt:r.updated_at}))});return true;
+    const entries=rows.map(r=>({id:r.id,userId:r.user_id,workerName:r.worker_name,site:r.site,name:r.name,points:serialize(r.points)||[],plannedStart:r.planned_start||null,schedule:serialize(r.route_schedule)||null,instructions:r.instructions||'',createdAt:r.created_at,updatedAt:r.updated_at}));
+    resp(res,200,{routes:reviewer(a)?[...operations.getAutoPrograms(),...entries]:entries});return true;
    }
    const routeMatch=p.match(/^\/api\/routes\/([0-9a-f-]{36})$/i);
    if((p==='/api/routes'&&m==='POST')||(routeMatch&&m==='PUT')){
     if(!(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,403,{error:'Somente COI ou Administração configura rotas'});return true;}
     const d=serialize((await body(req)).toString())||{};
-    const user=db.prepare("SELECT id,site FROM users WHERE id=? AND role='ronda' AND active=1").get(clean(d.userId));
+    const requestedWorker=clean(d.userId);
+    const user=requestedWorker==='auto'?null:
+     db.prepare("SELECT id,site FROM users WHERE id=? AND role='ronda' AND active=1").get(requestedWorker);
     const title=clean(d.name).slice(0,120);
     const points=d.points;
     const plannedStart=d.plannedStart==null||d.plannedStart===''?null:Number(d.plannedStart);
@@ -236,21 +241,29 @@ export function createOperationalApi(){
     if(plannedStart!==null&&(!Number.isInteger(plannedStart)||plannedStart<1577836800000||plannedStart>4102444800000)){
      resp(res,422,{error:'Horário de início programado inválido'});return true;
     }
-    if(!user||!user.site||title.length<3||!Array.isArray(points)||points.length<2||points.length>30||
+    if((requestedWorker!=='auto'&&(!user||!user.site))||title.length<3||!Array.isArray(points)||points.length<1||points.length>30||
       !points.every(p=>p&&typeof p==='object'&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&Number.isFinite(p.lng)&&Math.abs(p.lng)<=180&&clean(p.name).length>0&&clean(p.name).length<=100)){
-      resp(res,422,{error:'Selecione um vigia com posto e informe nome e 2 a 30 pontos válidos'});return true;
+      resp(res,422,{error:'Selecione um agente de ronda ativo ou disponível e informe de 1 a 30 destinos válidos'});return true;
     }
     const safe=points.map(p=>({name:clean(p.name).slice(0,100),address:clean(p.address).slice(0,250),lat:p.lat,lng:p.lng}));
+    const instructions=clean(d.instructions).slice(0,1000);
+    if(requestedWorker==='auto'&&!routeMatch){
+     const taskId=operations.queueAutoRoute({authorId:a.id,site:a.site||'Grupo Maxvel',name:title,points:safe,schedule,instructions});
+     const assigned=operations.dispatchAutoRoutes().find(item=>item.taskId===taskId);
+     audit(a,'route.auto.create',taskId);
+     resp(res,201,{id:taskId,queued:true,assignedTo:assigned?.workerId||null});return true;
+    }
+    if(requestedWorker==='auto'){resp(res,422,{error:'Altere o responsável na edição da rota.'});return true;}
     if(routeMatch){
      const scheduleJson=explicitSchedule?JSON.stringify(schedule):existingRoute.route_schedule;
-     db.prepare('UPDATE planned_routes SET user_id=?,site=?,name=?,points=?,planned_start=?,route_schedule=?,updated_at=? WHERE id=?')
-      .run(user.id,user.site,title,JSON.stringify(safe),plannedStart,scheduleJson,now(),existingRoute.id);
-     audit(a,'route.update',existingRoute.id);resp(res,200,{id:existingRoute.id,updated:true});return true;
+     db.prepare('UPDATE planned_routes SET user_id=?,site=?,name=?,points=?,planned_start=?,route_schedule=?,instructions=?,updated_at=? WHERE id=?')
+      .run(user.id,user.site,title,JSON.stringify(safe),plannedStart,scheduleJson,instructions||existingRoute.instructions||'',now(),existingRoute.id);
+     audit(a,'route.update',existingRoute.id);operations.notifyAssignedRoute(user.id,existingRoute.id,title,schedule);resp(res,200,{id:existingRoute.id,updated:true,assignedTo:user.id});return true;
     }
     const rid=id();
-    db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,route_schedule,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)')
-     .run(rid,user.id,user.site,title,JSON.stringify(safe),plannedStart,explicitSchedule?JSON.stringify(schedule):'{}',now(),now(),a.id);
-    audit(a,'route.create',rid);resp(res,201,{id:rid,created:true});return true;
+    db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,route_schedule,created_at,updated_at,created_by,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+     .run(rid,user.id,user.site,title,JSON.stringify(safe),plannedStart,explicitSchedule?JSON.stringify(schedule):'{}',now(),now(),a.id,instructions);
+    audit(a,'route.create',rid);operations.notifyAssignedRoute(user.id,rid,title,schedule);resp(res,201,{id:rid,created:true,assignedTo:user.id});return true;
    }
    if(p==='/api/events'&&m==='POST'){
     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente tem acesso somente de leitura'});return true;}

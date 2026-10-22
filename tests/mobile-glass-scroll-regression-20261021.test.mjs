@@ -31,17 +31,17 @@ test('Glass Maxvel: botões principais não retornam a blocos opacos',()=>{
 
 test('a solicitação principal de ronda atende o vigia sem apagar o Vistoriador',()=>{
   assert.match(wizard,/w\.role==='ronda'&&w\.active/);
-  assert.match(wizard,/kind:'ronda'/);
-  assert.match(wizard,/Solicitar início de ronda/);
+  assert.match(wizard,/recurrence:.*daily/);
+  assert.match(wizard,/Programar ronda/);
   assert.doesNotMatch(wizard,/vistor(?:ia|iador)/i);
   assert.match(app,/data-action="dispatch-open">Solicitar ronda/);
-  assert.match(app,/act==='inspector-create'/);
-  assert.match(app,/role==='vistoriador'/);
+  assert.match(wizard,/Próximo agente disponível/);
+  assert.doesNotMatch(app,/\['vistoriador','Vistoriador','clipboard'\]/);
 });
 
 test('atualização PWA entrega mudanças de CSS e JS em mobile',()=>{
   assert.match(index,/ronda-pro\.css\?v=53/);
-  assert.match(index,/theme\.css\?v=61/);
-  assert.match(index,/app\.js\?v=76/);
-  assert.match(serviceWorker,/rondas-pro-interface-v72/);
+  assert.match(index,/theme\.css\?v=62/);
+  assert.match(index,/app\.js\?v=77/);
+  assert.match(serviceWorker,/rondas-pro-interface-v73/);
 });

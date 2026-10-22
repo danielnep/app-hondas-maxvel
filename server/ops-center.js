@@ -11,10 +11,12 @@ const EVENT_LABELS={
  message:'Nova mensagem do campo',inspection:'Novo laudo de vistoria',patrol_end:'Ronda ou atendimento concluído',patrol_start:'Início de atendimento'
 };
 const clean=x=>String(x??'').trim();
+import {dueScheduleOccurrence} from '../src/route-schedule.js';
 export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}){
  db.exec('CREATE TABLE IF NOT EXISTS coi_permissions(module TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1,updated_by TEXT,updated_at INTEGER NOT NULL)');
  db.exec('CREATE TABLE IF NOT EXISTS dispatches(id TEXT PRIMARY KEY,worker_id TEXT NOT NULL,author_id TEXT NOT NULL,address TEXT NOT NULL,reason TEXT NOT NULL,latitude REAL,longitude REAL,created_at INTEGER NOT NULL,acknowledged_at INTEGER)');
  db.exec('CREATE INDEX IF NOT EXISTS idx_dispatch_worker ON dispatches(worker_id,created_at)');
+ db.exec("CREATE TABLE IF NOT EXISTS auto_route_programs(id TEXT PRIMARY KEY,author_id TEXT NOT NULL,site TEXT NOT NULL,name TEXT NOT NULL,points TEXT NOT NULL,schedule TEXT NOT NULL,instructions TEXT NOT NULL DEFAULT '',last_occurrence TEXT NOT NULL DEFAULT '',created_at INTEGER NOT NULL)");
  db.exec('CREATE TABLE IF NOT EXISTS notifications(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,kind TEXT NOT NULL,title TEXT NOT NULL,body TEXT NOT NULL,event_id TEXT,dispatch_id TEXT,created_at INTEGER NOT NULL,read_at INTEGER)');
  db.exec('CREATE INDEX IF NOT EXISTS idx_notification_user ON notifications(user_id,created_at)');
  db.exec('CREATE TABLE IF NOT EXISTS operational_presence(user_id TEXT PRIMARY KEY,last_seen INTEGER NOT NULL)');
@@ -72,6 +74,58 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    announce(record.user_id);
   }
  }
+ function notifyAssignedRoute(workerId,routeId,name,schedule){
+  const worker=db.prepare("SELECT id FROM users WHERE id=? AND active=1 AND role='ronda'").get(workerId);
+  if(!worker)return false;
+  const frequency=schedule?.recurrence==='daily'?'Diariamente':schedule?.recurrence==='once'?'Ronda pontual':'Ronda programada';
+  const text=frequency+' · '+clean(schedule?.hour||'08:00')+' · '+clean(name).slice(0,120);
+  insert.run(id(),worker.id,'notice','Nova ronda programada',text,null,null,now());
+  announce(worker.id);
+  return true;
+ }
+
+ function queueAutoRoute({authorId,site,name,points,schedule,instructions=''}) {
+  const taskId=id();
+  db.prepare('INSERT INTO auto_route_programs(id,author_id,site,name,points,schedule,instructions,created_at) VALUES(?,?,?,?,?,?,?,?)')
+   .run(taskId,authorId,site||'Grupo Maxvel',name,JSON.stringify(points),JSON.stringify(schedule),clean(instructions).slice(0,1000),now());
+  return taskId;
+ }
+ function getAutoPrograms(){
+  return db.prepare('SELECT * FROM auto_route_programs ORDER BY created_at DESC LIMIT 120').all().map(r=>({
+   id:r.id,userId:'auto',workerName:'Próximo agente disponível',site:r.site,name:r.name,
+   points:serialize(r.points)||[],schedule:serialize(r.schedule)||{},instructions:r.instructions,
+   createdAt:r.created_at,updatedAt:r.created_at,pending:true
+  }));
+ }
+ function dispatchAutoRoutes(){
+  // A atribuição é materializada quando um agente está online e a hora programada chegou.
+  // Cada ocorrência local é gravada uma única vez, mesmo após reiniciar o servidor.
+  const pending=db.prepare('SELECT * FROM auto_route_programs ORDER BY created_at ASC LIMIT 100').all();
+  const reserved=new Set();
+  const online=availability().filter(u=>u.role==='ronda'&&u.status==='Disponível'&&u.site)
+   .sort((a,b)=>(a.last_seen||0)-(b.last_seen||0));
+  const issued=[];
+  for(const task of pending){
+   const schedule=serialize(task.schedule)||{};
+   const localDay=dueScheduleOccurrence(schedule,now());
+   if(!localDay||localDay===task.last_occurrence)continue;
+   const worker=online.find(w=>!reserved.has(w.id));
+   if(!worker)break;
+   const routeId=id(),issuedAt=now();
+   const once={...schedule,recurrence:'once',startDate:localDay};
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    const taken=db.prepare('UPDATE auto_route_programs SET last_occurrence=? WHERE id=? AND last_occurrence<>?').run(localDay,task.id,localDay);
+    if(taken.changes){
+     db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,route_schedule,created_at,updated_at,created_by,instructions) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+      .run(routeId,worker.id,worker.site,task.name,task.points,null,JSON.stringify(once),issuedAt,issuedAt,task.author_id,task.instructions);
+    }
+    db.exec('COMMIT');
+    if(taken.changes){reserved.add(worker.id);notifyAssignedRoute(worker.id,routeId,task.name,once);issued.push({id:routeId,taskId:task.id,workerId:worker.id});}
+   }catch(e){db.exec('ROLLBACK');throw e;}
+  }
+  return issued;
+ }
  function recentRounds(){
   const items=db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery,details FROM events WHERE round_id IS NOT NULL AND occurred_at>? ORDER BY occurred_at')
    .all(now()-30*86400000);
@@ -93,6 +147,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const at=now();
    db.prepare('INSERT INTO operational_presence(user_id,last_seen,lat,lng,accuracy,fix_at) VALUES(?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen,lat=COALESCE(excluded.lat,operational_presence.lat),lng=COALESCE(excluded.lng,operational_presence.lng),accuracy=COALESCE(excluded.accuracy,operational_presence.accuracy),fix_at=COALESCE(excluded.fix_at,operational_presence.fix_at)')
     .run(user.id,at,valid?position.lat:null,valid?position.lng:null,valid?position.accuracy??null:null,valid?at:null);
+   if(user.role==='ronda')dispatchAutoRoutes();
    resp(res,200,{ok:true,positionRecorded:!!valid});return true;
   }
   if(p==='/api/presence/off'&&method==='POST'){
@@ -126,6 +181,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    resp(res,200,{ok:true});return true;
   }
   if(p==='/api/notifications'&&method==='GET'){
+   if(user.role==='ronda')dispatchAutoRoutes();
    const url=new URL(req.url,'http://local'),limit=Math.min(120,Math.max(1,Number(url.searchParams.get('limit'))||120));
    const cursor=url.searchParams.get('cursor'),parts=cursor?.split(':');
    if(cursor&&(!parts||parts.length!==2||!/^\d+$/.test(parts[0])||!/[a-f0-9-]{36}/i.test(parts[1]))){resp(res,422,{error:'Cursor inválido'});return true;}
@@ -291,5 +347,5 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   return false;
  }
  function broadcast(){for(const key of clients.keys())announce(key);}
- return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast};
+ return {handle,notifyEvent,notifyReview,notifyMessage,notifyAssignedRoute,queueAutoRoute,getAutoPrograms,dispatchAutoRoutes,allows,availability,broadcast};
 }

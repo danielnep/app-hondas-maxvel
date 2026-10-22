@@ -39,10 +39,10 @@ test('local admin can add testing account and field profile cannot',async()=>{
  const admin=PAGES_TEST_ACCOUNTS[0],vigia=PAGES_TEST_ACCOUNTS[2];
  const login=await pagesTestRequest('/login',{method:'POST',data:{email:admin.username,password:admin.password}});
  sessionStorage.setItem('rondaspro_api_token',login.token);
- assert.equal((await pagesTestRequest('/users')).users.length,4);
+ assert.equal((await pagesTestRequest('/users')).users.length,3);
  const user={name:'Vigia Extra',username:'extra',email:'extra@example.test',role:'ronda',password:'Extra-Only-Test2026!'};
  assert.equal(typeof (await pagesTestRequest('/users',{method:'POST',data:user})).id,'string');
- assert.equal((await pagesTestRequest('/users')).users.length,5);
+ assert.equal((await pagesTestRequest('/users')).users.length,4);
  await assert.rejects(pagesTestRequest('/users',{method:'POST',data:user}),{status:409});
  const field=await pagesTestRequest('/login',{method:'POST',data:{email:vigia.username,password:vigia.password}});
  sessionStorage.setItem('rondaspro_api_token',field.token);

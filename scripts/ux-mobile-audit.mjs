@@ -1,4 +1,4 @@
-/** Auditoria responsiva da entrada ATUAL de quatro áreas no ambiente de teste.
+/** Auditoria responsiva da entrada ATUAL de três áreas no ambiente de teste.
  * Navega com Chromium nos arquivos desta branch; não acessa API nem dados de produção.
  * Os testes de fluxo completo do cadastro de rotas ficam em route-planner-browser-qa.mjs.
  */
@@ -59,7 +59,7 @@ try{
   try{
    await page.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:16000});
    await page.locator('#dialog .role-picker-list [data-role="ronda"]').waitFor({timeout:12000});
-   check(await page.locator('#dialog .role-picker-list [data-role]').count()===4,'Seletor não contém as quatro áreas');
+   check(await page.locator('#dialog .role-picker-list [data-role]').count()===3,'Seletor não contém as três áreas');
    await role(page,'ronda',true);
    await page.locator('#mobile-map').waitFor({state:'visible',timeout:12000});
    check((await page.locator('.user-profile-button').textContent()).includes('Lucas Ferreira'),'Vigia fictício não foi selecionado');
@@ -67,7 +67,7 @@ try{
    await role(page,'coi');
    await navigation(page,'rondas');
    await page.locator('#rp-plan').waitFor({state:'visible',timeout:12000});
-   check(await page.locator('#rp-plan-worker option').count()===3,'Planejador não oferece os três vigias fictícios');
+   check(await page.locator('#rp-plan-worker option').count()===4,'Seletor precisa listar automático e três agentes de ronda');
    check(await page.locator('#rp-plan .rp-plan-steps button').count()===3,'Etapas da rota ausentes');
    await screen(page,width,'coi-rotas');
    await role(page,'admin');
@@ -75,12 +75,9 @@ try{
    await navigation(page,'rondas');
    await page.locator('#rp-plan').waitFor({state:'visible',timeout:12000});
    await screen(page,width,'admin-rotas');
-   await role(page,'vistoriador');
-   check(await page.locator('[data-view="vistoriador"]').count()>0,'Navegação do Vistoriador ausente');
-   await screen(page,width,'vistoriador');
    check(errors.length===0,'Erros JS: '+errors.join(' | '));
    check(remote.length===0,'Chamada real de API durante teste: '+remote.join(', '));
-   console.log(JSON.stringify({width,areas:4,selectedWorker:'Lucas Ferreira',planner:3,errors:0,remote:0}));
+   console.log(JSON.stringify({width,areas:3,selectedWorker:'Lucas Ferreira',planner:3,errors:0,remote:0}));
   }catch(error){fatal++;results.push({width,height,error:String(error),consoleErrors:errors});}
   finally{await ctx.close();}
  }
@@ -88,5 +85,5 @@ try{
  writeFileSync(out+'/report.json',JSON.stringify({sizes,results,fatal},null,2));
  await browser.close();
 }
-console.log(JSON.stringify({widths:sizes.length,areas:4,fatal,failures:results.filter(r=>r.error)}));
+console.log(JSON.stringify({widths:sizes.length,areas:3,fatal,failures:results.filter(r=>r.error)}));
 if(fatal)process.exitCode=1;

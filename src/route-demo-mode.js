@@ -27,15 +27,9 @@ export function seedDemoThree(){
 }
 export function exampleVigia(user){return isPagesTestMode()&&DEMO_THREE.some(x=>x.username===user?.username)}
 export function testRouteUsers(users){return isPagesTestMode()?users.filter(x=>exampleVigia(x)):users.filter(x=>x.role==='ronda'&&x.active!==0)}
-export async function routeRequest(path,options,api,role){
- if(!isPagesTestMode()||path!=='/routes'||options?.method!=='POST'||role!=='coi')return api(path,options);
- const d=options.data,watch=DEMO_THREE.find(x=>'pages-'+x.username===d?.userId);
- if(!watch||!Array.isArray(d.points)||d.points.length<2||d.points.length>30)throw Error('Selecione um dos vigias de demonstração e dois ou mais endereços.');
- const key=base+'routes';
- const routes=JSON.parse(localStorage.getItem(key)||'[]');
- if(!Array.isArray(routes))throw Error('Dados de teste indisponíveis.');
- const id=typeof crypto.randomUUID==='function'?crypto.randomUUID():'demo-'+Date.now();
- routes.push({...d,id,workerName:watch.name,site:'Grupo Maxvel',createdAt:Date.now(),updatedAt:Date.now()});
- localStorage.setItem(key,JSON.stringify(routes));
- return {id};
+/** Use o mesmo fluxo de atribuição no modo de demonstração e na operação real.
+ * A implementação local grava avisos e atribui o roteiro ao perfil correto.
+ */
+export async function routeRequest(path,options,api){
+ return api(path,options);
 }

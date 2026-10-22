@@ -115,7 +115,7 @@ const sessionList=()=>[...sessions].sort((a,b)=>b.startedAt-a.startedAt);
 const current=()=>session;
 const recentNotification=()=>sessionList().flatMap(s=>(s.notifications??[]).map(n=>({...n,session:s}))).sort((a,b)=>b.at-a.at);
 const recentIncidents=()=>sessionList().flatMap(s=>(s.incidents??[]).map(i=>({...i,session:s}))).sort((a,b)=>b.at-a.at);
-let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],syncTimer=null;
+let liveUsers=[],liveRoutes=[],liveEvents=[],liveAssignments=[],liveRouteNotices=[],syncTimer=null;
 const routePlanner=createRoutePlanner({
  getData:()=>({users:liveUsers,routes:liveRoutes,role:user?.role,demo:isPagesTestMode()}),
  api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
@@ -131,7 +131,8 @@ async function refreshLiveUsers(){if(['admin','coi','operador'].includes(user?.r
 async function refreshLiveOperational(){
  if(['admin','coi','operador','ronda'].includes(user?.role))liveRoutes=(await liveRequest('/routes').catch(()=>({routes:[]}))).routes||[];
  liveEvents=(await liveRequest('/events?limit=200').catch(()=>({events:[]}))).events||[];
- if(['admin','coi','vistoriador'].includes(user?.role))liveAssignments=(await liveRequest('/dispatches').catch(()=>({dispatches:[]}))).dispatches||[];
+ if(['admin','coi','ronda'].includes(user?.role))liveAssignments=(await liveRequest('/dispatches').catch(()=>({dispatches:[]}))).dispatches||[];
+ if(user?.role==='ronda')liveRouteNotices=(await liveRequest('/notifications?channel=events').catch(()=>({notifications:[]}))).notifications||[];
 }
 function runtimeRoute(raw){
  if(!raw?.points?.length)return null;
@@ -170,10 +171,10 @@ function save(){if(session){const idx=sessions.findIndex(s=>s.id===session.id);i
 function notify(message){toast.textContent=message;toast.classList.add('toast-visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('toast-visible'),4900)}
 const ux06RoleTips={
  ronda:'Operação de Ronda: sequência, permanência, justificativas, ocorrências e histórico próprio.',
- operador:'COI · Monitoramento: rotas em execução, posicionamento, alertas e contato com o vigia.',
- coi:'COI · Monitoramento: rotas em execução, posicionamento, alertas e contato com o vigia.',
+ operador:'COI · Monitoramento: rotas em execução, posicionamento, alertas e contato com o agente de ronda.',
+ coi:'COI · Monitoramento: rotas em execução, posicionamento, alertas e contato com o agente de ronda.',
  cliente:'Cliente: acompanhamento das rondas do seu local, sem recursos administrativos.',
- vistoriador:'Vistoriador: checklist, identificação do local e indicador de qualidade.',
+ vistoriador:'',
  admin:'Administração: supervisão, equipe, programação, alertas, relatórios e configurações.'
 };
 function notifyRoleView(role){notify('Visão de demonstração: '+ux06RoleTips[role]);}
@@ -208,7 +209,7 @@ function installUX06(){
   ['.ux-report-stage [data-ux-report="eventos"]','Eventos registrados'],
   ['.ux-report-stage [data-ux-report="historico"]','Histórico de rondas'],
   ['.ux-ronda-stage [data-ux-subpage="pontos"]','Pontos de verificação'],
-  ['.ux-ronda-stage [data-ux-subpage="historico"]','Histórico do vigia']
+  ['.ux-ronda-stage [data-ux-subpage="historico"]','Histórico do agente de ronda']
  ];
  for(const [selector,title] of sections){
   const el=content.querySelector(selector);if(!el)continue;
@@ -534,7 +535,7 @@ function render(){clearTimeout(patrolCompactTimer);if(!user){root.innerHTML=logi
  if(user?.role==='ronda'&&view==='minha-ronda'&&screen!=='landing'&&!isPagesTestMode()&&!locationGate.isGranted())locationGate.open({demo:presentation});
  else if(user?.role!=='ronda'||view!=='minha-ronda')locationGate.close();
 }
-/** O contexto da supervisão nunca altera o vigia conectado nem sua sessão. */
+/** O contexto da supervisão nunca altera o agente de ronda conectado nem sua sessão. */
 function watchesSession(s,watcher){
  if(!s||!watcher)return false;
  if(s.watcherId)return s.watcherId===watcher.id;
@@ -558,8 +559,8 @@ function supervisorWatcherSelector(){
  const info=supervisedContext(),status=info.current?.status==='active'?'Em ronda':
   info.current?.status==='completed'?'Última ronda concluída':'Aguardando execução';
  return `<div class="supervision-context" aria-label="Ronda por colaborador">
-  <label for="supervisor-watcher">${ic('users')} Vigia acompanhado</label>
-  <select id="supervisor-watcher" data-supervisor-watcher aria-label="Selecionar vigia para acompanhar mapa, rota e histórico">
+  <label for="supervisor-watcher">${ic('users')} Agente de ronda acompanhado</label>
+  <select id="supervisor-watcher" data-supervisor-watcher aria-label="Selecionar agente de ronda para acompanhar mapa, rota e histórico">
    ${DEMO_WATCHERS.map(w=>`<option value="${esc(w.id)}" ${w.id===info.watcher.id?'selected':''}>${esc(w.name)} · ${esc(w.unit)}</option>`).join('')}
   </select>
   <div class="supervision-context-meta"><strong>${esc(info.route.name)}</strong><span>${status} · ${info.history.length} registro(s) neste navegador · cenário ilustrativo</span></div>
@@ -612,13 +613,13 @@ function landing(){
  return `<div class="hero product-home"><div class="hero-container"><header class="topnav">${brand()}<nav class="nav-actions" aria-label="Acesso rápido">${btn(ic('help')+' Guia da plataforma','guide','','')} ${btn('Explorar '+ic('arrow'),'login','primary small')}</nav></header><main id="main"><section class="product-hero"><div class="product-hero-copy"><div class="eyebrow">${ic('shield')} GRUPO MAXVEL · OPERAÇÕES EM CAMPO</div><h1>Uma visão completa<br>de cada <span>ronda.</span></h1><p>Acompanhe o trabalho em campo e a supervisão em um só ambiente. Pontos, trajetos, permanência e ocorrências apresentados com clareza, do celular ao computador.</p><div class="hero-buttons">${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}${btn('Explorar sem login','login')}</div><div class="product-benefits"><span>${ic('checkcircle')} Passo a passo para o colaborador</span><span>${ic('checkcircle')} Visão da supervisão</span><span>${ic('checkcircle')} Registros com contexto</span></div><p class="product-fineprint">${ic('help')} Ambiente de avaliação: trajeto, pessoas e alertas ilustrativos. A cartografia é real quando online.</p></div><div class="product-showcase"><div class="showcase-main"><div class="showcase-toolbar"><div class="showcase-title">${ic('map')} <strong>Central de acompanhamento</strong><small>Prévia funcional do mapa</small></div><span class="showcase-status"><i></i> Visualização de rota</span></div><div id="hero-map" class="showcase-map"></div><div class="showcase-map-badge">${ic('pin')} Rota Centro · Divinópolis <span>4 pontos · raio 25 m</span></div><div class="showcase-overlay-stats"><div><small>Próxima verificação</small><strong>Portaria principal</strong></div><span>${ic('crosshair')} 25 m</span></div></div><div class="showcase-detail-grid"><div class="showcase-detail"><span class="showcase-detail-icon">${ic('clock')}</span><span><small>Permanência por ponto</small><strong>30 segundos contínuos</strong></span></div><div class="showcase-detail"><span class="showcase-detail-icon">${ic('bell')}</span><span><small>Desvios de percurso</small><strong>Justificativa e análise</strong></span></div></div><div class="showcase-disclaimer">Mapa OpenStreetMap · cenário operacional fictício</div></div></section><section class="product-capabilities"><div class="capabilities-intro"><div class="eyebrow">UMA PLATAFORMA · QUATRO FRENTES</div><h2>Feita para acompanhar a operação, não para complicá-la.</h2><p>O mesmo processo apresentado de forma específica para quem executa e para quem supervisiona.</p></div><div class="capability-grid">${examples.map(([ico,title,desc],i)=>`<article class="capability"><span class="capability-index">0${i+1}</span><span class="capability-icon">${ic(ico)}</span><h3>${title}</h3><p>${desc}</p></article>`).join('')}</div></section><section class="product-endcap"><div><div class="eyebrow">VEJA O FLUXO COMPLETO</div><h2>Do primeiro ponto ao relatório final.</h2><p>Explore as telas reais da experiência proposta para ronda e supervisão, com cenário operacional interativo.</p></div>${btn('Experimentar o aplicativo '+ic('arrow'),'presentation-intro','primary')}</section></main><footer class="hero-foot"><span>Grupo Maxvel | Daniel N. Xavier</span><a href="#" data-action="privacy">Privacidade e requisitos técnicos</a></footer></div></div>`;
 }
 const coiNavigation=[['overview','COI · Acompanhamento','headset'],['rondas','Rotas e rondas','map'],['notificacoes','Eventos','bell'],['ocorrencias','Histórico de tratativas','clipboard'],['equipe','Equipe de campo','users']];
-const allNav={ronda:[['minha-ronda','Minha ronda','compass'],['historico','Meu histórico','clipboard'],['meus-envios','Meus alertas e ocorrências','bell']],operador:coiNavigation,coi:coiNavigation,cliente:[['cliente','Meu acompanhamento','eye']],vistoriador:[['vistoriador','Vistorias e qualidade','clipboard'],['meus-envios','Meus alertas e ocorrências','bell']],admin:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Eventos','bell'],['ocorrencias','Histórico de tratativas','clipboard'],['equipe','Equipe','users'],['relatorios','Relatórios','clipboard'],['configuracoes','Configurações','settings']]};
+const allNav={ronda:[['minha-ronda','Minha ronda','compass'],['historico','Meu histórico','clipboard'],['meus-envios','Meus alertas e ocorrências','bell']],operador:coiNavigation,coi:coiNavigation,cliente:[['cliente','Meu acompanhamento','eye']],admin:[['overview','Visão geral','chart'],['rondas','Rondas','map'],['notificacoes','Eventos','bell'],['ocorrencias','Histórico de tratativas','clipboard'],['equipe','Equipe','users'],['relatorios','Relatórios','clipboard'],['configuracoes','Configurações','settings']]};
 for(const items of new Set(Object.values(allNav))){items.push(['chat-interno','Chat interno','message']);if(items.some(e=>e[0]==='overview'))items.push(['historico-operacional','Histórico de rondas','clipboard']);}
 
-const roleName={ronda:'Operação de Ronda',operador:'COI · Acompanhamento',coi:'COI · Acompanhamento',cliente:'Visão Cliente',vistoriador:'Vistoriador',admin:'Administração'};
+const roleName={ronda:'Agente de ronda',operador:'COI · Acompanhamento',coi:'COI · Acompanhamento',cliente:'Visão Cliente',admin:'Administração'};
 function simRoleBar(){
  if(!presentation)return '';
- const roles=[['ronda','Vigia','compass','Vigia'],['operador','COI · Acompanhamento','headset','COI'],['cliente','Cliente','eye','Cliente'],['vistoriador','Vistoriador','clipboard','Vistoria'],['admin','Administração','settings','Admin']];
+ const roles=[['ronda','Agente de ronda','compass','Ronda'],['operador','COI · Acompanhamento','headset','COI'],['cliente','Cliente','eye','Cliente'],['admin','Administração','settings','Admin']];
  const currentRole=user?.role??'ronda',point=session?.status==='active'?session.index+1:0,total=session?.route?.points.length??4;
  return `<div class="simulation-rolebar" aria-label="Ambiente interativo do aplicativo"><div class="simulation-caption"><span class="simulation-signal"></span><strong>Rondas Pro</strong><small>Demonstração sem login · cada usuário terá acesso e senha individuais cadastrados pelo administrador na implantação</small></div><nav class="simulation-roles" aria-label="Alternar perfis do aplicativo">${roles.map(([role,label,icon,short])=>`<button type="button" data-action="sim-role" data-role="${role}" aria-label="${label}" aria-pressed="${currentRole===role||(currentRole==='coi'&&role==='operador')}" class="${currentRole===role||(currentRole==='coi'&&role==='operador')?'selected':''}">${ic(icon)}<span class="role-long">${label}</span><span class="role-short" aria-hidden="true">${short}</span></button>`).join('')}</nav><div class="simulation-actions">${helpButton('profiles','perfil de acesso')}<span class="simulation-progress">${session?`Ponto ${Math.min(point,total)} / ${total}`:'Pronto para iniciar'}</span><button type="button" data-action="end-presentation" aria-label="Sair da simulação" title="Sair da simulação">${ic('close')}<span> Sair</span></button></div></div>`;
 }
@@ -653,21 +654,21 @@ function simulationIntro(){
 }
 
 const TOUR_STEPS=[
- {target:'[data-action="profile-menu"]',title:'Perfil e áreas',description:'Abra o perfil para consultar ou alternar entre Ronda, COI, Cliente, Vistoriador e Administração. A troca de áreas nesta demonstração é ilustrativa.'},
+ {target:'[data-action="profile-menu"]',title:'Perfil e áreas',description:'Abra o perfil para consultar ou alternar entre Ronda, COI, Cliente, Administração. A troca de áreas nesta demonstração é ilustrativa.'},
  {target:'#mobile-map, #ops-map',title:'Mapa e pontos',description:'Cada ponto tem raio de 25 metros. O mapa traz ruas reais quando online, mas a posição e o percurso de avaliação são fictícios.'},
  {target:'.patrol-actions, .v4-dashboard-tabs, .ux-ronda-tabs',title:'Ações e detalhes',description:'Cada perfil apresenta apenas as funções relevantes: execução, monitoramento, consulta do cliente, vistoria ou administração.'},
  {target:'[data-action="profile-menu"]',title:'Ajuda sempre disponível',description:'Feche a introdução quando quiser. O guia completo foi refeito por perfil e pode ser reaberto pelo menu Ajuda ou Perfil.'}
 ];
 const tour=createSpotlightTour({app:root,steps:TOUR_STEPS});
 const HELP_TOPICS={
- profiles:['Perfis e acesso','Ronda executa pontos; COI monitora; Cliente acompanha o local; Vistoriador verifica qualidade; Administração organiza rotas, equipe, alertas e relatórios. Os acessos desta demonstração não autenticam usuários reais.'],
+ profiles:['Perfis e acesso','Ronda executa pontos; COI monitora; Cliente acompanha o local; Administração organiza rotas, equipe, alertas e relatórios. Os acessos desta demonstração não autenticam usuários reais.'],
  map:['Mapa e áreas de verificação','Cada ponto exige posicionamento dentro de 25 metros e permanência contínua de 30 segundos. O mapa usa cartografia real quando online, mas as rotas e movimentos de exemplo são ilustrativos.'],
  action:['Próxima ação','O aplicativo indica qual passo executar agora: iniciar, deslocar, validar, registrar ocorrência ou justificar um desvio. A sequência de pontos não pode ser pulada.'],
  timer:['Tempo e geocerca','O cronômetro só conta dentro do raio de 25 metros com sinal confiável. A perda de precisão reinicia a permanência, mas não comprova desvio.'],
  alerts:['Alertas e justificativas','A Administração consulta avisos de desvio e justificativas neste navegador. Não existem notificações remotas nesta versão; elas dependem de backend seguro.'],
- schedules:['Rondas programadas','Uma programação combina vigia, rota, data e horário. A Administração organiza a escala; o vigia vê suas rondas. Dados fictícios, armazenados localmente.'],
+ schedules:['Rondas programadas','Uma programação combina agente de ronda, rota, data e horário. A Administração organiza a escala; o agente de ronda vê suas rondas. Dados fictícios, armazenados localmente.'],
  reports:['Indicadores e relatórios','Os indicadores mostram valores derivados dos registros locais. Não confunda rondas apenas programadas com rondas realmente executadas.'],
- team:['Equipe','O cenário tem vários vigias fictícios. Para implantação real, permissões por papel, autenticação e isolamento entre unidades são obrigatórios.'],
+ team:['Equipe','O cenário tem vários agentes de ronda fictícios. Para implantação real, permissões por papel, autenticação e isolamento entre unidades são obrigatórios.'],
  help:['Ajuda e tutorial','Clique em ? perto de qualquer função para entender detalhes. O tutorial pode ser fechado e reaberto por Ajuda ou Rever tutorial no menu lateral.'],
  privacy:['Privacidade','Nesta avaliação, dados e horários ficam apenas no navegador. GPS real exige autorização explícita e monitoramento remoto depende de servidor e controles adequados.']
 };
@@ -747,19 +748,19 @@ function dashboardV4(){
    '<button type="button" class="v4-history-row" data-action="session-detail" data-id="'+esc(s.id)+'">'+
    '<span><strong>'+esc(s.route.name)+'</strong><small>'+fmt(s.startedAt)+' · '+esc(s.status==='completed'?'Concluída':'Em andamento')+'</small></span>'+
    '<b>'+s.index+'/'+s.route.points.length+'</b>'+ic('arrow')+'</button>').join(''):
-   '<p class="v4-empty">Este vigia ainda não possui registros neste navegador.</p>')+'</div>'+
+   '<p class="v4-empty">Este agente de ronda ainda não possui registros neste navegador.</p>')+'</div>'+
   '<div class="v4-pane-foot">'+btn('Ver relatório '+ic('arrow'),'nav-reports','small')+'</div></section>';
  const insightPane='<section class="v4-pane v4-insights-pane" data-v4-pane="insights"><div class="v4-pane-head"><h2>'+ (manager?'Insights da operação':'Pontos de atenção')+'</h2>'+
    '<span>Baseados nos registros</span></div>'+insightRows+
    '<p class="v4-ethics-note">Indicadores ilustrativos. Um alerta pede verificação, não representa prova de falha individual.</p></section>';
- const rosterPane=manager?'<section class="v4-pane v4-team-pane" data-v4-pane="equipe"><div class="v4-pane-head"><h2>Quatro vigias · cenários distintos</h2><span>Selecione para ver rota</span></div>'+
+ const rosterPane=manager?'<section class="v4-pane v4-team-pane" data-v4-pane="equipe"><div class="v4-pane-head"><h2>Quatro agentes de ronda · cenários distintos</h2><span>Selecione para ver rota</span></div>'+
   '<div class="v4-team-list">'+data.roster.map(w=>
    '<button type="button" class="v4-team-row" data-v4-watcher="'+esc(w.id)+'">'+
    '<span class="v4-team-avatar">'+esc(w.name[0])+'</span><span class="v4-team-copy"><strong>'+esc(w.name)+'</strong>'+
    '<small>'+w.total+' ronda(s) · '+w.completed+' concluída(s)</small></span>'+
    '<span class="v4-team-status">'+(w.deviations+w.incidents)+' evento(s)</span>'+ic('arrow')+'</button>').join('')+'</div>'+
    '<p class="v4-ethics-note">Nomes, rotas e ocorrências fictícios. Não é um ranking de desempenho.</p></section>':'';
- const summaryPane=manager?'<section class="v4-pane v4-summary-pane" data-v4-pane="resumo"><div class="v4-pane-head"><h2>Indicadores da operação</h2><span>'+data.roster.length+' vigias demonstrativos</span></div>'+
+ const summaryPane=manager?'<section class="v4-pane v4-summary-pane" data-v4-pane="resumo"><div class="v4-pane-head"><h2>Indicadores da operação</h2><span>'+data.roster.length+' agentes de ronda demonstrativos</span></div>'+
   metricNodes+'<div class="v4-summary-callout"><div><span>Execuções concluídas</span><strong>'+(data.completionRatio===null?'—':data.completionRatio+'%')+'</strong></div>'+
    '<p>'+esc(data.insights.find(x=>x.id==='completion').detail)+'</p></div>'+
    '<div class="v4-summary-quick">'+btn('Programar ronda '+ic('arrow'),'program-round','small primary')+
@@ -793,7 +794,7 @@ function demoCoiView(){
  '<div class="coi-inspection-list"><strong>Vistorias concluídas · '+completedInspections.length+'</strong>'+(completedInspections.length?completedInspections.slice(0,4).map(a=>'<article><b>'+esc(a.address)+'</b><small> · '+fmt(a.completedAt)+'</small></article>').join(''):'<p class="empty">Nenhum laudo concluído.</p>')+'</div></section>';
  const roundRows=local.length?local.slice(0,10).map((record,i)=>{
   const live=record.status==='active';
-  return '<article class="coi-demo-record"><header><div><span>'+esc(record.route?.name||'Ronda')+'</span><h3>'+esc(record.name||'Vigia')+'</h3></div><b>'+(live?'Em andamento':record.status==='completed'?'Concluída':'Histórico')+'</b></header><div class="coi-demo-facts"><span>Início <strong>'+fmt(record.startedAt)+'</strong></span><span>Pontos <strong>'+Number(record.checkpoints?.filter(x=>x.completedAt).length||0)+'</strong></span></div>'+
+  return '<article class="coi-demo-record"><header><div><span>'+esc(record.route?.name||'Ronda')+'</span><h3>'+esc(record.name||'Agente de ronda')+'</h3></div><b>'+(live?'Em andamento':record.status==='completed'?'Concluída':'Histórico')+'</b></header><div class="coi-demo-facts"><span>Início <strong>'+fmt(record.startedAt)+'</strong></span><span>Pontos <strong>'+Number(record.checkpoints?.filter(x=>x.completedAt).length||0)+'</strong></span></div>'+
    (i===0?'<div id="ops-map" class="map-container large coi-demo-map" aria-label="Mapa ilustrativo da ronda selecionada"></div><small>Mapa e posição ilustrativos neste navegador. O COI real usa GPS enviado pelo campo.</small>':'')+
    '</article>';
  }).join(''):'<div class="empty">Nenhuma ronda registrada no cenário.</div>';
@@ -813,7 +814,7 @@ function realOverview(){
  const rows=[['Profissionais',liveUsers.filter(p=>p.active).length],['Atendimentos pendentes',pending.length],['Em execucao',active.length],['Eventos',liveEvents.length]];
  const metrics='<div class="ops-metrics">'+rows.map(([label,n])=>'<article class="ops-metric"><strong>'+n+'</strong><h3>'+esc(label)+'</h3></article>').join('')+'</div>';
  const recent=liveEvents.slice(0,30).map(e=>'<div class="team-row"><div><strong>'+esc(e.description||e.kind)+'</strong><small>'+esc(e.kind)+' · '+fmt(e.occurred_at)+'</small></div><span>'+esc(e.status||'aberta')+'</span></div>').join('');
- const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Solicitar início de ronda"><div><small>OPERAÇÃO DE CAMPO</small><strong>Solicitar início de ronda</strong><span>Vigia · endereço · orientações</span></div><button type="button" data-action="dispatch-open">Solicitar ronda '+ic('arrow')+'</button></section>':'';
+ const dispatch=reviewer?'<section class="rp-dispatch-launch" aria-label="Solicitar início de ronda"><div><small>OPERAÇÃO DE CAMPO</small><strong>Solicitar início de ronda</strong><span>Agente de ronda · endereço · orientações</span></div><button type="button" data-action="dispatch-open">Solicitar ronda '+ic('arrow')+'</button></section>':'';
  return pageTitle(admin?'Administracao':'COI · Central operacional','Eventos e equipe cadastrados no banco de dados.')+dispatch+metrics+
  '<section class="schedule-workspace"><div class="schedule-heading"><h2>Eventos recentes</h2><button type="button" class="button" data-action="live-refresh">Atualizar</button></div><div class="team-list">'+(recent||'<p>Nenhum evento recebido.</p>')+'</div></section>';
 }
@@ -869,22 +870,22 @@ function mySchedule(){
  const mine=programsForWatcher(programs,selectedWatcherId);
  const upcoming=mine.filter(p=>scheduleStatus(p,sessions)!=='concluída').slice(0,9);
  const selected=programs.find(p=>p.id===selectedProgramId)??nextProgram(programs,selectedWatcherId,sessions);
- return `<details class="my-schedule"><summary><span class="my-schedule-label">${ic('clock')} <b>Minhas rondas</b> <small>${mine.length} programadas</small></span><span class="my-schedule-current">${selected?formatShortDate(selected.startAt):'Sem próxima programação'}</span></summary><div class="my-schedule-inner"><div class="my-schedule-top"><strong>${esc(watcherById(selectedWatcherId)?.name??'Vigia')}</strong>${helpButton('schedules','rondas programadas')}</div><div class="my-schedule-list">${upcoming.length?upcoming.map(p=>{
+ return `<details class="my-schedule"><summary><span class="my-schedule-label">${ic('clock')} <b>Minhas rondas</b> <small>${mine.length} programadas</small></span><span class="my-schedule-current">${selected?formatShortDate(selected.startAt):'Sem próxima programação'}</span></summary><div class="my-schedule-inner"><div class="my-schedule-top"><strong>${esc(watcherById(selectedWatcherId)?.name??'Agente de ronda')}</strong>${helpButton('schedules','rondas programadas')}</div><div class="my-schedule-list">${upcoming.length?upcoming.map(p=>{
  const current=selected?.id===p.id;return `<button type="button" class="${current?'chosen':''}" data-action="select-program" data-id="${esc(p.id)}"><span><strong>${formatShortDate(p.startAt)}</strong><small>${esc(routeById(p.routeId)?.name||'Rota')} · ${esc(scheduleStatus(p,sessions))}</small></span>${current?ic('checkcircle'):ic('arrow')}</button>`;
- }).join(''):'<div class="empty">Nenhuma ronda futura para este vigia.</div>'}</div><p class="map-caption">Os horários e colaboradores são fictícios. Escolha uma ronda para vinculá-la à execução.</p></div></details>`;
+ }).join(''):'<div class="empty">Nenhuma ronda futura para este agente de ronda.</div>'}</div><p class="map-caption">Os horários e colaboradores são fictícios. Escolha uma ronda para vinculá-la à execução.</p></div></details>`;
 }
 const schedulePageSize=()=>window.innerWidth<=900?Math.max(1,Math.min(3,Math.floor((window.innerHeight-360)/65))):16;
 function schedulePanel(){
  const totals=scheduleTotals(programs,sessions);
  const active=filterPrograms(programs,{status:scheduleFilter,watcherId:scheduleWatcher,unit:scheduleUnit,query:scheduleQuery,sessions});
  const paged=pagePrograms(active,schedulePage,schedulePageSize()),rows=paged.items;
- return `<section class="schedule-workspace"><header class="schedule-heading"><div><div class="eyebrow">PLANEJAMENTO DE RONDAS ${helpButton('schedules','agendamento')}</div><h2>Escalas e programação</h2><p>${programs.length} rondas de ${DEMO_WATCHERS.length} vigias · somente neste navegador</p></div>${btn(ic('clock')+' Programar ronda','program-round','primary')}</header>
+ return `<section class="schedule-workspace"><header class="schedule-heading"><div><div class="eyebrow">PLANEJAMENTO DE RONDAS ${helpButton('schedules','agendamento')}</div><h2>Escalas e programação</h2><p>${programs.length} rondas de ${DEMO_WATCHERS.length} agentes de ronda · somente neste navegador</p></div>${btn(ic('clock')+' Programar ronda','program-round','primary')}</header>
  ${window.innerWidth<=900?btn('Filtros','schedule-show-filters','small'):''}<div class="schedule-stats">${[['programada','Programadas'],['em andamento','Em andamento'],['atrasada','Atrasadas'],['concluída','Concluídas']].map(([key,label])=>`<div><strong>${totals[key]||0}</strong><span>${label}</span></div>`).join('')}</div>
  <div class="schedule-switch"><button type="button" data-action="schedule-tab" data-tab="agenda" aria-pressed="${scheduleTab==='agenda'}" class="${scheduleTab==='agenda'?'active':''}">${ic('list')} Agenda de rondas</button><button type="button" data-action="schedule-tab" data-tab="mapa" aria-pressed="${scheduleTab==='mapa'}" class="${scheduleTab==='mapa'?'active':''}">${ic('map')} Mapa da operação</button></div>
- ${scheduleTab==='agenda'?`<div class="schedule-toolbar"><span>${ic('list')} Escalas registradas</span><label>Filtrar <select data-schedule-filter aria-label="Filtrar rondas programadas">${[['all','Todas'],['programada','Programadas'],['em andamento','Em andamento'],['atrasada','Atrasadas'],['concluída','Concluídas'],['cancelada','Canceladas']].map(([k,label])=>`<option value="${k}" ${scheduleFilter===k?'selected':''}>${label}</option>`).join('')}</select></label></div><div class="schedule-refine"><label>Buscar ronda<input type="search" data-schedule-query aria-label="Buscar vigia, rota ou unidade" placeholder="Vigia, rota ou unidade" value="${esc(scheduleQuery)}"></label><label>Unidade<select data-schedule-unit aria-label="Filtrar por unidade"><option value="all">Todas as unidades</option>${[...new Set(DEMO_WATCHERS.map(w=>w.unit))].map(unit=>`<option value="${esc(unit)}" ${scheduleUnit===unit?'selected':''}>${esc(unit)}</option>`).join('')}</select></label><label>Vigia<select data-schedule-watcher aria-label="Filtrar por vigia"><option value="all">Todos os vigias</option>${DEMO_WATCHERS.filter(w=>scheduleUnit==='all'||w.unit===scheduleUnit).map(w=>`<option value="${w.id}" ${scheduleWatcher===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select></label></div><div class="schedule-list-count" role="status" aria-live="polite">${paged.total===0?'Nenhum resultado':`Mostrando ${paged.from}–${paged.to} de ${paged.total} rondas`}</div><div class="schedule-list" role="region" aria-label="Lista de rondas programadas" tabindex="0">${rows.map(p=>{
+ ${scheduleTab==='agenda'?`<div class="schedule-toolbar"><span>${ic('list')} Escalas registradas</span><label>Filtrar <select data-schedule-filter aria-label="Filtrar rondas programadas">${[['all','Todas'],['programada','Programadas'],['em andamento','Em andamento'],['atrasada','Atrasadas'],['concluída','Concluídas'],['cancelada','Canceladas']].map(([k,label])=>`<option value="${k}" ${scheduleFilter===k?'selected':''}>${label}</option>`).join('')}</select></label></div><div class="schedule-refine"><label>Buscar ronda<input type="search" data-schedule-query aria-label="Buscar agente de ronda, rota ou unidade" placeholder="Agente de ronda, rota ou unidade" value="${esc(scheduleQuery)}"></label><label>Unidade<select data-schedule-unit aria-label="Filtrar por unidade"><option value="all">Todas as unidades</option>${[...new Set(DEMO_WATCHERS.map(w=>w.unit))].map(unit=>`<option value="${esc(unit)}" ${scheduleUnit===unit?'selected':''}>${esc(unit)}</option>`).join('')}</select></label><label>Agente de ronda<select data-schedule-watcher aria-label="Filtrar por agente de ronda"><option value="all">Todos os agentes de ronda</option>${DEMO_WATCHERS.filter(w=>scheduleUnit==='all'||w.unit===scheduleUnit).map(w=>`<option value="${w.id}" ${scheduleWatcher===w.id?'selected':''}>${esc(w.name)}</option>`).join('')}</select></label></div><div class="schedule-list-count" role="status" aria-live="polite">${paged.total===0?'Nenhum resultado':`Mostrando ${paged.from}–${paged.to} de ${paged.total} rondas`}</div><div class="schedule-list" role="region" aria-label="Lista de rondas programadas" tabindex="0">${rows.map(p=>{
  const w=watcherById(p.watcherId),route=routeById(p.routeId),state=scheduleStatus(p,sessions);
- return `<article class="schedule-row"><div class="schedule-row-time"><strong>${formatShortDate(p.startAt)}</strong><small>Até ${new Date(p.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div><div class="schedule-row-person"><strong>${esc(w?.name??'Vigia')}</strong><small>${esc(route?.name??'Rota')} · ${esc(w?.unit??'')}</small></div><span class="schedule-state" data-status="${state}">${esc(state)}</span><div class="schedule-row-tools">${btn('Detalhes','program-detail','small',`data-id="${esc(p.id)}"`)}${state==='programada'||state==='atrasada'?`${btn('Reprogramar','program-edit','small',`data-id="${esc(p.id)}"`)}${btn('Cancelar','program-cancel','small',`data-id="${esc(p.id)}"`)}`:''}</div></article>`;
- }).join('')||'<div class="empty">Não há rondas com este filtro.</div>'}</div><nav class="schedule-pagination" aria-label="Páginas da agenda">${btn('Anterior','schedule-prev','small',paged.page===0?'disabled':'')}<span>Página ${paged.page+1} de ${paged.pages}</span>${btn('Próxima','schedule-next','small',paged.page>=paged.pages-1?'disabled':'')}</nav>`:'<p class="schedule-map-intro">O mapa mostra um cenário de rota ilustrativo, enquanto a lista mantém as programações por vigia.</p>'}</section>`;
+ return `<article class="schedule-row"><div class="schedule-row-time"><strong>${formatShortDate(p.startAt)}</strong><small>Até ${new Date(p.endAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div><div class="schedule-row-person"><strong>${esc(w?.name??'Agente de ronda')}</strong><small>${esc(route?.name??'Rota')} · ${esc(w?.unit??'')}</small></div><span class="schedule-state" data-status="${state}">${esc(state)}</span><div class="schedule-row-tools">${btn('Detalhes','program-detail','small',`data-id="${esc(p.id)}"`)}${state==='programada'||state==='atrasada'?`${btn('Reprogramar','program-edit','small',`data-id="${esc(p.id)}"`)}${btn('Cancelar','program-cancel','small',`data-id="${esc(p.id)}"`)}`:''}</div></article>`;
+ }).join('')||'<div class="empty">Não há rondas com este filtro.</div>'}</div><nav class="schedule-pagination" aria-label="Páginas da agenda">${btn('Anterior','schedule-prev','small',paged.page===0?'disabled':'')}<span>Página ${paged.page+1} de ${paged.pages}</span>${btn('Próxima','schedule-next','small',paged.page>=paged.pages-1?'disabled':'')}</nav>`:'<p class="schedule-map-intro">O mapa mostra um cenário de rota ilustrativo, enquanto a lista mantém as programações por agente de ronda.</p>'}</section>`;
 }
 function programRoundDialog(){
  if(user?.role!=='admin')return;
@@ -906,11 +907,11 @@ function programRoundDialog(){
 function editProgramDialog(program){
  if(!program||program.status!=='scheduled'||sessions.some(s=>s.programId===program.id))return;
  const local=ms=>{const d=new Date(ms);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
- showDialog(`<div class="program-dialog"><div class="eyebrow">AGENDA · ALTERAÇÃO LOCAL</div><h2>Reprogramar ronda</h2><p>Atualize o responsável ou o horário. O histórico da alteração será preservado neste navegador.</p><form id="program-edit-form" data-id="${esc(program.id)}"><label>Vigia<select name="watcherId" required>${DEMO_WATCHERS.map(w=>`<option value="${w.id}" ${w.id===program.watcherId?'selected':''}>${esc(w.name)} · ${esc(w.unit)}</option>`).join('')}</select></label><label>Rota<select name="routeId" required>${DEMO_ROUTES.map(r=>`<option value="${r.id}" ${r.id===program.routeId?'selected':''} ${watcherById(program.watcherId)?.unit!==r.unit?'disabled':''}>${esc(r.name)} · ${esc(r.unit)}</option>`).join('')}</select></label><div class="program-date-grid"><label>Início previsto<input type="datetime-local" name="startAt" value="${local(program.startAt)}" required></label><label>Término previsto<input type="datetime-local" name="endAt" value="${local(program.endAt)}" required></label></div><label>Observações<textarea name="notes" maxlength="240" rows="2">${esc(program.notes??'')}</textarea></label><p class="program-error" role="alert" aria-live="polite"></p><button type="submit" class="button primary full">Revisar alteração ${ic('arrow')}</button></form><p class="map-caption">A programação pode ser alterada antes de iniciar a execução; não há envio remoto.</p></div>`,true);
+ showDialog(`<div class="program-dialog"><div class="eyebrow">AGENDA · ALTERAÇÃO LOCAL</div><h2>Reprogramar ronda</h2><p>Atualize o responsável ou o horário. O histórico da alteração será preservado neste navegador.</p><form id="program-edit-form" data-id="${esc(program.id)}"><label>Agente de ronda<select name="watcherId" required>${DEMO_WATCHERS.map(w=>`<option value="${w.id}" ${w.id===program.watcherId?'selected':''}>${esc(w.name)} · ${esc(w.unit)}</option>`).join('')}</select></label><label>Rota<select name="routeId" required>${DEMO_ROUTES.map(r=>`<option value="${r.id}" ${r.id===program.routeId?'selected':''} ${watcherById(program.watcherId)?.unit!==r.unit?'disabled':''}>${esc(r.name)} · ${esc(r.unit)}</option>`).join('')}</select></label><div class="program-date-grid"><label>Início previsto<input type="datetime-local" name="startAt" value="${local(program.startAt)}" required></label><label>Término previsto<input type="datetime-local" name="endAt" value="${local(program.endAt)}" required></label></div><label>Observações<textarea name="notes" maxlength="240" rows="2">${esc(program.notes??'')}</textarea></label><p class="program-error" role="alert" aria-live="polite"></p><button type="submit" class="button primary full">Revisar alteração ${ic('arrow')}</button></form><p class="map-caption">A programação pode ser alterada antes de iniciar a execução; não há envio remoto.</p></div>`,true);
 }
 
 function watcherChooser(){
- showDialog(`<div class="eyebrow">PERFIL DO VIGIA · AVALIAÇÃO</div><h2>Selecionar colaborador</h2><p>Explore as rondas de diferentes vigias fictícios. Uma implantação real exige login individual e permissões.</p><div class="watcher-grid">${DEMO_WATCHERS.map(w=>`<button type="button" data-action="choose-watcher" data-id="${w.id}" class="${selectedWatcherId===w.id?'active':''}"><span class="avatar">${esc(w.name.slice(0,1))}</span><span><strong>${esc(w.name)}</strong><small>${esc(w.unit)} · ${programsForWatcher(programs,w.id).length} escalas</small></span></button>`).join('')}</div>`,true);
+ showDialog(`<div class="eyebrow">PERFIL DO VIGIA · AVALIAÇÃO</div><h2>Selecionar colaborador</h2><p>Explore as rondas de diferentes agentes de ronda fictícios. Uma implantação real exige login individual e permissões.</p><div class="watcher-grid">${DEMO_WATCHERS.map(w=>`<button type="button" data-action="choose-watcher" data-id="${w.id}" class="${selectedWatcherId===w.id?'active':''}"><span class="avatar">${esc(w.name.slice(0,1))}</span><span><strong>${esc(w.name)}</strong><small>${esc(w.unit)} · ${programsForWatcher(programs,w.id).length} escalas</small></span></button>`).join('')}</div>`,true);
 }
 
 
@@ -958,8 +959,8 @@ function demoInspectorView(){
 function demoAdminRouteQueue(){
  const w=watcherById(selectedSupervisedWatcherId)||DEMO_WATCHERS[0],history=sessionList().filter(s=>s.name===w.name).slice(0,5),planned=programsForWatcher(programs,w.id);
  return '<section class="demo-admin-route-queue"><header class="demo-admin-route-header"><div><span class="eyebrow">MAPAS · RONDAS POR COLABORADOR</span><h2>'+esc(w.name)+'</h2><p>'+esc(w.unit)+' · '+history.length+' registros recentes · '+planned.length+' programações</p></div><a class="button primary" href="./central.html#routes">+ Criar nova rota para colaborador</a></header>'+
- '<p class="map-caption">A seleção do vigia acima filtra os mapas e o histórico. O cadastro persistente abre a central autenticada.</p>'+
- (history.length?history.map((s,i)=>'<article class="demo-admin-route-line"><div id="admin-route-mini-'+i+'" class="demo-mini-route-map"></div><div><span class="demo-route-flag">'+(s.status==='active'?'Em andamento':'Concluída')+'</span><h3>'+esc(s.route.name)+'</h3><p>'+esc(w.unit)+' · '+fmt(s.startedAt)+'</p><p>'+(s.checkpoints||[]).filter(p=>p.completedAt).length+'/'+s.route.points.length+' pontos verificados</p><button class="button small" data-action="session-detail" data-id="'+esc(s.id)+'">Ver cronologia</button></div></article>').join(''):'<p class="empty">Sem execução registrada para este vigia. Confira a agenda abaixo.</p>')+'</section>';
+ '<p class="map-caption">A seleção do agente de ronda acima filtra os mapas e o histórico. O cadastro persistente abre a central autenticada.</p>'+
+ (history.length?history.map((s,i)=>'<article class="demo-admin-route-line"><div id="admin-route-mini-'+i+'" class="demo-mini-route-map"></div><div><span class="demo-route-flag">'+(s.status==='active'?'Em andamento':'Concluída')+'</span><h3>'+esc(s.route.name)+'</h3><p>'+esc(w.unit)+' · '+fmt(s.startedAt)+'</p><p>'+(s.checkpoints||[]).filter(p=>p.completedAt).length+'/'+s.route.points.length+' pontos verificados</p><button class="button small" data-action="session-detail" data-id="'+esc(s.id)+'">Ver cronologia</button></div></article>').join(''):'<p class="empty">Sem execução registrada para este agente de ronda. Confira a agenda abaixo.</p>')+'</section>';
 }
 
 function rondas(){
@@ -1080,7 +1081,7 @@ function reports(){
 }
 function settings(){
  if(user?.role!=='admin')return pageTitle('Sem permissão','Regras disponíveis somente para Gerência e Administração.');
- return pageTitle('Configurações','Cadastro de profissionais autorizado apenas à Administração.')+'<section class="schedule-workspace"><h2>Cadastro de profissionais</h2><form id="live-create-user-form" class="live-register"><label>Perfil<select name="role"><option value="coi">COI</option><option value="ronda">Vigia / Ronda</option><option value="vistoriador">Vistoriador</option></select></label><label>Nome<input name="name" required minlength="2"></label><label>E-mail<input type="email" name="email" required></label><label>Telefone<input type="tel" name="phone" required></label><label>Usuário (opcional; pode usar e-mail)<input name="username" minlength="3" maxlength="40"></label><label>Senha<input type="password" name="password" required minlength="12" autocomplete="new-password"></label><button type="submit" class="button primary">Cadastrar</button></form><div class="team-list" style="margin-top:16px">'+liveUsers.map(p=>'<div class="team-row"><strong>'+esc(p.name)+'</strong><span>'+esc(p.username||p.email)+' · '+esc(roleName[p.role]||p.role)+'</span></div>').join('')+'</div></section>';
+ return pageTitle('Configurações','Cadastro de profissionais autorizado apenas à Administração.')+'<section class="schedule-workspace"><h2>Cadastro de profissionais</h2><form id="live-create-user-form" class="live-register"><label>Perfil<select name="role"><option value="coi">COI</option><option value="ronda">Agente de ronda / Ronda</option><option value="vistoriador">Vistoriador</option></select></label><label>Nome<input name="name" required minlength="2"></label><label>E-mail<input type="email" name="email" required></label><label>Telefone<input type="tel" name="phone" required></label><label>Usuário (opcional; pode usar e-mail)<input name="username" minlength="3" maxlength="40"></label><label>Senha<input type="password" name="password" required minlength="12" autocomplete="new-password"></label><button type="submit" class="button primary">Cadastrar</button></form><div class="team-list" style="margin-top:16px">'+liveUsers.map(p=>'<div class="team-row"><strong>'+esc(p.name)+'</strong><span>'+esc(p.username||p.email)+' · '+esc(roleName[p.role]||p.role)+'</span></div>').join('')+'</div></section>';
 }
 function legacySettings(){
  const options=[
@@ -1092,7 +1093,7 @@ function legacySettings(){
    info:'Exibe as etapas demonstrativas de conferência no ponto.'}
  ];
  const people='<section class="schedule-workspace"><div class="schedule-heading"><div><h2>Cadastro de profissionais</h2><p>Somente a Administracao pode criar acessos.</p></div></div>'+
- '<form id="live-create-user-form" class="live-register"><label>Perfil<select name="role" required><option value="coi">COI</option><option value="ronda">Vigia / Ronda</option><option value="vistoriador">Vistoriador</option></select></label>'+
+ '<form id="live-create-user-form" class="live-register"><label>Perfil<select name="role" required><option value="coi">COI</option><option value="ronda">Agente de ronda / Ronda</option><option value="vistoriador">Vistoriador</option></select></label>'+
  '<label>Nome<input name="name" required minlength="2" maxlength="100"></label>'+
  '<label>E-mail<input type="email" name="email" required maxlength="150"></label>'+
  '<label>Telefone<input type="tel" name="phone" required maxlength="35"></label>'+
@@ -1125,8 +1126,11 @@ function phoneTelemetry(){
  return `<div class="mobile-operational-strip"><div class="mobile-location-status"><span class="ops-live-dot"></span><div><strong>${esc(state)}</strong><small>${mode==='simulation'?'Cenário ilustrativo · sem GPS real':'GPS do dispositivo · sujeito à precisão'}</small></div></div><div class="mobile-progress-chip">${s?`${s.index}/${s.route.points.length}`:'0/4'} <span>pontos</span></div></div><div class="mobile-tracking-meta"><div>${ic('map')} <strong>${point?esc(point.name):s?.status==='completed'?'Ronda finalizada':'Rota Centro · Perímetro'}</strong></div><div class="mobile-mini-meter" role="progressbar" aria-label="Progresso da ronda" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div><small>${point?'Próximo ponto obrigatório':'Verifique a sequência no mapa'} · ${mode==='real'&&fix?`Precisão ${Math.round(fix.accuracy??0)} m`:'25 m de raio por ponto'}</small></div>`;
 }
 function readyStartPanel(){
+ const assigned=liveRoutes.filter(r=>r.userId===user?.id),next=assigned[0];
+ const unread=liveRouteNotices.filter(n=>!n.read_at&&/ronda programada/i.test(n.title||''));
+ const announcement=next?'<div class="rp-route-delivery" role="status"><strong>'+ic('bell')+' '+(unread.length?'Nova ronda atribuída':'Ronda programada')+'</strong><p>'+esc(next.name)+' · '+esc(scheduleDescription(next.schedule))+'</p><small>'+next.points.length+' destinos · enviado pelo COI</small></div>':'';
  const count=(session?.route??assignedRoute()??routeForWatcher(selectedWatcherId)).points.length;
- return `<div class="patrol-stage-intro"><span class="patrol-stage-index">01 · PREPARAÇÃO</span><h2>Pronto para iniciar?</h2><p>${count} pontos · raio de 25 m · 30 s por ponto.</p></div><div class="patrol-mode-toggle" aria-label="Modo da ronda"><button type="button" class="${mode==='simulation'?'selected':''}" data-action="mode-simulation" aria-pressed="${mode==='simulation'}">${ic('play')} Cenário</button><button type="button" class="${mode==='real'?'selected':''}" data-action="mode-real" ${presentation?'disabled':''} aria-pressed="${mode==='real'}">${ic('crosshair')} GPS real</button></div>${btn('Iniciar ronda '+ic('arrow'),'start','primary full')}<p class="patrol-microtext">${presentation?'Você experimenta o próprio aplicativo, com mapa e alertas ilustrativos.':mode==='real'?'O aparelho solicitará permissão para localização durante a ronda.':'O mapa contém ruas reais; trajeto e posições do cenário são simulados.'}</p>`;
+ return announcement+`<div class="patrol-stage-intro"><span class="patrol-stage-index">01 · PREPARAÇÃO</span><h2>Pronto para iniciar?</h2><p>${count} pontos · raio de 25 m · 30 s por ponto.</p></div><div class="patrol-mode-toggle" aria-label="Modo da ronda"><button type="button" class="${mode==='simulation'?'selected':''}" data-action="mode-simulation" aria-pressed="${mode==='simulation'}">${ic('play')} Cenário</button><button type="button" class="${mode==='real'?'selected':''}" data-action="mode-real" ${presentation?'disabled':''} aria-pressed="${mode==='real'}">${ic('crosshair')} GPS real</button></div>${btn('Iniciar ronda '+ic('arrow'),'start','primary full')}<p class="patrol-microtext">${presentation?'Você experimenta o próprio aplicativo, com mapa e alertas ilustrativos.':mode==='real'?'O aparelho solicitará permissão para localização durante a ronda.':'O mapa contém ruas reais; trajeto e posições do cenário são simulados.'}</p>`;
 }
 function navigationShortcuts(point){
  if(!point)return '';
@@ -1268,7 +1272,7 @@ function incidentReviewDialog(s,i){
  const manage=canReviewDemo();
  const log=(i.history??[]).slice().reverse().map(h=>`<div class="incident-review-row"><strong>${esc(h.status)}</strong><small>${fmt(h.at)} · ${esc(h.actor??'Supervisão')}</small>${h.note?`<p>${esc(h.note)}</p>`:''}</div>`).join('');
  const edit=manage&&i.status!=='Resolvida'?`<form id="incident-review-form" data-session="${esc(s.id)}" data-id="${esc(i.id)}"><label class="field">Situação<select name="status"><option ${i.status==='Aberta'?'selected':''}>Aberta</option><option ${i.status==='Em análise'?'selected':''}>Em análise</option><option ${i.status==='Resolvida'?'selected':''}>Resolvida</option></select></label><label class="field">Responsável pela providência<input name="assignee" maxlength="60" value="${esc(user.name)}" readonly aria-readonly="true"></label><label class="field">Providência / observação<textarea name="note" maxlength="450" placeholder="Descreva o que foi feito ou o encaminhamento"></textarea></label>${btn('Salvar tratamento','incident-review','primary full')}</form>`:'<p><strong>Responsável pela providência:</strong> '+esc(i.assignee||'Aguardando COI')+'</p><p>'+ (i.status==='Resolvida'?'Resolvida · somente consulta.':'Em aberto · aguardando tratamento.')+'</p>';
- showDialog(`<div class="incident-review-dialog"><div class="eyebrow">OCORRÊNCIA · REGISTRO LOCAL</div><h2>${esc(i.title)}</h2><div class="incident-review-tags">${tag(i.severity,'orange')}${tag(i.status==='Em análise'?'Em aberto · Em análise':i.status??'Aberta',i.status==='Resolvida'?'green':'orange')}</div><p>${esc(i.description)}</p>${ops.incidentMediaList(i)}<div class="detail-pair"><span>Vigia</span><strong>${esc(s.name)}</strong></div><div class="detail-pair"><span>Ponto</span><strong>${esc(i.pointName)}</strong></div><div class="detail-pair"><span>Registrada</span><strong>${fmt(i.at)}</strong></div>${edit}${i.status==='Resolvida'?'<h3>Solução registrada</h3><p>'+esc(i.history?.at(-1)?.note||'Consulte o histórico de tratamento.')+'</p>':''}<details class="incident-review-history"><summary>Histórico de tratamento (${(i.history??[]).length})</summary>${log||'<p>Nenhuma análise registrada.</p>'}</details><p class="map-caption">Demonstração: sem envio remoto nem identificação de usuário validada por servidor.</p></div>`,true);
+ showDialog(`<div class="incident-review-dialog"><div class="eyebrow">OCORRÊNCIA · REGISTRO LOCAL</div><h2>${esc(i.title)}</h2><div class="incident-review-tags">${tag(i.severity,'orange')}${tag(i.status==='Em análise'?'Em aberto · Em análise':i.status??'Aberta',i.status==='Resolvida'?'green':'orange')}</div><p>${esc(i.description)}</p>${ops.incidentMediaList(i)}<div class="detail-pair"><span>Agente de ronda</span><strong>${esc(s.name)}</strong></div><div class="detail-pair"><span>Ponto</span><strong>${esc(i.pointName)}</strong></div><div class="detail-pair"><span>Registrada</span><strong>${fmt(i.at)}</strong></div>${edit}${i.status==='Resolvida'?'<h3>Solução registrada</h3><p>'+esc(i.history?.at(-1)?.note||'Consulte o histórico de tratamento.')+'</p>':''}<details class="incident-review-history"><summary>Histórico de tratamento (${(i.history??[]).length})</summary>${log||'<p>Nenhuma análise registrada.</p>'}</details><p class="map-caption">Demonstração: sem envio remoto nem identificação de usuário validada por servidor.</p></div>`,true);
 }
 function evidenceDialog(){
  if(!session||session.status!=='active'||mode!=='simulation'||!currentCheckpoint(session)){notify('Verificação de exemplo disponível apenas durante a ronda simulada.');return;}
@@ -1288,13 +1292,13 @@ async function activatePagesRole(role){
 }
 function openDemoWorkerPicker(){
  if(!isPagesTestMode())return;
- showDialog('<section class="rp-demo-worker-picker"><span class="eyebrow">RONDA PRO · PERFIL VIGIA</span><h2>Escolha o vigia que deseja simular</h2><p>Esta é uma demonstração do funcionamento do aplicativo. Os três nomes são fictícios; não há acompanhamento real nem envio de dados a outros aparelhos.</p><div class="rp-demo-worker-list">'+DEMO_THREE.map((w,i)=>'<button type="button" data-action="choose-demo-worker" data-username="'+esc(w.username)+'"><b>'+(i+1)+'</b><span><strong>'+esc(w.name)+'</strong><small>Abrir aplicativo como este vigia · demonstração</small></span>'+ic('arrow')+'</button>').join('')+'</div></section>',true);
+ showDialog('<section class="rp-demo-worker-picker"><span class="eyebrow">RONDA PRO · PERFIL VIGIA</span><h2>Escolha o agente de ronda que deseja simular</h2><p>Esta é uma demonstração do funcionamento do aplicativo. Os três nomes são fictícios; não há acompanhamento real nem envio de dados a outros aparelhos.</p><div class="rp-demo-worker-list">'+DEMO_THREE.map((w,i)=>'<button type="button" data-action="choose-demo-worker" data-username="'+esc(w.username)+'"><b>'+(i+1)+'</b><span><strong>'+esc(w.name)+'</strong><small>Abrir aplicativo como este agente de ronda · demonstração</small></span>'+ic('arrow')+'</button>').join('')+'</div></section>',true);
 }
 function openAreaPicker(){
   if(!presentation&&!isPagesTestMode())return;
   const roles=isPagesTestMode()
-   ?[['ronda','Vigia','compass'],['coi','COI · Acompanhamento','headset'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']]
-   :[['ronda','Vigia','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
+   ?[['ronda','Agente de ronda','compass'],['coi','COI · Acompanhamento','headset'],['admin','Administração','settings']]
+   :[['ronda','Agente de ronda','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['admin','Administração','settings']];
   showDialog(`<div class="eyebrow">ÁREAS DO RONDA PRO · ${isPagesTestMode()?'TESTES':'DEMONSTRAÇÃO'}</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">${isPagesTestMode()?'Escolha livremente uma área de teste. Os dados permanecem neste navegador.':'A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.'}</p>${(isPagesTestMode())?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`,false,'role-picker-dialog');
 }
 function profileDialog(){
@@ -1317,7 +1321,7 @@ function localCommunications(){try{return JSON.parse(localStorage.getItem('ronda
 async function recordFieldNotice(kind,description,details={},form=null){
  const id=crypto.randomUUID(),at=Date.now(),local=mode==='simulation'||!sessionStorage.getItem('rondaspro_api_token');
  if(form){const attachment={id};await ops.attachIncidentMedia(attachment,form);details={...details,media:attachment.media,mediaIds:attachment.media.map(m=>m.id)};}
- const record={id,at,kind,label:description,details,seenAt:null,readAt:null,sessionId:session?.id||'field',name:user?.name||'Vigia',route:session?.route?.name||'Fora de ronda'};
+ const record={id,at,kind,label:description,details,seenAt:null,readAt:null,sessionId:session?.id||'field',name:user?.name||'Agente de ronda',route:session?.route?.name||'Fora de ronda'};
  if(local){const rows=localCommunications();rows.unshift(record);localStorage.setItem('rondas-pro-field-notices',JSON.stringify(rows));}
  else{await ops.queueEvent({id,at,kind,status:'pending',payload:{description,...details,mode:'real',sessionId:session?.id||null,position:locationFix}});await ops.syncPending();}
  return local?'Registro salvo na demonstração.':ops.allEvents().find(e=>e.id===id)?.status==='synced'?'Enviado à central.':'Salvo no aparelho · envio pendente.';
@@ -1430,7 +1434,7 @@ function realtimeTick(){if(!session||session.status!=='active'||document.hidden)
  processPosition();}
 setInterval(realtimeTick,180);
 /* O servidor continua sendo a fonte da operação real. Consulta curta e isolada
- * permite que o vigia veja uma rota nova sem recarregar ou interromper a ronda.
+ * permite que o agente de ronda veja uma rota nova sem recarregar ou interromper a ronda.
  * O modo Pages lê exclusivamente seu armazenamento local de teste. */
 let routePollBusy=false;
 setInterval(async()=>{
@@ -1505,7 +1509,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
  if(act==='tour-restart'){modal.close?.();tour.open();return;}
  if(act==='feature-help'){featureHelp(el.dataset.topic);return;}
  if(act==='no-op'){notify('Você está na tela de ronda.');return;}
- if(act==='presentation-intro'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
+ if(act==='presentation-intro'){beginSimulation(watcherById(selectedWatcherId)?.name||'Agente de ronda demonstrativo',false,'ronda');return;}
  if(act==='guide'){showGuide(false);return;}
  if(act==='guide-stage'){const input=modal.querySelector('#presentation-name');if(input?.value?.trim())presentationName=input.value.trim().slice(0,60);showGuide(modal.dataset.guideLaunch==='true',Number(el.dataset.stage));return;}
  if(act==='guide-back'||act==='guide-forward'){const input=modal.querySelector('#presentation-name');if(input?.value?.trim())presentationName=input.value.trim().slice(0,60);showGuide(modal.dataset.guideLaunch==='true',Math.max(0,Math.min(lessonNames.length-1,guideStage+(act==='guide-forward'?1:-1))));return;}
@@ -1514,7 +1518,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   if(name.length<2){notify('Informe um nome com pelo menos duas letras.');return;}
   beginSimulation(name,false,'ronda');return;
  }
- if(act==='end-presentation'){locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
+ if(act==='end-presentation'){locationGate.reset();beginSimulation(watcherById(selectedWatcherId)?.name||'Agente de ronda demonstrativo',false,'ronda');return;}
  if(act==='launch-scenario'){
   beginSimulation('Administrador',true,'admin');
   notify('Cenário ativo. Alterne para Ronda para mover o marcador e gerar eventos.');return;
@@ -1573,7 +1577,7 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
  if(act==='schedule-show-filters'){const ref=document.querySelector('.schedule-refine');scheduleFiltersOpen=!scheduleFiltersOpen;if(ref){ref.classList.toggle('ux-filters-open',scheduleFiltersOpen);el.setAttribute('aria-expanded',String(scheduleFiltersOpen));}return;}
  if(act==='watcher-chooser'){if(user?.role==='ronda')watcherChooser();return;}
  if(act==='choose-watcher'){
-  if(user?.role!=='ronda'||session?.status==='active'){notify('Finalize a ronda ativa antes de trocar de vigia.');return;}
+  if(user?.role!=='ronda'||session?.status==='active'){notify('Finalize a ronda ativa antes de trocar de agente de ronda.');return;}
   const w=watcherById(el.dataset.id);if(!w)return;
   selectedWatcherId=w.id;selectedProgramId=null;session=null;user.name=w.name;presentationName=w.name;
   persist();modal.close();render();return;
@@ -1599,12 +1603,12 @@ if(act==='schedule-tab'){if(!['agenda','mapa'].includes(el.dataset.tab))return;s
  if(act==='program-detail'){
   const p=programs.find(p=>p.id===el.dataset.id);if(!p)return;
   const w=watcherById(p.watcherId),route=routeById(p.routeId);
-  showDialog(`<div class="eyebrow">RONDA PROGRAMADA</div><h2>${esc(route?.name??'Rota')}</h2><div class="detail-pair"><span>Vigia</span><strong>${esc(w?.name??'')}</strong></div><div class="detail-pair"><span>Unidade</span><strong>${esc(w?.unit??'')}</strong></div><div class="detail-pair"><span>Início previsto</span><strong>${esc(formatShortDate(p.startAt))}</strong></div><div class="detail-pair"><span>Situação</span><strong>${esc(scheduleStatus(p,sessions))}</strong></div><p>${esc(p.notes||'Sem observações.')}</p>${btn('Fechar','close-dialog','primary full')}`);return;
+  showDialog(`<div class="eyebrow">RONDA PROGRAMADA</div><h2>${esc(route?.name??'Rota')}</h2><div class="detail-pair"><span>Agente de ronda</span><strong>${esc(w?.name??'')}</strong></div><div class="detail-pair"><span>Unidade</span><strong>${esc(w?.unit??'')}</strong></div><div class="detail-pair"><span>Início previsto</span><strong>${esc(formatShortDate(p.startAt))}</strong></div><div class="detail-pair"><span>Situação</span><strong>${esc(scheduleStatus(p,sessions))}</strong></div><p>${esc(p.notes||'Sem observações.')}</p>${btn('Fechar','close-dialog','primary full')}`);return;
  }
  if(act==='program-cancel'){
   if(user?.role!=='admin')return;
   const p=programs.find(p=>p.id===el.dataset.id);if(!p||sessions.some(s=>s.programId===p.id))return;
-  showDialog(`<h2>Cancelar programação?</h2><p>A ronda de ${esc(watcherById(p.watcherId)?.name||'vigia')} prevista para ${esc(formatShortDate(p.startAt))} será marcada como cancelada.</p><div class="modal-actions">${btn('Manter ronda','close-dialog')}${btn('Confirmar cancelamento','program-cancel-confirm','danger',`data-id="${esc(p.id)}"`)}</div>`);return;
+  showDialog(`<h2>Cancelar programação?</h2><p>A ronda de ${esc(watcherById(p.watcherId)?.name||'agente de ronda')} prevista para ${esc(formatShortDate(p.startAt))} será marcada como cancelada.</p><div class="modal-actions">${btn('Manter ronda','close-dialog')}${btn('Confirmar cancelamento','program-cancel-confirm','danger',`data-id="${esc(p.id)}"`)}</div>`);return;
  }
  if(act==='program-cancel-confirm'){
   if(user?.role!=='admin')return;
@@ -1643,7 +1647,7 @@ if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch((
   '<button type="submit" class="button primary full">Enviar laudo e concluir</button></form>');
   return;
  }
- if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
+ if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Agente de ronda demonstrativo',false,'ronda');return;}
  if(act==='logout'){if(isPagesTestMode()){openAreaPicker();return;}stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
  if(act==='start'){if(!locationGate.isGranted()&&!isPagesTestMode()){locationGate.open({demo:presentation});return;}startDialog();return;}
@@ -2046,4 +2050,15 @@ const locationGate=createLocationEntryGate({onGranted:fix=>{
  // O guia permanece disponível após a autorização, sem encobrir a cortina de localização.
 }});
 (async()=>{try{seedDemoThree();if(isPagesTestMode()){await activatePagesRole('admin');openAreaPicker();}else if(liveSession.token)await restoreLiveAccount();else render();}catch{liveLogout();notify('Entre novamente para acessar seus dados.');}})();
+// Atualização de atribuições sem logout. Nunca reconstruir o painel durante uma ronda ativa.
+setInterval(async()=>{
+ if(user?.role!=='ronda'||screen!=='dashboard'||document.hidden||session?.status==='active')return;
+ const previous=liveRoutes.map(r=>r.id).join('|'),unread=liveRouteNotices.filter(n=>!n.read_at).length;
+ try{
+  await refreshLiveOperational();
+  if(previous!==liveRoutes.map(r=>r.id).join('|')||unread!==liveRouteNotices.filter(n=>!n.read_at).length){
+   render();notify('Programação de ronda atualizada.');
+  }
+ }catch{}
+},15000);
 if(window.AndroidTracking&&session?.status==='active')setTimeout(syncNativeHistory,300);
