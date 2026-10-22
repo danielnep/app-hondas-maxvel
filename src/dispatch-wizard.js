@@ -1,8 +1,9 @@
 import {loadLeaflet} from './map.js';
+import {fetchRoadItinerary} from './inspection-street-route.js';
 /** Despacho compacto por etapas. O backend continua sendo a autoridade da operação. */
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=>[],request,refresh,redraw,notify}){
- let locationPoint=null,destinations=[],previewMap=null,previewLayers=[],previewEpoch=0,searchController=null,searchTimer=null;
+ let locationPoint=null,destinations=[],previewMap=null,previewLayers=[],previewEpoch=0,routeController=null,searchController=null,searchTimer=null;
  dialog.addEventListener('close',()=>clearPreview());
  const names=['Profissional','Destino','Orientações','Revisão'];
  function open(){
@@ -20,7 +21,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    '<section class="rp-dispatch-stage" data-dispatch-stage="2" hidden><span class="rp-dispatch-counter">02 / 04 · DESTINOS</span><h3>Por quais lugares o vigia passará?</h3>'+
    '<label for="rp-dispatch-address">Pesquisar próximo destino<input id="rp-dispatch-address" name="address" minlength="5" maxlength="350" autocomplete="off" placeholder="Rua, número, bairro e cidade"></label>'+
    '<div id="rp-dispatch-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Locais encontrados"></div>'+
-   '<div id="rp-dispatch-preview-map" class="rp-plan-map" aria-label="Mapa dos destinos da ronda">O mapa mostrará os endereços escolhidos.</div>'+
+   '<div id="rp-dispatch-preview-map" class="rp-plan-map" aria-label="Mapa dos destinos da ronda">O mapa mostrará os endereços escolhidos.</div>'+ '<p id="rp-dispatch-route-status" class="rp-dispatch-road-status" role="status" aria-live="polite">Ao incluir dois destinos, calcularemos o percurso pelas ruas.</p>'+
    '<p id="rp-dispatch-location-status" class="rp-dispatch-location-status" role="status" aria-live="polite">Pesquise um endereço, selecione o resultado e confira no mapa.</p>'+ '<button type="button" id="rp-dispatch-add-destination" class="rp-dispatch-add" disabled>+ Adicionar destino</button>'+ '<div class="rp-dispatch-stops-heading"><strong>Destinos da ronda (<span id="rp-dispatch-stop-count">0</span>/12)</strong><small>Na ordem em que o vigia deverá visitar</small></div>'+ '<ol id="rp-dispatch-stops" class="rp-dispatch-stops" aria-label="Destinos confirmados"></ol>'+
    '<input type="hidden" name="latitude"><input type="hidden" name="longitude">'+
    '<p>Confira o marcador e toque em Adicionar destino. Você pode incluir até 12 locais.</p></section>'+
@@ -58,6 +59,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
  }
 
  function clearPreview(){
+  routeController?.abort();routeController=null;
   if(searchController)searchController.abort();
   clearTimeout(searchTimer);
   previewEpoch++;
@@ -102,6 +104,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   const focus=valid(point)?point:locationPoint||destinations.at(-1);
   if(!valid(focus))return;
   const epoch=++previewEpoch;
+  routeController?.abort();routeController=null;
   if(!previewMap)fallbackPreview(focus); // Mapas de contingência aparecem sem esperar pelo CDN do Leaflet.
   try{
    const L=await loadLeaflet();if(epoch!==previewEpoch||!host.isConnected)return;
@@ -116,7 +119,6 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    for(const layer of previewLayers)previewMap.removeLayer(layer);
    previewLayers=[];
    const line=destinations.map(p=>[p.lat,p.lng]);
-   if(line.length>1)previewLayers.push(L.polyline(line,{color:'#65c7f4',weight:4,opacity:.95}).addTo(previewMap));
    destinations.forEach((p,i)=>{
     previewLayers.push(L.marker([p.lat,p.lng]).addTo(previewMap).bindPopup(escape((i+1)+'. '+p.address)));
    });
@@ -124,6 +126,22 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    if(line.length>1)previewMap.fitBounds(L.latLngBounds([...line,[focus.lat,focus.lng]]).pad(.18),{maxZoom:16,animate:false});
    else previewMap.setView([focus.lat,focus.lng],15,{animate:false});
    setTimeout(()=>{if(epoch===previewEpoch&&host.isConnected)previewMap?.invalidateSize()},160);
+   // Só exibir caminho após roteamento viário real, jamais conectar pontos por reta.
+   const status=dialog.querySelector('#rp-dispatch-route-status');
+   if(destinations.length>=2){
+    if(status)status.textContent='Calculando trajeto pelas ruas para '+destinations.length+' destinos…';
+    const controller=new AbortController();routeController=controller;
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    try{
+     const road=await fetchRoadItinerary(destinations,{signal:controller.signal});
+     if(controller.signal.aborted||epoch!==previewEpoch||!previewMap||!host.isConnected)return;
+     previewLayers.push(L.polyline(road.path.map(p=>[p.lat,p.lng]),{color:'#55c9f5',weight:5,opacity:1,lineJoin:'round'}).addTo(previewMap));
+     previewMap.fitBounds(L.latLngBounds(road.path.map(p=>[p.lat,p.lng])).pad(.12),{maxZoom:16,animate:false});
+     if(status)status.textContent='Percurso pelas ruas: '+(road.distanceMeters/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+' km · cerca de '+Math.max(1,Math.round(road.durationSeconds/60))+' min de deslocamento, sem contar paradas.';
+    }catch{
+     if(epoch===previewEpoch&&status)status.textContent=controller.signal.aborted?'Tempo esgotado ao calcular a rota. Os locais estão marcados; tente novamente.':'Serviço viário indisponível. Destinos marcados, mas ainda sem trajeto calculado.';
+    }finally{clearTimeout(timeout);if(routeController===controller)routeController=null;}
+   }else if(status)status.textContent='Inclua ao menos dois destinos para traçar o percurso pelas ruas.';
   }catch(error){
    if(epoch!==previewEpoch||!host.isConnected)return;
    fallbackPreview(focus);
