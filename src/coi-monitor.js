@@ -1,4 +1,4 @@
-/* Rondas Pro · COI: pessoas, acompanhamento, evidências e situação.
+/* Ronda Pro · COI: pessoas, acompanhamento, evidências e situação.
  * Não há página de mapa. O mapa pertence a cada ronda/vistoria, contextualizado.
  * Tudo é obtido da API autenticada, sem simular pessoas em produção.
  */
