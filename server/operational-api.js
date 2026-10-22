@@ -216,7 +216,11 @@ export function createOperationalApi(){
    if((p==='/api/routes'&&m==='POST')||(routeMatch&&m==='PUT')){
     if(!(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,403,{error:'Somente COI ou Administração configura rotas'});return true;}
     const d=serialize((await body(req)).toString())||{};
-    const user=db.prepare("SELECT id,site FROM users WHERE id=? AND role='ronda' AND active=1").get(clean(d.userId));
+    const requestedWorker=clean(d.userId);
+    const online=operations.availability().filter(w=>w.role==='ronda'&&w.status==='Disponível'&&w.site);
+    const user=requestedWorker==='auto'?
+     (online.sort((a,b)=>(a.last_seen||0)-(b.last_seen||0))[0]||null):
+     db.prepare("SELECT id,site FROM users WHERE id=? AND role='ronda' AND active=1").get(requestedWorker);
     const title=clean(d.name).slice(0,120);
     const points=d.points;
     const plannedStart=d.plannedStart==null||d.plannedStart===''?null:Number(d.plannedStart);
@@ -236,21 +240,21 @@ export function createOperationalApi(){
     if(plannedStart!==null&&(!Number.isInteger(plannedStart)||plannedStart<1577836800000||plannedStart>4102444800000)){
      resp(res,422,{error:'Horário de início programado inválido'});return true;
     }
-    if(!user||!user.site||title.length<3||!Array.isArray(points)||points.length<2||points.length>30||
+    if(!user||!user.site||title.length<3||!Array.isArray(points)||points.length<1||points.length>30||
       !points.every(p=>p&&typeof p==='object'&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&Number.isFinite(p.lng)&&Math.abs(p.lng)<=180&&clean(p.name).length>0&&clean(p.name).length<=100)){
-      resp(res,422,{error:'Selecione um vigia com posto e informe nome e 2 a 30 pontos válidos'});return true;
+      resp(res,422,{error:'Selecione um agente de ronda ativo ou disponível e informe de 1 a 30 destinos válidos'});return true;
     }
     const safe=points.map(p=>({name:clean(p.name).slice(0,100),address:clean(p.address).slice(0,250),lat:p.lat,lng:p.lng}));
     if(routeMatch){
      const scheduleJson=explicitSchedule?JSON.stringify(schedule):existingRoute.route_schedule;
      db.prepare('UPDATE planned_routes SET user_id=?,site=?,name=?,points=?,planned_start=?,route_schedule=?,updated_at=? WHERE id=?')
       .run(user.id,user.site,title,JSON.stringify(safe),plannedStart,scheduleJson,now(),existingRoute.id);
-     audit(a,'route.update',existingRoute.id);resp(res,200,{id:existingRoute.id,updated:true});return true;
+     audit(a,'route.update',existingRoute.id);operations.notifyAssignedRoute(user.id,existingRoute.id,title,schedule);resp(res,200,{id:existingRoute.id,updated:true,assignedTo:user.id});return true;
     }
     const rid=id();
     db.prepare('INSERT INTO planned_routes(id,user_id,site,name,points,planned_start,route_schedule,created_at,updated_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)')
      .run(rid,user.id,user.site,title,JSON.stringify(safe),plannedStart,explicitSchedule?JSON.stringify(schedule):'{}',now(),now(),a.id);
-    audit(a,'route.create',rid);resp(res,201,{id:rid,created:true});return true;
+    audit(a,'route.create',rid);operations.notifyAssignedRoute(user.id,rid,title,schedule);resp(res,201,{id:rid,created:true,assignedTo:user.id});return true;
    }
    if(p==='/api/events'&&m==='POST'){
     if(a.role==='cliente'){resp(res,403,{error:'Perfil cliente tem acesso somente de leitura'});return true;}
