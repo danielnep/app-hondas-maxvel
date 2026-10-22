@@ -121,7 +121,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
       .run(routeId,worker.id,worker.site,task.name,task.points,null,JSON.stringify(once),issuedAt,issuedAt,task.author_id,task.instructions);
     }
     db.exec('COMMIT');
-    if(taken.changes){reserved.add(worker.id);notifyAssignedRoute(worker.id,routeId,task.name,once);issued.push({id:routeId,workerId:worker.id});}
+    if(taken.changes){reserved.add(worker.id);notifyAssignedRoute(worker.id,routeId,task.name,once);issued.push({id:routeId,taskId:task.id,workerId:worker.id});}
    }catch(e){db.exec('ROLLBACK');throw e;}
   }
   return issued;
