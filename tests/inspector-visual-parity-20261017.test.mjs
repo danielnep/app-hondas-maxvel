@@ -27,7 +27,7 @@ test('estado vazio não repete avisos e mantém comandos operacionais',()=>{
  assert.match(html,/Aguardando COI/);
  assert.doesNotMatch(html,/class="rp-inspection-ready"/);
  assert.match(html,/data-field-tool-alert/);
- assert.match(html,/data-field-tool-chat/);
+ assert.doesNotMatch(html,/data-field-tool-chat/);
  assert.match(html,/data-field-tool-panic/);
 });
 
