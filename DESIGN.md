@@ -1,4 +1,4 @@
-# DESIGN | Rondas Pro · Grupo Maxvel
+# DESIGN | Ronda Pro · Grupo Maxvel
 
 ## Identidade preservada
 Este é um produto do Grupo Maxvel. A identidade pública não exibe a marca Horizon. O mapa deve permanecer protagonista nos acessos Vigia e Vistoriador. O contexto de missão e a próxima ação são o restante do primeiro plano. Vermelho de alto impacto é reservado ao pânico e a riscos/alertas; não deve pintar toda a interface.
