@@ -58,3 +58,25 @@ export function nextRouteStart(route,now=Date.now()){
  }
  return null;
 }
+
+/** Identificador do dia em que uma rotina já ficou elegível na unidade.
+ * A zona é explícita: o relógio UTC do servidor não desloca uma ronda brasileira.
+ */
+export function dueScheduleOccurrence(schedule,at=Date.now(),timeZone='America/Sao_Paulo'){
+ if(!schedule||!validHour(schedule.hour)||!Number.isFinite(at))return null;
+ const fields=new Intl.DateTimeFormat('en-GB',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})
+  .formatToParts(new Date(at));
+ const part=t=>fields.find(f=>f.type===t)?.value;
+ const date=[part('year'),part('month'),part('day')].join('-'),clock=part('hour')+':'+part('minute');
+ if(clock<schedule.hour)return null;
+ const base=validDate(schedule.startDate),today=validDate(date);
+ if(!today)return null;
+ const delta=base?dayNumber(today)-dayNumber(base):null;
+ switch(schedule.recurrence){
+  case 'once':return delta===0?date:null;
+  case 'daily':return !base||delta>=0?date:null;
+  case 'alternate':return delta!==null&&delta>=0&&delta%2===0?date:null;
+  case 'weekly':return Array.isArray(schedule.weekdays)&&schedule.weekdays.includes(today.getDay())&&(!base||delta>=0)?date:null;
+  default:return null;
+ }
+}
