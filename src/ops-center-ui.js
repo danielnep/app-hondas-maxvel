@@ -148,7 +148,13 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
     '<small>'+esc(w.site||'Posto não definido')+' · Última atividade: '+stamp(w.lastActivity)+'</small></button>').join('')+'</div></section>'+
    '<dialog id="ops-dispatch-modal" class="ops-dispatch-modal" aria-labelledby="ops-dispatch-heading"><div class="ops-dispatch-modal-header"><div><div class="eyebrow">DESPACHO OPERACIONAL</div><h2 id="ops-dispatch-heading">Direcionar vigia</h2><p id="ops-dispatch-worker-label" class="muted">Selecione um vigia</p></div><button type="button" data-ops-close-dispatch aria-label="Fechar">✕</button></div>'+
    '<form id="ops-dispatch-form" class="ops-dispatch-form"><input type="hidden" name="workerId" required>'+
-   '<label>Endereço ou ponto específico<input name="address" required minlength="5" maxlength="350" placeholder="Rua, número, local ou referência" autocomplete="street-address"></label>'+
+   '<label>Endereço ou identificação da ronda<input name="address" required minlength="5" maxlength="350" placeholder="Digite e escolha o endereço" autocomplete="street-address"></label>'+
+   '<div id="ops-guard-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados"></div>'+
+   '<div class="rp-inspection-route-editor"><strong>Destinos da ronda no mapa</strong><small>Digite e selecione um endereço ou toque no mapa. Adicione os destinos na ordem de visita. O GPS do agente confere cada ponto.</small>'+
+   '<div id="ops-guard-map" class="rp-plan-map" role="application" aria-label="Marcar destinos da ronda"></div>'+
+   '<input type="hidden" name="latitude"><input type="hidden" name="longitude"><input type="hidden" name="routePoints" value="[]">'+
+   '<p data-guard-dispatch-status class="rp-route-status">Marque pelo menos um destino no mapa.</p>'+
+   '<button type="button" data-ops-guard-clear>Limpar destinos</button></div>'+
    '<label class="ops-reason">Motivo do despacho <span class="ops-required">Obrigatório</span><textarea name="reason" required minlength="10" maxlength="1000" placeholder="Explique o que ocorreu e o que deve ser verificado"></textarea></label>'+
    '<div class="ops-dispatch-actions"><button type="button" data-ops-close-dispatch>Cancelar</button><button class="primary" type="submit">Registrar despacho e notificar</button></div></form></dialog>'+
    '<section class="surface ops-inspector-section"><h2>Solicitar vistoria</h2><p class="muted">É possível adicionar novas visitas ao circuito de um vistoriador que já esteja em atendimento. O aplicativo organiza as próximas pelo ponto mais próximo, preservando a vistoria em andamento.</p>'+
@@ -286,6 +292,65 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   });
  }
 
+
+ // Mapa real de definição das coordenadas que o GPS conferirá no campo.
+ function attachGuardMap(dialog){
+  const host=dialog.querySelector('#ops-guard-map'),field=dialog.querySelector('#ops-dispatch-form [name="address"]');
+  const suggestions=dialog.querySelector('#ops-guard-suggestions'),status=dialog.querySelector('[data-guard-dispatch-status]');
+  if(!host||!field||!suggestions)return;
+  if(dialog._guardMap){dialog._guardMap.remove();dialog._guardMap=null;}
+  dialog._guardMarkers=[];
+  dialog.querySelector('[name="routePoints"]').value='[]';
+  if(!window.L){status.textContent='Mapa não carregou. Reabra a central com conexão à internet.';return;}
+  const map=window.L.map(host,{scrollWheelZoom:false}).setView([-20.1437,-44.8906],12);
+  dialog._guardMap=map;
+  window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(map);
+  const add=(lat,lng,label='')=>{
+   lat=Number(lat);lng=Number(lng);
+   if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)return;
+   const control=dialog.querySelector('[name="routePoints"]');
+   let points=[];try{points=JSON.parse(control.value)}catch{}
+   if(points.length>=12){status.textContent='Limite de 12 destinos por ronda.';return;}
+   const name=label||field.value.trim()||'Destino '+(points.length+1);
+   points.push({lat:Number(lat.toFixed(6)),lng:Number(lng.toFixed(6)),label:name.slice(0,70)});
+   control.value=JSON.stringify(points);
+   dialog.querySelector('[name="latitude"]').value=lat;
+   dialog.querySelector('[name="longitude"]').value=lng;
+   if(!field.value.trim())field.value='Ronda com '+points.length+' destino(s)';
+   const marker=window.L.circleMarker([lat,lng],{radius:10,color:'#fff',fillColor:'#e72d4d',fillOpacity:1})
+    .addTo(map).bindTooltip(String(points.length),{permanent:true,direction:'center'});
+   dialog._guardMarkers.push(marker);
+   status.textContent=points.length+' destino(s) geolocalizado(s). Toque em outros pontos para ampliar a ronda.';
+   map.setView([lat,lng],Math.max(15,map.getZoom()),{animate:false});
+   suggestions.replaceChildren();
+  };
+  map.on('click',event=>add(event.latlng.lat,event.latlng.lng));
+  let debounce=null,controller=null;
+  field.oninput=()=>{
+   clearTimeout(debounce);controller?.abort();suggestions.replaceChildren();
+   const q=field.value.trim();if(q.length<5)return;
+   debounce=setTimeout(async()=>{
+    controller=new AbortController();
+    try{
+     const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=5&q='+encodeURIComponent(q),{signal:controller.signal});
+     if(!response.ok)throw Error('Busca indisponível');
+     const body=await response.json();
+     if(controller.signal.aborted)return;
+     for(const f of body.features||[]){
+      const p=f.properties||{},coords=f.geometry?.coordinates||[];
+      const address=[p.name,p.street,p.housenumber,p.city,p.state].filter(Boolean).join(', ');
+      if(!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1])))continue;
+      const button=document.createElement('button');button.type='button';button.setAttribute('role','option');
+      button.textContent=address||q;
+      button.onclick=()=>{add(Number(coords[1]),Number(coords[0]),address||q);field.value=address||q;};
+      suggestions.append(button);
+     }
+     if(!suggestions.children.length)status.textContent='Endereço não localizado. Marque o ponto diretamente no mapa.';
+    }catch(error){if(!controller.signal.aborted)status.textContent='Busca indisponível. Marque o ponto no mapa.';}
+   },600);
+  };
+  setTimeout(()=>map.invalidateSize(),120);
+ }
  async function click(target){
   if(target.hasAttribute('data-ops-more')){
    if(!nextCursor)return true;
@@ -338,7 +403,15 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    dialog.querySelector('[name="workerId"]').value=target.dataset.opsSelectWorker;
    dialog.querySelector('#ops-dispatch-worker-label').textContent=target.querySelector('b')?.textContent||'Vigia selecionado';
    dialog.showModal();
+   attachGuardMap(dialog);
    dialog.querySelector('[name="address"]').focus();
+   return true;
+  }
+  if(target.hasAttribute('data-ops-guard-clear')){
+   const dialog=document.querySelector('#ops-dispatch-modal');
+   if(dialog){dialog.querySelector('[name="routePoints"]').value='[]';dialog.querySelector('[name="latitude"]').value='';dialog.querySelector('[name="longitude"]').value='';
+    dialog._guardMarkers?.forEach(marker=>marker.remove());dialog._guardMarkers=[];
+    dialog.querySelector('[data-guard-dispatch-status]').textContent='Destinos limpos. Marque pelo menos um ponto no mapa.';}
    return true;
   }
   if(target.hasAttribute('data-ops-close-dispatch')){document.querySelector('#ops-dispatch-modal')?.close();return true;}
@@ -407,9 +480,13 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
   }
   if(form.id!=='ops-dispatch-form')return false;
   const data=Object.fromEntries(new FormData(form));
+  try{data.routePoints=JSON.parse(data.routePoints||'[]')}catch{data.routePoints=[]}
+  if(!Array.isArray(data.routePoints)||!data.routePoints.length)throw Error('Marque no mapa um destino geográfico antes de enviar a ronda.');
+  data.latitude=Number(data.routePoints[data.routePoints.length-1].lat);
+  data.longitude=Number(data.routePoints[data.routePoints.length-1].lng);
   await api('/dispatches',{method:'POST',data});
   document.querySelector('#ops-dispatch-modal')?.close();
-  flash('Despacho registrado. Vigia e administração notificados.');
+  flash('Ronda e destinos enviados ao agente de ronda.');
   await refresh(current,false);openNotice({page:'dispatches'});return true;
  }
  async function change(input){
