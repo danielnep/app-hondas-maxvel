@@ -48,3 +48,45 @@ test('API: senha, perfis, mensagens internas, idempotência e upload reservado',
   rmSync(dir,{recursive:true,force:true});
  }
 });
+
+
+test('piloto: senha padrao migra contas anteriores e vale para novos cadastros',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'ronda-password-'));
+ process.env.RONDA_PRO_DB_PATH=join(dir,'db.sqlite');
+ process.env.RONDA_PRO_MASTER_EMAIL='master-pilot@example.test';
+ process.env.RONDA_PRO_MASTER_PASSWORD='OldMasterPassword1234!';
+ delete process.env.RONDA_PRO_PILOT_PASSWORD;
+ delete process.env.RONDA_PRO_PILOT_PASSWORD_REVISION;
+ const open=async()=>{const srv=createAppServer();await new Promise(ok=>srv.listen(0,'127.0.0.1',ok));return srv};
+ const request=(srv,path,data,token)=>fetch('http://127.0.0.1:'+srv.address().port+'/api'+path,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(data)});
+ let srv=null;
+ try{
+  srv=await open();
+  const original=await request(srv,'/login',{email:'master-pilot@example.test',password:'OldMasterPassword1234!'});
+  assert.equal(original.status,200);
+  const root=(await original.json()).token;
+  const created=await request(srv,'/users',{name:'Agente Teste',email:'agente-pilot@example.test',username:'agentepiloto',role:'ronda',password:'AntigaSenhaAgente123!',site:'Maxvel'},root);
+  assert.equal(created.status,201);
+  await new Promise(ok=>srv.close(ok));srv=null;
+  const pilotPass='Equipe@2026';
+  process.env.RONDA_PRO_PILOT_PASSWORD=pilotPass;
+  process.env.RONDA_PRO_PILOT_PASSWORD_REVISION='piloto-v1';
+  srv=await open();
+  assert.equal((await request(srv,'/login',{email:'master-pilot@example.test',password:'OldMasterPassword1234!'})).status,401);
+  assert.equal((await request(srv,'/login',{email:'agentepiloto',password:'AntigaSenhaAgente123!'})).status,401);
+  const migrated=await request(srv,'/login',{email:'master-pilot@example.test',password:pilotPass});
+  assert.equal(migrated.status,200);
+  const pilotRoot=(await migrated.json()).token;
+  assert.equal((await request(srv,'/login',{email:'agentepiloto',password:pilotPass})).status,200);
+  const newUser=await request(srv,'/users',{name:'COI Teste',email:'coi-pilot@example.test',username:'coipiloto',role:'coi',site:'Maxvel'},pilotRoot);
+  assert.equal(newUser.status,201);
+  assert.equal((await request(srv,'/login',{email:'coipiloto',password:pilotPass})).status,200);
+  await new Promise(ok=>srv.close(ok));srv=null;
+  srv=await open();
+  assert.equal((await request(srv,'/login',{email:'master-pilot@example.test',password:pilotPass})).status,200);
+ }finally{
+  if(srv)await new Promise(ok=>srv.close(ok));
+  delete process.env.RONDA_PRO_PILOT_PASSWORD;delete process.env.RONDA_PRO_PILOT_PASSWORD_REVISION;
+  rmSync(dir,{recursive:true,force:true});
+ }
+});
