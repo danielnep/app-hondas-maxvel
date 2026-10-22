@@ -36,12 +36,11 @@ try{
     throw error;
    }
    assert(await page.locator('#live-login-form').count()===0,'Tela de login apareceu');
-   assert(await page.locator('#dialog .role-picker-list [data-action="sim-role"]').count()===4,'Devem aparecer Vigia, COI, Vistoriador e Administração');
-   for(const role of ['ronda','coi','vistoriador','admin'])assert(await page.locator('#dialog .role-picker-list [data-role="'+role+'"]').count()===1,'Perfil ausente: '+role);
-   await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
-   await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Vistoriador'));
-   assert(await page.locator('#live-login-form').count()===0,'Login apareceu ao escolher Vistoriador');
-   await page.screenshot({path:out+'/vistoriador-'+width+'.png'});
+   assert(await page.locator('#dialog .role-picker-list [data-action="sim-role"]').count()===3,'Devem aparecer Agente de ronda, COI e Administração');
+   for(const role of ['ronda','coi','admin'])assert(await page.locator('#dialog .role-picker-list [data-role="'+role+'"]').count()===1,'Perfil ausente: '+role);
+   await page.locator('#dialog [data-action="sim-role"][data-role="admin"]').click();
+   await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Administração'));
+   await page.screenshot({path:out+'/admin-'+width+'.png'});
    await page.locator('.user-profile-button').click();
    await page.locator('#dialog[open] [data-action="sim-role-picker"]').click();
    await page.locator('#dialog[open] [data-action="sim-role"][data-role="ronda"]').click();
@@ -49,7 +48,7 @@ try{
    await picker.waitFor();
    assert(await picker.locator('[data-action="choose-demo-worker"]').count()===3,'Exatamente três vigias fictícios');
    await picker.locator('[data-username="vigia-demo-ana"]').click();
-   await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Operação de Ronda'));
+   await page.waitForFunction(()=>document.querySelector('.user-profile-button')?.textContent?.includes('Agente de ronda'));
    assert(await page.locator('#live-login-form').count()===0,'Login apareceu ao voltar ao Vigia');
    const map=page.locator('#mobile-map'),bounds=await map.boundingBox();
    assert(!!bounds&&bounds.width>220&&bounds.height>200,'Mapa do Vigia oculto ou comprimido: '+JSON.stringify(bounds));
@@ -57,7 +56,7 @@ try{
    assert(await page.locator('.rp-demo-banner-global').count()>0,'Aviso demonstrativo ausente');
    await page.screenshot({path:out+'/vigia-'+width+'.png'});
    assert(errors.length===0,'Erro de JavaScript: '+errors.join(' | '));
-   console.log(JSON.stringify({width,entry:'role-picker',selected:'vistoriador',return:'vigia',login:false,errors:errors.length}));
+   console.log(JSON.stringify({width,entry:'role-picker',selected:'admin',return:'ronda',login:false,errors:errors.length}));
   }finally{await context.close()}
  }
 }finally{await browser?.close()}
