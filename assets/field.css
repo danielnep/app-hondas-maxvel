@@ -4,7 +4,7 @@
 /* Canonical stylesheet. Edit here; no legacy generator. */
 
 /* SECTION: maxvel-atelier-20261016 */
-/* Rondas Pro Maxvel | Refinamento institucional 16/10/2026.
+/* Ronda Pro Maxvel | Refinamento institucional 16/10/2026.
    Superfícies grafite, vermelho Maxvel e comunicação sem azul marinho. */
 :root{
  --mx-atelier-canvas:#09090b;--mx-atelier-shell:#111115;--mx-atelier-raise:#1a1a1e;
@@ -158,7 +158,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 }
 @media(max-width:900px){
  .dashboard .app-header{min-height:62px!important;height:62px!important;padding:7px 12px!important}
- /* Logo institucional completo: preservar Rondas Pro e Grupo Maxvel em todas as larguras. */
+ /* Logo institucional completo: preservar Ronda Pro e Grupo Maxvel em todas as larguras. */
  .dashboard .app-header .brand.maxvel-only-brand{
   display:grid!important;grid-template-columns:max-content 2px max-content!important;
   align-items:center!important;justify-content:center!important;justify-items:center!important;
@@ -235,7 +235,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 }
 
 /* SECTION: maxvel-field-refinement-20261016 */
-/* Rondas Pro · tratamento visual Maxvel · Campo/COI 16.10.2026
+/* Ronda Pro · tratamento visual Maxvel · Campo/COI 16.10.2026
    Sem superfícies azul-marinho. Marca Maxvel e estados operacionais preservados. */
 :root{
  --mx-accent:#5abce9;
@@ -917,7 +917,7 @@ body:has(#central-root) > header.top .rp-popover-list{
 }
 
 /* SECTION: inspector-patrol-parity-20261016 */
-/* Rondas Pro | Paridade visual ronda x vistoriador. O MAPA permanece livre.
+/* Ronda Pro | Paridade visual ronda x vistoriador. O MAPA permanece livre.
    Complemento de ultimo carregamento para sobrepor folhas legadas sem alterar a ronda. */
 :is(.dashboard .rp-demo-inspector,#central-root .rp-inspector-workspace) .rp-inspection-cockpit{
  position:relative!important;display:block!important;isolation:isolate!important;
@@ -1100,7 +1100,7 @@ body:has(#central-root) > header.top .rp-popover-list{
  .rp-inspection-map-actions button:active,.rp-inspection-main-action:active,.rp-inspection-panic:active{transform:scale(.97)}
 }
 
-/* Rondas Pro · contrato visual de 17/10/2026
+/* Ronda Pro · contrato visual de 17/10/2026
    Regressões: vermelho excessivo, modais altos, controles crus, mapa oculto,
    galeria em lugar de câmera, navegação incompleta e compositor inchado.
    A folha atual é a última camada operacional, sem criar outra cascata. */
