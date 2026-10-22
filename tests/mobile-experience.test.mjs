@@ -8,10 +8,11 @@ const theme=readStyles('application');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const gradle=readFileSync(new URL('../android/app/build.gradle',import.meta.url),'utf8');
 
-test('tema operacional é carregado na web e empacotado no Android',()=>{
+test('tema web permanece e Android usa renderização de mapa nativa',()=>{
  assert.ok(existsSync(new URL('../assets/ronda-pro.css',import.meta.url)));
  assert.match(html,/assets\/ronda-pro\.css/);
- assert.match(gradle,/assets\/\*\*/);
+ assert.match(gradle,/org\.maplibre\.gl:android-sdk/);
+ assert.doesNotMatch(gradle,/generated\/web-assets|assets\/\*\*/);
 });
 
 test('menu pelo topo preserva acesso a todas as áreas do papel e ao perfil',()=>{
