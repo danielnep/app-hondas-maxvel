@@ -13,10 +13,10 @@ const visits=[
 test('mapa e ações de campo reutilizam o padrão minimalista da ronda',()=>{
  const html=inspectionCockpit({queue:visits,mapId:'inspection-map',mode:'real',position:{lat:-20.14,lng:-44.88}});
  assert.match(html,/class="map-container mini rp-inspector-map"/);
- for(const id of ['data-inspection-fit','data-field-tool-panic','data-field-tool-alert','data-field-tool-incident','data-field-tool-chat','data-inspection-circuit-open','data-inspection-history-open','data-inspection-distance']){
+ for(const id of ['data-inspection-fit','data-field-tool-panic','data-field-tool-alert','data-field-tool-incident','data-inspection-circuit-open','data-inspection-history-open','data-inspection-distance']){
   assert.ok(html.includes(id),id);
  }
- assert.match(html,/data-inspection-stops/);
+ assert.doesNotMatch(html,/data-field-tool-chat/);assert.match(html,/data-inspection-stops/);
  assert.match(html,/data-inspection-history-open/);
  assert.match(html,/Condomínio Reserva da Serra/);
  assert.doesNotMatch(html,/rp-field-quicktools|rp-inspection-map-hud|<details/);
