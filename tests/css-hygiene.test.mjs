@@ -23,7 +23,7 @@ test('web demo e central compartilham camadas na mesma ordem, cache só inclui C
  const expected={index:['ronda-pro','operational','mobile-critical','field','theme'],central:['central','operational','field','theme']};
  for(const [page,order] of Object.entries(expected)){
   const links=[...read(page+'.html').matchAll(/href="\.\/assets\/([^"?]+)\.css\?v=(\d+)"/g)];
-  assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]===(m[1]==='theme'?'60':m[1]==='ronda-pro'?'53':m[1]==='field'?'52':m[1]==='operational'?'52':'50')));
+  assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]===(m[1]==='theme'?'61':m[1]==='ronda-pro'?'53':m[1]==='field'?'52':m[1]==='operational'?'52':'50')));
  }
  const cached=[...read('sw.js').matchAll(/'\.\/assets\/([^']+\.css)'/g)].map(m=>m[1]).sort();
  assert.deepEqual(cached,files);

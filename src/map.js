@@ -126,9 +126,8 @@ export class PatrolMap{
    this.accuracyCircle=add(L.circle(latlng(this.position),{radius:Math.max(3,Number(this.position.accuracy)||8),color:'#55C9F5',weight:1,fillOpacity:.10,interactive:false}));
    return;
   }
-  // Geometria por ruas quando a consulta externa funciona; senão o corredor
-  // indicativo base → 1 → 2... permanece visível (sem voltar à base).
-  const pts=((this.route.inspectionMode||this.route.roadRouting)&&this.streetPath?.length>1?this.streetPath:routeWaypoints(this.route)).map(latlng);
+  // Em ronda real, não ligar pontos por linhas retas quando OSRM estiver indisponível.
+  const pts=((this.route.inspectionMode||this.route.roadRouting)?(this.streetPath?.length>1?this.streetPath:[]):routeWaypoints(this.route)).map(latlng);
   if(pts.length>1){
    add(L.polyline(pts,{color:'#08090d',weight:12,opacity:.92,lineJoin:'round',interactive:false}));
    add(L.polyline(pts,{color:'#55C9F5',weight:5,opacity:1,dashArray:(this.route.inspectionMode||this.route.roadRouting)&&this.streetPath?.length>1?null:'11 8',lineJoin:'round',interactive:false}));
@@ -173,7 +172,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
    const coordinates=await fetchInspectionStreetPath(this.route,{signal:controller.signal});
    if(this.destroyed||epoch!==this.streetEpoch||controller.signal.aborted)return;
    if(!coordinates?.length){
-    this.onStreetRoute('Percurso indicativo · rota viária indisponível.');
+    this.onStreetRoute('Trajeto pelas ruas indisponível; destinos identificados no mapa.');
     return;
    }
    this.streetPath=coordinates;
@@ -181,7 +180,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
    if(this.instance){this.refreshGeometry();this.fit();}
   }catch{
    if(!this.destroyed&&epoch===this.streetEpoch)
-    this.onStreetRoute('Percurso indicativo · sem roteamento viário neste momento.');
+    this.onStreetRoute('Roteamento pelas ruas indisponível; destinos visíveis, sem linha fictícia.');
   }finally{
    clearTimeout(timeout);
    if(this.streetRequest===controller)this.streetRequest=null;

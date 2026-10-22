@@ -181,6 +181,17 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
  '<button class="primary" type="submit">Enviar ao profissional selecionado</button></form></section>'+
  '<section class="surface"><h2>Últimos despachos</h2>'+dispatchList()+'</section></section>';
  }
+ function dispatchStops(d){
+  if(d.kind!=='ronda')return '';
+  let points=d.route_points||d.routePoints||[];
+  if(typeof points==='string'){try{points=JSON.parse(points)}catch{points=[]}}
+  if(!Array.isArray(points)||points.length<2)return '';
+  return '<details class="ops-dispatch-itinerary"><summary>'+points.length+' destinos na ordem da ronda</summary><ol>'+
+   points.slice(0,12).filter(p=>Number.isFinite(Number(p?.lat))&&Number.isFinite(Number(p?.lng))).map((p,i)=>{
+    const lat=Number(p.lat),lng=Number(p.lng),url='https://www.openstreetmap.org/?mlat='+lat+'&mlon='+lng+'#map=17/'+lat+'/'+lng;
+    return '<li><b>'+(i+1)+'.</b><span>'+esc(p.label||'Destino '+(i+1))+'</span><a target="_blank" rel="noopener noreferrer" href="'+url+'">Abrir mapa ↗</a></li>';
+   }).join('')+'</ol><small>Confira cada local antes de iniciar o percurso.</small></details>';
+ }
  function dispatchList(){
   if(!dispatches.length)return '<p class="empty">Nenhum despacho registrado.</p>';
   return '<div class="ops-dispatch-list">'+dispatches.slice(0,60).map(d=>{
@@ -190,7 +201,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
     (!d.started_at?'<button type="button" class="ops-start-button" data-ops-start="'+esc(d.id)+'">Iniciar atendimento</button>':
      (d.kind==='vistoria'?'<button type="button" class="ops-finish-button" data-ops-page="inspections">Abrir checklist da vistoria</button>':'<button type="button" class="ops-finish-button" data-ops-finish="'+esc(d.id)+'">Concluir atendimento</button>'))+'</div>':'';
    return '<article class="ops-dispatch-line"><div><b>'+esc(d.worker||'Vigia')+'</b><span class="pill '+(d.completed_at?'ok':d.started_at?'warning':'')+'">'+label+'</span></div>'+
-    '<strong>'+esc(d.address)+'</strong><p>'+esc(d.reason)+'</p><a class="ops-destination-link" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(d.address)+'">Abrir endereço no mapa ↗</a><small>Enviado '+stamp(d.created_at)+' · Operador: '+esc(d.author||'Não informado')+'</small>'+
+    '<strong>'+esc(d.address)+'</strong><p>'+esc(d.reason)+'</p>'+dispatchStops(d)+'<a class="ops-destination-link" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(d.address)+'">Abrir endereço no mapa ↗</a><small>Enviado '+stamp(d.created_at)+' · Operador: '+esc(d.author||'Não informado')+'</small>'+
     (d.started_at?'<small>Iniciado '+stamp(d.started_at)+'</small>':'')+
     (d.completed_at?'<small>Concluído '+stamp(d.completed_at)+' · '+esc(d.completion_note||'')+'</small>':'')+actions+'</article>';
   }).join('')+'</div>';
@@ -251,7 +262,7 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    timer=setTimeout(async()=>{
     controller=new AbortController();
     try{
-     const response=await fetch('https://photon.komoot.io/api/?lang=pt&limit=6&q='+encodeURIComponent(text),{signal:controller.signal});
+     const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=6&q='+encodeURIComponent(text),{signal:controller.signal});
      if(!response.ok)throw Error('busca indisponível');
      const result=await response.json();
      if(controller.signal.aborted)return;

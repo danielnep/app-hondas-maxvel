@@ -2243,6 +2243,46 @@
  .rp-theme #dialog :is(.rp-dispatch-next,.rp-dispatch-submit){background:linear-gradient(115deg,rgba(165,37,60,.72),rgba(40,35,46,.86))!important;color:#fff!important;backdrop-filter:blur(14px)!important;
   border:1px solid #e0546a!important}
  .rp-theme #dialog .rp-dispatch-actions button:disabled{opacity:.55;cursor:not-allowed}
+
+ /* Itinerário multi-destinos, mantendo o Glass fosco Maxvel. */
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-add{width:100%;min-height:42px!important;border:1px solid #6b9db3!important;border-radius:8px!important;background:rgba(28,58,73,.85)!important;color:#f8fafc!important;font-size:13px!important;font-weight:800;cursor:pointer}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-add:disabled{opacity:.42;cursor:not-allowed}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stops-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:7px 0 4px;border-bottom:1px solid #67778570}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stops-heading strong{font-size:12px;color:#f5f6fa}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stops-heading small{font-size:10px;color:#b7c6d2;text-align:right}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stops{display:grid;gap:7px;list-style:none;margin:0;padding:6px 0;min-width:0}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop{display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:8px;align-items:center;min-width:0;padding:7px;border:1px solid #71869664;border-radius:10px;background:rgba(27,42,54,.72)}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-mini{position:relative;width:86px;height:60px;min-height:60px!important;padding:0!important;overflow:hidden;border:1px solid #698090!important;border-radius:7px;background:repeating-linear-gradient(45deg,#293c4b 0 12px,#334c5d 12px 24px)!important}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-mini img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-mini-marker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:25px;height:25px;background:#ed3550;border:2px solid #fff;border-radius:50%;color:white;font-size:11px;box-shadow:0 2px 8px #000a}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-label{min-width:0;display:grid;gap:3px}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-label strong{font-size:12px;color:#fff;overflow-wrap:anywhere;line-height:1.25}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-label small{font-size:10px;color:#b9cbd9;line-height:1.35;overflow:hidden;max-height:3.9em;overflow-wrap:anywhere}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-label a{font-size:10px;color:#a5ddf7;text-decoration:underline}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-tools{display:grid;gap:3px}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-tools button{height:26px;min-height:26px!important;width:28px;min-width:28px!important;padding:0!important;border:1px solid #6f8092!important;border-radius:5px!important;background:rgba(39,53,65,.9)!important;color:#fff!important;font-size:14px!important}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-tools button:disabled{opacity:.27}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-empty{font-size:11px;color:#c2cfda;padding:8px 2px}
+ .rp-theme #dialog.rp-dispatch-dialog #rp-dispatch-preview-map{position:relative;display:block;width:100%;height:215px;min-height:215px;overflow:hidden;border:1px solid #597f93;border-radius:10px;background:#283949;color:#edf5fb}
+ .rp-theme #dialog.rp-dispatch-dialog #rp-dispatch-preview-map iframe{display:block;width:100%;height:100%;border:0}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-map-link{position:absolute;left:7px;bottom:7px;z-index:3;max-width:calc(100% - 14px);padding:6px 9px;background:rgba(18,30,42,.94);border:1px solid #7395a8;border-radius:6px;color:#fff;font-size:11px}
+ .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stage[data-dispatch-stage="2"] .rp-plan-suggestions{max-height:128px;overflow-y:auto;min-height:0}
+ @media(max-width:420px){
+  .rp-theme #dialog.rp-dispatch-dialog #rp-dispatch-preview-map{height:182px;min-height:182px}
+  .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop{grid-template-columns:76px minmax(0,1fr) auto;gap:6px;padding:6px}
+  .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-mini{width:76px}
+  .rp-theme #dialog.rp-dispatch-dialog .rp-dispatch-stop-label small{max-height:2.6em}
+ }
+
+ /* Atribuição multi-ponto no celular do Vigia e painel COI. */
+ #central-root .ops-dispatch-itinerary{margin:8px 0 11px;border:1px solid rgba(125,161,184,.44);background:rgba(31,42,53,.62);border-radius:9px;padding:7px 10px}
+ #central-root .ops-dispatch-itinerary>summary{font-size:12px;cursor:pointer;font-weight:760;color:#f5f9fe;min-height:32px;display:flex;align-items:center}
+ #central-root .ops-dispatch-itinerary ol{list-style:none;display:grid;gap:0;margin:0;padding:0}
+ #central-root .ops-dispatch-itinerary li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:7px;align-items:center;padding:8px 0;border-top:1px solid #687b8952}
+ #central-root .ops-dispatch-itinerary li b{color:#91d9fa;font-size:12px}
+ #central-root .ops-dispatch-itinerary li span{font-size:11px;color:#f1f6fb;overflow-wrap:anywhere}
+ #central-root .ops-dispatch-itinerary li a{font-size:10px;color:#9bdefd;min-height:30px;display:inline-flex;align-items:center}
+ #central-root .ops-dispatch-itinerary>small{font-size:10px;color:#bdcbd7}
  /* Janelas de operacao: vidro fosco legivel, com fundo isolado na camada modal real. */
  .rp-theme #dialog[open]:not(.role-picker-dialog):not(.rp-dispatch-dialog):not(.guide-dialog):not(.ux06-fullscreen){
   background:rgba(24,31,40,.94)!important;color:#f5f8fb!important;

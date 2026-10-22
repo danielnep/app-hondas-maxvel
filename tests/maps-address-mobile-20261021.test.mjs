@@ -47,6 +47,21 @@ test('COI and dispatch geocode address on map, not text-only',async()=>{
  assert.match(ops,/attachInspectorGeocoder\(dialog\)/);
  assert.match(ops,/photon\.komoot\.io/);
  assert.match(dispatch,/rp-dispatch-preview-map/);
- assert.match(dispatch,/latitude:locationPoint\.lat/);
- assert.match(dispatch,/Confirme o endereço selecionando um ponto no mapa/);
+ assert.match(dispatch,/latitude:first\.lat/);
+ assert.match(dispatch,/routePoints:destinations\.map/);
+ assert.match(dispatch,/rp-dispatch-add-destination/);
+ assert.match(dispatch,/rp-dispatch-stops/);
+ assert.match(dispatch,/tile\.openstreetmap\.org/);
+ assert.match(dispatch,/fallbackPreview/);
+ assert.match(dispatch,/Adicione ao menos um destino/);
+});
+
+test('Photon usa o idioma suportado no servidor publico em todos os tres fluxos',async()=>{
+ const files=['src/dispatch-wizard.js','src/route-planner.js','src/ops-center-ui.js'];
+ for(const path of files){
+  const code=await readFile(new URL('../'+path,import.meta.url),'utf8');
+  assert.match(code,/photon\.komoot\.io\/api\/\?/);
+  assert.match(code,/lang=default/);
+  assert.doesNotMatch(code,/lang=pt/);
+ }
 });

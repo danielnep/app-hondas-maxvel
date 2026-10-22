@@ -50,3 +50,26 @@ export async function fetchInspectionStreetPath(route,{fetcher=fetch,signal}={})
  }
  throw lastError||Error('Sem serviço de roteamento');
 }
+
+/** Geometria viária e estimativas OSRM para destinos confirmados, na ordem recebida.
+ * Distâncias e tempos são estimativas, não GPS ou tráfego em tempo real.
+ */
+export async function fetchRoadItinerary(stops,{fetcher=fetch,signal}={}){
+ if(!Array.isArray(stops)||stops.length<2||stops.length>30)throw Error('Selecione de 2 a 30 destinos válidos');
+ const points=stops.map(p=>({lat:Number(p?.lat),lng:Number(p?.lng)}));
+ if(points.some(p=>!Number.isFinite(p.lat)||!Number.isFinite(p.lng)||Math.abs(p.lat)>90||Math.abs(p.lng)>180))throw Error('Coordenadas inválidas');
+ let error=null;
+ for(const endpoint of STREET_ROUTE_ENDPOINTS){
+  if(signal?.aborted)throw Error('Consulta cancelada');
+  try{
+   const response=await fetcher(streetRouteUrl(points,endpoint),{signal,mode:'cors'});
+   if(!response.ok)throw Error('Serviço de rotas: HTTP '+response.status);
+   const body=await response.json();
+   const path=parseStreetRoute(body),route=body.routes[0];
+   const distanceMeters=Number(route.distance),durationSeconds=Number(route.duration);
+   if(!Number.isFinite(distanceMeters)||distanceMeters<0||!Number.isFinite(durationSeconds)||durationSeconds<0)throw Error('Estimativa viária inválida');
+   return {path,distanceMeters,durationSeconds};
+  }catch(e){if(signal?.aborted)throw e;error=e}
+ }
+ throw error||Error('Não foi possível calcular o caminho pelas ruas');
+}
