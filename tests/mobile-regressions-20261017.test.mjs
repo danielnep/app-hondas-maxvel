@@ -51,7 +51,7 @@ test('visor de vistorias fornece Google Maps e Waze sob a ação de deslocamento
 });
 test('tela não mantém força de 100dvh nas janelas e evita vermelho em ação comum',()=>{
  const css=readStyles('inspector-patrol-parity-20261016');
- assert.match(css,/Rondas Pro · contrato visual de 17\/10\/2026/);
+ assert.match(css,/Ronda Pro · contrato visual de 17\/10\/2026/);
  assert.match(css,/\.rp-field-wizard-dialog\[open\][\s\S]*?height:auto!important/);
  assert.match(css,/\.rp-inspection-main-action\{[\s\S]*?background:#edf0f5!important/);
  assert.match(css,/\.rp-inspection-directions/);
