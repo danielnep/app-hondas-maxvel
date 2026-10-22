@@ -266,7 +266,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   try{
    const first=destinations[0];
    const when={kind:'specific',recurrence:data.recurrence==='daily'?'daily':'once',hour:data.hour,startDate:data.recurrence==='daily'?'':data.startDate,weekdays:[]};
-   const created=await request('/routes',{method:'POST',data:{userId:data.workerId,name:'Ronda · '+first.address.slice(0,70),points:destinations.map(p=>({name:p.name||p.address,address:p.address,lat:p.lat,lng:p.lng})),schedule:when}});
+   const created=await request('/routes',{method:'POST',data:{userId:data.workerId,name:'Ronda · '+first.address.slice(0,70),points:destinations.map(p=>({name:p.name||p.address,address:p.address,lat:p.lat,lng:p.lng})),schedule:when,instructions:data.reason}});
    if(created?.assignedTo&&created.assignedTo!==data.workerId)notify('Ronda atribuída automaticamente ao agente disponível.');
    dialog.close();clearPreview();await refresh();redraw();notify('Ronda programada: '+destinations.length+' '+(destinations.length===1?'destino':'destinos')+'. Aviso enviado ao agente responsável.');
   }catch(error){
