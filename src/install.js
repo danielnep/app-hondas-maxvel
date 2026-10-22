@@ -28,7 +28,7 @@ export function createInstallManager(){
   button.type='button';button.className='button small install-app-btn';
   button.setAttribute('data-install-app','');
   button.textContent='↓ Instalar aplicativo';
-  button.setAttribute('aria-label','Instalar Rondas Pro no dispositivo');
+  button.setAttribute('aria-label','Instalar Ronda Pro no dispositivo');
   if(inMobileDashboard)host.append(button);
   else host.prepend(button);
   show();
