@@ -27,8 +27,8 @@ function publicFile(requestUrl) {
   catch { return null; }
   if (!pathname.startsWith('/') || /[\\\0]/.test(pathname)) return null;
   if (pathname.split('/').some(part => part.startsWith('.'))) return null;
-  if (pathname === '/') return 'index.html';
-  if (pathname === '/central.html' || pathname === '/index.html' || pathname === '/sw.js' || pathname === '/manifest.webmanifest') return pathname.slice(1);
+  if (pathname === '/') return 'central.html';
+  if (pathname === '/central.html') return pathname.slice(1);
   if (pathname.startsWith('/src/') || pathname.startsWith('/assets/')) return pathname.slice(1);
   return null;
 }
