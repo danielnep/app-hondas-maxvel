@@ -65,7 +65,7 @@ const summary=report=>{
 export function createXlsxReport(report){
  const data=summary(report),generated=new Date(report.geradoEm||report.at||Date.now()).toLocaleString('pt-BR');
  const dashboard=[
-  ['RONDAS PRO  |  DASHBOARD OPERACIONAL'],
+  ['RONDA PRO  |  DASHBOARD OPERACIONAL'],
   [],[],
   ['Rondas registradas','Concluídas','Conclusão (%)','Alertas','Ocorrências','Amostras GPS'],
   [data.sessions.length,data.completed,data.percent??'Sem base',data.alerts.length,data.incidents.length,data.gps.length],
