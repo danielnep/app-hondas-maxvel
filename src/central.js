@@ -6,7 +6,7 @@ import {createActivityHistoryUI} from './activity-history-ui.js';
 import {EVENT_TYPES,typeInfo,isPending,stateLabel} from './treatment-policy.js';
 import {createXlsxReport} from './report-xlsx.js';
 import {createRouteBoard} from './route-board.js';
-import {nextRouteStart} from './route-schedule.js';
+import {nextRouteStart,routeCanStart} from './route-schedule.js';
 import {openConclusionDialog} from './conclusion-dialog.js';
 import {createOpsCenterUI} from './ops-center-ui.js';
 import {createCoiMonitor} from './coi-monitor.js';
@@ -256,6 +256,11 @@ async function syncOperational({remote=false}={}){
     const feedback=document.querySelector('[data-live-treatment-state]');if(feedback)feedback.textContent=result.event.status==='resolvida'?'Este registro foi concluído em outra sessão. O texto em edição foi preservado.':result.event.treatment_owner?'Atendimento: '+result.event.treatment_owner:'';
    }
   }else if(selected?.event&&!review()){const result=await api('/activity/events/'+encodeURIComponent(selected.event.id));selected={event:result.event};if(!document.querySelector('#send-message textarea')?.value.trim()||!isPending(result.event))render();else void loadMessages(result.event.id);}
+  else if(account.role==='ronda'&&page==='dashboard'){
+   const fresh=(await api('/routes')).routes||[],prior=routes.map(r=>r.id).join('|');
+   routes=fresh;
+   if(fresh.map(r=>r.id).join('|')!==prior){mySummary=(await api('/my-summary').catch(()=>mySummary));render();flash('Nova ronda recebida. Confira sua programação.');}
+  }
   else if(page==='inspections'&&account.role==='vistoriador'){refreshInspectorStops();}
   else if(page==='history'){const result=await api('/events?limit=500');events=result.events||[];render();}
   else if(page==='treatments'&&review()){await readTreatmentRows();render();}
@@ -396,10 +401,11 @@ function dashboardView(){
 }
 function ownDashboard(){
  const planned=guardPlannedRoute();const map=guardCockpit({round:guardRound,planned,position:guardFix,gpsStatus:guardWatch!=null?'GPS em acompanhamento':'Aguardando GPS'});
+ const programmed=planned&&!guardRound?'<div class="rp-route-delivery" role="status"><strong>Ronda recebida · '+escape(planned.name)+'</strong><p>'+escape(planned.schedule?.recurrence==='daily'?'Todos os dias':planned.schedule?.recurrence==='once'?'Ronda pontual':'Programação')+' · '+escape(planned.schedule?.hour||'A definir')+'</p><small>'+planned.points.length+' destinos atribuídos a você</small></div>':'';
  const mine=mySummary||{},all=mine.rounds||rounds,activity=events.filter(e=>e.kind!=='gps'&&e.kind!=='battery');
  const open=activity.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
  const latest=all.find(r=>r.status==='em_andamento')||all[0];
- return '<section class="stack rp-guard-workspace">'+map+'<div class="toolbar"><div><div class="eyebrow">ACESSO DO AGENTE DE RONDA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
+ return '<section class="stack rp-guard-workspace">'+map+programmed+'<div class="toolbar"><div><div class="eyebrow">ACESSO DO AGENTE DE RONDA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
  composeActionButtons(false)+'<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','message','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
  '<section class="surface"><div class="toolbar"><h2>Minha execução mais recente</h2><button data-page="history">Histórico completo</button></div>'+
  (latest?'<div class="detail-grid">'+[['Início',fmt(latest.start)],['Estado',latest.status.replaceAll('_',' ')],['Percorrido',latest.km.toFixed(2)+' km'],['Tempo em trajeto',latest.minutes==null?'Sem registro':latest.minutes+' min'],['Alertas',latest.alerts],['Pânico',latest.panics],['Bateria',latest.lastBattery==null?'Não informada':latest.lastBattery+'%']].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>':'<div class="empty">Nenhuma ronda real sincronizada para sua conta.</div>')+
@@ -897,7 +903,8 @@ document.addEventListener('click',async e=>{
   if(target.hasAttribute('data-guard-fit')){guardMap?.fit();return;}
   if(target.hasAttribute('data-guard-start')){
    if(account?.role!=='ronda'||guardRound)return;
-   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COE.');
+   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COI.');
+   if(!routeCanStart(planned))throw Error('Ronda programada para outro horário. Consulte o aviso da programação.');
    const fix=await guardRequireGps(),route=buildGuardRoute(planned,fix);if(!route?.points?.length)throw Error('Rota sem coordenadas.');
    const state=initialGuardState(route,fix);target.disabled=true;
    try{
