@@ -25,7 +25,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
  const kindLabels={routine:'Ronda de rotina',specific:'Ronda específica / aleatória'};
  const field=(label,body)=>'<label class="rp-plan-field"><span>'+label+'</span>'+body+'</label>';
  const safePoint=p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180&&String(p.name).trim();
- const footer='<p class="rp-plan-caption">A representação liga os pontos cadastrados em ordem. Não representa navegação por ruas. © OpenStreetMap.</p>';
+ const footer='<p class="rp-plan-caption">Percurso por vias públicas calculado em ordem, quando o roteador estiver disponível. Tempo estimado sem trânsito ao vivo. © OpenStreetMap.</p>';
  function html(){
   if(!roleOk())return '<p class="rp-plan-warning">A configuração de rondas é permitida ao COI e à Administração.</p>';
   const people=watcherList();if(!people.some(w=>w.id===workerId))workerId=people[0]?.id||'';
