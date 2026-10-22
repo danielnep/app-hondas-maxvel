@@ -29,6 +29,7 @@ export function guardCockpit({round=null,planned=null,position=null,gpsStatus='A
  const current=round?.points?.[round.index]||null,total=round?.points?.length||planned?.points?.length||0;
  const focus=current||round?.base||null,d=focus&&position?metersBetween(position,focus):Infinity;
  const action=!planned?'<span class="rp-inspection-ready">Aguardando rota do COI</span>':
+ !round&&!planned.points?.length?'<span class="rp-inspection-ready">Aguardando localização geográfica do destino pelo COI</span>':
  !round?'<button type="button" class="rp-inspection-main-action" data-guard-start>Iniciar ronda · sair da base</button>':
  current?round.insideSince==null?'<button type="button" class="rp-inspection-main-action" data-guard-arrive>Estou aqui</button>':
  '<button type="button" class="rp-inspection-main-action" data-guard-checkpoint>Confirmar ponto após 30 segundos</button>':
