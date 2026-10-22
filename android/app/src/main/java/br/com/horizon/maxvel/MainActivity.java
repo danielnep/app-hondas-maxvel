@@ -258,6 +258,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
     private void startPatrol(){
         if(selected==null||points.isEmpty()){notice("Selecione uma rota real do COI.");return;}
         if(!hasLocation()){requestLocation();return;}
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},32);notice("Conceda as notificações para acompanhar a ronda.");return;}
         if(fix==null||System.currentTimeMillis()-fix.getTime()>30000){notice("Aguardando sinal GPS atual.");return;}
         request("/api/dispatches/"+selected.optString("id")+"/start","POST",new JSONObject(),data->{
             started=true;startButton.setText("Concluir ronda");startNativeTracking();routeToNext();
