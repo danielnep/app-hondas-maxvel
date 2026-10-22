@@ -72,6 +72,15 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    announce(record.user_id);
   }
  }
+ function notifyAssignedRoute(workerId,routeId,name,schedule){
+  const worker=db.prepare("SELECT id FROM users WHERE id=? AND active=1 AND role='ronda'").get(workerId);
+  if(!worker)return false;
+  const frequency=schedule?.recurrence==='daily'?'Diariamente':schedule?.recurrence==='once'?'Ronda pontual':'Ronda programada';
+  const text=frequency+' · '+clean(schedule?.hour||'08:00')+' · '+clean(name).slice(0,120);
+  insert.run(id(),worker.id,'dispatch','Nova ronda programada',text,null,null,now());
+  announce(worker.id);
+  return true;
+ }
  function recentRounds(){
   const items=db.prepare('SELECT round_id,user_id,site,kind,occurred_at,lat,lng,accuracy,battery,details FROM events WHERE round_id IS NOT NULL AND occurred_at>? ORDER BY occurred_at')
    .all(now()-30*86400000);
@@ -291,5 +300,5 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   return false;
  }
  function broadcast(){for(const key of clients.keys())announce(key);}
- return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast};
+ return {handle,notifyEvent,notifyReview,notifyMessage,notifyAssignedRoute,allows,availability,broadcast};
 }
