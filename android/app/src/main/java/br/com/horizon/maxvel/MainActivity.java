@@ -389,9 +389,10 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
                         if(!road.isEmpty())instruction="Siga por "+road+" · "+Math.round(meters)+" m";
                     }
                 }
+                final String navInstruction=instruction;
                 runOnUiThread(()->{
                     if(next>=points.size()||p!=points.get(next))return;
-                    roadGeometry=geometry;nextInstruction=instruction;
+                    roadGeometry=geometry;nextInstruction=navInstruction;
                     String geo="{\"type\":\"Feature\",\"properties\":{},\"geometry\":{\"type\":\"LineString\",\"coordinates\":"+geometry+"}}";
                     updateSource("ronda-road",geo);updateDestination();
                 });
