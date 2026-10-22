@@ -654,14 +654,14 @@ function simulationIntro(){
 }
 
 const TOUR_STEPS=[
- {target:'[data-action="profile-menu"]',title:'Perfil e áreas',description:'Abra o perfil para consultar ou alternar entre Ronda, COI, Cliente, Vistoriador e Administração. A troca de áreas nesta demonstração é ilustrativa.'},
+ {target:'[data-action="profile-menu"]',title:'Perfil e áreas',description:'Abra o perfil para consultar ou alternar entre Ronda, COI, Cliente, Administração. A troca de áreas nesta demonstração é ilustrativa.'},
  {target:'#mobile-map, #ops-map',title:'Mapa e pontos',description:'Cada ponto tem raio de 25 metros. O mapa traz ruas reais quando online, mas a posição e o percurso de avaliação são fictícios.'},
  {target:'.patrol-actions, .v4-dashboard-tabs, .ux-ronda-tabs',title:'Ações e detalhes',description:'Cada perfil apresenta apenas as funções relevantes: execução, monitoramento, consulta do cliente, vistoria ou administração.'},
  {target:'[data-action="profile-menu"]',title:'Ajuda sempre disponível',description:'Feche a introdução quando quiser. O guia completo foi refeito por perfil e pode ser reaberto pelo menu Ajuda ou Perfil.'}
 ];
 const tour=createSpotlightTour({app:root,steps:TOUR_STEPS});
 const HELP_TOPICS={
- profiles:['Perfis e acesso','Ronda executa pontos; COI monitora; Cliente acompanha o local; Vistoriador verifica qualidade; Administração organiza rotas, equipe, alertas e relatórios. Os acessos desta demonstração não autenticam usuários reais.'],
+ profiles:['Perfis e acesso','Ronda executa pontos; COI monitora; Cliente acompanha o local; Administração organiza rotas, equipe, alertas e relatórios. Os acessos desta demonstração não autenticam usuários reais.'],
  map:['Mapa e áreas de verificação','Cada ponto exige posicionamento dentro de 25 metros e permanência contínua de 30 segundos. O mapa usa cartografia real quando online, mas as rotas e movimentos de exemplo são ilustrativos.'],
  action:['Próxima ação','O aplicativo indica qual passo executar agora: iniciar, deslocar, validar, registrar ocorrência ou justificar um desvio. A sequência de pontos não pode ser pulada.'],
  timer:['Tempo e geocerca','O cronômetro só conta dentro do raio de 25 metros com sinal confiável. A perda de precisão reinicia a permanência, mas não comprova desvio.'],
@@ -1297,8 +1297,8 @@ function openDemoWorkerPicker(){
 function openAreaPicker(){
   if(!presentation&&!isPagesTestMode())return;
   const roles=isPagesTestMode()
-   ?[['ronda','Agente de ronda','compass'],['coi','COI · Acompanhamento','headset'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']]
-   :[['ronda','Agente de ronda','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['vistoriador','Vistoriador','clipboard'],['admin','Administração','settings']];
+   ?[['ronda','Agente de ronda','compass'],['coi','COI · Acompanhamento','headset'],['admin','Administração','settings']]
+   :[['ronda','Agente de ronda','compass'],['operador','COI · Acompanhamento','headset'],['cliente','Cliente','eye'],['admin','Administração','settings']];
   showDialog(`<div class="eyebrow">ÁREAS DO RONDA PRO · ${isPagesTestMode()?'TESTES':'DEMONSTRAÇÃO'}</div><h2>Escolher área</h2><div class="role-picker-list">${roles.map(([role,label,ico])=>`<button type="button" data-action="sim-role" data-role="${role}" class="${user?.role===role||(user?.role==='coi'&&role==='operador')?'selected':''}" aria-pressed="${user?.role===role||(user?.role==='coi'&&role==='operador')}">${ic(ico)}<strong>${label}</strong>${user?.role===role||(user?.role==='coi'&&role==='operador')?'<span>Atual</span>':''}</button>`).join('')}</div><p class="map-caption">${isPagesTestMode()?'Escolha livremente uma área de teste. Os dados permanecem neste navegador.':'A troca de perfil demonstra as áreas no mesmo navegador; não representa autenticação.'}</p>${(isPagesTestMode())?'':'<a class="button full" href="./central.html">Entrar na operação real ↗</a>'}`,false,'role-picker-dialog');
 }
 function profileDialog(){
