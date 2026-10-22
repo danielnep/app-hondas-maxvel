@@ -44,6 +44,8 @@ test('auth e dados do COI chegam de verdade pelo backend, offline mantem SQLite 
  assert.match(store,/pendingSync/);
  assert.match(activity,/if\(path.startsWith\("\/api\/"\)\)return null/);
  assert.match(activity,/onGeolocationPermissionsShowPrompt/);
+ assert.match(activity,/trustedOrigin\(android\.net\.Uri\.parse\(origin\)\)/);
+ assert.match(activity,/trustedOrigin\(request\.getOrigin\(\)\)/);
  assert.match(activity,/onPermissionRequest/);
  assert.match(activity,/setTorchEnabled/);
 });

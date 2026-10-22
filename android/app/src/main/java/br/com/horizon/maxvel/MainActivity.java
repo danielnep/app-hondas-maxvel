@@ -122,12 +122,12 @@ public final class MainActivity extends Activity implements SensorEventListener,
         });
         web.setWebChromeClient(new WebChromeClient(){
             @Override public void onGeolocationPermissionsShowPrompt(String origin,GeolocationPermissions.Callback callback){
-                boolean allowed=ORIGIN.equals(origin)&&checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;
+                boolean allowed=trustedOrigin(android.net.Uri.parse(origin))&&checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;
                 callback.invoke(origin,allowed,false);
                 if(!allowed)requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},LOCATION);
             }
             @Override public void onPermissionRequest(PermissionRequest request){
-                if(!ORIGIN.equals(request.getOrigin().toString())){request.deny();return;}
+                if(!trustedOrigin(request.getOrigin())){request.deny();return;}
                 for(String resource:request.getResources())if(PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)){
                     if(checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED){request.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});return;}
                     pendingCamera=request;requestPermissions(new String[]{Manifest.permission.CAMERA},CAMERA);return;
@@ -160,6 +160,9 @@ public final class MainActivity extends Activity implements SensorEventListener,
     @Override protected void onActivityResult(int request,int result,Intent data){
         super.onActivityResult(request,result,data);
         if(request==FILES&&fileRequest!=null){fileRequest.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result,data));fileRequest=null;}
+    }
+    private boolean trustedOrigin(Uri uri){
+        return uri!=null&&"https".equals(uri.getScheme())&&"maxvel.hzsys.tech".equals(uri.getHost());
     }
     private void trackLocation(){
         if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;
