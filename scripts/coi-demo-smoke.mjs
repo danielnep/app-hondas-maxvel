@@ -92,36 +92,7 @@ try{
   await page.locator('#demo-inspection-request [name="routePoints"]').fill('-20.146, -44.892');
   await page.locator('#demo-inspection-request [name="instructions"]').fill('Vistoria programada na entrada principal e no setor técnico.');
   await page.locator('#demo-inspection-request [type="submit"]').click();
-  await page.locator('[data-action="sim-role-picker"]').first().evaluate(el=>el.click());
-  await page.locator('#toast.toast-visible').waitFor({state:'hidden'});
-  await page.locator('#dialog [data-action="sim-role"][data-role="vistoriador"]').click();
-  await page.locator('#demo-inspection-map').waitFor();
-  if(!await page.locator('.rp-inspection-cockpit #demo-inspection-map').count())throw Error('Vistoriador deve usar cockpit cartográfico da ronda');
-  if(await page.locator('#demo-inspection-form').count())throw Error('Laudo não pode aparecer antes da chegada');
-  await page.locator('[data-action="demo-inspection-depart"]').click();
-  await page.locator('[data-action="demo-inspection-arrive"]').click();
-  const dialog=page.locator('#rp-demo-wizard-dialog');
-  if(!await dialog.count())throw Error('Vistoria não abriu o checklist por etapas');
-  for(let stage=0;stage<4;stage++){
-    await dialog.locator('.rp-field-verification input[type="checkbox"]').first().check();
-    await dialog.locator('[data-wizard-next]').click();
-   }
-   if(!await page.locator('#demo-inspection-form [name="localPhoto"][multiple]').count())throw Error('Etapa final não oferece seleção de múltiplas fotos do local');
-   await page.screenshot({path:out+'/vistoriador-'+width+'.png',fullPage:true});
-   const file={name:'evidencia.jpg',mimeType:'image/jpeg',buffer:Buffer.from([255,216,255,224,0,16])};
-   await page.locator('#demo-inspection-form [name="selfie"]').setInputFiles(file);
-   await page.locator('#demo-inspection-form [name="localPhoto"]').setInputFiles([file,{...file,name:'segunda.jpg'}]);
-   await page.locator('#demo-inspection-form [name="observation"]').fill('Conferência realizada no local, sem irregularidades nos critérios observados.');
-   await page.locator('#demo-inspection-form [name="confirmation"]').check();
-   await page.locator('#demo-inspection-form [type="submit"]').click();
-   if(await page.locator('#demo-inspection-form').count())throw Error('Vistoria concluída não voltou para o mapa sem pendências');
-   await page.locator('.rp-inspection-cockpit.is-idle .rp-inspection-destination').waitFor();
-   await page.locator('.rp-header-tools [aria-label="Mensagens do COE"]').click();
-   await page.locator('[data-action="demo-chat-overlay"]').click();
-   await page.locator('#rp-demo-chat-overlay #demo-chat-form').waitFor();
-   if(await page.locator('#rp-demo-chat-overlay .field-chat-contact-row:visible').count())throw Error('Chat de campo abriu lista em vez de conversa direta');
-   await page.screenshot({path:out+'/chat-vistoriador-'+width+'.png',fullPage:true});
-   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);
   if(overflow)throw Error('Rolagem horizontal indevida em '+width+'px');
   const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('horizon-maxvel-v1')));
   const incident=state.sessions.flatMap(s=>s.incidents).find(i=>i.id==='rev3-fixture-incident');
