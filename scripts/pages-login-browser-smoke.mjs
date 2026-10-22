@@ -40,6 +40,13 @@ try{
    body:JSON.stringify({features:[{type:'Feature',geometry:{coordinates:route.request().url().includes('Avenida')?[-44.8761,-20.1471]:[-44.8906,-20.1437]},
      properties:route.request().url().includes('Avenida')?{name:'Avenida Central',street:'Avenida Central',housenumber:'400',city:'Divinópolis'}:{name:'Rua da Ronda',street:'Rua da Ronda',housenumber:'123',city:'Divinópolis'}}]})
   }));
+  // Fixture deterministicamente viária e curva: não aceita reta entre os pinos.
+  await context.route('**/route/v1/driving/**',route=>route.fulfill({
+   status:200,contentType:'application/json',
+   body:JSON.stringify({code:'Ok',routes:[{distance:2850,duration:510,geometry:{
+    type:'LineString',coordinates:[[-44.8906,-20.1437],[-44.8899,-20.1415],[-44.8813,-20.1436],[-44.8761,-20.1471]]
+   }}]})
+  }));
   page.on('pageerror',err=>errors.push(err.message));
   try{
    await page.goto(target.url,{waitUntil:'domcontentloaded'});
@@ -89,6 +96,8 @@ try{
       await form.locator('[data-dispatch-up="1"]').click();
       await form.locator('[data-dispatch-down="0"]').click();
       await form.locator('#rp-dispatch-stops').scrollIntoViewIfNeeded();
+      await form.locator('#rp-dispatch-route-status').getByText('Percurso pelas ruas:').waitFor({timeout:12000});
+      if((await form.locator('#rp-dispatch-preview-map .leaflet-overlay-pane path').count())<1)throw Error('Geometria viária não desenhada no mapa');
       await page.screenshot({path:'artifacts/pages-browser-login/'+target.name+'-destinos.png',animations:'disabled'});
       await form.locator('[data-action="dispatch-next"]').click();
       await form.locator('[name="reason"]').fill('Conferir portaria principal e acesso dos visitantes.');
