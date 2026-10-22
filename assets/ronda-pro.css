@@ -2812,7 +2812,7 @@ dialog.ux06-fullscreen .ux06-sheet{display:flex!important;flex:1 1 auto!importan
 .ux06-sheet-footer{flex:0 0 33px;min-height:33px;max-height:33px;display:flex;align-items:center;border-top:1px solid var(--mx-line);padding:5px 13px;font-size:10px}
 dialog.ux06-fullscreen:not([open]),dialog.ux06-fullscreen.ux-dialog-paging:not([open]){display:none!important}
 @media (max-width:360px){.ux06-sheet-header{padding-left:10px;padding-right:44px}}
-/* Identidade única do Rondas Pro: preto, celeste e violeta discreto. Geometria dos mapas é independente dos controles. */
+/* Identidade única do Ronda Pro: preto, celeste e violeta discreto. Geometria dos mapas é independente dos controles. */
 :root {
  --mx-bg:#050505; --mx-surface:#0d0d0e; --mx-raised:#161618; --mx-hover:#222225;
  --mx-line:#2b2b30; --mx-text:#f4f4f4; --mx-secondary:#ccccd0; --mx-muted:#a8a8b0;
@@ -3142,7 +3142,7 @@ dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)
 }
 
 /* Funcionalidades operacionais complementares */
-/* Rondas Pro · adições operacionais sem alterar o tema aprovado. */
+/* Ronda Pro · adições operacionais sem alterar o tema aprovado. */
 .ops-added-section{margin:15px 0 0;padding:16px 18px;border:1px solid rgba(109,170,202,.22);border-radius:10px;background:rgba(25,35,44,.75);color:#e6edf2}
 .ops-added-section h2{font:700 1.04rem/1.25 inherit;margin:0 0 9px;color:#f2f9ff}
 .ops-added-section p{line-height:1.6;color:#bfcdd7;font-size:.9rem;margin:8px 0}
@@ -3188,7 +3188,7 @@ dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)
 @media(prefers-reduced-motion:reduce){.ops-panic{transition:none;animation:none}}
 @media print{.ops-panic,.ops-admin-actions,.ops-inline-actions{display:none}}
 
-/* Rondas Pro | camada de motion discreto e controles adaptativos.
+/* Ronda Pro | camada de motion discreto e controles adaptativos.
    Não altera as cores oficiais Maxvel nem os estados operacionais. */
 :root {
   --rp-ui-ease: cubic-bezier(.2,.7,.2,1);
@@ -3291,7 +3291,7 @@ dialog[open].rp-sheet-dragging { transform:translate3d(0,var(--rp-drag-y,0px),0)
   .rp-label-short {display:none!important}
 }
 
-/* Rondas Pro V3 · movimento de interface, nunca de geolocalização ou de segurança.
+/* Ronda Pro V3 · movimento de interface, nunca de geolocalização ou de segurança.
    Durações curtas, sem loops decorativos e sem alterar a paleta Maxvel. */
 @keyframes rp-v3-float-in {
   from {opacity:.45;translate:0 9px}
@@ -3693,7 +3693,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
 }
 @media print{.patrol-communication-bar{display:none!important}}
 
-/* RONDAS PRO · mapa de fundo + cockpit do vigia · Maxvel mobile, out/2026
+/* RONDA PRO · mapa de fundo + cockpit do vigia · Maxvel mobile, out/2026
    Camadas: mapa > controles Leaflet > comandos sobrepostos > pânico > diálogos. */
 @media screen and (max-width:900px){
   .dashboard .app-content.ronda-page{
@@ -4010,7 +4010,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
 }
 
 /* SECTION: demo-roles */
-/* Rondas Pro · acessos de demonstração e histórico de rotas, visual Maxvel */
+/* Ronda Pro · acessos de demonstração e histórico de rotas, visual Maxvel */
 .demo-role-view,.demo-admin-route-queue{display:grid;gap:16px;min-width:0}
 .demo-role-site{padding:18px 20px;background:var(--surface,#16161a);border:1px solid rgba(186,191,203,.22);border-radius:12px}
 .demo-role-site>span{font-size:10px;font-weight:800;letter-spacing:1.3px;color:var(--muted,#aaa)}
@@ -4050,7 +4050,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
 .simulation-roles button{flex-shrink:0}
 @media(max-width:760px){.demo-role-columns,.demo-admin-route-line{grid-template-columns:minmax(0,1fr)}.demo-role-columns .map-container{height:250px;min-height:250px}.demo-admin-route-header .button{width:100%;justify-content:center}.demo-mini-route-map{height:220px;min-height:220px}.demo-role-view,.demo-admin-route-queue{gap:12px}.demo-role-columns>section,.demo-role-columns>form{padding:13px}.demo-admin-route-line>div:last-child{padding:14px}.simulation-roles{justify-content:flex-start}}
 
-/* Seletor mobile do Rondas Pro: cinco áreas, sem painel vazio ou rolagem horizontal. */
+/* Seletor mobile do Ronda Pro: cinco áreas, sem painel vazio ou rolagem horizontal. */
 #dialog.role-picker-dialog[open]{box-sizing:border-box!important;height:max-content!important;min-height:0!important;max-height:calc(100dvh - 28px)!important;width:min(480px,calc(100vw - 26px))!important;overflow-y:auto!important;overflow-x:hidden!important;padding:18px!important;margin:auto!important;background:rgba(16,16,19,.97)!important;color:#f4f4f5!important;border:1px solid rgba(171,179,194,.3)!important;border-radius:16px!important;box-shadow:0 24px 70px rgba(0,0,0,.65)!important}
 #dialog.role-picker-dialog .eyebrow{font-size:10px!important;letter-spacing:.10em;color:#38bdf8!important;font-weight:800;margin-top:8px}
 #dialog.role-picker-dialog h2{font-size:24px!important;line-height:1.2;margin:6px 0 14px!important;color:#fafafa!important}
@@ -4086,7 +4086,7 @@ dialog.guide-dialog .guide-launch input {width:100%;min-width:0}
  .dashboard .ronda-page .patrol-actions{top:70px!important}
 }
 
-/* Rondas Pro | revisão UI de 14/10/2026
+/* Ronda Pro | revisão UI de 14/10/2026
  * Design: Zinc + vidro fosco. Azul permitido apenas celeste (#7ac8e4).
  * O painel de ação diminui sem reduzir os alvos de toque abaixo de 44px. */
 :root{--ronda-celeste:#7ac8e4;--ronda-verde:#10b981;--ronda-alerta:#f59e0b;--ronda-panico:#ec121f}
@@ -4165,7 +4165,7 @@ body.checkpoint-arrived .dashboard .ronda-page .patrol-actions{visibility:hidden
 .evidence-direct{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}.evidence-direct-btn{min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid #507286;border-radius:9px;background:#173246;color:#f5fbff;font-size:12px;font-weight:750}.evidence-direct-btn:hover,.evidence-direct-btn:focus-visible{background:#295475;border-color:#8ccdfa}.evidence-direct-btn svg{width:24px;height:24px}.evidence-attachment-list{font-size:11px;color:#b7cbd9;line-height:1.45;margin:8px 0 10px}.evidence-attachment-list .attached-file{display:inline-flex;align-items:center;gap:5px;border:1px solid #517389;border-radius:6px;padding:5px 8px;margin:3px 5px 0 0;font-size:11px}.evidence-attachment-list button{border:0;background:transparent;color:#ffb0b8;font-size:12px}.evidence-voice-overlay{position:fixed;inset:0;z-index:7000;display:flex;justify-content:center;align-items:center;padding:20px;color:#fff}.evidence-voice-frost{position:absolute;inset:0;background:#000e;backdrop-filter:blur(15px)}.evidence-voice-layout{position:relative;width:min(100%,460px);max-height:95dvh;overflow:auto;display:grid;justify-items:center;text-align:center;gap:12px;padding:28px 16px}.evidence-voice-symbol{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:#17374c;border:2px solid #71c4fb;color:#bce7ff}.evidence-voice-symbol svg{width:33px;height:33px}.evidence-voice-eyebrow{font-size:10px;letter-spacing:1px;color:#a3dafa;font-weight:800}.evidence-voice-layout h2{font-size:28px;margin:0}.evidence-voice-layout p{font-size:13px;line-height:1.6;color:#d6e2eb;max-width:380px}.evidence-voice-layout output{font-size:55px;font-weight:850;font-variant-numeric:tabular-nums}.evidence-voice-state{font-size:12px;min-height:25px;color:#d5e4f2}.evidence-voice-buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%}.evidence-voice-buttons button{min-width:145px;min-height:46px;border:1px solid #618aa7;border-radius:9px;background:#162c3f;color:#fff;font-weight:750}.evidence-voice-buttons .voice-primary,.evidence-voice-buttons [data-voice-use]{background:#fff;color:#15283a;border-color:#fff}.evidence-voice-buttons [hidden]{display:none!important}.evidence-wave{display:flex;align-items:center;justify-content:center;height:40px;gap:6px}.evidence-wave i{height:14px;width:4px;border-radius:6px;background:#74bde5}.is-recording .evidence-wave i{animation:voiceWave .8s ease-in-out infinite alternate}.is-recording .evidence-wave i:nth-child(2n){animation-delay:.15s}.is-recording .evidence-wave i:nth-child(3n){animation-delay:.35s}@keyframes voiceWave{to{height:38px}}.ops-media-fields{border:0!important;padding:0!important}.ops-media-choices{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.ops-media-choices label{cursor:pointer}.checkpoint-tools .evidence-direct{grid-column:1/-1;margin:0}.checkpoint-tools:has(.evidence-direct){display:block}.evidence-direct-btn:focus-visible{outline:3px solid #b0e4ff;outline-offset:2px}@media(max-width:370px){.evidence-voice-buttons button{min-width:120px}.evidence-direct-btn{min-height:60px}}@media(prefers-reduced-motion:reduce){.is-recording .evidence-wave i{animation:none}}
 
 /* SECTION: maxvel-visual-2026 */
-/* Rondas Pro | Revisao visual 14/10/2026
+/* Ronda Pro | Revisao visual 14/10/2026
    Superficies graphite/zinc + vidro, jamais azul-escuro opaco.
    Ciano reservado a rota/destaques, verde status, amarelo atencao, vermelho emergencia. */
 :root{
@@ -4509,7 +4509,7 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
 }
 
 /* SECTION: rondas-pro-flow-20261014 */
-/* Rondas Pro | cockpit de ronda 14-10-2026
+/* Ronda Pro | cockpit de ronda 14-10-2026
    Última camada: glass Zinc, controles em pílula, acessibilidade e fluxo explícito. */
 :root{--rp-zinc:#09090b;--rp-glass:rgba(22,22,25,.86);--rp-cyan:#38bdf8;--rp-silver:#e4e4e7;}
 .dashboard .ronda-page .patrol-actions,
