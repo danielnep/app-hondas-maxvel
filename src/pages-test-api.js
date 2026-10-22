@@ -7,8 +7,7 @@ export const isPagesTestMode = () => typeof location !== 'undefined' && ['daniel
 export const PAGES_TEST_ACCOUNTS=Object.freeze([
  {name:'Administrador',username:'admin',email:'admin@rondapro.local',role:'admin',password:'Admin@Maxvel26!'},
  {name:'Operador COI',username:'coi',email:'coi@rondapro.local',role:'coi',password:'Coi@Maxvel26!'},
- {name:'Vigia',username:'vigia',email:'vigia@rondapro.local',role:'ronda',password:'Vigia@Maxvel26!'},
- {name:'Vistoriador',username:'vistoriador',email:'vistoriador@rondapro.local',role:'vistoriador',password:'Vistoria@Maxvel26!'}
+ {name:'Agente de ronda',username:'vigia',email:'vigia@rondapro.local',role:'ronda',password:'Vigia@Maxvel26!'},
 ]);
 const PREFIX='ronda-pro-pages-test-v2:',TOKEN_KEY='rondaspro_api_token';
 const read=(key,defaultValue)=>{try{return JSON.parse(localStorage.getItem(PREFIX+key))??defaultValue}catch{return defaultValue}};
@@ -62,14 +61,29 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
   if(method==='GET')return {routes:a.role==='ronda'?own(rows,user.id):rows};
   if(method==='POST'){
    if(a.role!=='admin')throw fail('Somente administração cria rotas.',403);
-   if(!data?.userId||!Array.isArray(data?.points)||data.points.length<2)throw fail('Informe responsável e dois pontos.',422);
-   const entry={...data,id:newId(),createdAt:Date.now(),updatedAt:Date.now(),site:'Grupo Maxvel'};
-   store('routes',[...rows,entry]);return {id:entry.id};
+   if(!data?.userId||!Array.isArray(data?.points)||!data.points.length)throw fail('Informe o agente e pelo menos um destino.',422);
+   const userId=data.userId==='auto'?'pages-vigia':data.userId;
+   if(!allUsers().some(x=>x.role==='ronda'&&'pages-'+x.username===userId))throw fail('Agente de ronda não encontrado.',422);
+   const entry={...data,userId,id:newId(),createdAt:Date.now(),updatedAt:Date.now(),site:'Grupo Maxvel'};
+   store('routes',[...rows,entry]);
+   const notice={id:newId(),user_id:userId,kind:'notice',title:'Nova ronda programada',body:entry.name+' · '+(entry.schedule?.hour||'08:00'),created_at:Date.now(),read_at:null};
+   store('notifications',[notice,...read('notifications',[])]);
+   return {id:entry.id,assignedTo:userId};
   }
+ }
+ if(p==='/notifications'&&method==='GET'){
+  const rows=read('notifications',[]).filter(n=>n.user_id===user.id);
+  return {notifications:rows,total:rows.length,unread:rows.filter(n=>!n.read_at).length,attention:rows.filter(n=>!n.read_at).length};
+ }
+ const readNotice=p.match(/^\/notifications\/([^/]+)\/read$/);
+ if(readNotice&&method==='POST'){
+  const rows=read('notifications',[]),item=rows.find(n=>n.id===readNotice[1]&&n.user_id===user.id);
+  if(!item)throw fail('Aviso não encontrado.',404);
+  item.read_at=item.read_at||Date.now();store('notifications',rows);return {ok:true};
  }
  if(p==='/dispatches'){
   const rows=read('dispatches',[]);
-  if(method==='GET')return {dispatches:a.role==='vistoriador'?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
+  if(method==='GET')return {dispatches:a.role==='ronda'?rows.filter(item=>item.workerId===user.id||item.worker_id===user.id):rows};
   if(method==='POST'){
    const self=a.role==='vistoriador',kind=data?.kind==='inspection'?'vistoria':data?.kind==='ronda'?'ronda':'ronda';
    if(!self&&!['admin','coi'].includes(a.role))throw fail('Sem permissão.',403);
