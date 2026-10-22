@@ -62,7 +62,7 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
   const rows=read('routes',[]);
   if(method==='GET')return {routes:a.role==='ronda'?own(rows,user.id):rows};
   if(method==='POST'){
-   if(a.role!=='admin')throw fail('Somente administração cria rotas.',403);
+   if(!['admin','coi'].includes(a.role))throw fail('Somente COI ou Administração programa rondas.',403);
    if(!data?.userId||!Array.isArray(data?.points)||!data.points.length)throw fail('Informe o agente e pelo menos um destino.',422);
    const candidate=allUsers().find(x=>x.role==='ronda'&&x.username.startsWith('vigia-demo-'))||allUsers().find(x=>x.role==='ronda');
    const userId=data.userId==='auto'?'pages-'+candidate?.username:data.userId;
