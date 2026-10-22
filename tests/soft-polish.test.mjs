@@ -44,7 +44,7 @@ test('as duas interfaces carregam a camada e a PWA atualiza seus arquivos',()=>{
 
 test('V3 mantém feedback visual e o novo cockpit respeita movimento reduzido',()=>{
  for(const path of ['../assets/ronda-pro.css','../assets/central.css']){
-  const css=path.includes('central.css')?readStyles('soft-polish'):readStyles('application'),v3=css.slice(css.lastIndexOf('/* Rondas Pro V3'));
+  const css=path.includes('central.css')?readStyles('soft-polish'):readStyles('application'),v3=css.slice(css.lastIndexOf('/* Ronda Pro V3'));
   assert.ok(v3.length>3000,path);
   assert.match(v3,/rp-v3-float-in/);
   assert.match(v3,/rp-v3-soft-pop/);
@@ -56,5 +56,5 @@ test('V3 mantém feedback visual e o novo cockpit respeita movimento reduzido',(
  }
  const app=read('../index.html'),central=read('../central.html');
  assert.match(app,/ronda-pro\.css\?v=52/);
- assert.match(central,/central\.css\?v=50/);
+ assert.match(central,/central\.css\?v=51/);
 });
