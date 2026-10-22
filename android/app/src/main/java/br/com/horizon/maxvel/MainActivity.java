@@ -11,6 +11,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.hardware.GeomagneticField;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -53,7 +55,8 @@ import org.maplibre.android.style.sources.GeoJsonSource;
 
 /** Interface 100% Android Views + mapa nativo. Nada de WebView, HTML ou simulação. */
 public class MainActivity extends Activity implements LocationListener,SensorEventListener {
-    private static final int LOCATION_PERMISSION=31;
+    private static final int LOCATION_PERMISSION=31,TORCH_PERMISSION=33;
+    private boolean torchOn=false;private String torchId;
     private static final int DARK=0xff17191d,RED=0xffdf343c,WHITE=0xfff2f4f6;
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private final Handler handler=new Handler(Looper.getMainLooper());
@@ -165,10 +168,11 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
         checkpoint=text("GPS aguardando localização.",13,0xffbfcad3);
         bottom.addView(steps);bottom.addView(checkpoint);
         LinearLayout actions=new LinearLayout(this);
-        Button select=button("Rondas"),recenter=button("Centralizar"),incident=button("Ocorrência");
+        Button select=button("Rondas"),recenter=button("Centralizar"),incident=button("Ocorrência"),torch=button("Lanterna");
         actions.addView(select,new LinearLayout.LayoutParams(0,dp(48),1));
         actions.addView(recenter,new LinearLayout.LayoutParams(0,dp(48),1));
         actions.addView(incident,new LinearLayout.LayoutParams(0,dp(48),1));
+        actions.addView(torch,new LinearLayout.LayoutParams(0,dp(48),1));
         bottom.addView(actions);
         LinearLayout active=new LinearLayout(this);
         startButton=button("Iniciar rota");checkButton=button("Estou aqui");
@@ -179,6 +183,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
         select.setOnClickListener(v->loadDispatches(true));
         recenter.setOnClickListener(v->{following=true;updateLocationView();});
         incident.setOnClickListener(v->incidentDialog());
+        torch.setOnClickListener(v->toggleTorch());
         startButton.setOnClickListener(v->{if(started)finishPatrol();else startPatrol();});
         checkButton.setOnClickListener(v->checkin());
         setContentView(frame);
@@ -310,6 +315,29 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
             });
         }catch(Exception e){checkButton.setEnabled(true);notice(e.getMessage());}
     }
+    private void toggleTorch(){
+        if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.CAMERA},TORCH_PERMISSION);return;
+        }
+        try{
+            CameraManager camera=(CameraManager)getSystemService(CAMERA_SERVICE);
+            if(torchId==null){
+                for(String id:camera.getCameraIdList()){
+                    CameraCharacteristics info=camera.getCameraCharacteristics(id);
+                    Boolean flash=info.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                    Integer facing=info.get(CameraCharacteristics.LENS_FACING);
+                    if(Boolean.TRUE.equals(flash)&&facing!=null&&facing==CameraCharacteristics.LENS_FACING_BACK){torchId=id;break;}
+                }
+            }
+            if(torchId==null){notice("Lanterna indisponível neste aparelho.");return;}
+            camera.setTorchMode(torchId,!torchOn);torchOn=!torchOn;
+        }catch(Exception e){notice("Não foi possível ligar a lanterna.");}
+    }
+    private void switchOffTorch(){
+        if(!torchOn)return;
+        try{((CameraManager)getSystemService(CAMERA_SERVICE)).setTorchMode(torchId,false);}catch(Exception ignored){}
+        torchOn=false;
+    }
     private void incidentDialog(){
         if(!started){notice("Inicie uma ronda para registrar ocorrências.");return;}
         EditText input=new EditText(this);input.setHint("Descreva a ocorrência");input.setMinLines(3);
@@ -391,6 +419,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
         super.onRequestPermissionsResult(code,p,result);
         if(code==LOCATION_PERMISSION&&hasLocation())requestLocation();
         else if(code==LOCATION_PERMISSION)notice("A localização precisa é necessária durante a ronda.");
+        if(code==TORCH_PERMISSION&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)toggleTorch();
     }
     @Override public void onLocationChanged(Location loc){
         if(!loc.hasAccuracy()||loc.getAccuracy()>90)return;
@@ -444,7 +473,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
     @Override protected void onResume(){super.onResume();if(mapView!=null)mapView.onResume();
         if(rotationSensor!=null)sensors.registerListener(this,rotationSensor,SensorManager.SENSOR_DELAY_GAME);
         if(mapView!=null&&hasLocation())requestLocation();}
-    @Override protected void onPause(){if(mapView!=null)mapView.onPause();sensors.unregisterListener(this);super.onPause();}
+    @Override protected void onPause(){switchOffTorch();if(mapView!=null)mapView.onPause();sensors.unregisterListener(this);super.onPause();}
     @Override protected void onStop(){if(mapView!=null)mapView.onStop();super.onStop();}
     @Override protected void onDestroy(){
         handler.removeCallbacks(refresh);if(locationManager!=null)locationManager.removeUpdates(this);
