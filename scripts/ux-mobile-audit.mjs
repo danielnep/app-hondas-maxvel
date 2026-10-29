@@ -6,7 +6,7 @@ import {chromium} from 'playwright-core';
 import {execFileSync} from 'node:child_process';
 import {existsSync,mkdirSync,writeFileSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
-const root=resolve('.'),out=resolve('artifacts/mobile-ux'),origin='https://ronda-pro-production.up.railway.app';
+const root=resolve('.'),out=resolve('artifacts/mobile-ux'),origin='https://danielnep.github.io';
 mkdirSync(out,{recursive:true});
 const types={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png'};
 const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900],[1920,1080]];
