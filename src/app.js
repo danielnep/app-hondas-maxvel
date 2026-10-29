@@ -985,7 +985,7 @@ function demoEventNotifications(){
 }
 let demoChatScreen='list',liveChatId=null,liveContacts=[],liveConversations=[],liveMessages=[];
 async function refreshRealChat(){
- if(!user?.id)return;
+ if(!user?.id||isPagesTestMode())return;
  const [contactData,conversationsData]=await Promise.all([liveRequest('/chat/contacts'),liveRequest('/chat/conversations')]);
  liveContacts=contactData.contacts||[];liveConversations=conversationsData.conversations||[];
  if(liveChatId){
@@ -2034,7 +2034,7 @@ const ops=createOperationsUpgrade({
  get:()=>({user,view,session,sessions,programs,operationalSettings,mode,locationFix,
   selectedRoute:session?.route??routeForWatcher(selectedWatcherId)}),
  render,save,persist,notify,showDialog,incidentDialog,alertDialog,
- openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('./central.html#chat');return;}openDemoChatOverlay(true);},
+ openChat:()=>openDemoChatOverlay(true),
  closeDialog:()=>modal.close(),
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });
