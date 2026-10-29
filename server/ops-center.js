@@ -20,7 +20,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  db.exec('CREATE TABLE IF NOT EXISTS operational_presence(user_id TEXT PRIMARY KEY,last_seen INTEGER NOT NULL)');
  // Migração aditiva: preserva todas as presenças e os registros existentes.
  const presenceCols=new Set(db.prepare('PRAGMA table_info(operational_presence)').all().map(c=>c.name));
- for(const [field,type] of [['lat','REAL'],['lng','REAL'],['accuracy','REAL'],['fix_at','INTEGER']])if(!presenceCols.has(field))db.exec(`ALTER TABLE operational_presence ADD COLUMN ${field} ${type}`);
+ for(const [field,type] of [['lat','REAL'],['lng','REAL'],['accuracy','REAL'],['fix_at','INTEGER'],['shift_state',"TEXT NOT NULL DEFAULT 'active'"],['ended_at','INTEGER']])if(!presenceCols.has(field))db.exec(`ALTER TABLE operational_presence ADD COLUMN ${field} ${type}`);
  db.exec('CREATE TABLE IF NOT EXISTS inspection_destinations(id TEXT PRIMARY KEY,client_name TEXT NOT NULL,contact_name TEXT NOT NULL DEFAULT "",phone TEXT NOT NULL DEFAULT "",email TEXT NOT NULL DEFAULT "",address TEXT NOT NULL,latitude REAL,longitude REAL,active INTEGER NOT NULL DEFAULT 1,created_by TEXT NOT NULL,created_at INTEGER NOT NULL)');
  const dispatchCols=db.prepare('PRAGMA table_info(dispatches)').all().map(x=>x.name);
  if(!dispatchCols.includes('kind'))db.exec("ALTER TABLE dispatches ADD COLUMN kind TEXT NOT NULL DEFAULT 'ronda'");
@@ -80,9 +80,21 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  function availability(){
   const busy=new Set(recentRounds().filter(r=>r.status==='em_andamento').map(r=>r.userId));
   const inspecting=new Set(db.prepare("SELECT worker_id FROM dispatches WHERE kind='vistoria' AND completed_at IS NULL AND started_at IS NOT NULL").all().map(x=>x.worker_id));
-  const workers=db.prepare("SELECT u.id,u.name,u.role,u.site,u.active,p.last_seen,p.lat,p.lng,p.accuracy,p.fix_at FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role IN ('ronda','vistoriador') ORDER BY u.name").all();
-  return workers.map(w=>({...w,status:!w.active?'Fora de serviço':w.role==='vistoriador'&&inspecting.has(w.id)?'Em vistoria':busy.has(w.id)?'Em ronda':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço',
-   position:w.fix_at&&now()-w.fix_at<120000&&Number.isFinite(w.lat)&&Number.isFinite(w.lng)?{lat:w.lat,lng:w.lng,accuracy:w.accuracy,at:w.fix_at}:null}));
+  const workers=db.prepare("SELECT u.id,u.name,u.role,u.site,u.active,p.last_seen,p.lat,p.lng,p.accuracy,p.fix_at,p.shift_state,p.ended_at FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role IN ('ronda','vistoriador') ORDER BY u.name").all();
+  const at=now(),ttl=120000;
+  return workers.map(w=>{
+   const offDuty=!w.active||w.shift_state==='off'||!w.last_seen;
+   const connected=!offDuty&&at-w.last_seen<ttl&&at>=w.last_seen-60000;
+   const activity=w.role==='vistoriador'&&inspecting.has(w.id)?'Em vistoria':busy.has(w.id)?'Em ronda':null;
+   return {...w,connectionStatus:offDuty?'off_duty':connected?'online':'offline',
+    lastContactAt:w.last_seen||null,activity,
+    status:offDuty?'Fora de serviço':!connected?'Offline por falta de conexão':activity||'Disponível',
+    position:connected&&w.fix_at&&at-w.fix_at<ttl&&Number.isFinite(w.lat)&&Number.isFinite(w.lng)?{lat:w.lat,lng:w.lng,accuracy:w.accuracy,at:w.fix_at}:null};
+  });
+ }
+ function endShift(user){
+  const at=now();
+  db.prepare("INSERT INTO operational_presence(user_id,last_seen,shift_state,ended_at) VALUES(?,?,'off',?) ON CONFLICT(user_id) DO UPDATE SET shift_state='off',ended_at=excluded.ended_at").run(user.id,at,at);
  }
  async function handle(req,res,user,p,method){
   if(p==='/api/presence'&&method==='POST'){
@@ -91,13 +103,13 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const valid=position&&Number.isFinite(position.lat)&&Number.isFinite(position.lng)&&Math.abs(position.lat)<=90&&Math.abs(position.lng)<=180&&
     (position.accuracy==null||Number.isFinite(position.accuracy)&&position.accuracy>=0&&position.accuracy<=5000);
    const at=now();
-   db.prepare('INSERT INTO operational_presence(user_id,last_seen,lat,lng,accuracy,fix_at) VALUES(?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen,lat=COALESCE(excluded.lat,operational_presence.lat),lng=COALESCE(excluded.lng,operational_presence.lng),accuracy=COALESCE(excluded.accuracy,operational_presence.accuracy),fix_at=COALESCE(excluded.fix_at,operational_presence.fix_at)')
+   db.prepare("INSERT INTO operational_presence(user_id,last_seen,lat,lng,accuracy,fix_at,shift_state,ended_at) VALUES(?,?,?,?,?,?,'active',NULL) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen,lat=COALESCE(excluded.lat,operational_presence.lat),lng=COALESCE(excluded.lng,operational_presence.lng),accuracy=COALESCE(excluded.accuracy,operational_presence.accuracy),fix_at=COALESCE(excluded.fix_at,operational_presence.fix_at),shift_state='active',ended_at=NULL")
     .run(user.id,at,valid?position.lat:null,valid?position.lng:null,valid?position.accuracy??null:null,valid?at:null);
    resp(res,200,{ok:true,positionRecorded:!!valid});return true;
   }
   if(p==='/api/presence/off'&&method==='POST'){
    if(!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Presença reservada à equipe de campo'});return true;}
-   db.prepare('DELETE FROM operational_presence WHERE user_id=?').run(user.id);
+   endShift(user);
    resp(res,200,{ok:true});return true;
   }
   if(p==='/api/availability'&&method==='GET'){
@@ -291,5 +303,5 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   return false;
  }
  function broadcast(){for(const key of clients.keys())announce(key);}
- return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast};
+ return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast,endShift};
 }

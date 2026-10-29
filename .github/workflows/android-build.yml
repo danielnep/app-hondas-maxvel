@@ -12,7 +12,7 @@ on:
       - 'central.html'
       - '.github/workflows/android-build.yml'
   push:
-    branches: [main, maxvel-06-ux-mobile, native-vps-navigation-20261022, fix/apk-glass-offline-20261022]
+    branches: [main, maxvel-06-ux-mobile, native-vps-navigation-20261022, audit/offline-first-20261029]
     paths:
       - 'android/**'
       - 'src/**'
@@ -64,6 +64,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: ronda-pro-maxvel-glass-offline-2.1.1
+          name: ronda-pro-maxvel-glass-presence-2.1.2
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error

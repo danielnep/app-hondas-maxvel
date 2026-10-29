@@ -27,7 +27,8 @@ test('aplicativo Android declara rastreamento transparente com encerramento vis√
  assert.match(manifest,/android:allowBackup="false"/);
  assert.match(manifest,/android:usesCleartextTraffic="false"/);
  assert.match(service,/setOngoing\(true\)/);
- assert.match(service,/Parar acompanhamento/);
+ assert.match(service,/Expediente em andamento/);
+ assert.doesNotMatch(service,/Parar acompanhamento/,'parar GPS sem encerrar expediente criaria presen√ßa falsa');
  assert.match(service,/stopForeground\(STOP_FOREGROUND_REMOVE\)/);
  assert.match(service,/START_NOT_STICKY/);
  assert.match(service,/onDestroy/);

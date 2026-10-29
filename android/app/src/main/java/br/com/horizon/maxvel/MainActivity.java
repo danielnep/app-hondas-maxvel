@@ -155,7 +155,7 @@ public final class MainActivity extends Activity implements SensorEventListener,
             if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)saved.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
             else saved.deny();
         }
-        if(request==LOCATION&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)trackLocation();
+        if(request==LOCATION&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED){trackLocation();startPresenceService();}
     }
     @Override protected void onActivityResult(int request,int result,Intent data){
         super.onActivityResult(request,result,data);
@@ -206,18 +206,23 @@ public final class MainActivity extends Activity implements SensorEventListener,
         try{response.put("requestId",id);}catch(Exception ignored){}
         event("rondas-native-torch-result",response);
     }
+    private void startPresenceService(){
+        if(!getSharedPreferences("tracking",MODE_PRIVATE).getBoolean("shiftActive",false)||NativeApi.token(this).isEmpty()||checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;
+        try{startForegroundService(new Intent(this,PatrolLocationService.class).setAction(PatrolLocationService.START_SHIFT).putExtra("roundId",""));}catch(Exception ignored){}
+    }
     private final class Bridge{
         @JavascriptInterface public void rememberToken(String token){if(token!=null&&token.length()>10)NativeApi.saveLogin(MainActivity.this,token,"agente");}
-        @JavascriptInterface public void forgetToken(){NativeApi.logout(MainActivity.this);}
+        @JavascriptInterface public void startShift(){getSharedPreferences("tracking",MODE_PRIVATE).edit().putBoolean("shiftActive",true).apply();runOnUiThread(()->startPresenceService());}
+        @JavascriptInterface public void forgetToken(){getSharedPreferences("tracking",MODE_PRIVATE).edit().putBoolean("shiftActive",false).apply();NativeApi.logout(MainActivity.this);runOnUiThread(()->stopService(new Intent(MainActivity.this,PatrolLocationService.class)));}
         @JavascriptInterface public void startTracking(String roundId){
             if(roundId==null||roundId.length()<8||NativeApi.token(MainActivity.this).isEmpty())return;
             Intent intent=new Intent(MainActivity.this,PatrolLocationService.class).setAction(PatrolLocationService.START).putExtra("roundId",roundId);
             try{startForegroundService(intent);}catch(Exception error){js("console.warn('GPS nativo ainda sem permissão')");}
         }
-        @JavascriptInterface public void stopTracking(){stopService(new Intent(MainActivity.this,PatrolLocationService.class));}
+        @JavascriptInterface public void stopTracking(){try{startService(new Intent(MainActivity.this,PatrolLocationService.class).setAction(PatrolLocationService.STOP_ROUTE));}catch(Exception ignored){}}
         @JavascriptInterface public void setTorchEnabled(boolean enabled,String requestId){runOnUiThread(()->torch(enabled,requestId));}
     }
-    @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();trackLocation();if(rotation!=null)sensors.registerListener(this,rotation,SensorManager.SENSOR_DELAY_UI);if(offline!=null)offline.flush();}
+    @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();trackLocation();startPresenceService();if(rotation!=null)sensors.registerListener(this,rotation,SensorManager.SENSOR_DELAY_UI);if(offline!=null)offline.flush();}
     @Override protected void onPause(){if(torchOn)torch(false,"");sensors.unregisterListener(this);if(locations!=null)locations.removeUpdates(this);if(web!=null)web.onPause();super.onPause();}
     @Override protected void onDestroy(){if(fileRequest!=null)fileRequest.onReceiveValue(null);if(web!=null){web.removeJavascriptInterface("AndroidTracking");web.removeJavascriptInterface("RondaOffline");web.destroy();web=null;}if(offline!=null)offline.shutdown();background.shutdown();super.onDestroy();}
     @Override public void onBackPressed(){if(web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}

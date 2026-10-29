@@ -4,6 +4,31 @@
  window.__RONDA_ANDROID_BUNDLE__=true;
  const bridge=window.RondaOffline;
  const originalFetch=window.fetch.bind(window);
+ const pendingChatKey='ronda-pro-offline-chat-outbox-view-v1';
+ const chatMessagesPath=/^\/chat\/conversations\/([a-zA-Z0-9-]+)\/messages(?:\?.*)?$/;
+ function pendingChats(){try{return JSON.parse(localStorage.getItem(pendingChatKey)||'[]').filter(x=>x&&x.id&&x.cid)}catch{return []}}
+ function savePending(items){try{localStorage.setItem(pendingChatKey,JSON.stringify(items.slice(-300)))}catch{}}
+ function mergeChat(path,raw){
+  const match=path.match(chatMessagesPath);if(!match)return raw;
+  try{
+   const obj=JSON.parse(raw),pending=pendingChats(),existing=new Set((obj.messages||[]).map(m=>m.id));
+   const keep=pending.filter(m=>!existing.has(m.id));if(keep.length!==pending.length)savePending(keep);
+   const extra=keep.filter(m=>m.cid===match[1]).map(({cid,...m})=>m);
+   if(!extra.length)return raw;
+   obj.messages=[...(obj.messages||[]),...extra].sort((a,b)=>a.created_at-b.created_at);
+   return JSON.stringify(obj);
+  }catch{return raw}
+ }
+ function rememberPending(path,token,body){
+  const match=path.match(chatMessagesPath);if(!match)return;
+  try{
+   const d=JSON.parse(body||'{}');if(!d.id||!d.body)return;
+   const user=JSON.parse(bridge.read('/me',token)||'{}').user||{};
+   const pending=pendingChats();if(pending.some(m=>m.id===d.id))return;
+   pending.push({id:d.id,cid:match[1],body:d.body,author_id:user.id||'own',author:'Envio pendente',created_at:Date.now(),kind:'text',pendingSync:true});savePending(pending);
+  }catch{}
+ }
+
  let online=navigator.onLine;
  function badge(){
   let b=document.getElementById('rp-android-connectivity');
@@ -21,22 +46,27 @@
   try{
    if(!navigator.onLine)throw new TypeError('offline');
    const response=await originalFetch(input,options);
+   let liveResponse=response;
    if(response.ok&&method==='GET'){
-    try{bridge.cache(path,token,await response.clone().text());}catch{}
+    try{
+     const raw=await response.clone().text();bridge.cache(path,token,raw);
+     if(chatMessagesPath.test(path))liveResponse=new Response(mergeChat(path,raw),{status:response.status,headers:{'Content-Type':'application/json'}});
+    }catch{}
    }
    online=true;badge();try{bridge.flush();}catch{}
-   return response;
+   return liveResponse;
   }catch(error){
    if(error.name==='AbortError')throw error;
    online=false;badge();
    if(method==='GET'){
     let saved='';try{saved=bridge.read(path,token);}catch{}
-    if(saved)return new Response(saved,{status:200,headers:{'Content-Type':'application/json','X-Ronda-Offline':'cache'}});
+    if(saved)return new Response(mergeChat(path,saved),{status:200,headers:{'Content-Type':'application/json','X-Ronda-Offline':'cache'}});
     return new Response(JSON.stringify({error:'Sem conexão e sem dados locais para esta tela.'}),{status:503,headers:{'Content-Type':'application/json'}});
    }
    let receipt='';try{receipt=bridge.queue(method,path,token,typeof options.body==='string'?options.body:'');}catch{}
    let json;try{json=JSON.parse(receipt);}catch{json={error:'Falha ao guardar operação offline.'};}
    if(json.error)return new Response(JSON.stringify(json),{status:503,headers:{'Content-Type':'application/json'}});
+   rememberPending(path,token,typeof options.body==='string'?options.body:'');
    badge();return new Response(receipt,{status:202,headers:{'Content-Type':'application/json','X-Ronda-Offline':'outbox'}});
   }
  }

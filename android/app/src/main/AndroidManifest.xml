@@ -11,7 +11,7 @@
     <!-- Para iniciar localização em segundo plano em casos permitidos: solicitar somente em contexto apropriado, via Configurações. -->
 
     <application android:allowBackup="false" android:usesCleartextTraffic="false"
-        android:label="Rondas Pro" android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:label="Ronda Pro" android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:icon="@drawable/ic_maxvel" android:roundIcon="@drawable/ic_maxvel"
         android:supportsRtl="true">
         <activity android:name=".MainActivity" android:configChanges="orientation|screenSize|keyboardHidden" android:exported="true"
