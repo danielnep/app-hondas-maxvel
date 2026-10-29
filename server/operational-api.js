@@ -296,10 +296,11 @@ export function createOperationalApi(){
     }
     const eid=/^[0-9a-z-]{8,80}$/i.test(d.id||'')?d.id:id();
     const existing=event(eid);
-    if(existing){resp(res,existing.user_id===a.id?200:409,{id:eid,duplicate:true});return true;}
+    if(existing){if(existing.user_id===a.id)operations.noteContact(a);resp(res,existing.user_id===a.id?200:409,{id:eid,duplicate:true});return true;}
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .run(eid,a.id,d.kind,clean(d.roundId)||null,d.occurredAt,now(),position?.lat??null,position?.lng??null,position?.accuracy??null,battery,clean(d.description),details,inspectionAssignment?.site||a.site||'');
     audit(a,'event.create',eid);
+    operations.noteContact(a); // GPS recebido confirma conexão mesmo com aplicativo em segundo plano.
     operations.notifyEvent(a,event(eid));
     if(['alert','gps_issue','patrol_end'].includes(d.kind)){
      const key=d.kind==='alert'?clean(d.details?.templateId):d.kind==='gps_issue'?'gps_unreliable':'patrol_completed';

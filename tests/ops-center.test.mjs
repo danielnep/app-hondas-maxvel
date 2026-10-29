@@ -63,6 +63,10 @@ test('COI: presença, despacho, início e conclusão auditáveis, alertas e perm
   assert.equal(disconnected.connectionStatus,'offline');
   assert.equal(disconnected.status,'Offline por falta de conexão');
   assert.equal(disconnected.position,null);
+  // O serviço GPS de segundo plano comprova conexão sem depender da tela aberta.
+  const gps=await post('/events',{kind:'gps',occurredAt:Date.now(),position:{lat:-20.14,lng:-44.89,accuracy:9},description:'Ponto GPS de segundo plano'},guard);
+  assert.equal(gps.status,201);
+  assert.equal((await (await get('/availability',operator)).json()).guards.find(x=>x.id===workerId).connectionStatus,'online');
   assert.equal((await post('/presence',{},guard)).status,200);
   assert.equal((await post('/dispatches',{workerId,address:'Portaria da unidade Centro',reason:'curto'},operator)).status,422);
   const created=await post('/dispatches',{workerId,address:'Portaria da unidade Centro',reason:'Verificar chamado de apoio na portaria'},operator);

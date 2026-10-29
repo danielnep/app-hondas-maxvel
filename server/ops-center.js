@@ -96,6 +96,9 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   const at=now();
   db.prepare("INSERT INTO operational_presence(user_id,last_seen,shift_state,ended_at) VALUES(?,?,'off',?) ON CONFLICT(user_id) DO UPDATE SET shift_state='off',ended_at=excluded.ended_at").run(user.id,at,at);
  }
+ function noteContact(user){
+  if(['ronda','vistoriador'].includes(user.role))db.prepare("UPDATE operational_presence SET last_seen=? WHERE user_id=? AND shift_state='active'").run(now(),user.id);
+ }
  async function handle(req,res,user,p,method){
   if(p==='/api/presence'&&method==='POST'){
    if(!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Presença reservada à equipe de campo'});return true;}
@@ -303,5 +306,5 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   return false;
  }
  function broadcast(){for(const key of clients.keys())announce(key);}
- return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast,endShift};
+ return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast,endShift,noteContact};
 }
