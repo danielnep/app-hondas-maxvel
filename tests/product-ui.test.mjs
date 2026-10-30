@@ -14,7 +14,8 @@ test('aplicativo usa identidade Maxvel própria nos acessos web e Android',()=>{
  assert.doesNotMatch(app,/Horizon|horizon/);
  assert.match(app,/aria-label="Grupo Maxvel"/);
  const gradle=readFileSync(new URL('../android\/app\/build.gradle',import.meta.url),'utf8');
- assert.match(gradle,/assets\/\*\*/);
+ assert.match(gradle,/embedGlassFrontend/);
+ assert.match(gradle,/generated\/rondaFrontend/);
 });
 
 test('entrada mostra plataforma com acesso à operação e mapa cartográfico',()=>{

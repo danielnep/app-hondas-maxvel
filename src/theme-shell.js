@@ -68,7 +68,7 @@ export function decorateTheme(role,name=''){
     if(extras.length){const disclosure=document.createElement('details');disclosure.className='rp-field-records';const label=document.createElement('summary');label.textContent='Meus registros e informações';disclosure.append(label,...extras);controls.append(disclosure);}
    }
    const stage=$('.patrol-stage-index',controls),heading=$('.patrol-action-heading',controls);
-   if(stage&&heading&&!heading.contains(stage))heading.insertBefore(stage,$('button',heading));
+   if(stage&&heading&&!heading.contains(stage)){const next=[...heading.children].find(child=>child.tagName==='BUTTON')||null;heading.insertBefore(stage,next);}
    const hud=$('.rp-inspection-map-hud',workspace);if(hud&&!controls.contains(hud))controls.prepend(hud);
    const upcoming=$('.rp-inspection-upcoming',controls);
    if(upcoming&&!$('[data-rp-guard-options]',controls)){upcoming.hidden=true;const heading=$('.patrol-action-heading',controls);if(heading){const option=document.createElement('button');option.type='button';option.dataset.rpGuardOptions='';option.textContent='⋯';option.setAttribute('aria-label','Ver pontos da ronda');option.addEventListener('click',()=>{upcoming.hidden=!upcoming.hidden;upcoming.open=!upcoming.hidden});heading.append(option)}}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {DatabaseSync} from 'node:sqlite';
 import {createAppServer} from '../server.js';
 
 test('COI: presença, despacho, início e conclusão auditáveis, alertas e permissões reais',async()=>{
@@ -54,6 +55,15 @@ test('COI: presença, despacho, início e conclusão auditáveis, alertas e perm
   assert.equal((await post('/presence',{},guard)).status,200);
   const available=(await (await get('/availability',operator)).json()).guards.find(x=>x.id===workerId);
   assert.equal(available.status,'Disponível');
+  assert.equal(available.connectionStatus,'online');
+  const staleDb=new DatabaseSync(process.env.RONDA_PRO_DB_PATH);
+  try{staleDb.prepare('UPDATE operational_presence SET last_seen=? WHERE user_id=?').run(Date.now()-130000,workerId);}
+  finally{staleDb.close();}
+  const disconnected=(await (await get('/availability',operator)).json()).guards.find(x=>x.id===workerId);
+  assert.equal(disconnected.connectionStatus,'offline');
+  assert.equal(disconnected.status,'Offline por falta de conexão');
+  assert.equal(disconnected.position,null);
+  assert.equal((await post('/presence',{},guard)).status,200);
   assert.equal((await post('/dispatches',{workerId,address:'Portaria da unidade Centro',reason:'curto'},operator)).status,422);
   const created=await post('/dispatches',{workerId,address:'Portaria da unidade Centro',reason:'Verificar chamado de apoio na portaria'},operator);
   assert.equal(created.status,201);
@@ -101,6 +111,12 @@ test('COI: presença, despacho, início e conclusão auditáveis, alertas e perm
   assert.equal((await post('/presence/off',{},guard)).status,200);
   const loggedOut=(await (await get('/availability',master)).json()).guards.find(x=>x.id===workerId);
   assert.equal(loggedOut.status,'Fora de serviço');
+  assert.equal(loggedOut.connectionStatus,'off_duty');
+  assert.equal((await post('/presence',{},guard)).status,200);
+  assert.equal((await (await get('/availability',master)).json()).guards.find(x=>x.id===workerId).connectionStatus,'online');
+  assert.equal((await post('/logout',{},guard)).status,200);
+  const exited=(await (await get('/availability',master)).json()).guards.find(x=>x.id===workerId);
+  assert.equal(exited.connectionStatus,'off_duty');
  }finally{
   await new Promise(resolve=>server.close(resolve));
   rmSync(dir,{recursive:true,force:true});

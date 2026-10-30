@@ -1,3 +1,4 @@
+import {prefetchRoadPaths} from './inspection-street-route.js';
 import {decorateTheme} from './theme-shell.js';
 import {createRoutePlanner} from './route-planner.js';
 import {createDispatchWizard} from './dispatch-wizard.js';
@@ -130,6 +131,7 @@ function persist(){
 async function refreshLiveUsers(){if(['admin','coi','operador'].includes(user?.role))liveUsers=(await liveRequest('/users')).users||[];}
 async function refreshLiveOperational(){
  if(['admin','coi','operador','ronda'].includes(user?.role))liveRoutes=(await liveRequest('/routes').catch(()=>({routes:[]}))).routes||[];
+ if(user?.role==='ronda'&&liveRoutes.length&&!isPagesTestMode())void prefetchRoadPaths(liveRoutes.filter(r=>r.userId===user.id).map(runtimeRoute).filter(Boolean));
  liveEvents=(await liveRequest('/events?limit=200').catch(()=>({events:[]}))).events||[];
  if(['admin','coi','vistoriador'].includes(user?.role))liveAssignments=(await liveRequest('/dispatches').catch(()=>({dispatches:[]}))).dispatches||[];
 }
@@ -139,7 +141,7 @@ function runtimeRoute(raw){
  if(coords.length<2)return null;
  return {id:raw.id,name:raw.name,unit:raw.site||'Grupo Maxvel',
   base:{id:'base',name:'Base da rota',lat:coords[0].lat,lng:coords[0].lng},
-  points:coords.map((p,i)=>({id:'p'+(i+1),name:p.name,instruction:p.name,lat:p.lat,lng:p.lng,radius:RADIUS_METERS})),legs:[]};
+  points:coords.map((p,i)=>({id:'p'+(i+1),name:p.name,instruction:p.name,lat:p.lat,lng:p.lng,radius:RADIUS_METERS})),legs:[],baseKnown:true,roadRouting:true};
 }
 const assignedRoute=()=>runtimeRoute(liveRoutes.find(r=>r.userId===user?.id));
 const assignedSchedule=()=>liveRoutes.find(r=>r.userId===user?.id)?.schedule||null;
@@ -152,15 +154,25 @@ function scheduleDescription(schedule){
 async function restoreLiveAccount(){
  const a=(await liveRequest('/me')).user;
  user={id:a.id,name:a.name,email:a.email,username:a.username||'',role:a.role==='master'?'admin':a.role};
- const saved=(await liveRequest('/app-state')).state;
+ const saved=(await liveRequest('/app-state').catch(()=>({state:null}))).state;
+ const local=loadState(),sameAccount=local?.activeUser?.id===a.id;
+ const localActive=sameAccount?local.sessions?.find(x=>x.id===local.activeSessionId&&x.status==='active'&&x.mode==='real'):null;
  sessions=Array.isArray(saved?.sessions)?saved.sessions:[];
  programs=Array.isArray(saved?.programs)?saved.programs:[];
+ if(sameAccount&&Array.isArray(local.sessions)&&(!saved||navigator.onLine===false)){
+  sessions=local.sessions;
+  programs=Array.isArray(local.programs)?local.programs:programs;
+ }
+ if(localActive){
+  const at=sessions.findIndex(x=>x.id===localActive.id);
+  if(at>=0)sessions[at]=localActive;else sessions.unshift(localActive);
+ }
  selectedWatcherId=saved?.selectedWatcherId||selectedWatcherId;
  operationalSettings={...operationalSettings,...saved?.operationalSettings};
- screen='dashboard';presentation=false;mode=isPagesTestMode()?'simulation':'real';session=null;
+ screen='dashboard';presentation=false;mode=isPagesTestMode()?'simulation':'real';session=localActive||null;
  view=user.role==='ronda'?'minha-ronda':user.role==='vistoriador'?'vistoriador':'overview';
  await Promise.all([refreshLiveUsers(),refreshLiveOperational()]);
- if(['ronda','vistoriador'].includes(user.role)&&!isPagesTestMode())void liveRequest('/presence',{method:'POST',data:{position:null}}).catch(()=>{});
+ if(['ronda','vistoriador'].includes(user.role)&&!isPagesTestMode()){try{window.AndroidTracking?.startShift?.()}catch{};void liveRequest('/presence',{method:'POST',data:{position:null}}).catch(()=>{});}
  render();
 }
 function liveLogout(){
@@ -985,7 +997,7 @@ function demoEventNotifications(){
 }
 let demoChatScreen='list',liveChatId=null,liveContacts=[],liveConversations=[],liveMessages=[];
 async function refreshRealChat(){
- if(!user?.id)return;
+ if(!user?.id||isPagesTestMode())return;
  const [contactData,conversationsData]=await Promise.all([liveRequest('/chat/contacts'),liveRequest('/chat/conversations')]);
  liveContacts=contactData.contacts||[];liveConversations=conversationsData.conversations||[];
  if(liveChatId){
@@ -1023,6 +1035,8 @@ function demoChatView(){
  return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(demoChatScreen==='contacts'?contacts:demoChatScreen==='thread'?conversation:list)+'</div></section>';
 }
 setInterval(()=>{if(user?.id&&!document.hidden&&(document.querySelector('#rp-demo-chat-overlay')?.open||view==='chat-interno'))void refreshRealChat().catch(()=>{});},8000);
+// Heartbeat: sessão aberta com rede válida não equivale a expediente encerrado.
+setInterval(()=>{if(user?.id&&['ronda','vistoriador'].includes(user.role)&&!document.hidden&&!isPagesTestMode())void liveRequest('/presence',{method:'POST',data:{position:locationFix||null}}).catch(()=>{});},45000);
 let demoHistoryPage=0;
 function demoActivityRows(){return [...sessionList().map(r=>({id:r.id,selectionKey:'round:'+r.id,type:'round',at:r.startedAt,name:r.name,site:r.route?.name,status:r.status})),...demoInspectionRecords().map((r,i)=>({id:String(i),selectionKey:'inspection:'+i,type:'inspection',at:r.at,name:'Vistoria',site:r.address||DEMO_WATCHERS[0].unit,status:'Enviada'}))].sort((a,b)=>b.at-a.at);}
 let demoHistorySelection=new Set();
@@ -1340,7 +1354,7 @@ async function startSession(){
   const route=assignedRoute();if(!route){notify('Nenhuma rota real atribuida. Solicite cadastro da rota.');return;}route.rules={dwellMs:operationalSettings.dwellSeconds*1000,
   blockOnDeviation:operationalSettings.deviationJustification,logDeviations:true,verificationMode:operationalSettings.verificationMode};
  session=createSession(user?.name??presentationName,route,now,'real');session.requiresManualCheckin=true;session.evidenceEnabled=operationalSettings.evidenceEnabled;locationFix=f;
-  try{window.AndroidTracking?.startTracking()}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
+  try{window.AndroidTracking?.startTracking(session.id)}catch{notify('Não foi possível iniciar o serviço nativo. GPS seguirá somente com app aberto.');}
   deviceWatch=navigator.geolocation.watchPosition(pos=>{
    const f={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,at:Date.now()};
    locationFix=f;
@@ -1644,7 +1658,7 @@ if(act==='profile-menu'){if(user?.role==='admin')void refreshLiveUsers().catch((
   return;
  }
  if(act==='login'){beginSimulation(watcherById(selectedWatcherId)?.name||'Vigia demonstrativo',false,'ronda');return;}
- if(act==='logout'){if(isPagesTestMode()){openAreaPicker();return;}stopLocation();locationGate.reset();void liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
+ if(act==='logout'){if(isPagesTestMode()){openAreaPicker();return;}stopLocation();locationGate.reset();if(['ronda','vistoriador'].includes(user?.role))await liveRequest('/presence/off',{method:'POST',data:{}}).catch(()=>{});await liveRequest('/logout',{method:'POST'}).catch(()=>{});liveLogout();return;}
  if(act==='privacy'){privacy();return;}
  if(act==='start'){if(!locationGate.isGranted()&&!isPagesTestMode()){locationGate.open({demo:presentation});return;}startDialog();return;}
  if(act==='confirm-start'){if(mode==='real'&&!presentation&&!isPagesTestMode()&&!getConsent()){trackingIntroduction();return;}await startSession();return;}
@@ -2021,7 +2035,7 @@ modal.addEventListener('submit',async e=>{e.preventDefault();const f=new FormDat
  if(e.target.id==='incident-form'){if(!session||session.status!=='active'){const status=await recordFieldNotice('incident',f.get('title')+' · '+f.get('description'),{category:f.get('category'),severity:f.get('severity')},e.target);modal.close();render();notify(status);return;}const i=registerIncident(session,{title:f.get('title'),description:f.get('description'),severity:f.get('severity')});if(!i){notify('Preencha título e descrição com detalhes suficientes.');return;}i.category=f.get('category');await ops.attachIncidentMedia(i,e.target);await ops.recordIncident(i);save();modal.close();render();notify('Ocorrência registrada e exibida na supervisão · simulação local.');return;}
 });
 window.addEventListener('online',()=>{if(screen!=='landing'&&!modal.open)notify('Conexão restabelecida. O mapa pode voltar a carregar.');});
-window.addEventListener('offline',()=>notify('Sem internet: o esquema alternativo mantém a rota visível.'));
+window.addEventListener('offline',()=>notify('Sem internet: a rota guardada e o progresso local continuam disponíveis.'));
 modal.addEventListener('cancel',e=>{if(modal.dataset.mandatoryNotice==='true')e.preventDefault()});
 // Recuperação local: somente da ronda real ainda ativa; dados de demonstração não implicam login seguro.
 if(persisted?.activeSessionId&&persisted.activeUser){
@@ -2032,7 +2046,7 @@ const ops=createOperationsUpgrade({
  get:()=>({user,view,session,sessions,programs,operationalSettings,mode,locationFix,
   selectedRoute:session?.route??routeForWatcher(selectedWatcherId)}),
  render,save,persist,notify,showDialog,incidentDialog,alertDialog,
- openChat:()=>{if(sessionStorage.getItem('rondaspro_api_token')){window.location.assign('./central.html#chat');return;}openDemoChatOverlay(true);},
+ openChat:()=>openDemoChatOverlay(true),
  closeDialog:()=>modal.close(),
  showClient:()=>{notify('O acompanhamento do cliente está disponível para análise na Administração.');}
 });

@@ -21,7 +21,10 @@ test('servidor de implantação entrega o app e impede acesso ao repositório', 
 
   await t.test('entrada e arquivos públicos mantêm conteúdo e tipo corretos', async () => {
     for (const [path, file, mime] of [
-      ['/', 'index.html', 'text/html'],
+      ['/', 'central.html', 'text/html'],
+      ['/index.html', 'index.html', 'text/html'],
+      ['/sw.js', 'sw.js', 'text/javascript'],
+      ['/manifest.webmanifest','manifest.webmanifest','application/manifest+json'],
       ['/src/app.js?v=27', 'src/app.js', 'text/javascript'],
       ['/assets/ronda-pro.css?v=50', 'assets/ronda-pro.css', 'text/css'],
       ['/assets/horizon-logo-transparente.webp', 'assets/horizon-logo-transparente.webp', 'image/webp']

@@ -7,31 +7,35 @@ android {
         applicationId 'br.com.horizon.maxvel'
         minSdk 26
         targetSdk 35
-        versionCode 5
-        versionName '1.1.3'
+        versionCode 13
+        versionName '2.1.5-offline-roads'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    sourceSets {
-        main.assets.srcDirs "$buildDir/generated/web-assets"
-    }
+    sourceSets.main.assets.srcDirs += [layout.buildDirectory.dir('generated/rondaFrontend')]
 }
 
-dependencies {
-    implementation 'androidx.webkit:webkit:1.11.0'
-}
-
-// A web view e o repositório usam a MESMA fonte: sem duplicar arquivos manualmente.
-tasks.register('syncWebAssets', Copy) {
-    from(rootProject.projectDir.parentFile) {
-        include 'index.html', 'central.html', 'src/**', 'assets/**'
+tasks.register('embedGlassFrontend', Copy) {
+    from(file('../..')) {
+        include 'index.html', 'central.html', 'manifest.webmanifest', 'src/**', 'assets/**'
+        exclude '**/*.map'
     }
-    into "$buildDir/generated/web-assets/site"
-}
-tasks.configureEach {
-    if (name.startsWith('merge') && name.endsWith('Assets')) {
-        dependsOn(tasks.named('syncWebAssets'))
+    into(layout.buildDirectory.dir('generated/rondaFrontend/app'))
+    doLast {
+        def output = layout.buildDirectory.dir('generated/rondaFrontend/app').get().asFile
+        ['index.html','central.html'].each { filename ->
+            def page = new File(output, filename)
+            def html = page.getText('UTF-8')
+                .replace('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', './assets/vendor/leaflet/leaflet.css')
+                .replace('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', './assets/vendor/leaflet/leaflet.js')
+                .replace('if("serviceWorker" in navigator&&location.protocol==="https:"', 'if(!window.__RONDA_ANDROID_BUNDLE__&&"serviceWorker" in navigator&&location.protocol==="https:"')
+            html = html.replace('</head>','<script src="./src/native-boot.js"></script></head>')
+            page.setText(html, 'UTF-8')
+        }
+        def map = new File(output,'src/map.js')
+        map.setText(map.getText('UTF-8').replace('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js','./assets/vendor/leaflet/leaflet.js'),'UTF-8')
     }
 }
+preBuild.dependsOn(tasks.named('embedGlassFrontend'))
