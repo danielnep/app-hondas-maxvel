@@ -5,7 +5,7 @@
  <meta name="theme-color" content="#050505"><meta name="description" content="Grupo Maxvel: acompanhamento de rondas, supervisão e gestão operacional.">
  <title>Ronda Pro · Grupo Maxvel | Acompanhamento Operacional</title>
  <link rel="preconnect" href="https://tile.openstreetmap.org"><link rel="preconnect" href="https://unpkg.com">
- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
+ <link rel="stylesheet" href="./assets/vendor/leaflet/leaflet.css" crossorigin="anonymous">
  <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/webp" href="./assets/maxvel-logo.webp"><link rel="apple-touch-icon" href="./assets/maxvel-logo.webp">
 
 <link rel="stylesheet" href="./assets/ronda-pro.css?v=53">
@@ -24,7 +24,7 @@
  <script type="module" src="./src/soft-polish.js?v=1"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.includes("appassets.androidplatform.net")){
-  const updateKey="rondas-pro-updated-v72";
+  const updateKey="rondas-pro-updated-v73";
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
     if(sessionStorage.getItem(updateKey))return;
     sessionStorage.setItem(updateKey,"1");
@@ -40,7 +40,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.in
       document.body.append(notice);
     }
   });
-  navigator.serviceWorker.register("./sw.js?v=72",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register("./sw.js?v=73",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
 }
 </script>
 </body>

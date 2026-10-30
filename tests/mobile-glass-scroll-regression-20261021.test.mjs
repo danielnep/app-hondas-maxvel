@@ -43,5 +43,5 @@ test('atualização PWA entrega mudanças de CSS e JS em mobile',()=>{
   assert.match(index,/ronda-pro\.css\?v=53/);
   assert.match(index,/theme\.css\?v=62/);
   assert.match(index,/app\.js\?v=76/);
-  assert.match(serviceWorker,/rondas-pro-interface-v72/);
+  assert.match(serviceWorker,/rondas-pro-interface-v73/);
 });

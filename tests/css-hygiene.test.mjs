@@ -25,7 +25,7 @@ test('web demo e central compartilham camadas na mesma ordem, cache só inclui C
   const links=[...read(page+'.html').matchAll(/href="\.\/assets\/([^"?]+)\.css\?v=(\d+)"/g)];
   assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]===(m[1]==='theme'?'62':m[1]==='ronda-pro'?'53':m[1]==='field'?'52':m[1]==='operational'?'52':'50')));
  }
- const cached=[...read('sw.js').matchAll(/'\.\/assets\/([^']+\.css)'/g)].map(m=>m[1]).sort();
+ const cached=[...read('sw.js').matchAll(/'\.\/assets\/([^']+\.css)'/g)].map(m=>m[1]).filter(x=>!x.startsWith('vendor/')).sort();
  assert.deepEqual(cached,files);
 });
 

@@ -348,6 +348,10 @@
   .rp-theme .fallback-svg text {
     fill: #485a66 !important
   }
+  /* Offline route-only map uses real road geometry, not fictional roads. */
+  .rp-theme .route-only-svg>text,.rp-theme .route-only-svg g text {
+    fill: #fff !important
+  }
   .rp-theme .fallback-svg pattern path {
     stroke: #d3dbd6 !important
   }

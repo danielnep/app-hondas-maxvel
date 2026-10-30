@@ -28,7 +28,7 @@ function publicFile(requestUrl) {
   if (!pathname.startsWith('/') || /[\\\0]/.test(pathname)) return null;
   if (pathname.split('/').some(part => part.startsWith('.'))) return null;
   if (pathname === '/') return 'central.html';
-  if (pathname === '/central.html') return pathname.slice(1);
+  if (['/central.html','/index.html','/sw.js','/manifest.webmanifest'].includes(pathname)) return pathname.slice(1);
   if (pathname.startsWith('/src/') || pathname.startsWith('/assets/')) return pathname.slice(1);
   return null;
 }
