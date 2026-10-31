@@ -21,4 +21,4 @@ Endereços selecionados e links de retorno usam as coordenadas reais da rota; re
 ## Limites
 A compilação e a inspeção Chromium dos arquivos embarcados não equivalem à instalação no Galaxy A53. GPS físico, câmera Android, teclado do sistema e execução em segundo plano ainda exigem homologação no aparelho. Nenhuma posição de telefone foi inventada para afirmar esse teste.
 
-O deploy e a leitura autenticada da configuração em produção serão registrados no checkpoint desta branch. Não há merge na principal.
+Publicação concluída em 31/10/2026 às 18:03 UTC: servidor 2.2.1 na URL operacional, API de configuração autenticada respondendo 200 e acesso sem autenticação respondendo 401. Padrão preservado em GPS com 30 segundos. Contas e rotas preservadas, sem dados de teste em produção. Os arquivos de configuração, política, estilos e service worker servidos pela URL pública conferem byte a byte com a fonte. Backup consistente do banco e compose registrado no checkpoint; a troca respeita a inicialização saudável antes da checagem pública. Implementação publicada no PR #111, sem merge na principal.

@@ -12,7 +12,10 @@
     "Endpoint persistente /operational-settings e formulários nas duas entradas",
     "APK sincroniza regra no login/a cada 15s/antes da ronda; sessão ativa conserva regra inicial",
     "QR físico por câmera com decoder local, códigos por rota/coordenadas e validação da VPS; fila offline",
-    "272 testes e revisão visual final aprovados; bundle confere com fonte"
+    "272 testes e revisão visual final aprovados; bundle confere com fonte",
+    "Branch publicada e PR #111 aberta, sem merge; servidor e endpoints 2.2.1 em produção com backup e rollback",
+    "URL pública e API autenticada verificadas; assets centrais byte-idênticos à fonte; 4 contas preservadas e nenhuma rota fictícia criada",
+    "APK final disponível; tamanho e SHA-256 conferidos"
   ],
   "current_requirements": [
     "Dados e endereços reais; não substituir posição do aparelho por GPS sintético",
@@ -21,8 +24,7 @@
     "APK deve receber configuração central e aplicar a próximas rondas; ronda ativa preserva política inicial"
   ],
   "remaining": [
-    "Publicar branch/PR e imagem de produção com backup e rollback",
-    "Conferir API autenticada em produção e salvar APK final"
+    "Homologar GPS físico, câmera Android, teclado do sistema e execução em segundo plano no aparelho"
   ],
   "paths": {
     "worktree": "/opt/ronda-pro-ui-20261031",
@@ -34,6 +36,23 @@
   "apk": {
     "path": "/opt/ronda-pro-build-ui-20261031/Ronda-Pro-2.2.1-Operacional.apk",
     "sha256": "5dda36725f3f001e24e0db1328f848898792c22a3216ce1dc8a93cc9cd12b2b5",
-    "bytes": 617067
+    "bytes": 617067,
+    "available": true
+  },
+  "release": {
+    "sourceCommit": "95268237c76be9272d60d2e8587b49cfbe1a53c7",
+    "tree": "80770f696e0d4893a079a8698c4dbdc706a26426",
+    "pullRequest": "https://github.com/danielnep/app-hondas-maxvel/pull/111",
+    "version": "2.2.1",
+    "deployedAt": "2026-10-31T18:03:03.755375+00:00",
+    "backup": "/opt/ronda-pro-backups/ui-221-20261031T180257Z",
+    "defaultPolicy": {
+      "verificationMode": "gps",
+      "dwellSeconds": 30,
+      "updatedAt": 0
+    },
+    "apiVerified": true,
+    "servedAssetsVerified": true,
+    "preservedAccountsAndRoutes": true
   }
 }
