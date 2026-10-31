@@ -46,7 +46,7 @@ public final class NativeOfflineStore extends SQLiteOpenHelper {
     @JavascriptInterface public synchronized String queue(String method,String path,String token,String body){
         if(!safe(path)||!"POST".equals(method)&&!"PUT".equals(method)||body==null||body.length()>900000||token==null||token.length()<10)
             return "{\"error\":\"operacao_offline_nao_suportada\"}";
-        if(!path.equals("/events")&&!path.equals("/presence")&&!path.equals("/presence/off")&&!path.equals("/app-state")&&!path.matches("^/chat/conversations/[a-zA-Z0-9-]{8,80}/messages$")&&!path.startsWith("/dispatches/"))
+        if(!path.equals("/qr/verify")&&!path.equals("/events")&&!path.equals("/presence")&&!path.equals("/presence/off")&&!path.equals("/app-state")&&!path.matches("^/chat/conversations/[a-zA-Z0-9-]{8,80}/messages$")&&!path.startsWith("/dispatches/"))
             return "{\"error\":\"operacao_exige_conexao\"}";
         try{new JSONObject(body);}catch(Exception e){return "{\"error\":\"corpo_invalido\"}";}
         getWritableDatabase().execSQL("INSERT INTO outbox(identity,token,method,path,data,saved) VALUES(?,?,?,?,?,?)",

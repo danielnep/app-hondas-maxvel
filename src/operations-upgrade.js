@@ -1,5 +1,6 @@
 import {evidenceButtons,createMediaCapture} from './media-capture.js';
 import {isPagesTestMode} from './pages-test-api.js';
+import {loadQrDecoder} from './qr-reader.js';
 /** Rondas Pro: ampliação aditiva da demonstração operacional.
  * Persistência em IndexedDB no dispositivo; em Android o trajeto também usa SQLite nativo.
  * Sem API de produção, "pendente de envio" nunca significa entregue remotamente.
@@ -231,7 +232,7 @@ export function createOperationsUpgrade(api){
   await persistEvent({id:uuid(),at,kind:'checkpoint',status:'pending',payload:{
    mode:session.mode,sessionId:session.id,pointId:point.id,pointName:point.name,
    observation:checkpoint.observation,description:'Ponto '+point.name+': '+checkpoint.observation,
-   position:checkpoint.position,battery:lastBattery?.level??null,mediaIds:saved.map(x=>x.id),
+   position:checkpoint.position,battery:lastBattery?.level??null,verificationMode:session.route.rules?.verificationMode||'gps',qrVerifiedAt:checkpoint.qrVerifiedAt||null,qrPendingSync:!!checkpoint.qrPendingSync,mediaIds:saved.map(x=>x.id),
    mediaViews:saved.filter(x=>x.view).map(x=>({view:x.view,id:x.id}))}});
  }
  async function recordLifecycle(kind,round){
@@ -293,7 +294,7 @@ export function createOperationsUpgrade(api){
   return section('Comprovação do ponto',
    '<div class="ops-inline-actions">'+
    '<button type="button" class="ops-mini-action" data-ops="save-map">⬇ Salvar mapa offline</button>'+
-   (point&&mode!=='gps'?'<button type="button" class="ops-mini-action" data-ops="scan-qr" '+(verified?'disabled':'')+'>▣ '+(verified?'QR confirmado':'Ler QR Code')+'</button>':'')+'</div>'+
+   (point&&mode!=='gps'?'<button type="button" class="ops-mini-action" data-ops="scan-qr" '+(verified?'disabled':'')+'>▣ '+(verified?(s.checkpoints[s.index].qrPendingSync?'QR lido · envio pendente':'QR confirmado'):'Ler QR Code')+'</button>':'')+'</div>'+
    '<p>Validação configurada: <b>'+safe(mode==='gps'?'GPS no ponto + permanência':mode==='qr'?'QR Code por ponto':'GPS e QR Code obrigatórios')+'</b>. Ordem dos pontos obrigatória. Sem selfie.</p>');
  }
  function adminQuick(){
@@ -340,7 +341,7 @@ export function createOperationsUpgrade(api){
    if(view==='relatorios'){
     main.querySelector('.report-page')?.insertAdjacentHTML('afterbegin',adminQuick()+reportSmart());
    }
-   if(view==='configuracoes')main.insertAdjacentHTML('beforeend',qrSetting());
+   if(view==='configuracoes'){if(isPagesTestMode())main.insertAdjacentHTML('beforeend',qrSetting());}
   }
   if(['admin','operador','coi'].includes(user?.role)&&view==='notificacoes'){
    // Preserva os pânicos avulsos já registrados, no mesmo feed e sem duplicação.
@@ -407,41 +408,50 @@ export function createOperationsUpgrade(api){
  async function scanQR(){
   const s=current().session,point=s?.route?.points?.[s.index];
   if(!point||s.status!=='active'){api.notify('Inicie uma ronda para ler o QR Code.');return;}
+  if(!isPagesTestMode()&&!point.qrCode){api.notify('Este ponto ainda não tem um QR Code cadastrado pela central.');return;}
   const expected=point.qrCode??'MAXVEL-'+point.id.toUpperCase();
-  api.showDialog('<div class="ops-qr-panel"><h2>▣ QR Code · '+safe(point.name)+'</h2><p>Leia o código fixado no ponto. A ordem da ronda continua obrigatória.</p>'+
-   '<video id="ops-qr-video" playsinline muted autoplay aria-label="Leitor de QR Code"></video>'+
-   '<button type="button" class="button primary full" data-ops="qr-camera">Ativar câmera e ler QR</button>'+
-   '<details><summary>Simular leitura (somente demonstração)</summary><p>Código fictício deste ponto: <code>'+safe(expected)+'</code></p>'+
-   '<label class="ops-label">Código de teste<input id="ops-qr-code" placeholder="Digite o código da demonstração"></label><button type="button" class="button" data-ops="qr-manual">Validar código de demonstração</button></details>'+
-   '<p class="ops-demo-note">O leitor usa a câmera quando compatível. Código digitado é recurso somente demonstrativo; em produção será validado no servidor.</p></div>',true);
+  const demo=isPagesTestMode()?'<details><summary>Simular leitura (somente demonstração)</summary><p>Código fictício deste ponto: <code>'+safe(expected)+'</code></p><label class="ops-label">Código de teste<input id="ops-qr-code"></label><button type="button" class="button" data-ops="qr-manual">Validar código de demonstração</button></details>':'';
+  api.showDialog('<div class="ops-qr-panel"><h2>QR Code · '+safe(point.name)+'</h2><p>Leia pela câmera a etiqueta fixada neste ponto. A ordem da ronda continua obrigatória.</p><video id="ops-qr-video" playsinline muted autoplay aria-label="Leitor de QR Code"></video><button type="button" class="button primary full" data-ops="qr-camera">Ativar câmera e ler QR</button>'+demo+'<p class="ops-demo-note">A imagem é analisada no aparelho. A confirmação é enviada à central; sem conexão, fica na fila de sincronização.</p></div>',true);
  }
- function acceptQR(value){
-  const c=current(),s=c.session,p=s?.route?.points?.[s.index];
-  if(!p||s.status!=='active')return;
-  const expected=p.qrCode??'MAXVEL-'+p.id.toUpperCase();
-  if(String(value).trim()!==expected){api.notify('QR Code não corresponde ao próximo ponto.');return;}
-  s.checkpoints[s.index].qrVerifiedAt=Date.now();
-  s.timeline.unshift({id:uuid(),kind:'qr',at:Date.now(),label:'QR Code confirmado: '+p.name,pointId:p.id});
-  api.save();stopCamera();api.render();api.notify('QR Code validado para o ponto '+(s.index+1)+'.');
+ async function acceptQR(value){
+  const c=current(),s=c.session,index=s?.index,p=s?.route?.points?.[index];
+  if(!p||s.status!=='active')return false;
+  const expected=p.qrCode??(isPagesTestMode()?'MAXVEL-'+p.id.toUpperCase():null);
+  if(!expected||String(value).trim()!==expected){api.notify('QR Code não corresponde ao próximo ponto desta rota.');return false;}
+  try{
+   const receipt=isPagesTestMode()?{verified:true,verifiedAt:Date.now()}:await api.verifyQr({id:uuid(),roundId:s.id,routeId:s.route.id,pointIndex:index,code:String(value).trim()});
+   if(!receipt?.verified&&!receipt?.pendingSync)throw Error('A central não confirmou esta leitura.');
+   if(current().session!==s||s.index!==index||s.status!=='active')return false;
+   s.checkpoints[index].qrVerifiedAt=Number(receipt.verifiedAt)||Date.now();
+   s.checkpoints[index].qrPendingSync=!!receipt.pendingSync;
+   s.timeline.unshift({id:uuid(),kind:'qr',at:Date.now(),label:'QR Code lido: '+p.name,pointId:p.id,pendingSync:!!receipt.pendingSync});
+   api.save();stopCamera();api.render();api.notify(receipt.pendingSync?'QR lido no aparelho · confirmação pendente de conexão.':'QR Code confirmado na central para o ponto '+(index+1)+'.');return true;
+  }catch(error){api.notify(error.message||'Não foi possível confirmar o QR Code.');return false;}
  }
  function stopCamera(){scanning=false;cameraStream?.getTracks().forEach(t=>t.stop());cameraStream=null;}
  async function cameraQR(){
-  if(!navigator.mediaDevices?.getUserMedia||typeof BarcodeDetector==='undefined'){
-   api.notify('Leitura automática indisponível neste aparelho. Use a simulação de código.');return;
-  }
+  if(!navigator.mediaDevices?.getUserMedia){api.notify('A câmera não está disponível neste aparelho. Confira a permissão de câmera.');return;}
   try{
-   cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+   const decoder=await loadQrDecoder();
+   cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
    const video=document.getElementById('ops-qr-video');if(!video){stopCamera();return;}
    video.srcObject=cameraStream;await video.play();scanning=true;
-   const detector=new BarcodeDetector({formats:['qr_code']});
+   const canvas=document.createElement('canvas'),context=canvas.getContext('2d',{willReadFrequently:true});
+   let lastCode='',lastAttempt=0;
    const scan=async()=>{
     if(!scanning||!video.isConnected){stopCamera();return;}
-    try{const codes=await detector.detect(video);if(codes.length){acceptQR(codes[0].rawValue);return;}}
-    catch(err){console.warn(err);}
+    if(video.readyState>=2&&video.videoWidth&&video.videoHeight){
+     canvas.width=Math.min(video.videoWidth,800);canvas.height=Math.round(video.videoHeight*canvas.width/video.videoWidth);
+     context.drawImage(video,0,0,canvas.width,canvas.height);
+     const pixels=context.getImageData(0,0,canvas.width,canvas.height),code=decoder(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'});
+     if(code?.data&&(code.data!==lastCode||Date.now()-lastAttempt>2000)){
+      lastCode=code.data;lastAttempt=Date.now();if(await acceptQR(code.data))return;
+     }
+    }
     if(scanning)setTimeout(scan,300);
    };
-   scan();
-  }catch(err){stopCamera();api.notify('Câmera não disponível ou permissão negada.');}
+   void scan().catch(error=>{stopCamera();api.notify('Falha no leitor da câmera: '+error.message);});
+  }catch(error){stopCamera();api.notify(error.name==='NotAllowedError'?'Permita o acesso à câmera para ler o QR Code.':error.message||'Câmera não disponível.');}
  }
  async function saveMap(){
   const c=current(),route=c.session?.route??c.selectedRoute;
@@ -509,12 +519,12 @@ export function createOperationsUpgrade(api){
   if(cmd==='save-map'){await saveMap();return;}
   if(cmd==='scan-qr'){await scanQR();return;}
   if(cmd==='qr-camera'){await cameraQR();return;}
-  if(cmd==='qr-manual'){acceptQR(document.querySelector('#ops-qr-code')?.value);return;}
+  if(cmd==='qr-manual'){if(isPagesTestMode())await acceptQR(document.querySelector('#ops-qr-code')?.value);return;}
   if(cmd==='save-qr-setting'){
    if(current().user?.role!=='admin')return;
    const selected=document.getElementById('ops-mode')?.value;
    if(!['gps','qr','gps+qr'].includes(selected))return;
-   state().verificationMode=selected;api.persist();api.render();api.notify('Regra de QR/GPS salva para as próximas rondas.');return;
+   try{if(isPagesTestMode()){state().verificationMode=selected;api.persist();}else await api.saveVerificationMode(selected);api.render();api.notify('Regra de QR/GPS salva para as próximas rondas.');}catch(error){api.notify(error.message);}return;
   }
   if(cmd==='open-media'){
    const item=await store.get('media',el.dataset.mediaId);
@@ -540,6 +550,7 @@ export function createOperationsUpgrade(api){
   api.notify('Relatório exportado do dispositivo.');api.closeDialog();
  },true);
  document.addEventListener('click',e=>{if(e.target.closest('[data-action="close-dialog"]'))stopCamera();},true);
+ document.querySelector('#dialog')?.addEventListener('close',stopCamera);
  window.addEventListener('online',()=>{api.notify('Conexão restaurada. Tentando sincronizar registros autenticados.');syncPending().catch(console.warn);});
  load();
  setInterval(()=>{autoReport().catch(console.warn);sampleBattery().catch(console.warn);syncPending().catch(console.warn);},60000);

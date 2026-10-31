@@ -5,6 +5,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.text.TextUtils;
+import android.view.Gravity;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -47,6 +51,7 @@ public final class MainActivity extends Activity implements SensorEventListener,
     private static final int LOCATION=201,CAMERA=202,FILES=203;
     private final ExecutorService background=Executors.newSingleThreadExecutor();
     private WebView web;
+    private TextView connectionLine;
     private NativeOfflineStore offline;
     private LocationManager locations;
     private SensorManager sensors;
@@ -72,7 +77,24 @@ public final class MainActivity extends Activity implements SensorEventListener,
         offline=new NativeOfflineStore(this);
         web=new WebView(this);web.setBackgroundColor(0xff161b21);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        web.setOnApplyWindowInsetsListener((view,insets)->{
+        // A linha pertence ao Android: a WebView recebe apenas a altura útil restante.
+        LinearLayout layout=new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setBackgroundColor(0xff14181e);
+        connectionLine=new TextView(this);
+        connectionLine.setText("Conectando…");
+        connectionLine.setTextSize(11);
+        connectionLine.setTextColor(0xffd5e1e7);
+        connectionLine.setSingleLine(true);
+        connectionLine.setEllipsize(TextUtils.TruncateAt.END);
+        connectionLine.setIncludeFontPadding(false);
+        connectionLine.setMinHeight(dp(22));
+        connectionLine.setPadding(dp(12),dp(2),dp(12),dp(2));
+        connectionLine.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+        connectionLine.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        layout.addView(connectionLine,new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
+        layout.addView(web,new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,1f));
+        layout.setOnApplyWindowInsetsListener((view,insets)->{
             int top,bottom;
             if(Build.VERSION.SDK_INT>=30){android.graphics.Insets safe=insets.getInsets(WindowInsets.Type.systemBars());top=safe.top;bottom=safe.bottom;}
             else{top=insets.getSystemWindowInsetTop();bottom=insets.getSystemWindowInsetBottom();}
@@ -141,7 +163,8 @@ public final class MainActivity extends Activity implements SensorEventListener,
                 catch(Exception e){fileRequest=null;callback.onReceiveValue(null);return false;}
             }
         });
-        setContentView(web);
+        setContentView(layout);
+        layout.requestApplyInsets();
         web.loadUrl(ORIGIN+"/app/index.html");
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},204);
@@ -161,6 +184,7 @@ public final class MainActivity extends Activity implements SensorEventListener,
         super.onActivityResult(request,result,data);
         if(request==FILES&&fileRequest!=null){fileRequest.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result,data));fileRequest=null;}
     }
+    private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private boolean trustedOrigin(Uri uri){
         return uri!=null&&"https".equals(uri.getScheme())&&"maxvel.hzsys.tech".equals(uri.getHost());
     }
@@ -211,6 +235,17 @@ public final class MainActivity extends Activity implements SensorEventListener,
         try{startForegroundService(new Intent(this,PatrolLocationService.class).setAction(PatrolLocationService.START_SHIFT).putExtra("roundId",""));}catch(Exception ignored){}
     }
     private final class Bridge{
+        @JavascriptInterface public void setConnectionStatus(String state,int pending){
+            final boolean online="online".equals(state),offline="offline".equals(state);
+            final int count=Math.max(0,Math.min(9999,pending));
+            final String message=(online?"Conectado":offline?"Sem conexão":"Conectando…")+
+                (count>0?" · "+count+" para sincronizar":"");
+            runOnUiThread(()->{
+                if(connectionLine==null)return;
+                if(!message.contentEquals(connectionLine.getText()))connectionLine.setText(message);
+                connectionLine.setTextColor(offline?0xffffd494:0xffd5e1e7);
+            });
+        }
         @JavascriptInterface public void rememberToken(String token){if(token!=null&&token.length()>10)NativeApi.saveLogin(MainActivity.this,token,"agente");}
         @JavascriptInterface public void startShift(){getSharedPreferences("tracking",MODE_PRIVATE).edit().putBoolean("shiftActive",true).apply();runOnUiThread(()->startPresenceService());}
         @JavascriptInterface public void forgetToken(){getSharedPreferences("tracking",MODE_PRIVATE).edit().putBoolean("shiftActive",false).apply();NativeApi.logout(MainActivity.this);runOnUiThread(()->stopService(new Intent(MainActivity.this,PatrolLocationService.class)));}
@@ -224,6 +259,6 @@ public final class MainActivity extends Activity implements SensorEventListener,
     }
     @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();trackLocation();startPresenceService();if(rotation!=null)sensors.registerListener(this,rotation,SensorManager.SENSOR_DELAY_UI);if(offline!=null)offline.flush();}
     @Override protected void onPause(){if(torchOn)torch(false,"");sensors.unregisterListener(this);if(locations!=null)locations.removeUpdates(this);if(web!=null)web.onPause();super.onPause();}
-    @Override protected void onDestroy(){if(fileRequest!=null)fileRequest.onReceiveValue(null);if(web!=null){web.removeJavascriptInterface("AndroidTracking");web.removeJavascriptInterface("RondaOffline");web.destroy();web=null;}if(offline!=null)offline.shutdown();background.shutdown();super.onDestroy();}
+    @Override protected void onDestroy(){connectionLine=null;if(fileRequest!=null)fileRequest.onReceiveValue(null);if(web!=null){web.removeJavascriptInterface("AndroidTracking");web.removeJavascriptInterface("RondaOffline");web.destroy();web=null;}if(offline!=null)offline.shutdown();background.shutdown();super.onDestroy();}
     @Override public void onBackPressed(){if(web!=null&&web.canGoBack())web.goBack();else super.onBackPressed();}
 }
