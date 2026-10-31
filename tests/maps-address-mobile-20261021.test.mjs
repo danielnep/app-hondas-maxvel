@@ -35,9 +35,9 @@ test('route entry accepts registered map points and geocoder before submission',
  assert.match(html,/rp-plan-query/);
  assert.match(html,/rp-plan-map/);
  const script=await readFile(new URL('../src/route-planner.js',import.meta.url),'utf8');
- assert.match(script,/photon\.komoot\.io/);
+ assert.match(script,/searchPlaces/);
  assert.match(script,/preRegistered/);
- assert.match(script,/Endereço encontrado · confirme o ponto/);
+ assert.match(script,/Resultado da busca · selecione para adicionar à rota/);
 });
 test('COI and dispatch geocode address on map, not text-only',async()=>{
  const [ops,dispatch]=await Promise.all([
@@ -45,7 +45,7 @@ test('COI and dispatch geocode address on map, not text-only',async()=>{
   readFile(new URL('../src/dispatch-wizard.js',import.meta.url),'utf8')]);
  assert.match(ops,/ops-inspection-address-suggestions/);
  assert.match(ops,/attachInspectorGeocoder\(dialog\)/);
- assert.match(ops,/photon\.komoot\.io/);
+ assert.match(ops,/searchPlaces/);
  assert.match(dispatch,/rp-dispatch-preview-map/);
  assert.match(dispatch,/latitude:first\.lat/);
  assert.match(dispatch,/routePoints:destinations\.map/);
@@ -57,11 +57,11 @@ test('COI and dispatch geocode address on map, not text-only',async()=>{
 });
 
 test('Photon usa o idioma suportado no servidor publico em todos os tres fluxos',async()=>{
- const files=['src/dispatch-wizard.js','src/route-planner.js','src/ops-center-ui.js'];
- for(const path of files){
+ for(const path of ['src/dispatch-wizard.js','src/route-planner.js','src/ops-center-ui.js']){
   const code=await readFile(new URL('../'+path,import.meta.url),'utf8');
-  assert.match(code,/photon\.komoot\.io\/api\/\?/);
-  assert.match(code,/lang=default/);
-  assert.doesNotMatch(code,/lang=pt/);
+  assert.match(code,/searchPlaces/);assert.match(code,/from '.\/place-search.js'/);
  }
+ const {searchPlaces}=await import('../src/place-search.js');let url;
+ await searchPlaces('Mercado',{fetcher:async raw=>{url=new URL(raw);return {ok:true,json:async()=>({features:[]})}}});
+ assert.equal(url.hostname,'photon.komoot.io');assert.equal(url.searchParams.get('lang'),'default');
 });

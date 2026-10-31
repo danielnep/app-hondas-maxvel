@@ -1,5 +1,6 @@
 import {loadLeaflet} from './map.js';
 import {fetchRoadItinerary} from './inspection-street-route.js';
+import {searchPlaces,rankPlaces,searchFocus,requestSearchFocus,distanceLabel} from './place-search.js';
 /** Despacho compacto por etapas. O backend continua sendo a autoridade da operação. */
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=>[],request,refresh,redraw,notify}){
@@ -184,7 +185,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    const button=document.createElement('button');button.type='button';
    button.setAttribute('role','option');button.className='rp-dispatch-location-choice';
    const strong=document.createElement('strong');strong.textContent=point.name||'Ponto encontrado';
-   const small=document.createElement('small');small.textContent=point.address||'Local encontrado';
+   const small=document.createElement('small');small.textContent=(point.address||'Local encontrado')+(Number.isFinite(point.distanceMeters)?' · '+distanceLabel(point.distanceMeters):'');
    button.append(strong,small);
    button.addEventListener('click',()=>selectPoint(point));host.append(button);
   }
@@ -203,16 +204,11 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   searchTimer=setTimeout(async()=>{
    const controller=new AbortController();searchController=controller;
    try{
-    const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=6&q='+encodeURIComponent(value.trim()),{signal:controller.signal});
-    if(!response.ok)throw Error('Pesquisa de endereço indisponível');
-    const data=await response.json();
+    const focus=await requestSearchFocus({fallback:searchFocus(null,previewMap)||destinations.at(-1)||null});
     if(controller.signal.aborted)return;
-    const found=(data.features||[]).map(f=>{
-     const props=f.properties||{},coords=f.geometry?.coordinates||[];
-     return {name:String(props.name||props.street||'Local'),address:[props.street,props.housenumber,props.city,props.state].filter(Boolean).join(', ')||String(props.name||value),
-      lat:Number(coords[1]),lng:Number(coords[0])};
-    }).filter(valid);
-    displaySuggestions([...known,...found]);
+    const found=await searchPlaces(value.trim(),{focus,signal:controller.signal});
+    if(controller.signal.aborted)return;
+    displaySuggestions(rankPlaces([...known,...found],focus));
     if(found.length){void showPreview(found[0]);if(status)status.textContent='Confira o ponto encontrado no mapa e toque no endereço correto.';}
     else if(status)status.textContent='Nenhum resultado encontrado. Experimente rua, número, bairro e cidade.';
    }catch(e){if(!controller.signal.aborted&&status)status.textContent='Não foi possível consultar endereços agora. Tente novamente.';}

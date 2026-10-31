@@ -1,5 +1,6 @@
 import {loadLeaflet} from './map.js';
 import {fetchRoadItinerary} from './inspection-street-route.js';
+import {searchPlaces,rankPlaces,searchFocus,requestSearchFocus,distanceLabel,normalizePlaceText} from './place-search.js';
 
 /** Responsividade da proposta aprovada: endereço -> agendamento -> revisão.
  * O endereço informado vira coordenadas SOMENTE após seleção de resultado de geocodificação.
@@ -7,7 +8,7 @@ import {fetchRoadItinerary} from './inspection-street-route.js';
  */
 export function createRoutePlanner({getData,api,afterSave,notify}){
  const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let step=1,points=[],kind='routine',recurrence='daily',hour='08:00',startDate='',weekdays=[1,2,3,4,5],workerId='',name='',suggestions=[],query='',loading=false,lookupTimer=null,lookupSerial=0,map=null,mapSeq=0,roadController=null,saving=false;
+ let step=1,points=[],kind='routine',recurrence='daily',hour='08:00',startDate='',weekdays=[1,2,3,4,5],workerId='',name='',suggestions=[],query='',loading=false,lookupTimer=null,lookupSerial=0,map=null,mapSeq=0,roadController=null,saving=false,focus=null,focusPromise=null,focusRequested=false,searchController=null;
  const preRegistered=()=>{
   const known=new Map();
   for(const route of getData().routes||[])for(const point of route.points||[]){
@@ -15,7 +16,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    const key=(point.address||point.name).toLocaleLowerCase('pt-BR').trim();
    if(!known.has(key))known.set(key,{...point,address:String(point.address||point.name)});
   }
-  return [...known.values()].slice(0,40);
+  return [...known.values()];
  };
  const watcherList=()=>getData().users.filter(u=>u.role==='ronda'&&u.active!==0&&(!getData().demo||String(u.username||'').startsWith('vigia-demo-')));
  const roleOk=()=>['admin','coi','operador','master'].includes(getData().role);
@@ -41,7 +42,8 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    field('Agente de Ronda responsável','<select id="rp-plan-worker" name="userId" required>'+people.map(w=>'<option value="'+escape(w.id)+'" '+(w.id===workerId?'selected':'')+'>'+escape(w.name)+'</option>').join('')+'</select>')+
    field('Nome da rota','<input id="rp-plan-name" name="routeName" maxlength="120" minlength="3" placeholder="Ex.: Ronda do turno noturno" value="'+escape(name)+'" required>')+
    '<label class="rp-plan-field"><span>Pesquisar endereço ou ponto cadastrado</span><input id="rp-plan-query" autocomplete="off" placeholder="Pesquisar empresa, local ou endereço" value="'+escape(query)+'" aria-autocomplete="list" aria-controls="rp-plan-suggestions"></label>'+
-   '<div id="rp-plan-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados">'+(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml()+'</div>'+
+   '<p id="rp-plan-search-context" class="rp-plan-caption" role="status">'+focusLabel()+'</p><button type="button" class="rp-plan-nearby" data-action="rp-plan-nearby">Usar minha localização na busca</button>'+
+    '<div id="rp-plan-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados">'+(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml()+'</div>'+
    '<div class="rp-plan-stop-head"><h3>Pontos da rota ('+points.length+')</h3>'+(points.length?'<button type="button" data-action="rp-plan-clear">Limpar</button>':'')+'</div>'+
    '<div class="rp-plan-stops">'+(positions||'<p class="rp-plan-empty">Busque e selecione ao menos dois endereços para criar a rota.</p>')+'</div></section></div>'+
    '<div class="rp-plan-right"><section class="rp-plan-panel rp-plan-map-panel" data-part="1"><h2>Visualização da rota</h2><div id="rp-plan-map" class="rp-plan-map" role="img" aria-label="Mapa dos endereços da rota"><span>Adicione endereços para visualizar os pontos.</span></div><p id="rp-plan-road-status" role="status" aria-live="polite" class="rp-plan-caption">Inclua dois endereços para calcular o percurso pelas ruas.</p>'+footer+'</section>'+
@@ -55,16 +57,26 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    '<div class="rp-plan-actions"><button type="button" class="rp-plan-secondary" data-action="rp-plan-back" '+(step===1?'disabled':'')+'>Voltar</button><button type="button" class="rp-plan-next" data-action="rp-plan-next" '+(step===3?'hidden':'')+'>Próximo: '+(step===1?'Agendamento':'Revisão')+' →</button><button type="submit" class="rp-plan-save" '+(step!==3?'data-mobile-final="hidden"':'')+' '+(!people.length||saving?'disabled':'')+'>'+(saving?'Salvando…':getData().demo?'Salvar demonstração':'Salvar e disponibilizar ao vigia')+'</button></div></form>'+
    '<section class="rp-plan-saved"><h2>Rotas cadastradas</h2>'+(getData().routes.length?getData().routes.slice(0,5).map(r=>'<div class="rp-plan-saved-row"><strong>'+escape(r.name)+'</strong><small>'+escape(r.workerName||people.find(w=>w.id===r.userId)?.name||'Agente de Ronda')+' · '+r.points.length+' endereços</small></div>').join(''):'<p>Nenhuma rota cadastrada.</p>')+'</section></section>';
  }
+ function focusLabel(){return focus?'Mais próximos '+(focus.source==='gps'?'da sua localização.':'do ponto de referência no mapa.'):'Permita a localização ou mova o mapa para priorizar os locais próximos.';}
+ function updateFocusLabel(){const label=document.getElementById('rp-plan-search-context');if(label)label.textContent=focusLabel();}
+ async function ensureFocus(force=false){
+  if(force){focus=null;focusRequested=false;}
+  if(focus)return focus;
+  const available=searchFocus(getData().position);if(available){focus=available;updateFocusLabel();return focus;}
+  if(focusRequested&&!focusPromise){const point=points.at(-1);if(point){focus={lat:point.lat,lng:point.lng,source:'map'};updateFocusLabel();}return focus;}
+  focusRequested=true;
+  if(!focusPromise)focusPromise=requestSearchFocus().then(value=>{focus=value;updateFocusLabel();return focus}).finally(()=>{focusPromise=null});
+  return focusPromise;
+ }
  function visibleSuggestions(){
-  const all=preRegistered();
-  const q=query.trim().toLocaleLowerCase('pt-BR');
-  const registered=q?all.filter(p=>(p.name+' '+p.address).toLocaleLowerCase('pt-BR').includes(q)):all.slice(0,6);
-  return [...registered.slice(0,6),...suggestions].slice(0,10);
+  const all=preRegistered(),q=normalizePlaceText(query);
+  const registered=q?all.filter(p=>normalizePlaceText(p.name+' '+p.address).includes(q)):all;
+  return rankPlaces([...registered,...suggestions],focus).slice(0,10);
  }
  function suggestionsHtml(){
   const items=visibleSuggestions();
-  return (items.length?'<p class="rp-plan-caption">'+(query.trim()?'Confira o local e toque para adicionar ao mapa.':'Pontos já cadastrados · toque para adicionar')+'</p>':'')+
-   items.map((p,i)=>'<button type="button" role="option" data-action="rp-plan-pick" data-index="'+i+'"><strong>'+escape(p.name)+'</strong><small>'+escape(p.address)+'</small></button>').join('');
+  if(!items.length)return query.trim().length>=3&&!loading?'<p role="status">Nenhum local encontrado. Inclua bairro ou cidade, ou ajuste a referência no mapa.</p>':'';
+  return '<p class="rp-plan-caption">Confira o endereço real e toque para adicionar ao mapa.</p>'+items.map((p,i)=>'<button type="button" role="option" data-action="rp-plan-pick" data-index="'+i+'"><strong>'+escape(p.name)+'</strong><small>'+escape(p.address)+(Number.isFinite(p.distanceMeters)?' · '+distanceLabel(p.distanceMeters):'')+'</small></button>').join('');
  }
  function replaceSuggestions(){const host=document.getElementById('rp-plan-suggestions');if(host)host.innerHTML=(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml();}
  function clearMap(){roadController?.abort();roadController=null;if(map){try{map.remove()}catch{}map=null;}}
@@ -84,12 +96,16 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
      marker.addTo(map).bindTooltip(escape(p.name));
     }
     points.length===1?map.setView(line[0],15):map.fitBounds(L.latLngBounds(line).pad(.25),{maxZoom:16});
-   }else map.setView([-19.92,-43.94],7);
+   }else if(focus)map.setView([focus.lat,focus.lng],15);
+   else map.fitBounds([[-33.75,-73.99],[5.3,-34.79]]);
+   const mountedMap=map;
+   map.on('dragend',()=>{const c=mountedMap.getCenter();focus={lat:c.lat,lng:c.lng,source:'map'};updateFocusLabel();if(query.trim().length>=3)input({id:'rp-plan-query',value:query});});
+   void ensureFocus().then(value=>{if(value&&current===mapSeq&&map===mountedMap&&!points.length&&!query.trim())mountedMap.setView([value.lat,value.lng],15);});
    // Preview the search result on the cartography BEFORE the user saves a point.
    const preview=query.trim()?visibleSuggestions()[0]:null;
    if(preview&&safePoint(preview)){
-    L.circleMarker([preview.lat,preview.lng],{radius:9,color:'#fff',fillColor:'#43b3ec',fillOpacity:.85})
-     .addTo(map).bindTooltip('Endereço encontrado · confirme o ponto');
+    L.circleMarker([preview.lat,preview.lng],{radius:9,color:'#fff',fillColor:'#e53c56',fillOpacity:.85})
+     .addTo(map).bindTooltip('Resultado da busca · selecione para adicionar à rota');
     if(!points.length)map.setView([preview.lat,preview.lng],15,{animate:false});
    }
    setTimeout(()=>{if(map&&host.isConnected)map.invalidateSize()},100);
@@ -110,7 +126,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    }else if(status)status.textContent='Inclua dois endereços para calcular o percurso pelas ruas.';
   }catch{if(current===mapSeq&&host.isConnected)host.innerHTML='<span>Mapa temporariamente indisponível. Os endereços permanecem salvos na lista.</span>';}
  }
- function dispose(){lookupSerial++;clearTimeout(lookupTimer);mapSeq++;clearMap();}
+ function dispose(){lookupSerial++;searchController?.abort();clearTimeout(lookupTimer);mapSeq++;clearMap();}
  function changed(){afterSave(false);}
  function validCurrentStep(){
   if(step===1){
@@ -126,6 +142,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
  }
  async function click(el){
   const act=el.dataset.action;if(!act?.startsWith('rp-plan-'))return false;
+  if(act==='rp-plan-nearby'){const value=await ensureFocus(true);if(!value)notify('Localização não obtida. Mova o mapa ou informe a cidade.');if(query.trim().length>=3)input({id:'rp-plan-query',value:query});else void mount();return true;}
   if(act==='rp-plan-pick'){const p=visibleSuggestions()[Number(el.dataset.index)];if(p&&points.length<30&&safePoint(p)){points.push(p);query='';suggestions=[];changed();}else notify('Limite de 30 pontos por rota.');return true;}
   if(act==='rp-plan-kind'){kind=el.dataset.kind==='specific'?'specific':'routine';changed();return true;}
   if(act==='rp-plan-remove'){points.splice(Number(el.dataset.index),1);changed();return true;}
@@ -148,23 +165,17 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
  function input(el){
   if(el.id==='rp-plan-name'){name=el.value;return true;}
   if(el.id!=='rp-plan-query')return false;
-  query=el.value;const serial=++lookupSerial;clearTimeout(lookupTimer);suggestions=[];
-  loading=query.trim().length>=3;replaceSuggestions();
+  query=el.value;const text=query.trim(),serial=++lookupSerial;clearTimeout(lookupTimer);searchController?.abort();suggestions=[];
+  loading=text.length>=3;replaceSuggestions();
   if(!loading)return true;
   lookupTimer=setTimeout(async()=>{
+   const controller=new AbortController();searchController=controller;
    try{
-    const url='https://photon.komoot.io/api/?limit=6&lang=default&q='+encodeURIComponent(query.trim());
-    const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)});
-    if(!response.ok)throw Error('Pesquisa indisponível');
-    const data=await response.json();if(serial!==lookupSerial)return;
-    suggestions=(data.features||[]).map(f=>{
-     const p=f.properties||{},c=f.geometry?.coordinates||[];
-     const label=[p.name,p.street,p.housenumber,p.city,p.state].filter(Boolean).join(', ');
-     return {name:String(p.name||p.street||'Local').slice(0,100),address:label||'Endereço identificado no mapa',lat:Number(c[1]),lng:Number(c[0])};
-    }).filter(safePoint);
-   }catch{if(serial===lookupSerial){suggestions=[];notify('A busca de endereços está indisponível. Confira sua conexão e tente novamente.');}}
+    const center=await ensureFocus();if(serial!==lookupSerial)return;
+    suggestions=await searchPlaces(text,{focus:center,signal:controller.signal});
+   }catch(error){if(serial===lookupSerial&&!controller.signal.aborted){suggestions=[];notify('A busca de endereços está indisponível. Confira sua conexão e tente novamente.');}}
    if(serial===lookupSerial){loading=false;replaceSuggestions();void mount();}
-  },650);
+  },450);
   return true;
  }
  async function submit(form){

@@ -1,0 +1,23 @@
+{
+  "task": "Corre\u00e7\u00e3o de busca real, contatos, rodap\u00e9 e SDK Android",
+  "branch": "fix/ronda-real-search-mobile-20261031",
+  "base": "ec3c1983f0da363caa901320613efbf949bcd3da",
+  "apkVersion": "2.2.3",
+  "apkSha256": "9682f8c61a34a1c57dee93353d8334522bdc06f977a943f2cadfcbc898f8ee9b",
+  "apkBytes": 617143,
+  "completed": [
+    "Busca compartilhada por foco real e dist\u00e2ncia",
+    "Contato anterior reproduzido e corrigido",
+    "Rodap\u00e9 no fluxo sem cobrir mapa",
+    "Mapa claro sem invers\u00e3o de tiles",
+    "SDK/Gradle instalados e auditoria do APK aprovada",
+    "Android Lint sem erros e assembleRelease aprovado",
+    "APK disponibilizado durante a execu\u00e7\u00e3o",
+    "Credenciais preservadas; recusas com diagn\u00f3stico sem segredos"
+  ],
+  "pending": [
+    "Publicar branch e atualizar servidor com backup",
+    "Homologa\u00e7\u00e3o f\u00edsica e diagn\u00f3stico do erro n\u00e3o reproduzido nos logins do telefone"
+  ],
+  "emulatorCancelled": true
+}

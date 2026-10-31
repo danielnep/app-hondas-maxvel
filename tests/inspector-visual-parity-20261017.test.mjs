@@ -58,7 +58,7 @@ test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
  assert.match(index,new RegExp('sw\\.js\\?v='+version));
  assert.match(sw,new RegExp('rondas-pro-interface-v'+version));
  for(const page of [index,central]){
-  assert.match(page,/field\.css\?v=52/);
+  assert.match(page,/field\.css\?v=53/);
  }
 });
 
