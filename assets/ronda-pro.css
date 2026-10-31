@@ -1938,7 +1938,13 @@ body[data-rp-field="true"] :is(#app,.dashboard,.dashboard .app-shell,.dashboard 
 .dashboard .simulation-rolebar .simulation-roles button[data-role="admin"]{display:none!important}
 .dashboard .app-content{flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;padding:3px 8px!important;display:flex!important;flex-direction:column!important;gap:3px!important}
 body[data-rp-field="true"] .dashboard .app-content{overflow:hidden!important}
-body:not([data-rp-field="true"]) .dashboard .app-content:not(.ronda-page){display:block!important;flex:none!important;min-height:calc(100dvh - 110px)!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+/* A central e o planejamento rolam dentro do viewport; apenas o cockpit de campo é travado. */
+body:not([data-rp-field="true"]) .dashboard .app-content:not(.ronda-page){
+ display:block!important;flex:1 1 0%!important;min-height:0!important;max-height:none!important;
+ overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;
+ scroll-padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));
+ padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important;
+}
 .dashboard .app-content .page-title{flex:0 0 auto!important;margin:0!important;padding:3px 1px!important}
 .dashboard .app-content .page-title h1{font-size:16px!important;line-height:1.2!important}
 .dashboard .app-content .page-title p{display:none!important}

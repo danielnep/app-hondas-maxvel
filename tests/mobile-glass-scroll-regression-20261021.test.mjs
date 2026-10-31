@@ -13,7 +13,7 @@ const serviceWorker=file('sw.js');
 test('mobile: gestão e formulários recuperam rolagem e campo conserva viewport',()=>{
   assert.match(layout,/html,body\{height:auto!important;min-height:100%!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important/);
   assert.match(layout,/body\[data-rp-field="true"\]\{height:100dvh!important;max-height:100dvh!important;overflow:hidden!important/);
-  assert.match(layout,/body:not\(\[data-rp-field="true"\]\) \.dashboard \.app-content:not\(\.ronda-page\)\{display:block!important/);
+  assert.match(layout,/body:not\(\[data-rp-field="true"\]\) \.dashboard \.app-content:not\(\.ronda-page\)\s*\{[^}]*flex:1 1 0%!important;[^}]*overflow-y:auto!important/);
   assert.match(layout,/\.dashboard \.schedule-list\{[^}]*overflow-y:auto!important/);
   assert.match(layout,/\.dashboard \.ops-alert-list\{[^}]*overflow-y:auto!important/);
   assert.match(layout,/\.ux-ronda-stage>\[data-ux-subpage\]\{[^}]*overflow-y:auto!important/);
@@ -40,8 +40,8 @@ test('a solicitação principal de ronda atende o vigia sem apagar o Vistoriador
 });
 
 test('atualização PWA entrega mudanças de CSS e JS em mobile',()=>{
-  assert.match(index,/ronda-pro\.css\?v=53/);
-  assert.match(index,/theme\.css\?v=61/);
-  assert.match(index,/app\.js\?v=76/);
-  assert.match(serviceWorker,/rondas-pro-interface-v72/);
+  assert.match(index,/ronda-pro\.css\?v=54/);
+  assert.match(index,/theme\.css\?v=62/);
+  assert.match(index,/app\.js\?v=77/);
+  assert.match(serviceWorker,/rondas-pro-interface-v73/);
 });

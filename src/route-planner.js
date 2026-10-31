@@ -32,13 +32,13 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
   const positions=points.map((p,i)=>'<div class="rp-plan-stop"><span class="rp-plan-grip" aria-hidden="true">⠿</span><b class="rp-plan-number">'+(i+1)+'</b><div class="rp-plan-stop-copy"><strong>Endereço '+(i+1)+' · '+escape(p.name)+'</strong><small>'+escape(p.address||p.name)+'</small></div><div class="rp-plan-order"><button type="button" data-action="rp-plan-up" data-index="'+i+'" aria-label="Subir endereço '+(i+1)+'" '+(i===0?'disabled':'')+'>↑</button><button type="button" data-action="rp-plan-down" data-index="'+i+'" aria-label="Descer endereço '+(i+1)+'" '+(i===points.length-1?'disabled':'')+'>↓</button><button type="button" class="rp-plan-remove" data-action="rp-plan-remove" data-index="'+i+'" aria-label="Remover endereço '+(i+1)+'">×</button></div></div>').join('');
   const summary='<div class="rp-plan-summary"><div><small>Tipo</small><strong>'+kindLabels[kind]+'</strong></div><div><small>Destino</small><strong>'+points.length+' pontos</strong></div><div><small>Agendamento</small><strong>'+(recurrence==='once'?(startDate||'Data não informada'):repeatLabels[recurrence])+' · '+hour+'</strong></div></div>';
   return '<section id="rp-plan" class="rp-plan" data-step="'+step+'">'+
-   '<div class="rp-plan-heading"><div><h1>Rotas e rondas</h1><p>Cadastro de percursos e atribuição de vigias.</p></div><span class="rp-plan-access">COI + Administrador</span></div>'+
-   (getData().demo?'<div class="rp-plan-demo"><strong>DEMONSTRAÇÃO</strong> Esta é uma simulação do funcionamento do Ronda Pro. As rotas criadas aqui ficam somente neste navegador e não são enviadas para a operação real.</div>':'<p class="rp-plan-info">Configuração operacional. Ao salvar, a rota fica disponível para o vigia vinculado após sincronização.</p>')+
+   '<div class="rp-plan-heading"><div><h1>Rotas e rondas</h1><p>Cadastro de percursos e atribuição de agentes de ronda.</p></div><span class="rp-plan-access">COI + Administrador</span></div>'+
+   (getData().demo?'<div class="rp-plan-demo"><strong>DEMONSTRAÇÃO</strong> Esta é uma simulação do funcionamento do Ronda Pro. As rotas criadas aqui ficam somente neste navegador e não são enviadas para a operação real.</div>':'<p class="rp-plan-info">Configuração operacional. Ao salvar, a rota fica disponível para o agente de ronda vinculado após sincronização.</p>')+
    '<nav class="rp-plan-steps" aria-label="Etapas do cadastro">'+[[1,'Endereços'],[2,'Agendamento'],[3,'Revisão e envio']].map(([n,t])=>'<button type="button" class="'+(step===n?'selected':'')+'" data-action="rp-plan-step" data-step="'+n+'" aria-current="'+(step===n?'step':'false')+'"><b>'+n+'</b><span>'+t+'</span></button>').join('')+'</nav>'+
    '<form id="rp-plan-form" class="rp-plan-layout">'+
    '<div class="rp-plan-left"><section class="rp-plan-panel rp-plan-addresses" data-part="1">'+
    '<h2>Definir os endereços</h2><div class="rp-plan-type"><button type="button" data-action="rp-plan-kind" data-kind="routine" class="'+(kind==='routine'?'selected':'')+'" aria-pressed="'+(kind==='routine')+'"><strong>Ronda de rotina</strong><small>Sequência fixa de endereços</small></button><button type="button" data-action="rp-plan-kind" data-kind="specific" class="'+(kind==='specific'?'selected':'')+'" aria-pressed="'+(kind==='specific')+'"><strong>Ronda específica / aleatória</strong><small>Ronda pontual ou extraordinária</small></button></div>'+
-   field('Vigia responsável','<select id="rp-plan-worker" name="userId" required>'+people.map(w=>'<option value="'+escape(w.id)+'" '+(w.id===workerId?'selected':'')+'>'+escape(w.name)+'</option>').join('')+'</select>')+
+   field('Agente de Ronda responsável','<select id="rp-plan-worker" name="userId" required>'+people.map(w=>'<option value="'+escape(w.id)+'" '+(w.id===workerId?'selected':'')+'>'+escape(w.name)+'</option>').join('')+'</select>')+
    field('Nome da rota','<input id="rp-plan-name" name="routeName" maxlength="120" minlength="3" placeholder="Ex.: Ronda do turno noturno" value="'+escape(name)+'" required>')+
    '<label class="rp-plan-field"><span>Pesquisar endereço ou ponto cadastrado</span><input id="rp-plan-query" autocomplete="off" placeholder="Pesquisar empresa, local ou endereço" value="'+escape(query)+'" aria-autocomplete="list" aria-controls="rp-plan-suggestions"></label>'+
    '<div id="rp-plan-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Endereços encontrados">'+(loading?'<p>Pesquisando locais…</p>':'')+suggestionsHtml()+'</div>'+
@@ -53,7 +53,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
    '<section class="rp-plan-panel rp-plan-review" data-part="3"><h2>Resumo e envio</h2>'+summary+
    '<p class="rp-plan-info">'+(getData().demo?'Demonstração local, sem comunicação com vigias reais.':'Disponibilização após sincronização do dispositivo do vigia.')+'</p></section></div>'+
    '<div class="rp-plan-actions"><button type="button" class="rp-plan-secondary" data-action="rp-plan-back" '+(step===1?'disabled':'')+'>Voltar</button><button type="button" class="rp-plan-next" data-action="rp-plan-next" '+(step===3?'hidden':'')+'>Próximo: '+(step===1?'Agendamento':'Revisão')+' →</button><button type="submit" class="rp-plan-save" '+(step!==3?'data-mobile-final="hidden"':'')+' '+(!people.length||saving?'disabled':'')+'>'+(saving?'Salvando…':getData().demo?'Salvar demonstração':'Salvar e disponibilizar ao vigia')+'</button></div></form>'+
-   '<section class="rp-plan-saved"><h2>Rotas cadastradas</h2>'+(getData().routes.length?getData().routes.slice(0,5).map(r=>'<div class="rp-plan-saved-row"><strong>'+escape(r.name)+'</strong><small>'+escape(r.workerName||people.find(w=>w.id===r.userId)?.name||'Vigia')+' · '+r.points.length+' endereços</small></div>').join(''):'<p>Nenhuma rota cadastrada.</p>')+'</section></section>';
+   '<section class="rp-plan-saved"><h2>Rotas cadastradas</h2>'+(getData().routes.length?getData().routes.slice(0,5).map(r=>'<div class="rp-plan-saved-row"><strong>'+escape(r.name)+'</strong><small>'+escape(r.workerName||people.find(w=>w.id===r.userId)?.name||'Agente de Ronda')+' · '+r.points.length+' endereços</small></div>').join(''):'<p>Nenhuma rota cadastrada.</p>')+'</section></section>';
  }
  function visibleSuggestions(){
   const all=preRegistered();
@@ -114,7 +114,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
  function changed(){afterSave(false);}
  function validCurrentStep(){
   if(step===1){
-   if(!watcherList().some(w=>w.id===workerId)){notify('Selecione um vigia de demonstração ou um profissional cadastrado.');return false;}
+   if(!watcherList().some(w=>w.id===workerId)){notify('Selecione um agente de ronda de demonstração ou um profissional cadastrado.');return false;}
    if(name.trim().length<3){notify('Informe o nome da rota.');return false;}
    if(points.length<2){notify('Adicione ao menos dois endereços pela pesquisa.');return false;}
   }else if(step===2){
@@ -175,7 +175,7 @@ export function createRoutePlanner({getData,api,afterSave,notify}){
   try{
    const payload={userId:workerId,name:name.trim(),points:points.map(({name,lat,lng,address})=>({name,address,lat,lng})),schedule:{kind,recurrence,hour,startDate,weekdays}};
    await api('/routes',{method:'POST',data:payload});
-   notify(getData().demo?'Rota fictícia salva neste navegador. Escolha o Vigia para conferir.':'Rota salva. Ela ficará disponível ao vigia após a próxima sincronização.');
+   notify(getData().demo?'Rota fictícia salva neste navegador. Selecione um agente de ronda para conferir.':'Rota salva. Ela ficará disponível ao agente de ronda após a próxima sincronização.');
    step=1;points=[];name='';query='';suggestions=[];
    await afterSave(true);
   }catch(err){notify(err.message||'Não foi possível salvar a rota.');}
