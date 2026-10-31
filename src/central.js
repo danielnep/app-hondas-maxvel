@@ -1,4 +1,6 @@
 import {decorateTheme} from './theme-shell.js';
+import {verificationSettingsHtml,saveVerificationSettings,renderQrLabels} from './verification-settings-ui.js';
+let centralVerificationSettings={verificationMode:'gps',dwellSeconds:30};
 import {isPagesTestMode} from './pages-test-api.js';
 import {createInternalChatUI} from './internal-chat-ui.js';
 import {createChatCalls} from './internal-chat-calls.js';
@@ -335,6 +337,7 @@ async function load(){
   }
   if(['ronda','vistoriador'].includes(account.role))try{const context=await eventTelemetry();await api('/presence',{method:'POST',data:{position:context.position||null}})}catch{}
   await ops.refresh(account,false);
+  if(['admin','master'].includes(account.role))centralVerificationSettings=(await api('/operational-settings')).settings;
   await chat.refresh();
   if(page==='activity-history')await activity.refresh();
   if(['monitor','dashboard'].includes(page)&&review()&&ops.allowed('rondas'))latestActivity=await activity.latestHtml();
@@ -360,8 +363,8 @@ const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
  operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Configurações','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Configurações','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['history','Meus alertas e ocorrências','▤'],['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Eventos','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
@@ -775,7 +778,7 @@ function render(){
  const required=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[page];
  if(review()&&required&&!ops.allowed(required)){page='notifications';selected=null;}
  activity.reset();
- let content=page==='chat'?chat.view():page==='activity-history'?activity.view():page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(['ronda','vistoriador'].includes(account.role)?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):page==='treatments'&&review()?treatmentsView():
+ let content=page==='chat'?chat.view():page==='activity-history'?activity.view():page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(['ronda','vistoriador'].includes(account.role)?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?verificationSettingsHtml(centralVerificationSettings,routes)+ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):page==='treatments'&&review()?treatmentsView():
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?(page==='history'?ownHistory():page==='send'?sendView():inspectionView()):
@@ -1103,6 +1106,8 @@ document.addEventListener('submit',async e=>{
  if(e.target.matches('[data-chat-compose],[data-chat-create],[data-chat-profile-form],[data-activity-filters]')){e.preventDefault();try{if(await chat.submit(e.target))return;if(await activity.submit(e.target))return}catch(error){flash(error.message)}return;}
 
  const form=e.target;
+ if(form.id==='verification-settings-form'){e.preventDefault();try{centralVerificationSettings=await saveVerificationSettings(form,api);}catch(error){flash(error.message);const status=form.querySelector('[data-verification-status]');if(status)status.textContent=error.message;}return;}
+ if(form.id==='verification-qr-form'){e.preventDefault();try{await renderQrLabels(form,api);}catch(error){flash(error.message);}return;}
  if(['ops-dispatch-form','ops-completion-form','ops-inspector-form','ops-destination-form'].includes(form.id)){e.preventDefault();try{await ops.submit(form)}catch(err){flash(err.message)}return;}
  if(form.id==='route-form'){e.preventDefault();try{await routeBoard.submit(form)}catch(err){flash(err.message)}return;}
  if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','send-message','upload-evidence','inspection-form'].includes(form.id))return;

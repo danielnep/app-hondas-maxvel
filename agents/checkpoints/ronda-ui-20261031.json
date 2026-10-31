@@ -1,0 +1,39 @@
+{
+  "task": "Revisar UI do APK operacional e configuração central GPS/QR",
+  "branch": "fix/ronda-apk-statusline-20261031",
+  "base": "9ee3a621216243eb60736b7e826aa7578975c0a0",
+  "completed": [
+    "Comparadas versões Library/VPS/GitHub; 2.2.0 era o APK mais recente",
+    "Reproduzida sobreposição do indicador conectado em 3 controles do header",
+    "Implementada faixa Android nativa de 22dp; versão 2.2.1/code15 assinada",
+    "271 testes, sintaxe, estilos e build passaram antes da ampliação GPS/QR",
+    "Revisão de assets exatos APK em 360/412px, altura 458/808, paisagem915x390; sem erros JS nem overflow horizontal",
+    "Photon e OSRM reais consultados; nenhum GPS do telefone foi homologado",
+    "Endpoint persistente /operational-settings e formulários nas duas entradas",
+    "APK sincroniza regra no login/a cada 15s/antes da ronda; sessão ativa conserva regra inicial",
+    "QR físico por câmera com decoder local, códigos por rota/coordenadas e validação da VPS; fila offline",
+    "272 testes e revisão visual final aprovados; bundle confere com fonte"
+  ],
+  "current_requirements": [
+    "Dados e endereços reais; não substituir posição do aparelho por GPS sintético",
+    "Faixa pequena natural no topo para conexão/avisos",
+    "Configuração na Administração web/VPS define GPS+30s, QR, preservando GPS+QR",
+    "APK deve receber configuração central e aplicar a próximas rondas; ronda ativa preserva política inicial"
+  ],
+  "remaining": [
+    "Publicar branch/PR e imagem de produção com backup e rollback",
+    "Conferir API autenticada em produção e salvar APK final"
+  ],
+  "paths": {
+    "worktree": "/opt/ronda-pro-ui-20261031",
+    "oldSource": "/opt/ronda-pro-real-20261031",
+    "uiArtifacts": "/tmp/ronda-apk-ui-audit-20261031",
+    "newBuild": "/opt/ronda-pro-build-ui-20261031"
+  },
+  "hardware_limit": "VPS sem emulador/KVM e sem conexão ao telefone; não afirmar GPS/câmera Android testados",
+  "apk": {
+    "path": "/opt/ronda-pro-build-ui-20261031/Ronda-Pro-2.2.1-Operacional.apk",
+    "sha256": "5dda36725f3f001e24e0db1328f848898792c22a3216ce1dc8a93cc9cd12b2b5",
+    "bytes": 617067
+  }
+}

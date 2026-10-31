@@ -8,6 +8,7 @@ import {createOpsCenter} from './ops-center.js';
 import {createInternalChat} from './internal-chat.js';
 import {createActivityHistory} from './activity-history.js';
 import {createTreatments} from './treatments.js';
+import {createVerification} from './verification.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
 const roles=['ronda','operador','admin','master','coi','cliente','vistoriador'];
@@ -162,6 +163,7 @@ export function createOperationalApi(){
  const chat=db?createInternalChat(db,{now,id,audit,resp,body,serialize}):null;
  const activity=db?createActivityHistory(db,{resp,serialize,aggregateOperationalRounds,visible,operations}):null;
  const treatmentService=db?createTreatments(db,{now,id,audit,resp,body,serialize,operations}):null;
+ const verification=db?createVerification(db,{now,audit,resp,body,serialize,operations}):null;
  async function notifyEmail(record,template){
   const targetGroups=serialize(template.recipients)||[];
   const emails=db.prepare('SELECT email,group_name FROM recipients WHERE enabled=1').all().filter(x=>!targetGroups.length||targetGroups.includes(x.group_name)).map(x=>x.email);
@@ -195,6 +197,7 @@ export function createOperationalApi(){
    const a=userFrom(req);
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
+   if(await verification(req,res,a))return true;
    if(p==='/api/app-state'&&m==='GET'){
     const record=db.prepare('SELECT data,updated_at FROM app_state WHERE user_id=?').get(a.id);
     resp(res,200,{state:record?serialize(record.data):null,updatedAt:record?.updated_at||null});return true;

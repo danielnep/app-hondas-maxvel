@@ -43,7 +43,8 @@ export function createCheckpointCurtain(api){
   const s=api.get().session,point=s&&currentCheckpoint(s);
   if(!s||s.status!=='active'||!point||key!==s.id+':'+s.index||hasBlock(s)){close();return}
   const elapsed=Math.round(s.checkpoints[s.index].dwellMs/1000),target=Math.round(requiredDwellMs(s)/1000);
-  const remain=Math.max(0,target-elapsed);
+  const policy=s.route.rules?.verificationMode||'gps',qrOnly=policy==='qr';
+  const remain=qrOnly?0:Math.max(0,target-elapsed);
   root.querySelector('[data-dwell-seconds]').textContent=String(Math.floor(remain/60)).padStart(2,'0')+':'+String(remain%60).padStart(2,'0');
   root.querySelector('[data-dwell-seconds]').parentElement?.setAttribute('aria-label',remain+' segundos restantes');
   for(const el of root.querySelectorAll('.checkpoint-after-timer,.checkpoint-condition,.checkpoint-submit,.checkpoint-footnote'))el.hidden=remain>0;
@@ -53,7 +54,8 @@ export function createCheckpointCurtain(api){
   root.querySelector('.checkpoint-curtain-eyebrow').hidden=remain>0;
   root.querySelector('.checkpoint-curtain-panel')?.classList.toggle('is-ready',remain===0);
   root.querySelector('[data-curtain-observation-wrap]').setAttribute('aria-hidden',String(remain>0));
-  root.querySelector('.checkpoint-curtain-panel')?.setAttribute('data-rp2-phase',s.insideSince==null?'paused':remain===0?'ready':'counting');
+  root.querySelector('.checkpoint-curtain-panel')?.setAttribute('data-rp2-phase',qrOnly?'ready':s.insideSince==null?'paused':remain===0?'ready':'counting');
+  const qrAction=root.querySelector('[data-curtain-qr]');if(qrAction)qrAction.hidden=policy==='gps'||!!s.checkpoints[s.index].qrVerifiedAt;
   root.querySelector('[data-dwell-message]').textContent=s.insideSince==null
     ?'GPS fora do raio ou impreciso. A validação está suspensa.'
     :elapsed<target?'Aguarde e observe o ambiente para registrar as condições deste ponto.':'Tempo concluído. Informe as condições verificadas para prosseguir.';
@@ -73,15 +75,17 @@ export function createCheckpointCurtain(api){
  function open(){
   const state=api.get(),s=state.session,p=s&&currentCheckpoint(s);
   if(s?.status==='active'&&hasBlock(s)){close();return}
-  if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||!p||s.insideSince==null){status();return}
+  const qrConfirmed=s?.route?.rules?.verificationMode==='qr'&&!!s?.checkpoints[s.index]?.qrVerifiedAt;
+  if(state.view!=='minha-ronda'||state.user?.role!=='ronda'||s?.status!=='active'||!p||s.insideSince==null&&!qrConfirmed){status();return}
   const next=s.id+':'+s.index;if(root&&key===next){status();return}
   close();key=next;document.body.classList.add('checkpoint-arrived');root=document.createElement('section');
   root.className='checkpoint-curtain';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
   root.setAttribute('aria-label','Conferência obrigatória do ponto de ronda');
   root.innerHTML='<div class="checkpoint-curtain-shade"></div><div class="checkpoint-curtain-panel" tabindex="-1">'+
-   '<div class="checkpoint-curtain-eyebrow">✓ CHEGADA CONFIRMADA · PONTO '+(s.index+1)+'</div>'+
+   '<div class="checkpoint-curtain-eyebrow">✓ '+(qrConfirmed?'QR CONFIRMADO':'CHEGADA CONFIRMADA')+' · PONTO '+(s.index+1)+'</div>'+
    '<h2>'+safe(p.name)+'</h2><p>'+safe(p.instruction||'Verifique as condições do local.')+'</p>'+
    '<div class="checkpoint-stopwatch" role="timer" aria-live="off"><strong><span data-dwell-seconds>00:30</span></strong><small data-dwell-message role="status" aria-live="polite">Aguarde e observe o ambiente antes de preencher a verificação.</small></div>'+
+   '<button type="button" class="button primary full" data-curtain-qr data-ops="scan-qr" hidden>Ler QR Code do ponto</button>'+
    '<div class="checkpoint-after-timer"><div class="checkpoint-evidence-title"><span>Fotos do ponto</span><small data-evidence-count aria-live="polite">Nenhuma foto</small></div>'+
    '<div class="checkpoint-view-grid" role="group" aria-label="Fotos do ponto"><button type="button" class="checkpoint-view-action" data-evidence-kind="point-photo" aria-label="Adicionar foto do ponto"><span aria-hidden="true">▧<b>+</b></span><small>Foto</small></button><button type="button" class="checkpoint-view-action" data-evidence-view="selfie" aria-label="Adicionar selfie"><span aria-hidden="true">▧<b>+</b></span><small>Selfie</small></button></div>'+
    '<label class="checkpoint-photo-direction">Direção da foto<select data-photo-direction>'+EVIDENCE_VIEWS.filter(([v])=>v!=='selfie').map(([v,label])=>'<option value="'+v+'">'+label+'</option>').join('')+'</select></label>'+
@@ -135,7 +139,7 @@ export function createCheckpointCurtain(api){
  }
  async function submit(){
   const {session:s,locationFix}=api.get(),p=currentCheckpoint(s),checkpoint=s?.checkpoints[s.index];
-  if(!p||!canCompletePoint(s)){status();api.notify('Aguarde a permanência com GPS confiável.');return}
+  if(!p||!canCompletePoint(s)){status();api.notify(s?.route?.rules?.verificationMode==='qr'?'Confirme o QR Code deste ponto.':'Conclua a permanência e as confirmações exigidas para este ponto.');return}
   const attention=root.querySelector('[name="point-state"]:checked')?.value==='attention';
   const note=root.querySelector('textarea')?.value.trim()||'';
   if(attention&&note.length<10){api.notify('Descreva a situação que exige atenção com pelo menos 10 caracteres.');return}
@@ -147,7 +151,7 @@ export function createCheckpointCurtain(api){
   checkpoint.observation=observation;checkpoint.observedAt=Date.now();
   checkpoint.position=locationFix?{lat:locationFix.lat,lng:locationFix.lng,accuracy:locationFix.accuracy,at:locationFix.at}:null;
   try{
-   if(!completePoint(s,Date.now())){throw new Error('A localização mudou antes da confirmação do ponto.')}
+   if(!completePoint(s,Date.now())){throw new Error('A validação mudou antes da confirmação do ponto.')}
    checkpoint.condition=attention?'attention':'ok';
    await api.recordCheckpoint(checkpoint,files,p);
    api.save();close();api.render();
