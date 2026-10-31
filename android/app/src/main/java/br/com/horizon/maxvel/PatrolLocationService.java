@@ -1,6 +1,7 @@
 package br.com.horizon.maxvel;
 
 import android.Manifest;
+import android.os.Build;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -83,7 +84,8 @@ public class PatrolLocationService extends Service implements LocationListener {
             .setContentText("Localização e conexão monitoradas até sair da conta.")
             .setContentIntent(open).setOngoing(true)
             .build();
-        startForeground(NOTIFICATION_ID,notice,ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.Q)startForeground(NOTIFICATION_ID,notice,ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+        else startForeground(NOTIFICATION_ID,notice);
     }
     @Override public void onLocationChanged(Location loc){
         if(!running||loc==null||!loc.hasAccuracy())return;

@@ -52,7 +52,7 @@ export function createAppServer() {
       return;
     }
     if (request.url.split('?')[0] === '/health') {
-      send(200, JSON.stringify({status: 'ok', app: 'Ronda Pro', mode: 'production', version: '2.2.1', authentication: 'vps'}), 'application/json; charset=utf-8');
+      send(200, JSON.stringify({status: 'ok', app: 'Ronda Pro', mode: 'production', version: '2.2.3', authentication: 'vps'}), 'application/json; charset=utf-8');
       return;
     }
     const relativeFile = publicFile(request.url);

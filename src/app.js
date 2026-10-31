@@ -129,7 +129,7 @@ async function refreshVerificationSettings(){
  return operationalSettings;
 }
 const routePlanner=createRoutePlanner({
- getData:()=>({users:liveUsers,routes:liveRoutes,role:user?.role,demo:isPagesTestMode()}),
+ getData:()=>({users:liveUsers,routes:liveRoutes,role:user?.role,demo:isPagesTestMode(),position:locationFix||window.__rondaNativeFix}),
  api:(path,options)=>routeRequest(path,options,liveRequest,user?.role),notify,
  afterSave:async reload=>{if(reload)await refreshLiveOperational();render();}
 });
@@ -1045,7 +1045,7 @@ function demoChatView(){
  const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Equipe · Banco de dados</small></div></header>';
  const rows=liveConversations.map(c=>'<button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="'+esc(c.id)+'"><span class="field-chat-avatar">'+esc(c.title?.slice(0,1)||'?')+'</span><span class="field-chat-contact-copy"><strong>'+esc(c.title)+'</strong><small>'+esc(c.last?.body||'Sem mensagens')+'</small></span>'+(c.unread?'<b>'+c.unread+'</b>':'')+'</button>').join('');
  const list='<section class="field-chat-list"><div class="field-chat-list-label">CONVERSAS</div>'+(rows||'<p>Nenhuma conversa iniciada.</p>')+'<button type="button" class="button primary" data-action="demo-chat-contacts">Nova conversa</button></section>';
- const contacts='<section class="field-chat-list"><div class="field-chat-list-label">CONTATOS</div>'+liveContacts.map(c=>'<button type="button" class="field-chat-contact-row" data-action="live-chat-contact" data-contact="'+esc(c.id)+'"><strong>'+esc(c.name)+'</strong><small>'+esc(roleName[c.role]||c.role)+'</small></button>').join('')+'<button class="button" type="button" data-action="demo-chat-list">Voltar</button></section>';
+ const contacts='<section class="field-chat-list"><div class="field-chat-list-label">CONTATOS</div>'+liveContacts.map(c=>'<button type="button" class="field-chat-contact-row" data-action="live-chat-contact" data-contact="'+esc(c.id)+'"><span class="field-chat-avatar" aria-hidden="true">'+esc(c.name?.slice(0,1)||'?')+'</span><span class="field-chat-contact-copy"><strong>'+esc(c.name)+'</strong><small>'+esc(roleName[c.role]||c.role)+'</small></span></button>').join('')+'<button class="button" type="button" data-action="demo-chat-list">Voltar</button></section>';
  const active=liveConversations.find(c=>c.id===liveChatId);
  const messages=liveMessages.map(m=>'<article class="field-chat-bubble '+(m.author_id===user.id?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+esc(m.author||'')+' · '+time(m.created_at)+'</small></article>').join('');
  const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list">'+ic('arrowleft')+'</button><strong>'+esc(active?.title||'Conversa')+'</strong></header><div class="field-chat-thread" role="log">'+(messages||'<p>Escreva a primeira mensagem.</p>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Mensagem</label><input name="body" id="demo-chat-body" required maxlength="4000" autocomplete="off" placeholder="Mensagem"><button type="submit" class="button primary">Enviar</button></form></section>';

@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <!-- Para iniciar localização em segundo plano em casos permitidos: solicitar somente em contexto apropriado, via Configurações. -->
 
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application android:allowBackup="false" android:usesCleartextTraffic="false"
         android:label="Ronda Pro Operação" android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:icon="@drawable/ic_maxvel" android:roundIcon="@drawable/ic_maxvel"

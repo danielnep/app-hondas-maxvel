@@ -12,3 +12,7 @@ confirmação a cada publicação. Pedido original: “Sempre pode publicar bran
 - Verificar a referência remota antes de informar que a branch está disponível.
 
 Esta autorização não dispensa as permissões técnicas das ferramentas.
+
+## Regressões Android e mobile
+
+Ao alterar Android, mapas, autenticação ou UI, consultar docs/REVISAO-UI-ANDROID-2.2.3.md. Executar o SDK/Lint/auditoria por scripts/android-development-check.py e o cenário de UI scripts/mobile-search-chat-check.mjs com runtime Playwright explícito. Preservar credenciais; não refutar erro em telefone com teste de API ou Chromium. Emulador cancelado: não iniciar sem nova instrução.

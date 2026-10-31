@@ -1,3 +1,4 @@
+import {searchPlaces,searchFocus,requestSearchFocus,distanceLabel} from './place-search.js';
 import {typeInfo,EVENT_TYPES} from './treatment-policy.js';
 /* UI da central COI: notificações, despachos e permissões com dados do servidor. */
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -266,28 +267,23 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    const status=dialog.querySelector('[data-ops-route-status]');
    if(status)status.textContent='Procurando endereço no mapa...';
    timer=setTimeout(async()=>{
-    controller=new AbortController();
+    const activeController=new AbortController();controller=activeController;
     try{
-     const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=6&q='+encodeURIComponent(text),{signal:controller.signal});
-     if(!response.ok)throw Error('busca indisponível');
-     const result=await response.json();
-     if(controller.signal.aborted)return;
-     const points=(result.features||[]).map(f=>{
-      const p=f.properties||{},c=f.geometry?.coordinates||[];
-      return {name:String(p.name||p.street||'Local'),address:[p.street,p.housenumber,p.city,p.state].filter(Boolean).join(', ')||String(p.name||text),
-       lat:Number(c[1]),lng:Number(c[0])};
-     }).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+     const focus=await requestSearchFocus({fallback:searchFocus(null,dialog._inspectionMap)});
+     if(activeController.signal.aborted)return;
+     const points=await searchPlaces(text,{focus,signal:activeController.signal});
+     if(activeController.signal.aborted)return;
      for(const point of points){
       const button=document.createElement('button');button.type='button';button.setAttribute('role','option');
       const title=document.createElement('strong');title.textContent=point.name;
-      const desc=document.createElement('small');desc.textContent=point.address;
+      const desc=document.createElement('small');desc.textContent=point.address+(Number.isFinite(point.distanceMeters)?' · '+distanceLabel(point.distanceMeters):'');
       button.append(title,desc);button.addEventListener('click',()=>mark(point));host.append(button);
      }
      if(points.length){
       dialog._inspectionMap?.setView([points[0].lat,points[0].lng],15,{animate:false});
       if(status)status.textContent='Endereço localizado. Toque no resultado correto para marcar o destino.';
      }else if(status)status.textContent='Não encontrei o endereço. Informe rua, número, bairro e cidade.';
-    }catch(e){if(!controller.signal.aborted&&status)status.textContent='Busca indisponível. Você pode marcar o destino tocando no mapa.';}
+    }catch(e){if(!activeController.signal.aborted&&status)status.textContent='Busca indisponível. Você pode marcar o destino tocando no mapa.';}
    },650);
   });
  }
@@ -330,23 +326,22 @@ export function createOpsCenterUI({api,flash,openNotice,onUpdate=()=>{}}){
    clearTimeout(debounce);controller?.abort();suggestions.replaceChildren();
    const q=field.value.trim();if(q.length<5)return;
    debounce=setTimeout(async()=>{
-    controller=new AbortController();
+    const activeController=new AbortController();controller=activeController;
     try{
-     const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=5&q='+encodeURIComponent(q),{signal:controller.signal});
-     if(!response.ok)throw Error('Busca indisponível');
-     const body=await response.json();
-     if(controller.signal.aborted)return;
-     for(const f of body.features||[]){
-      const p=f.properties||{},coords=f.geometry?.coordinates||[];
-      const address=[p.name,p.street,p.housenumber,p.city,p.state].filter(Boolean).join(', ');
-      if(!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1])))continue;
+     const focus=await requestSearchFocus({fallback:searchFocus(null,map)});
+     if(activeController.signal.aborted)return;
+     const found=await searchPlaces(q,{focus,signal:activeController.signal});
+     if(activeController.signal.aborted)return;
+     for(const point of found){
       const button=document.createElement('button');button.type='button';button.setAttribute('role','option');
-      button.textContent=address||q;
-      button.onclick=()=>{add(Number(coords[1]),Number(coords[0]),address||q);field.value=address||q;};
+      const title=document.createElement('strong');title.textContent=point.name;
+      const detail=document.createElement('small');detail.textContent=point.address+(Number.isFinite(point.distanceMeters)?' · '+distanceLabel(point.distanceMeters):'');
+      button.append(title,detail);
+      button.onclick=()=>{add(point.lat,point.lng,point.address);field.value=point.address;};
       suggestions.append(button);
      }
      if(!suggestions.children.length)status.textContent='Endereço não localizado. Marque o ponto diretamente no mapa.';
-    }catch(error){if(!controller.signal.aborted)status.textContent='Busca indisponível. Marque o ponto no mapa.';}
+    }catch(error){if(!activeController.signal.aborted)status.textContent='Busca indisponível. Marque o ponto no mapa.';}
    },600);
   };
   setTimeout(()=>map.invalidateSize(),120);

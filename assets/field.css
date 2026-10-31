@@ -485,7 +485,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 /* Cartografia aberta com acabamento dark aplicado localmente aos tiles reais. */
 .rp-inspection-map .leaflet-tile,
 .rp-plan-map .leaflet-tile{
- filter:grayscale(1) invert(.91) hue-rotate(180deg) brightness(.58) contrast(1.16)!important
+ filter:none!important
 }
 .rp-inspection-map .leaflet-control-zoom a,
 .rp-plan-map .leaflet-control-zoom a{

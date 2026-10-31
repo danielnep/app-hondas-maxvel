@@ -64,7 +64,7 @@ test('marca Grupo Maxvel permanece visível no cabeçalho mobile',()=>{
  assert.match(style,/\.dashboard \.app-header \.brand \.brand-partner\{[^}]*display:flex!important/);
  assert.match(style,/\.dashboard \.app-header \.brand \.maxvel-real-logo\{[^}]*display:block!important/);
  assert.doesNotMatch(style,/\.dashboard \.app-header \.brand \.brand-partner\{display:none!important/);
- assert.ok(index.includes('field.css?v=52'));
+ assert.ok(index.includes('field.css?v=53'));
 });
 
 test('vistorias têm mapa independente, fotos múltiplas e termos profissionais',()=>{

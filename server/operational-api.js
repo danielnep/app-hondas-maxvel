@@ -190,7 +190,7 @@ export function createOperationalApi(){
     const d=serialize((await body(req)).toString())||{},email=clean(d.email).toLowerCase();
     const row=db.prepare('SELECT * FROM users WHERE (email=? OR username=? COLLATE NOCASE) AND active=1').get(email,email);
     const candidate=typeof d.password==='string'&&row?authHash(d.password,row.salt):null;
-    if(!candidate||!timingSafeEqual(Buffer.from(candidate,'hex'),Buffer.from(row.password_hash,'hex'))){resp(res,401,{error:'Credenciais inválidas'});return true;}
+    if(!candidate||!timingSafeEqual(Buffer.from(candidate,'hex'),Buffer.from(row.password_hash,'hex'))){const reference=randomBytes(6).toString('hex');console.warn('RONDA_AUTH_FAILURE',JSON.stringify({reference,identifier:email.slice(0,254),client:String(req.headers['user-agent']||'').slice(0,300)}));resp(res,401,{error:'Credenciais inválidas',reference});return true;}
     const token=randomBytes(32).toString('hex');db.prepare('INSERT INTO tokens(token_hash,user_id,expires_at) VALUES(?,?,?)').run(hash(token),row.id,now()+28800000);
     audit(row,'login',row.id);resp(res,200,{token,user:{id:row.id,name:row.name,role:row.role,site:row.site||''},expiresIn:28800});return true;
    }
