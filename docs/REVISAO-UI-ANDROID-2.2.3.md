@@ -18,3 +18,7 @@ A lista de contatos colocava nomes na coluna de avatar da grade. A captura anter
 Contas e senhas repassadas foram preservadas. Os quatro logins passaram no endpoint de produção e no formulário do bundle; o relato de falha nos perfis fora Master no telefone continua distinto desses testes e não foi considerado refutado. Recusas na VPS agora têm referência e identificação do cliente em log, sem senha ou token. Nenhum reset de credenciais foi usado para contornar diagnóstico.
 
 A tentativa de emulador foi interrompida por instrução do proprietário. Não há homologação de GPS/câmera físicos, teclado Android ou segundo plano nesta entrega. Build, Lint e Chromium não equivalem a esses testes. A configuração central GPS/30 s, QR e GPS+QR permanece funcional.
+
+## Publicação verificada
+
+Servidor operacional em 2.2.3; os quatro perfis autenticados pela URL pública com Origin de produção. Configuração padrão GPS/30 segundos preservada; ausência de sessão retorna 401. Contas e rotas existentes preservadas e backup consistente concluído. Busca, planejamento e estilos servidos conferem byte a byte com a fonte. Implementação no PR #112, sem merge na principal.
