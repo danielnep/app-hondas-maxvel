@@ -50,7 +50,7 @@ test('API: senha, perfis, mensagens internas, idempotência e upload reservado',
 });
 
 
-test('piloto: senha padrao migra contas anteriores e vale para novos cadastros',async()=>{
+test('produção: preserva contas migradas e usa senha individual em novos cadastros',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'ronda-password-'));
  process.env.RONDA_PRO_DB_PATH=join(dir,'db.sqlite');
  process.env.RONDA_PRO_MASTER_EMAIL='master-pilot@example.test';
@@ -78,9 +78,10 @@ test('piloto: senha padrao migra contas anteriores e vale para novos cadastros',
   assert.equal(migrated.status,200);
   const pilotRoot=(await migrated.json()).token;
   assert.equal((await request(srv,'/login',{email:'agentepiloto',password:pilotPass})).status,200);
-  const newUser=await request(srv,'/users',{name:'COI Teste',email:'coi-pilot@example.test',username:'coipiloto',role:'coi',site:'Maxvel'},pilotRoot);
+  const newUser=await request(srv,'/users',{name:'COI Teste',email:'coi-pilot@example.test',username:'coipiloto',role:'coi',site:'Maxvel',password:'SenhaIndividualCOI123!'},pilotRoot);
   assert.equal(newUser.status,201);
-  assert.equal((await request(srv,'/login',{email:'coipiloto',password:pilotPass})).status,200);
+  assert.equal((await request(srv,'/login',{email:'coipiloto',password:pilotPass})).status,401);
+  assert.equal((await request(srv,'/login',{email:'coipiloto',password:'SenhaIndividualCOI123!'})).status,200);
   await new Promise(ok=>srv.close(ok));srv=null;
   srv=await open();
   assert.equal((await request(srv,'/login',{email:'master-pilot@example.test',password:pilotPass})).status,200);

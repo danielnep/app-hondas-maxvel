@@ -31,7 +31,7 @@ const presets=[
 ];
 function initialize(){
  const file=process.env.RONDA_PRO_DB_PATH,email=clean(process.env.RONDA_PRO_MASTER_EMAIL).toLowerCase(),pass=process.env.RONDA_PRO_MASTER_PASSWORD;
- if(!file||!email||!pass||pass.length<12)return null;
+ if(!file||!email||!pass||pass.length<(process.env.RONDA_PRO_PILOT_PASSWORD?10:12))return null;
  const path=resolve(file);mkdirSync(dirname(path),{recursive:true});
  const db=new DatabaseSync(path);db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
  const ddl=[
@@ -69,7 +69,7 @@ function initialize(){
   db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)')
    .run(id(),email,'Master','master',salt,authHash(pass,salt),'Conta principal',now());
  }
- // Contas iniciais configuradas por segredo do Railway; nunca credenciais no codigo.
+ // Contas iniciais configuradas no ambiente privado da VPS; nunca credenciais no codigo.
  if(process.env.RONDA_PRO_INITIAL_ACCOUNTS){
   let seeds=[];try{seeds=JSON.parse(process.env.RONDA_PRO_INITIAL_ACCOUNTS)}catch{throw new Error('RONDA_PRO_INITIAL_ACCOUNTS invalido')}
   if(!Array.isArray(seeds))throw new Error('Contas iniciais invalidas');
@@ -208,15 +208,15 @@ export function createOperationalApi(){
     resp(res,200,{stored:true});return true;
    }
    if(p==='/api/profile'&&m==='PUT'){const d=serialize((await body(req)).toString())||{};if(typeof d.phone!=='string'||d.phone.length>35){resp(res,422,{error:'Telefone inválido'});return true;}db.prepare('UPDATE users SET phone=? WHERE id=?').run(clean(d.phone),a.id);resp(res,200,{ok:true});return true;}
-   if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
+   if(p==='/api/logout'&&m==='POST'){if(['ronda','vistoriador'].includes(a.role))operations.endShift(a);db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
    if(await chat.handle(req,res,a,p,m))return true;
    if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
    if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),newPassword=process.env.RONDA_PRO_PILOT_PASSWORD||d.password;
-    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof newPassword!=='string'||newPassword.length<(process.env.RONDA_PRO_PILOT_PASSWORD?10:12)||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e uma senha válida'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),newPassword=d.password;
+    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof newPassword!=='string'||newPassword.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e uma senha válida'});return true;}
     if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
     if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();

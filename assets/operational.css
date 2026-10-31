@@ -1717,3 +1717,22 @@ body .checkpoint-curtain .checkpoint-curtain-panel .checkpoint-footnote{margin:0
  .dashboard .rp-inspector-records{padding-inline:0;}
 }
 }
+
+/* COI: conexão de rede separada da operação e do encerramento de turno. */
+#central-root .coi3-presence{border:1px solid var(--rp-ui-line,#3d3d46);border-radius:12px;margin:4px 0 18px;padding:12px;background:var(--rp-ui-surface,#17191e)}
+#central-root .coi3-presence>header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+#central-root .coi3-presence>header strong{font-size:14px;color:#f2f4f8}
+#central-root .coi3-presence>header span{font-size:11px;color:#b5bdc9}
+#central-root .coi3-presence-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:8px}
+#central-root .coi3-presence-person{display:flex;align-items:center;gap:9px;min-width:0;padding:11px;border:1px solid #3c4654;border-radius:9px;background:#1d242d}
+#central-root .coi3-presence-person>div{display:grid;gap:2px;min-width:0;flex:1}
+#central-root .coi3-presence-person b{font-size:12px;color:#edf1f7}
+#central-root .coi3-presence-person small{font-size:10px;color:#c3ccd6;line-height:1.35;overflow-wrap:anywhere}
+#central-root .coi3-presence-dot{width:9px;height:9px;border-radius:50%;flex:none;background:#b1b8c1}
+#central-root .coi3-presence-dot.online{background:#62d6a1}
+#central-root .coi3-presence-dot.offline{background:#ffa444}
+#central-root .coi3-presence-state{font-size:10px;text-align:right;max-width:140px;line-height:1.3;flex:none}
+#central-root .coi3-presence-state.online{color:#a8efcd}
+#central-root .coi3-presence-state.offline{color:#ffcd84}
+#central-root .coi3-presence-state.off-duty{color:#b1b8c1}
+@media(max-width:520px){#central-root .coi3-presence-person{align-items:flex-start}#central-root .coi3-presence-state{max-width:107px}}

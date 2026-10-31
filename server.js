@@ -27,8 +27,9 @@ function publicFile(requestUrl) {
   catch { return null; }
   if (!pathname.startsWith('/') || /[\\\0]/.test(pathname)) return null;
   if (pathname.split('/').some(part => part.startsWith('.'))) return null;
-  if (pathname === '/') return 'index.html';
-  if (pathname === '/central.html' || pathname === '/index.html' || pathname === '/sw.js' || pathname === '/manifest.webmanifest') return pathname.slice(1);
+  if (pathname === '/') return 'central.html';
+  if (pathname === '/src/pages-test-api.js') return 'src/production-api-mode.js';
+  if (['/central.html','/index.html','/sw.js','/manifest.webmanifest'].includes(pathname)) return pathname.slice(1);
   if (pathname.startsWith('/src/') || pathname.startsWith('/assets/')) return pathname.slice(1);
   return null;
 }
@@ -51,7 +52,7 @@ export function createAppServer() {
       return;
     }
     if (request.url.split('?')[0] === '/health') {
-      send(200, JSON.stringify({status: 'ok', app: 'Rondas Pro'}), 'application/json; charset=utf-8');
+      send(200, JSON.stringify({status: 'ok', app: 'Ronda Pro', mode: 'production', version: '2.2.0', authentication: 'vps'}), 'application/json; charset=utf-8');
       return;
     }
     const relativeFile = publicFile(request.url);

@@ -27,19 +27,19 @@ test('aplicativo Android declara rastreamento transparente com encerramento vis�
  assert.match(manifest,/android:allowBackup="false"/);
  assert.match(manifest,/android:usesCleartextTraffic="false"/);
  assert.match(service,/setOngoing\(true\)/);
- assert.match(service,/Parar acompanhamento/);
+ assert.match(service,/Expediente em andamento/);
+ assert.doesNotMatch(service,/Parar acompanhamento/,'parar GPS sem encerrar expediente criaria presença falsa');
  assert.match(service,/stopForeground\(STOP_FOREGROUND_REMOVE\)/);
  assert.match(service,/START_NOT_STICKY/);
  assert.match(service,/onDestroy/);
 });
 
-test('ponte nativa só inicia serviço ao acionar a ronda real',()=>{
+test('APK Android liga GPS nativo a uma ronda autenticada e abre Glass UI embarcada',()=>{
  assert.match(web,/mode==='real'&&!presentation/);
- assert.match(web,/if\(presentation&&act==='mode-real'\)/);
- assert.match(web,/AndroidTracking\?\.startTracking\(\)/);
+ assert.match(web,/AndroidTracking\?\.startTracking\(session\.id\)/);
  assert.match(web,/AndroidTracking\?\.stopTracking\(\)/);
- assert.match(web,/O navegador não acompanha sua posição depois de fechado/);
- assert.match(activity,/appassets\.androidplatform\.net/);
- assert.match(activity,/setAllowFileAccess\(false\)/);
- assert.match(activity,/setAllowContentAccess\(false\)/);
+ assert.match(activity,/new WebView\(this\)/);
+ assert.match(activity,/startForegroundService\(intent\)/);
+ assert.match(activity,/getAssets\(\)\.open\(local\)/);
+ assert.match(activity,/NativeApi\.token/);
 });

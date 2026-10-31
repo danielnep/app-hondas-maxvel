@@ -2,15 +2,22 @@ import {isPagesTestMode,pagesTestRequest,PAGES_TEST_ACCOUNTS} from './pages-test
 // Acesso real do Ronda Pro. Senhas e dados ficam exclusivamente no servidor.
 export async function liveRequest(path,{method='GET',data}={}){
  if(isPagesTestMode())return pagesTestRequest(path,{method,data});
- const token=sessionStorage.getItem('rondaspro_api_token');
+ const token=liveSession.token;
  const response=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data!==undefined?{'Content-Type':'application/json'}:{})},body:data===undefined?undefined:JSON.stringify(data),cache:'no-store'});
  const result=await response.json().catch(()=>({}));
  if(!response.ok)throw new Error(result.error||'Erro de conexao ('+response.status+')');
  return result;
 }
 export const liveSession={
- get token(){return sessionStorage.getItem('rondaspro_api_token')},
- set token(value){if(value)sessionStorage.setItem('rondaspro_api_token',value);else sessionStorage.removeItem('rondaspro_api_token')}
+ get token(){return sessionStorage.getItem('rondaspro_api_token')||(globalThis.__RONDA_ANDROID_BUNDLE__?localStorage.getItem('rondaspro_android_token'):null)},
+ set token(value){
+  if(value)sessionStorage.setItem('rondaspro_api_token',value);
+  else sessionStorage.removeItem('rondaspro_api_token');
+  if(globalThis.__RONDA_ANDROID_BUNDLE__){
+   if(value){localStorage.setItem('rondaspro_android_token',value);try{globalThis.AndroidTracking?.rememberToken(value)}catch{}}
+   else{localStorage.removeItem('rondaspro_android_token');try{globalThis.AndroidTracking?.forgetToken()}catch{}}
+  }
+ }
 };
 export function loginHtml(brand,error=''){
  const escape=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

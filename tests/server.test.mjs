@@ -21,8 +21,12 @@ test('servidor de implantação entrega o app e impede acesso ao repositório', 
 
   await t.test('entrada e arquivos públicos mantêm conteúdo e tipo corretos', async () => {
     for (const [path, file, mime] of [
-      ['/', 'index.html', 'text/html'],
+      ['/', 'central.html', 'text/html'],
+      ['/index.html', 'index.html', 'text/html'],
+      ['/sw.js', 'sw.js', 'text/javascript'],
+      ['/manifest.webmanifest','manifest.webmanifest','application/manifest+json'],
       ['/src/app.js?v=27', 'src/app.js', 'text/javascript'],
+      ['/src/pages-test-api.js', 'src/production-api-mode.js', 'text/javascript'],
       ['/assets/ronda-pro.css?v=50', 'assets/ronda-pro.css', 'text/css'],
       ['/assets/horizon-logo-transparente.webp', 'assets/horizon-logo-transparente.webp', 'image/webp']
     ]) {
@@ -39,7 +43,7 @@ test('servidor de implantação entrega o app e impede acesso ao repositório', 
     assert.ok(Number(head.headers['content-length']) > 0);
     const health = await get('/health');
     assert.equal(health.status, 200);
-    assert.deepEqual(JSON.parse(health.body), {status: 'ok', app: 'Rondas Pro'});
+    assert.deepEqual(JSON.parse(health.body), {status: 'ok', app: 'Ronda Pro', mode: 'production', version: '2.2.0', authentication: 'vps'});
   });
   await t.test('arquivos internos, travessia e caminhos inválidos ficam inacessíveis', async () => {
     for (const path of ['/.git/config', '/.env', '/package.json', '/server.js', '/docs/R6-BACKEND-CONTRATOS-E-DEPENDENCIAS.md', '/android/app/build.gradle', '/src/../server.js', '/src/%2e%2e/server.js', '/src/%2eenv', '/src/%2e%2e%5cserver.js', '/src/%00', '/src/%ZZ', '/src/missing.js', '/assets/']) {

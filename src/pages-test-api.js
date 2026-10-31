@@ -3,7 +3,7 @@
  * Sem servidor: credenciais e registros deste teste sao PUBLICOS/locais ao navegador.
  * Nunca usar estas senhas para acesso real nem confiar em papeis locais como seguranca.
  */
-export const isPagesTestMode = () => typeof location !== 'undefined' && location.hostname === 'danielnep.github.io';
+export const isPagesTestMode = () => !globalThis.__RONDA_PRODUCTION__ && typeof location !== 'undefined' && location.hostname === 'danielnep.github.io';
 export const PAGES_TEST_ACCOUNTS=Object.freeze([
  {name:'Administrador',username:'admin',email:'admin@rondapro.local',role:'admin',password:'Admin@Maxvel26!'},
  {name:'Operador COI',username:'coi',email:'coi@rondapro.local',role:'coi',password:'Coi@Maxvel26!'},

@@ -6,10 +6,10 @@ import {chromium} from 'playwright-core';
 import {execFileSync} from 'node:child_process';
 import {existsSync,mkdirSync,writeFileSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
-const root=resolve('.'),out=resolve('artifacts/mobile-ux'),origin='https://ronda-pro-production.up.railway.app';
+const root=resolve('.'),out=resolve('artifacts/mobile-ux'),origin='https://danielnep.github.io';
 mkdirSync(out,{recursive:true});
 const types={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png'};
-const sizes=[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900],[1920,1080]];
+const sizes=process.env.RONDA_AUDIT_SINGLE==='1'?[[390,780]]:[[320,600],[360,700],[390,780],[430,900],[768,1024],[1024,768],[1440,900],[1920,1080]];
 const bin=process.env.CHROME_BIN||execFileSync('bash',['-lc','command -v chromium || command -v google-chrome'],{encoding:'utf8'}).trim();
 const browser=await chromium.launch({headless:true,executablePath:bin,args:['--no-sandbox','--disable-dev-shm-usage']});
 const results=[];let fatal=0;
@@ -46,6 +46,7 @@ try{
   const ctx=await browser.newContext({viewport:{width,height},isMobile:width<500,hasTouch:width<500,reducedMotion:'reduce',serviceWorkers:'block'});
   const page=await ctx.newPage(),errors=[],remote=[];
   page.on('pageerror',e=>errors.push(String(e)));
+  page.on('console',msg=>{if(msg.type()==='error'&&!/^Failed to load resource: net::ERR_FAILED/.test(msg.text()))errors.push('console: '+msg.text())});
   await page.route('**/*',async request=>{
    const url=new URL(request.request().url());
    if(url.origin===origin){

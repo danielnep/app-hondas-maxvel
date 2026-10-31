@@ -1,5 +1,5 @@
 import {routeWaypoints} from './domain.js';
-import {fetchInspectionStreetPath} from './inspection-street-route.js';
+import {fetchInspectionStreetPath,readOfflineStreetPath} from './inspection-street-route.js';
 
 /**
  * Maps use genuine OpenStreetMap tiles when Leaflet and the network are available.
@@ -14,9 +14,17 @@ export function loadLeaflet(){
  if(window.L)return Promise.resolve(window.L);
  if(leafletPromise)return leafletPromise;
  leafletPromise=new Promise((resolve,reject)=>{
-  const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.async=true;s.crossOrigin='anonymous';
+  const s=document.createElement('script');s.src='./assets/vendor/leaflet/leaflet.js';s.async=true;s.crossOrigin='anonymous';
   const timer=setTimeout(()=>reject(new Error('Mapa online indisponível')),9000);
-  s.onload=()=>{clearTimeout(timer);window.L?resolve(window.L):reject(new Error('Biblioteca cartográfica indisponível'));};
+  s.onload=()=>{
+   clearTimeout(timer);
+   if(!window.L){reject(new Error('Biblioteca cartográfica indisponível'));return;}
+   if(!window.__RONDA_ANDROID_BUNDLE__){resolve(window.L);return;}
+   const rotate=document.createElement('script');rotate.src='./assets/vendor/leaflet/leaflet-rotate.js';
+   rotate.onload=()=>resolve(window.L);
+   rotate.onerror=()=>resolve(window.L); // never block the offline map if compass plugin is unavailable
+   document.head.appendChild(rotate);
+  };
   s.onerror=()=>{clearTimeout(timer);reject(new Error('Falha ao carregar mapa'));};
   document.head.appendChild(s);
  }).catch(err=>{leafletPromise=null;throw err});
@@ -32,7 +40,35 @@ export function project(point,route,width=680,height=360){
  const b=routeBounds(route),latSpan=Math.max(.001,b.maxLat-b.minLat),lngSpan=Math.max(.0012,b.maxLng-b.minLng);
  return {x:55+(point.lng-b.minLng)/lngSpan*(width-110),y:height-45-(point.lat-b.minLat)/latSpan*(height-90)};
 }
+// Real route-only map: persisted OSRM geometry and GPS; no downloaded street tiles needed.
+export function routeOnlySVG(route,session,position,{width=680,height=360}={}){
+ const street=readOfflineStreetPath(route);
+ const points=(route?.points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+ const base=route?.base;
+ const nodes=[...(street||[]),...(base?[base]:[]),...points];
+ if(!nodes.length)return null;
+ const w=Math.max(300,Math.round(width)),h=Math.max(280,Math.round(height));
+ const minLat=Math.min(...nodes.map(p=>p.lat)),maxLat=Math.max(...nodes.map(p=>p.lat));
+ const minLng=Math.min(...nodes.map(p=>p.lng)),maxLng=Math.max(...nodes.map(p=>p.lng));
+ const ratio=Math.cos(((minLat+maxLat)/2)*Math.PI/180);
+ const lngSpan=Math.max(.0001,(maxLng-minLng)*ratio),latSpan=Math.max(.0001,maxLat-minLat);
+ const scale=Math.min((w-72)/lngSpan,(h-92)/latSpan);
+ const project=p=>({x:w/2+((p.lng-(minLng+maxLng)/2)*ratio*scale),y:h/2-((p.lat-(minLat+maxLat)/2)*scale)});
+ const poly=path=>path.filter((_,i)=>i===0||i===path.length-1||i%Math.max(1,Math.ceil(path.length/1800))===0).map(p=>{const t=project(p);return t.x.toFixed(1)+','+t.y.toFixed(1)}).join(' ');
+ const planned=[base,...points].filter(Boolean);
+ const line=street?.length>1?`<polyline points="${poly(street)}" fill="none" stroke="#152c3a" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${poly(street)}" fill="none" stroke="#55c9f5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`:`<polyline points="${poly(planned)}" fill="none" stroke="#8d959e" stroke-width="3" stroke-dasharray="6 7"/>`;
+ const pins=planned.map((p,i)=>{const q=project(p),done=i>0&&!!session?.checkpoints?.[i-1]?.completedAt,current=i>0&&session?.index===i-1;return `<g transform="translate(${q.x.toFixed(1)},${q.y.toFixed(1)})"><circle r="17" fill="${done?'#307f67':current?'#128ac5':'#263b4b'}" stroke="#fff" stroke-width="2"/><text y="5" text-anchor="middle" fill="#fff" font-size="13" font-family="sans-serif" font-weight="700">${i===0?'B':done?'✓':i}</text></g>`}).join('');
+ const canLocate=Number.isFinite(position?.lat)&&Number.isFinite(position?.lng);
+ const user=canLocate?(()=>{const q=project(position);return `<g transform="translate(${q.x.toFixed(1)},${q.y.toFixed(1)})"><circle r="20" fill="#55c9f5" opacity=".15"/><circle r="9" fill="#55c9f5" stroke="white" stroke-width="3"/></g>`})():'';
+ const label=street?.length>1?'ROTA REAL SALVA · DISPONÍVEL OFFLINE':'PONTOS SALVOS · TRAJETO VIÁRIO AINDA NÃO BAIXADO';
+ return `<svg class="fallback-svg route-only-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa offline da rota atribuída e posição GPS"><rect width="${w}" height="${h}" fill="#17232e"/>${line}${pins}${user}<rect x="9" y="9" width="${Math.min(w-18,Math.max(218,label.length*6.8))}" height="31" rx="6" fill="#09151edb"/><text x="17" y="29" fill="#e9f5ff" font-size="10" font-family="sans-serif">${label}</text></svg>`;
+}
 export function fallbackSVG(route,session,position,showRoute=true,showPosition=true,viewport=null){
+ if(route?.roadRouting&&route?.baseKnown){
+  const routeOnly=routeOnlySVG(route,session,position,{width:viewport?.width||680,height:viewport?.height||360});
+  if(routeOnly)return routeOnly;
+ }
+
  const width=Math.max(300,Math.round(Number(viewport?.width)||680)),height=Math.max(280,Math.round(Number(viewport?.height)||360));
  const street=`M -15 ${Math.round(height*.258)}H${width+15} M -15 ${Math.round(height*.789)}H${width+15} M ${Math.round(width*.238)} -10V${height+10} M ${Math.round(width*.669)} -10V${height+10}`;
  const projectHere=p=>{
@@ -55,11 +91,17 @@ export class PatrolMap{
  constructor(container,{route,session=null,position=null,interactive=true,compact=false,onMapClick=null,standbyClean=false,positionVerified=true,onStreetRoute=()=>{}}={}){
   this.container=container;this.route=route;this.session=session;this.position=position??route.base;this.interactive=interactive;this.compact=compact;this.onMapClick=onMapClick;this.standbyClean=standbyClean;
   this.instance=null;this.leaflet=null;this.layers=[];this.pointMarkers=[];this.destroyed=false;this.pendingFocus=null;this.pendingFit=false;this.positionVerified=positionVerified;this.tracePositions=positionVerified?[this.position]:[];this.traceLayer=null;this.liveLayer=null;this.tileVisible=false;this.tileFallbackTimer=null;
-  this.streetPath=null;this.streetRequest=null;this.streetEpoch=0;this.onStreetRoute=onStreetRoute;
+  this.streetPath=readOfflineStreetPath(route);this.streetRequest=null;this.streetEpoch=0;this.onStreetRoute=onStreetRoute;
+  this.lastHeading=null;this.lastNavigationAt=0;
+  this.headingListener=event=>{
+   const value=Number(event.detail?.heading);
+   if(Number.isFinite(value)&&value>=0&&value<=360){this.lastHeading=value;this.followNavigation();}
+  };
+  if(globalThis.window?.__RONDA_ANDROID_BUNDLE__)window.addEventListener('rondapro:native-heading',this.headingListener);
   this.showFallback();this.setup();if(this.route.inspectionMode||this.route.roadRouting)this.loadStreetPath();
  }
- fallbackViewport(){return this.route.inspectionMode?{width:Math.max(300,this.container?.clientWidth||680),height:Math.max(320,this.container?.clientHeight||360)}:null}
- showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session,this.positionVerified,this.fallbackViewport())}</div><div class="map-attribution-local">Mapa esquemático enquanto a cartografia carrega</div>`}
+ fallbackViewport(){return this.route.inspectionMode||this.route.roadRouting?{width:Math.max(300,this.container?.clientWidth||680),height:Math.max(320,this.container?.clientHeight||360)}:null}
+ showFallback(){if(!this.destroyed&&this.container)this.container.innerHTML=`<div class="map-fallback">${fallbackSVG(this.route,this.session,this.position,!this.standbyClean||!!this.session,this.positionVerified,this.fallbackViewport())}</div><div class="map-attribution-local">${this.route.roadRouting||this.route.inspectionMode?'Traçado geográfico salvo no dispositivo · cartografia externa opcional':'Mapa esquemático enquanto a cartografia carrega'}</div>`}
  async setup(){try{
   const L=await loadLeaflet();if(this.destroyed)return;
   this.leaflet=L;
@@ -72,7 +114,7 @@ export class PatrolMap{
    mount.style.cssText='position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .2s ease';
    this.container.appendChild(mount);this.liveLayer=mount;
   }else this.container.innerHTML='';
-  const m=L.map(mount,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false});this.instance=m;
+  const m=L.map(mount,{zoomControl:false,scrollWheelZoom:this.interactive,dragging:this.interactive,attributionControl:true,preferCanvas:false,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false,rotate:!!window.__RONDA_ANDROID_BUNDLE__,touchRotate:true});this.instance=m;
   if(typeof this.onMapClick==='function')m.on('click',event=>this.onMapClick({lat:event.latlng.lat,lng:event.latlng.lng}));
   const credit='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
   // CARTO can return an HTTP-200 image saying API KEY REQUIRED, which tileerror cannot detect.
@@ -81,6 +123,14 @@ export class PatrolMap{
    maxZoom:19,minZoom:3,attribution:credit,crossOrigin:true,className:'maxvel-osm-dark-adapted'
   });
   let osmErrors=0;
+  // When offline, keep real road geometry from the last successful online routing.
+  if(this.streetPath?.length>1&&staged){
+   this.tileVisible=true;clearTimeout(this.tileFallbackTimer);
+   mount.style.opacity='1';mount.style.pointerEvents='auto';
+   this.container.querySelector('.map-fallback')?.remove();
+   this.container.querySelector('.map-attribution-local')?.remove();
+   this.container.removeAttribute('data-map-fallback');
+  }
   osm.on('tileload',()=>{
    if(this.destroyed||this.instance!==m||!staged||this.tileVisible)return;
    this.tileVisible=true;clearTimeout(this.tileFallbackTimer);
@@ -96,12 +146,12 @@ export class PatrolMap{
   },12000);
   osm.on('tileerror',()=>{
    if(this.destroyed||this.instance!==m)return;
-   if(++osmErrors>=5&&m.hasLayer(osm)){
+   if(++osmErrors>=5&&m.hasLayer(osm)&&!this.streetPath?.length){
     clearTimeout(this.tileFallbackTimer);m.remove();this.instance=null;mount!==this.container&&mount.remove();this.liveLayer=null;this.showFallback();
     this.container.setAttribute('data-map-fallback','true');
    }
   });
-  osm.addTo(m);
+  if(typeof navigator==='undefined'||navigator.onLine!==false)osm.addTo(m);
   L.control.zoom({position:'bottomright'}).addTo(m);
   this.refreshGeometry();
   if(this.standbyClean&&!this.session){m.setView(latlng(this.position),16,{animate:false});return;}
@@ -155,7 +205,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
  async loadStreetPath(){
   const epoch=++this.streetEpoch;
   this.streetRequest?.abort();
-  this.streetRequest=null;this.streetPath=null;
+  this.streetRequest=null;this.streetPath=readOfflineStreetPath(this.route);
   if(!(this.route.inspectionMode||this.route.roadRouting))return;
   if(!this.route.baseKnown){
    this.onStreetRoute('Sem posição de partida: ative o GPS para traçar o trajeto.');
@@ -205,8 +255,32 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
    return;
   }
   if(this.instance){if(indexWas!==session?.index||statusWas!==session?.status)this.refreshGeometry();
-   else{this.positionMarker?.setLatLng(latlng(this.position));this.accuracyCircle?.setLatLng(latlng(this.position));this.accuracyCircle?.setRadius(Math.max(3,Number(this.position.accuracy)||8));this.updateTrace();}}
+   else{this.positionMarker?.setLatLng(latlng(this.position));this.accuracyCircle?.setLatLng(latlng(this.position));this.accuracyCircle?.setRadius(Math.max(3,Number(this.position.accuracy)||8));this.updateTrace();}this.followNavigation();}
   else{const holder=this.container?.querySelector('.map-fallback');if(holder)holder.innerHTML=fallbackSVG(this.route,session,this.position,!this.standbyClean||!!session,this.positionVerified,this.fallbackViewport());}
+ }
+ followNavigation(){
+  if(!window.__RONDA_ANDROID_BUNDLE__||!this.instance||this.destroyed||this.session?.status!=='active'||!this.positionVerified)return;
+  if(!this.position||!Number.isFinite(this.position.lat)||!Number.isFinite(this.position.lng))return;
+  const now=Date.now();if(now-this.lastNavigationAt<750)return;this.lastNavigationAt=now;
+  const map=this.instance;
+  map.panTo(latlng(this.position),{animate:true,duration:.5});
+  if(map.getZoom()<16)map.setZoom(17,{animate:false});
+  if(Number.isFinite(this.lastHeading)){
+   if(typeof map.setHeading==='function')map.setHeading(this.lastHeading,{ease:.22,deadzone:1});
+   else if(typeof map.setBearing==='function')map.setBearing(-this.lastHeading);
+  }
+  const next=this.route.points?.[Math.max(0,this.session.index||0)];
+  if(!next||!Number.isFinite(this.lastHeading))return;
+  const from=this.position;
+  const deltaLon=(next.lng-from.lng)*Math.PI/180;
+  const lat1=from.lat*Math.PI/180,lat2=next.lat*Math.PI/180;
+  const destination=(Math.atan2(Math.sin(deltaLon)*Math.cos(lat2),Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(deltaLon))*180/Math.PI+360)%360;
+  const difference=((destination-this.lastHeading+540)%360)-180;
+  const instruction=Math.abs(difference)>145?'Sentido contrário':Math.abs(difference)<27?'Direção correta':difference>0?'Vire à direita':'Vire à esquerda';
+  let note=this.container.querySelector('.ronda-native-heading-note');
+  if(!note){note=document.createElement('output');note.className='ronda-native-heading-note';note.setAttribute('role','status');
+   note.style.cssText='position:absolute;bottom:15px;left:15px;z-index:600;padding:10px 13px;border:1px solid #ffffff25;border-radius:12px;background:#111a21ed;color:#f5f8fc;font:650 13px system-ui;pointer-events:none';this.container.append(note);}
+  note.textContent=instruction+' · '+Math.abs(Math.round(difference))+'°';
  }
  updateTrace(){
   if(!this.position||!Number.isFinite(this.position.lat)||!Number.isFinite(this.position.lng))return;
@@ -235,7 +309,7 @@ const pointState=i===0?'Base':done?'Concluído':active?(inspection?'Destino atua
  fit(){if(!this.instance){if(!this.destroyed)this.pendingFit=true;return;}this.pendingFit=false;if(this.standbyClean&&!this.session){this.instance.panTo(latlng(this.position));return;}const b=routeBounds(this.route);this.instance.fitBounds((this.route.inspectionMode||this.route.roadRouting)&&this.streetPath?.length>1?this.streetPath.map(latlng):[[b.minLat,b.minLng],[b.maxLat,b.maxLng]],this.mapViewPadding());}
  invalidate(){this.instance?.invalidateSize(false)}
  destroy(){
-  this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();
+  this.destroyed=true;this.streetEpoch++;this.streetRequest?.abort();if(this.headingListener&&typeof window!=='undefined')window.removeEventListener?.('rondapro:native-heading',this.headingListener);
   clearTimeout(this.tileFallbackTimer);
   const map=this.instance;this.instance=null;
   if(map){try{map.stop();map.off();map.remove();}catch{}}
