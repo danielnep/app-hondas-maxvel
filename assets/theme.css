@@ -97,7 +97,7 @@
   .rp-theme option {
     background: #202d37 !important
   }
-  .rp-theme :is(dialog,.rp-record-dialog,.conclusion-dialog,.login:not(#live-login-form),.rp-popover-list) {
+  .rp-theme :is(dialog:not(.rp-field-chat-overlay),.rp-record-dialog,.conclusion-dialog,.login:not(#live-login-form),.rp-popover-list) {
     background: rgba(25,35,44,.86) !important;
     color: var(--rp-ink) !important;
     border: 1px solid #899fad55 !important;
@@ -699,32 +699,56 @@
     margin: 0!important;
     width: 90%!important;
     max-width: none!important;
-    height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
-    max-height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
+    height: calc(100dvh - 88px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;
+    max-height: calc(100dvh - 88px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;
     padding: 12px 0 calc(8px + env(safe-area-inset-bottom,0px))!important;
-    border-radius: 15px 15px 0 0!important;
+    border-radius: 15px!important;
     overflow: hidden!important
   }
   .rp-theme .rp-field-chat-overlay[open] {
     display: flex!important;
     flex-direction: column!important
   }
+  /* Lista vazia/contatos usa painel proporcional. Conversas ativas preservam altura operacional. */
+  .rp-theme .rp-field-chat-overlay[open]:has(.field-chat-list) {
+    height:min(480px,calc(100dvh - 100px - env(safe-area-inset-bottom,0px)))!important;
+    max-height:calc(100dvh - 100px - env(safe-area-inset-bottom,0px))!important;
+  }
   .rp-theme .rp-field-chat-overlay .field-chat-screen {
-    height: 100%!important;
-    width: 100%!important;
-    border: 0!important;
-    display: flex!important;
-    flex-direction: column!important;
-    padding: 0!important;
-    min-height: 0!important;
-    background: transparent!important;
-    box-shadow: none!important
+    flex:1 1 auto!important;
+    height:auto!important;
+    width:100%!important;
+    border:0!important;
+    border-radius:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    padding:0!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    background:transparent!important;
+    box-shadow:none!important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-list{
+    background:transparent!important;
+    border:0!important;
+    min-height:0!important;
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-contact-row{
+    background:rgba(40,54,67,.38)!important;
+    border:1px solid rgba(126,166,190,.20)!important;
+    border-radius:11px!important;
+    margin-bottom:8px
   }
   .rp-theme .rp-field-chat-overlay .field-chat-surface {
-    flex: 1!important;
-    min-height: 0!important;
-    overflow: auto!important;
-    padding: 0 16px!important
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding:10px 16px 16px!important;
+    background:transparent!important;
+    border:0!important
   }
   .rp-theme .rp-field-chat-overlay .field-chat-conversation {
     height: 100%!important;
@@ -1336,7 +1360,7 @@
     background: linear-gradient(90deg,#ff17222e,transparent) !important;
     box-shadow: inset 0 1px #ff172244,inset 0 -1px #ff172244 !important
   }
-  .rp-theme .rp-field-chat-overlay :is(.field-chat-thread,.field-chat-threadbar,.field-chat-topbar,.chat-thread,.chat-thread-heading,.chat-main,.field-chat-conversation) {
+  .rp-theme .rp-field-chat-overlay :is(.field-chat-thread,.field-chat-threadbar,.chat-thread,.chat-thread-heading,.chat-main,.field-chat-conversation) {
     background: transparent !important;
     box-shadow: none !important;
     border-radius: 0 !important
@@ -1353,7 +1377,10 @@
     padding: 15px 20px !important;
     height: auto !important;
     min-height: 78px !important;
-    border: 0 !important
+    background: rgba(36,49,61,.46) !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(155,185,204,.22) !important;
+    border-radius: 0 !important
   }
   .rp-theme .rp-field-chat-overlay .field-chat-topbar .field-chat-back {
     display: none !important
@@ -1767,8 +1794,16 @@
       max-width: 100% !important;
     }
     body.rp-theme[data-rp-field="false"] .dashboard .app-content:not(.ronda-page) {
-      padding: 18px clamp(12px,3.8vw,26px) calc(35px + env(safe-area-inset-bottom,0px)) !important;
-      overflow: visible !important;
+      flex: 1 1 0% !important;
+      min-height: 0 !important;
+      height: auto !important;
+      max-height: none !important;
+      padding: 18px clamp(12px,3.8vw,26px) calc(96px + env(safe-area-inset-bottom,0px)) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: contain !important;
+      scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom,0px));
+      -webkit-overflow-scrolling: touch;
     }
     body.rp-theme[data-rp-field="false"] main#conteudo {
       box-sizing: border-box !important;
@@ -2099,6 +2134,8 @@
  .rp-theme .dashboard .rp-plan-panel{padding:11px;margin-bottom:10px;border-radius:9px}
  .rp-theme .dashboard .rp-plan-panel h2{font-size:16px!important;margin-bottom:10px}
  .rp-theme .dashboard .rp-plan-type{gap:7px;margin-bottom:10px}
+ .rp-theme .dashboard .rp-plan-heading{flex-wrap:wrap}
+ .rp-theme .dashboard .rp-plan-access{white-space:normal;max-width:100%}
  .rp-theme .dashboard .rp-plan-type button{padding:9px!important;min-height:58px}
  .rp-theme .dashboard .rp-plan-type strong{font-size:11px}
  .rp-theme .dashboard .rp-plan-type small{font-size:10px}
@@ -2110,15 +2147,20 @@
  .rp-theme .dashboard .rp-plan-map{height:170px}
  .rp-theme .dashboard .rp-plan-fields{grid-template-columns:1fr 1fr}
  .rp-theme .dashboard .rp-plan-summary{grid-template-columns:1fr;gap:9px}
- .rp-theme .dashboard .rp-plan-saved{display:none}
  .rp-theme .dashboard .rp-plan[data-step="1"] [data-part="2"],.rp-theme .dashboard .rp-plan[data-step="1"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="2"]{display:none!important}
- .rp-theme .dashboard .rp-plan-actions{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;gap:8px;background:rgba(27,37,46,.82);padding:9px;border:1px solid #9ab4c35c;border-radius:9px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+ .rp-theme .dashboard .rp-plan-actions{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;gap:8px;background:rgba(27,37,46,.88);padding:9px;border:1px solid #9ab4c35c;border-radius:12px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px #080d1380}
+ .rp-theme .dashboard .rp-plan :is(input,select){scroll-margin-bottom:110px}
  .rp-theme .dashboard .rp-plan-actions button{padding:8px 11px!important;min-height:42px!important;height:auto!important;font-size:12px;min-width:0}
  .rp-theme .dashboard .rp-plan-actions :is(.rp-plan-next,.rp-plan-save){flex:1}
  .rp-theme .dashboard .rp-plan-actions .rp-plan-save[data-mobile-final="hidden"]{display:none!important}
  .rp-theme .dashboard .rp-plan-demo{font-size:11px;padding:8px 10px}
  .rp-theme .dashboard .rp-demo-banner-global{padding:7px 12px;font-size:11px}
  .rp-theme .dashboard .field-chat-surface{max-height:calc(100dvh - 280px)!important;min-height:180px!important}
+}
+@media(max-width:380px){
+ .rp-theme .dashboard .rp-plan-type{grid-template-columns:1fr}
+ .rp-theme .dashboard .rp-plan-heading h1{font-size:23px!important}
+ .rp-theme .dashboard .rp-plan-steps button{flex-direction:column;gap:5px;line-height:1.2;text-align:center;min-height:66px}
 }
 @media(min-width:761px) and (max-width:1050px){
  .rp-theme .dashboard .rp-plan-layout{grid-template-columns:minmax(310px,1fr) minmax(320px,1fr)}

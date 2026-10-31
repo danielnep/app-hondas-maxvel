@@ -64,5 +64,5 @@ test('publicação atualiza cache PWA e ambas as páginas de campo',()=>{
 
 test('minimapa da Administração contém camadas Leaflet dentro de sua própria área',()=>{
  assert.ok(demoStyles.includes('.demo-mini-route-map{position:relative;isolation:isolate;overflow:hidden;height:206px'));
- assert.ok(index.includes('ronda-pro.css?v=53'));
+ assert.ok(index.includes('ronda-pro.css?v=54'));
 });
