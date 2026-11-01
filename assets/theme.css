@@ -2468,3 +2468,32 @@
   .rp-theme .dashboard .rp-real-history-detail-map{height:275px!important}
  }
 }
+
+
+/* RONDA PRO · Fundo contínuo durante scroll e teclado virtual.
+   O canvas fica no html; o body da entrada fica transparente. */
+@layer rp-layout {
+ html:has(body.rp-theme .entry-screen) {
+  min-height:100%;
+  background-color:#171e25!important;
+  background-image:radial-gradient(ellipse at 85% 0%,#33404a 0,transparent 52%),radial-gradient(ellipse at 8% 95%,#30252a 0,transparent 45%)!important;
+  background-attachment:fixed,fixed!important;
+  background-size:100% 100%,100% 100%!important;
+  background-repeat:no-repeat!important;
+ }
+ body.rp-theme:has(.entry-screen){
+  min-height:100dvh!important;height:auto!important;background:transparent!important;
+ }
+ body.rp-theme:has(.entry-screen) #app,
+ body.rp-theme:has(.entry-screen) .entry-screen{
+  width:100%;min-height:100dvh!important;height:auto!important;
+ }
+ body.rp-theme:has(.entry-screen) .entry-screen{
+  padding-bottom:env(safe-area-inset-bottom,0px);overflow-x:clip;
+ }
+ @media(max-height:640px){
+  body.rp-theme:has(.entry-screen) .entry-main{
+   margin-block:0 auto;padding-block:12px 20px;
+  }
+ }
+}
