@@ -2497,3 +2497,27 @@
   }
  }
 }
+
+
+/* Mobile de altura reduzida: a entrada jamais herda o clamp de 100dvh da tela de campo. */
+@layer rp-layout {
+ html:has(body.rp-theme .entry-screen) {
+  height:auto!important;max-height:none!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+ }
+ body.rp-theme:has(.entry-screen) {
+  height:auto!important;max-height:none!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+ }
+ body.rp-theme:has(.entry-screen) #app,
+ body.rp-theme:has(.entry-screen) .entry-screen {
+  height:auto!important;min-height:100dvh!important;max-height:none!important;
+  overflow-x:clip!important;overflow-y:visible!important;
+ }
+ body.rp-theme:has(.entry-screen) .entry-screen {
+  grid-template-rows:minmax(54px,auto) minmax(min-content,1fr) minmax(34px,auto)!important;
+ }
+ body.rp-theme:has(.entry-screen) .entry-main {
+  height:auto!important;max-height:none!important;overflow-y:visible!important;
+ }
+}
