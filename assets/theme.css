@@ -2477,7 +2477,7 @@
   min-height:100%;
   background-color:#171e25!important;
   background-image:radial-gradient(ellipse at 85% 0%,#33404a 0,transparent 52%),radial-gradient(ellipse at 8% 95%,#30252a 0,transparent 45%)!important;
-  background-attachment:fixed,fixed!important;
+  background-attachment:scroll,scroll!important;
   background-size:100% 100%,100% 100%!important;
   background-repeat:no-repeat!important;
  }
