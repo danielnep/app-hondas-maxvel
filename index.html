@@ -12,19 +12,19 @@
 <link rel="stylesheet" href="./assets/operational.css?v=52">
 <link rel="stylesheet" href="./assets/mobile-critical.css?v=50">
 <link rel="stylesheet" href="./assets/field.css?v=51">
-<link rel="stylesheet" href="./assets/theme.css?v=62">
+<link rel="stylesheet" href="./assets/theme.css?v=63">
 </head>
 <body class="rp-theme">
  <a href="#main" class="skip-link">Ir para o conteúdo</a>
  <div id="app"><div class="boot"><img src="./assets/maxvel-logo.webp" width="180" height="56" alt="Maxvel"><strong>Ronda Pro</strong><span>Preparando o ambiente operacional…</span></div></div>
  <div id="toast" role="status" aria-live="polite"></div>
  <dialog id="dialog" aria-label="Janela de informações"></dialog>
- <script type="module" src="./src/app.js?v=78"></script>
+ <script type="module" src="./src/app.js?v=79"></script>
  <script type="module" src="./src/inspection-demo-camera.js?v=1"></script>
  <script type="module" src="./src/soft-polish.js?v=1"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.includes("appassets.androidplatform.net")){
-  const updateKey="rondas-pro-updated-v75";
+  const updateKey="rondas-pro-updated-v76";
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
     if(sessionStorage.getItem(updateKey))return;
     sessionStorage.setItem(updateKey,"1");
