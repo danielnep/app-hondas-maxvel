@@ -1,0 +1,42 @@
+{
+  "physicalDeviceTested": false,
+  "emulatorStarted": false,
+  "checks": {
+    "java": {
+      "passed": true,
+      "output": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment (build 17.0.20.1+1-1-24.04-Ubuntu)\nOpenJDK 64-Bit Server VM (build 17.0.20.1+1-1-24.04-Ubuntu, mixed mode, sharing)\n"
+    },
+    "adb": {
+      "passed": true,
+      "output": "Android Debug Bridge version 1.0.41\nVersion 37.0.1-15733141\nInstalled as /opt/horizon-mobile-app/android-sdk/platform-tools/adb\nRunning on Linux 6.8.0-147-generic (x86_64)\n"
+    },
+    "sdkmanager": {
+      "passed": true,
+      "output": "22.0\n\nWARNING: The SDK Manager CLI tool (sdkmanager) is deprecated. Use Android CLI instead.\nThe 'android' binary can also be found in the cmdline-tools directory, and 'android sdk' is the replacement for 'sdkmanager'.\nTo learn more about the Android CLI and how to use it, see the documentation (https://d.android.com/tools/agents/android-cli)\n\nWarning: Observed package id 'cmdline-tools;latest' in inconsistent location '/opt/horizon-mobile-app/android-sdk/cmdline-tools/latest-2' (Expected '/opt/horizon-mobile-app/android-sdk/cmdline-tools/latest')\n"
+    },
+    "gradle": {
+      "passed": true,
+      "output": "\n------------------------------------------------------------\nGradle 8.9\n------------------------------------------------------------\n\nBuild time:    2024-07-11 14:37:41 UTC\nRevision:      d536ef36a19186ccc596d8817123e5445f30fef8\n\nKotlin:        1.9.23\nGroovy:        3.0.21\nAnt:           Apache Ant(TM) version 1.10.13 compiled on January 4 2023\nLauncher JVM:  17.0.20.1 (Ubuntu 17.0.20.1+1-1-24.04-Ubuntu)\nDaemon JVM:    /usr/lib/jvm/java-17-openjdk-amd64 (no JDK specified, using current Java home)\nOS:            Linux 6.8.0-147-generic amd64\n\n"
+    },
+    "signature": {
+      "passed": true,
+      "output": "Verifies\nVerified using v1 scheme (JAR signing): false\nVerified using v2 scheme (APK Signature Scheme v2): true\nVerified using v3 scheme (APK Signature Scheme v3): true\nVerified using v3.1 scheme (APK Signature Scheme v3.1): false\nVerified using v4 scheme (APK Signature Scheme v4): false\nVerified for SourceStamp: false\nNumber of signers: 1\nSigner #1 certificate DN: CN=Horizon PC, O=Horizon, C=BR\nSigner #1 certificate SHA-256 digest: 790423d6e43347877ee7d9a67a563efd748d08bf3866a68eec6a4d56e950175e\nSigner #1 certificate SHA-1 digest: 0fc79b0387d97863d82bebd51bb54abe092f56c0\nSigner #1 certificate MD5 digest: 2466f8fc73bcc1dd5556147ebdd16139\nSigner #1 key algorithm: RSA\nSigner #1 key size (bits): 3072\nSigner #1 public key SHA-256 digest: 99a8a7659137cf6f5e030c12ef02e9087f81b8a460d86f0fd94ec21cae23419c\nSigner #1 public key SHA-1 digest: 215d365375d6116c24c05cd32689083bcb00dda5\nSigner #1 public key MD5 digest: 946fab98cf8899064e4fc4b19478dc47\n"
+    },
+    "manifest": {
+      "passed": true,
+      "output": "package: name='br.com.horizon.maxvel.production' versionCode='18' versionName='2.2.4-production' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'\nuses-permission: name='android.permission.INTERNET'\nuses-permission: name='android.permission.ACCESS_NETWORK_STATE'\nuses-permission: name='android.permission.ACCESS_FINE_LOCATION'\nuses-permission: name='android.permission.CAMERA'\nuses-permission: name='android.permission.ACCESS_COARSE_LOCATION'\nuses-permission: name='android.permission.POST_NOTIFICATIONS'\nuses-permission: name='android.permission.FOREGROUND_SERVICE'\nuses-permission: name='android.permission.FOREGROUND_SERVICE_LOCATION'\nminSdkVersion:'26'\ntargetSdkVersion:'35'\napplication-label:'Ronda Pro Operação'\napplication-icon-160:'res/drawable/ic_maxvel.xml'\napplication: label='Ronda Pro Operação' icon='res/drawable/ic_maxvel.xml'\nlaunchable-activity: name='br.com.horizon.maxvel.MainActivity'  label='' icon=''\nfeature-group: label=''\n  uses-feature-not-required: name='android.hardware.camera'\n  uses-feature: name='android.hardware.faketouch'\n  uses-implied-feature: name='android.hardware.faketouch' reason='default feature for all apps'\n  uses-feature: name='android.hardware.location'\n  uses-implied-feature: name='android.hardware.location' reason='requested android.permission.ACCESS_COARSE_LOCATION permission, and requested android.permission.ACCESS_FINE_LOCATION permission'\n  uses-feature: name='android.hardware.location.gps'\n  uses-implied-feature: name='android.hardware.location.gps' reason='requested android.permission.ACCESS_FINE_LOCATION permission, and targetSdkVersion < 21'\n  uses-feature: name='android.hardware.location.network'\n  uses-implied-feature: name='android.hardware.location.network' reason='requested android.permission.ACCESS_COARSE_LOCATION permission, and targetSdkVersion < 21'\nmain\nother-services\nsupports-screens: 'small' 'normal' 'large' 'xlarge'\nsupports-any-density: 'true'\nlocales: '--_--'\ndensities: '160'\n"
+    }
+  },
+  "buildTools": "36.0.0",
+  "platforms": [
+    "android-35",
+    "android-36"
+  ],
+  "apk": {
+    "filename": "Ronda-Pro-2.2.4-Operacional.apk",
+    "bytes": 617143,
+    "sha256": "4ee554096cb46540a1f08a4d45684985b9a0569fc9a1f7a32eb7e4c5e56a1bd2",
+    "packageLine": "package: name='br.com.horizon.maxvel.production' versionCode='18' versionName='2.2.4-production' platformBuildVersionName='15' platformBuildVersionCode='35' compileSdkVersion='35' compileSdkVersionCodename='15'"
+  },
+  "passed": true
+}

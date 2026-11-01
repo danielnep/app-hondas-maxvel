@@ -1,7 +1,7 @@
 /* Cache da interface operacional autenticada do Ronda Pro. Não tenta baixar tiles
  * de OpenStreetMap em massa. O mapa esquemático é gerado localmente no app.
  */
-const CACHE='rondas-pro-interface-v76';
+const CACHE='rondas-pro-interface-v77';
 const CORE=['./src/place-search.js','./src/verification-policy.js','./src/verification-settings-ui.js','./src/qr-reader.js','./assets/vendor/jsqr/jsQR.js','./assets/vendor/leaflet/leaflet.css','./assets/vendor/leaflet/leaflet.js','./assets/theme.css','./src/theme-shell.js','./assets/ronda-pro.css','./assets/central.css','./assets/operational.css','./assets/mobile-critical.css','./assets/field.css','./src/field-guard-circuit.js','./src/field-inspection-wizard.js','./src/inspection-demo-camera.js','./src/inspection-queue.js','./src/inspection-cockpit.js','./src/inspection-street-route.js','./src/inspection-route-map.js','./src/internal-chat-ui.js','./src/internal-chat-calls.js','./src/activity-history-ui.js',
  './','./index.html','./manifest.webmanifest',
 

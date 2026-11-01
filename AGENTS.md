@@ -15,4 +15,6 @@ Esta autorização não dispensa as permissões técnicas das ferramentas.
 
 ## Regressões Android e mobile
 
-Ao alterar Android, mapas, autenticação ou UI, consultar docs/REVISAO-UI-ANDROID-2.2.3.md. Executar o SDK/Lint/auditoria por scripts/android-development-check.py e o cenário de UI scripts/mobile-search-chat-check.mjs com runtime Playwright explícito. Preservar credenciais; não refutar erro em telefone com teste de API ou Chromium. Emulador cancelado: não iniciar sem nova instrução.
+Ao alterar Android, mapas, autenticação ou UI, consultar docs/REVISAO-UI-ANDROID-2.2.4.md e a revisão 2.2.3 para busca/autenticação. Executar o SDK/Lint/auditoria por scripts/android-development-check.py e o cenário de UI scripts/mobile-search-chat-check.mjs com runtime Playwright explícito. Preservar credenciais; não refutar erro em telefone com teste de API ou Chromium. Emulador cancelado: não iniciar sem nova instrução.
+
+Na revisão de tema/Android, executar também scripts/android-parity-check.py e scripts/window-theme-check.py no Python Playwright da VPS. Comparar assets do APK, fonte canônica, camadas clicáveis, estados vazios e rascunho do chat. Não inventar homologação física.

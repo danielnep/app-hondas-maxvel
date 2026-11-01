@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """Build Android operacional com SDK local e assinatura persistente do proprietário."""
 from pathlib import Path
-import os,subprocess,zipfile,hashlib
+import os,subprocess,zipfile,hashlib,re
 R=Path(__file__).resolve().parents[1]
-W=Path(os.environ.get('RONDA_BUILD_DIR','/opt/ronda-pro-build-2.2.3'));W.mkdir(parents=True,exist_ok=True)
+gradle=(R/'android/app/build.gradle').read_text()
+package=re.search(r"applicationId\s+'([^']+)'",gradle).group(1)
+version_code=re.search(r"versionCode\s+(\d+)",gradle).group(1)
+version_name=re.search(r"versionName\s+'([^']+)'",gradle).group(1)
+release=version_name.removesuffix('-production')
+assert package=='br.com.horizon.maxvel.production' and re.fullmatch(r'\d+\.\d+\.\d+',release),'Identidade de release inválida'
+W=Path(os.environ.get('RONDA_BUILD_DIR','/opt/ronda-pro-build-'+release));W.mkdir(parents=True,exist_ok=True)
 SDK=Path(os.environ.get('ANDROID_SDK_ROOT','/opt/horizon-mobile-app/android-sdk'))
 T=SDK/'build-tools/35.0.0';A=SDK/'platforms/android-35/android.jar'
 KEY=Path('/opt/horizon-mobile-app/signing/horizon-pc-release.p12');PASS=KEY.parent/'storepass'
 assert KEY.is_file() and PASS.is_file(),'Assinatura persistente ausente'
 def run(*args):subprocess.run([str(a) for a in args],check=True)
 manifest=(R/'android/app/src/main/AndroidManifest.xml').read_text()
-manifest=manifest.replace('<manifest ','<manifest package="br.com.horizon.maxvel.production" android:versionCode="17" android:versionName="2.2.3-production" ',1)
+manifest=manifest.replace('<manifest ',f'<manifest package="{package}" android:versionCode="{version_code}" android:versionName="{version_name}" ',1)
 manifest=manifest.replace('<application ','<uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/><application ',1)
 for name in ['MainActivity','PatrolLocationService']:manifest=manifest.replace('android:name=".'+name+'"','android:name="br.com.horizon.maxvel.'+name+'"')
 (W/'AndroidManifest.xml').write_text(manifest)
@@ -38,7 +44,7 @@ with zipfile.ZipFile(u,'a') as z:
    data=data.replace('if("serviceWorker" in navigator&&location.protocol==="https:"','if(!window.__RONDA_ANDROID_BUNDLE__&&"serviceWorker" in navigator&&location.protocol==="https:"')
   z.writestr('assets/app/'+name,data,compress_type=zipfile.ZIP_DEFLATED)
 run(T/'zipalign','-f','4',u,W/'aligned.apk')
-out=W/'Ronda-Pro-2.2.3-Operacional.apk'
+out=W/('Ronda-Pro-'+release+'-Operacional.apk')
 run(T/'apksigner','sign','--ks',KEY,'--ks-key-alias','horizonpc','--ks-pass','file:'+str(PASS),'--out',out,W/'aligned.apk')
 run(T/'apksigner','verify','--verbose','--print-certs',out)
 print('APK',out,'BYTES',out.stat().st_size,'SHA256',hashlib.sha256(out.read_bytes()).hexdigest())

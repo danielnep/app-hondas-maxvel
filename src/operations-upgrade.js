@@ -326,7 +326,7 @@ export function createOperationsUpgrade(api){
   const dashboard=document.querySelector('.dashboard'),main=dashboard?.querySelector('.app-content');
   if(!main)return;
   if(user?.role==='ronda'){
-   (view==='minha-ronda'?main.querySelector('.patrol-map-panel'):dashboard)?.insertAdjacentHTML('beforeend',panicButton());
+   (main.querySelector('.patrol-map-panel')||dashboard)?.insertAdjacentHTML('beforeend',panicButton());
    if(view==='minha-ronda'){
     // Os três comandos são sempre visíveis na tela inicial, mesmo antes de iniciar a ronda.
     // No desktop acompanham as ações; no celular ficam logo após a ação principal.

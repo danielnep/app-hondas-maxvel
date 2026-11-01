@@ -187,6 +187,7 @@ async function restoreLiveAccount(){
  render();
 }
 function liveLogout(){
+ liveChatDrafts.clear();liveChatRefreshSequence++;
  liveSession.token='';user=null;session=null;sessions=[];programs=[];liveUsers=[];screen='landing';presentation=false;mode='real';render();
 }
 function save(){if(session){const idx=sessions.findIndex(s=>s.id===session.id);if(idx>=0)sessions[idx]=session;else sessions.unshift(session);}persist();void ops.autoReport()}
@@ -702,12 +703,15 @@ function featureHelp(topic){
 }
 
 function pageTitle(title,sub,extra=''){return `<div class="page-title"><div><div class="eyebrow">RONDAS PRO · ${esc(roleName[user.role])}</div><h1>${title}</h1><p>${sub}</p></div>${extra}</div>`}
+function windowEmpty(icon,title,detail){
+ return '<div class="rp-window-empty" role="status"><span aria-hidden="true">'+ic(icon)+'</span><strong>'+esc(title)+'</strong><p>'+esc(detail)+'</p></div>';
+}
 function fieldViewContent(){
  const content=viewContent();
  if(!['ronda','vistoriador'].includes(user?.role)||view===(user.role==='ronda'?'minha-ronda':'vistoriador'))return content;
  const back=user.role==='ronda'?'minha-ronda':'vistoriador';
  const backdrop=user.role==='ronda'?phoneContent():demoInspectorView();
- return backdrop+'<section class="rp-field-page-overlay" aria-label="Área de trabalho"><button type="button" class="rp-page-back" data-view="'+back+'">← Voltar ao mapa</button>'+content+'</section>';
+ return '<div class="rp-field-page-backdrop" aria-hidden="true" inert>'+backdrop+'</div><section class="rp-field-page-overlay" aria-label="Área de trabalho"><button type="button" class="rp-page-back" data-view="'+back+'">← Voltar ao mapa</button>'+content+'</section>';
 }
 function appShell(){const entries=allNav[user.role];let valid=entries.find(x=>x[0]===view);if(!valid){view=entries[0][0];valid=entries[0];}
  return `<div class="dashboard ${presentation?'simulation-mode':''}"><div class="app-shell"><aside class="sidebar">${brand()}<span class="side-caption">ÁREA DE TRABALHO</span><nav class="side-links" aria-label="Navegação principal">${entries.map(([key,title,ico])=>`<button data-view="${key}" class="side-link ${view===key?'active':''}" aria-current="${view===key?'page':'false'}">${ic(ico)}${title}${key==='notificacoes'&&recentNotification().filter(x=>!x.seenAt).length?`<span class="count">${recentNotification().filter(x=>!x.seenAt).length}</span>`:''}</button>`).join('')}</nav><div class="side-bottom"><span class="micro-disclaimer">Acesso individual autenticado · Grupo Maxvel</span><button class="foot-link" data-action="privacy">Privacidade e dados</button><button class="foot-link" data-action="tour-restart">Rever tutorial</button><button class="foot-link" data-action="guide">Guia completo</button><button class="foot-link" data-action="logout">Sair do perfil</button><p style="font-size:10px;margin-top:12px">Grupo Maxvel</p></div></aside><div class="shell-main"><header class="app-header"><button type="button" class="app-menu-button mobile-only" data-action="open-mobile-menu" aria-label="Abrir menu de navegação">${ic("menu")}</button>${brand()}<div class="eyebrow desktop-only">CENTRAL OPERACIONAL</div><div class="header-actions">${demoHeaderButtons()}<button class="help-toggle desktop-only" data-action="tour-restart" aria-label="Rever o tutorial da plataforma">${ic('help')}<span class="desktop-only">Ajuda</span></button><button type="button" class="user-pill user-profile-button" data-action="profile-menu" aria-label="Abrir perfil e opções"><span class="avatar">${esc(user.name.slice(0,1).toUpperCase())}</span><span><strong>${esc(user.name)}</strong><small>${roleName[user.role]}</small></span>${ic("settings")}</button><button class="button small desktop-only" data-action="logout">Sair</button></div></header>${isPagesTestMode()?'<div class="rp-demo-banner-global"><b>DEMONSTRAÇÃO</b> · Prévia de como o Ronda Pro funcionará. Dados fictícios, armazenados somente neste navegador.</div>':''}<main id="main" class="app-content ${view==='minha-ronda'?'ronda-page':''}">${fieldViewContent()}</main><footer class="footer-app">Ronda Pro · Grupo Maxvel</footer></div></div></div>`}
@@ -733,11 +737,11 @@ function myPatrolHistory(){
    '<h3>Cronologia detalhada</h3><div class="team-list">'+(x.timeline||[]).slice(0,120).map(e=>
    '<div class="team-row"><div><strong>'+esc(e.label||e.kind||'Registro')+'</strong><small>'+new Date(e.at).toLocaleString('pt-BR')+'</small></div></div>').join('')+'</div></details>';
  };
- return pageTitle('Meu histórico','Consulte apenas suas rondas, quilômetros, horários, observações, fotos, alertas e pânico.')+
- '<section class="schedule-workspace"><div class="schedule-heading"><div><div class="eyebrow">HISTÓRICO INDIVIDUAL</div><h2>'+mine.length+' ronda(s) registradas</h2><p>Resumo primeiro; abra uma execução para ver todos os registros.</p></div></div>'+
- (mine.length?mine.slice(0,50).map(item).join(''):'<p>Nenhuma ronda registrada neste aparelho.</p>')+
- '<p class="map-caption">Dados deste dispositivo. Para mensagens da equipe e histórico central sincronizado, utilize seu acesso autenticado.</p>'+
- '<a class="button" href="./central.html">Ver histórico completo e respostas da equipe</a></section>';
+ return pageTitle('Meu histórico','Veja suas rondas, horários, percurso e registros.')+
+ '<section class="schedule-workspace">'+(mine.length?'<div class="schedule-heading"><h2>'+mine.length+' ronda(s) registradas</h2></div>':'')+
+ (mine.length?mine.slice(0,50).map(item).join(''):windowEmpty('clock','Nenhuma ronda registrada','As rondas realizadas neste aparelho aparecerão aqui.'))+
+ '<p class="map-caption">Para consultar os registros sincronizados, abra o histórico da central.</p>'+
+ '<a class="button" href="./central.html">Ver histórico na central</a></section>';
 }
 function viewContent(){switch(view){case 'minha-ronda':return pageTitle('Minhas rondas','Veja seus compromissos e execute o próximo passo.',helpButton('help','tutorial'))+phoneContent();case 'historico':return myPatrolHistory();case 'meus-envios':return mySubmissions();case 'overview':return overview();case 'cliente':return demoClientView();case 'vistoriador':return demoInspectorView();case 'rondas':return rondas();case 'chat-interno':return demoChatView();case 'historico-operacional':return demoHistoryView();case 'notificacoes':return notificationsView();case 'ocorrencias':return occurrences();case 'equipe':return team();case 'relatorios':return reports();case 'configuracoes':return settings();default:return overview();}}
 function kpiCards(){const all=sessionList(),alerts=recentNotification(),inc=recentIncidents();const rows=[['Rondas registradas',all.length,'Sessões criadas no navegador'],['Concluídas',all.filter(s=>s.status==='completed').length,'Retorno à base confirmado'],['Desvios',all.reduce((n,s)=>n+s.deviations.length,0),'Eventos com justificativa'],['Ocorrências',inc.length,'Solicitações de análise']];return `<div class="grid-kpis">${rows.map(([label,n,detail])=>`<div class="card kpi"><small>${label}</small><strong>${String(n).padStart(2,'0')}</strong><em>${detail}</em></div>`).join('')}</div>`;}
@@ -1013,17 +1017,42 @@ function demoEventNotifications(){
  return [...own,...incoming].sort((a,b)=>b.at-a.at);
 }
 let demoChatScreen='list',liveChatId=null,liveContacts=[],liveConversations=[],liveMessages=[];
+const liveChatDrafts=new Map();let liveChatRefreshSequence=0;
+function replaceChatContent(container,html,replaceRoot=false){
+ const previous=container.querySelector('#demo-chat-body');
+ const key=previous?.dataset.conversation;
+ const focused=document.activeElement===previous;
+ const selection=previous?{start:previous.selectionStart,end:previous.selectionEnd,direction:previous.selectionDirection}:null;
+ if(key)liveChatDrafts.set(key,previous.value);
+ if(replaceRoot){
+  const template=document.createElement('template');template.innerHTML=html;
+  const next=template.content.firstElementChild;container.replaceWith(next);container=next;
+ }else container.innerHTML=html;
+ const input=container.querySelector('#demo-chat-body'),nextKey=input?.dataset.conversation;
+ if(input&&liveChatDrafts.has(nextKey))input.value=liveChatDrafts.get(nextKey);
+ if(input&&focused&&nextKey===key){
+  input.focus({preventScroll:true});
+  if(selection)input.setSelectionRange(selection.start,selection.end,selection.direction);
+ }
+}
+
 async function refreshRealChat(){
  if(!user?.id||isPagesTestMode())return;
+ const sequence=++liveChatRefreshSequence;
  const [contactData,conversationsData]=await Promise.all([liveRequest('/chat/contacts'),liveRequest('/chat/conversations')]);
+ if(sequence!==liveChatRefreshSequence)return;
  liveContacts=contactData.contacts||[];liveConversations=conversationsData.conversations||[];
  if(liveChatId){
-  if(liveConversations.some(c=>c.id===liveChatId))liveMessages=(await liveRequest('/chat/conversations/'+encodeURIComponent(liveChatId)+'/messages')).messages||[];
+  if(liveConversations.some(c=>c.id===liveChatId)){
+   const id=liveChatId,result=await liveRequest('/chat/conversations/'+encodeURIComponent(id)+'/messages');
+   if(sequence!==liveChatRefreshSequence||id!==liveChatId)return;
+   liveMessages=result.messages||[];
+  }
   else{liveChatId=null;liveMessages=[];demoChatScreen='list';}
  }
  const overlay=document.querySelector('#rp-demo-chat-overlay');
- if(overlay&&overlay.open)overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+demoChatView();
- if(view==='chat-interno'&&!overlay){const main=document.querySelector('#main .rp-chat-native');if(main)main.outerHTML=demoChatView();}
+ if(overlay&&overlay.open)replaceChatContent(overlay,chatOverlayHeader()+demoChatView());
+ if(view==='chat-interno'&&!overlay){const main=document.querySelector('#main .rp-chat-native');if(main)replaceChatContent(main,demoChatView(),true);}
 }
 function demoChatRows(){return liveMessages;}
 function demoHeaderButtons(){
@@ -1032,23 +1061,26 @@ function demoHeaderButtons(){
   ?'<button type="button" class="rp-blue-button rp-header-events" aria-label="Abrir eventos e notificações" data-view="notificacoes">'+ic('bell')+'</button>':'';
  return '<div class="rp-header-tools">'+eventsLink+'<button type="button" class="rp-blue-button" aria-label="Abrir mensagens" data-action="demo-chat-overlay">'+ic('message')+'<span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button></div>';
 }
+function chatOverlayHeader(){
+ return '<header class="rp-field-chat-overlay-head"><button type="button" data-action="demo-chat-close" aria-label="Voltar ao mapa">'+ic('arrowleft')+'</button><div><strong>Mensagens</strong><small>Converse com sua equipe</small></div></header>';
+}
 function openDemoChatOverlay(list=false){
  if(list)demoChatScreen='list';
  let overlay=document.querySelector('#rp-demo-chat-overlay');
  if(!overlay){overlay=document.createElement('dialog');overlay.id='rp-demo-chat-overlay';overlay.className='rp-field-chat-overlay';document.body.append(overlay);overlay.addEventListener('close',()=>overlay.remove(),{once:true});}
- overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+demoChatView();
+ replaceChatContent(overlay,chatOverlayHeader()+demoChatView());
  if(!overlay.open)overlay.showModal();
  void refreshRealChat().catch(e=>notify(e.message));
 }
 function demoChatView(){
  const back=user?.role==='ronda'?'minha-ronda':user?.role==='vistoriador'?'vistoriador':'overview';
- const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Equipe · Banco de dados</small></div></header>';
+ const header='<header class="field-chat-topbar"><button type="button" class="field-chat-back" data-view="'+back+'">'+ic('arrowleft')+'<span>Voltar</span></button><div><h1>Mensagens</h1><small>Converse com sua equipe</small></div></header>';
  const rows=liveConversations.map(c=>'<button type="button" class="field-chat-contact-row" data-action="demo-chat-open" data-contact="'+esc(c.id)+'"><span class="field-chat-avatar">'+esc(c.title?.slice(0,1)||'?')+'</span><span class="field-chat-contact-copy"><strong>'+esc(c.title)+'</strong><small>'+esc(c.last?.body||'Sem mensagens')+'</small></span>'+(c.unread?'<b>'+c.unread+'</b>':'')+'</button>').join('');
- const list='<section class="field-chat-list"><div class="field-chat-list-label">CONVERSAS</div>'+(rows||'<p>Nenhuma conversa iniciada.</p>')+'<button type="button" class="button primary" data-action="demo-chat-contacts">Nova conversa</button></section>';
+ const list='<section class="field-chat-list"><div class="field-chat-list-label">CONVERSAS</div>'+(rows||windowEmpty('message','Nenhuma conversa iniciada','Abra uma conversa para falar com sua equipe.'))+'<button type="button" class="button primary" data-action="demo-chat-contacts">Nova conversa</button></section>';
  const contacts='<section class="field-chat-list"><div class="field-chat-list-label">CONTATOS</div>'+liveContacts.map(c=>'<button type="button" class="field-chat-contact-row" data-action="live-chat-contact" data-contact="'+esc(c.id)+'"><span class="field-chat-avatar" aria-hidden="true">'+esc(c.name?.slice(0,1)||'?')+'</span><span class="field-chat-contact-copy"><strong>'+esc(c.name)+'</strong><small>'+esc(roleName[c.role]||c.role)+'</small></span></button>').join('')+'<button class="button" type="button" data-action="demo-chat-list">Voltar</button></section>';
  const active=liveConversations.find(c=>c.id===liveChatId);
  const messages=liveMessages.map(m=>'<article class="field-chat-bubble '+(m.author_id===user.id?'is-mine':'is-other')+'"><p>'+esc(m.body)+'</p><small>'+esc(m.author||'')+' · '+time(m.created_at)+'</small></article>').join('');
- const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list">'+ic('arrowleft')+'</button><strong>'+esc(active?.title||'Conversa')+'</strong></header><div class="field-chat-thread" role="log">'+(messages||'<p>Escreva a primeira mensagem.</p>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Mensagem</label><input name="body" id="demo-chat-body" required maxlength="4000" autocomplete="off" placeholder="Mensagem"><button type="submit" class="button primary">Enviar</button></form></section>';
+ const conversation='<section class="field-chat-conversation"><header class="field-chat-threadbar"><button type="button" data-action="demo-chat-list">'+ic('arrowleft')+'</button><strong>'+esc(active?.title||'Conversa')+'</strong></header><div class="field-chat-thread" role="log">'+(messages||'<p>Escreva a primeira mensagem.</p>')+'</div><form id="demo-chat-form" class="field-chat-compose"><label class="sr-only" for="demo-chat-body">Mensagem</label><input name="body" id="demo-chat-body" data-conversation="'+esc(liveChatId||'')+'" required maxlength="4000" autocomplete="off" placeholder="Mensagem"><button type="submit" class="button primary">Enviar</button></form></section>';
  return '<section class="field-chat-screen rp-chat-native">'+header+'<div class="field-chat-surface">'+(demoChatScreen==='contacts'?contacts:demoChatScreen==='thread'?conversation:list)+'</div></section>';
 }
 setInterval(()=>{if(user?.id&&!document.hidden&&(document.querySelector('#rp-demo-chat-overlay')?.open||view==='chat-interno'))void refreshRealChat().catch(()=>{});},8000);
@@ -1345,8 +1377,11 @@ function startDialog(){
 function incidentDialog(){showDialog(`<div class="field-composer"><h2>Registrar ocorrência</h2><form id="incident-form"><div class="field-composer-row"><label class="field">Tipo<select name="category"><option>Segurança</option><option>Acesso</option><option>Patrimônio</option><option>Manutenção</option><option>Outros</option></select></label><label class="field">Gravidade<select name="severity"><option>Baixa</option><option selected>Média</option><option>Alta</option></select></label></div><label class="field">Assunto<input name="title" required minlength="3" maxlength="100" placeholder="O que aconteceu?"></label><label class="field">Descrição<textarea name="description" rows="2" required minlength="10" maxlength="1400" placeholder="Descreva o fato observado."></textarea></label><details><summary>Anexar evidência</summary>${ops.mediaFields()}</details><label class="check-label"><input name="truth" type="checkbox" required>Confirmo o relato observado.</label><button type="submit" class="button primary full">Registrar ocorrência</button></form></div>`);}
 function alertDialog(){showDialog('<div class="field-composer"><h2>Enviar alerta</h2><form id="field-alert-form"><label class="field">Alerta<input name="description" required minlength="3" maxlength="240" placeholder="O que aconteceu?" autocomplete="off"></label><button class="button primary full" type="submit">Enviar alerta</button></form></div>');}
 function mySubmissions(){
- if(user?.id&&!isPagesTestMode())return pageTitle('Meus alertas e ocorrencias','Registros salvos no servidor.')+
- '<div class="team-list">'+liveEvents.filter(e=>['alert','incident','panic'].includes(e.kind)).map(e=>'<div class="team-row"><strong>'+esc(e.description||e.kind)+'</strong><span>'+esc(e.status||'aberta')+' · '+fmt(e.occurred_at)+'</span></div>').join('')+'</div>';
+ if(user?.id&&!isPagesTestMode()){
+  const rows=liveEvents.filter(e=>['alert','incident','panic'].includes(e.kind));
+  return pageTitle('Meus alertas e ocorrências','Registros enviados à central.')+
+   (rows.length?'<div class="team-list">'+rows.map(e=>'<div class="team-row"><strong>'+esc(e.description||e.kind)+'</strong><span>'+esc(e.status||'aberta')+' · '+fmt(e.occurred_at)+'</span></div>').join('')+'</div>':windowEmpty('clipboard','Nenhum alerta ou ocorrência registrado.','Os registros enviados à central aparecerão aqui.'));
+ }
  const own=localCommunications().filter(n=>n.name===user.name);
  const items=own.map(n=>'<article class="guide-pan"><h3>'+esc(n.label)+'</h3>'+tag(n.seenAt?'Resolvida':'Em aberto',n.seenAt?'green':'orange')+'<p>'+esc(n.response||'Aguardando resposta do COI.')+'</p>'+btn('Ver registro','own-notice-detail','small',`data-id="field:${esc(n.id)}" data-session="field"`)+'</article>');
  for(const s of sessions.filter(s=>s.name===user.name))for(const i of s.incidents)items.push('<article class="guide-pan"><h3>'+esc(i.title)+'</h3>'+tag(i.status==='Em análise'?'Em aberto · Em análise':i.status,i.status==='Resolvida'?'green':'orange')+'<p>'+esc(i.history?.at(-1)?.note||'Aguardando resposta do COI.')+'</p>'+btn('Ver registro','own-notice-detail','small',`data-id="${esc(s.notifications.find(n=>n.incidentId===i.id)?.id||'')}" data-session="${esc(s.id)}"`)+'</article>');
@@ -1536,6 +1571,7 @@ async function handleAction(event){const el=event.target.closest('[data-action],
   requestAnimationFrame(()=>document.querySelector('#rp-demo-wizard-dialog')?.showModal());
   notify('Chegada registrada na simulação. Preencha a vistoria.');return;
  }
+ if(act==='demo-chat-close'){document.querySelector('#rp-demo-chat-overlay')?.close();return;}
  if(act==='demo-chat-contacts'){demoChatScreen='contacts';if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();return;}
  if(act==='live-chat-contact'){
   try{const r=await liveRequest('/chat/conversations',{method:'POST',data:{members:[el.dataset.contact]}});liveChatId=r.id;demoChatScreen='thread';await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();}
@@ -1986,7 +2022,20 @@ document.addEventListener('submit',async e=>{
   catch(error){notify(error.message);}
   return;
  }
- if(e.target.id==='demo-chat-form'){e.preventDefault();const message=String(new FormData(e.target).get('body')||'').trim();if(!liveChatId||!message)return;const button=e.target.querySelector('button');button.disabled=true;try{await liveRequest('/chat/conversations/'+encodeURIComponent(liveChatId)+'/messages',{method:'POST',data:{body:message,id:crypto.randomUUID()}});await refreshRealChat();if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();}catch(error){button.disabled=false;notify(error.message)}return;}
+ if(e.target.id==='demo-chat-form'){
+  e.preventDefault();const message=String(new FormData(e.target).get('body')||'').trim(),id=liveChatId;
+  if(!id||!message)return;
+  const button=e.target.querySelector('button');button.disabled=true;
+  try{
+   await liveRequest('/chat/conversations/'+encodeURIComponent(id)+'/messages',{method:'POST',data:{body:message,id:crypto.randomUUID()}});
+   const input=document.querySelector('#demo-chat-body');
+   if(input?.dataset.conversation===id&&input.value.trim()===message)input.value='';
+   if(liveChatDrafts.get(id)?.trim()===message)liveChatDrafts.delete(id);
+   await refreshRealChat();
+   if(document.querySelector('#rp-demo-chat-overlay'))openDemoChatOverlay(false);else render();
+  }catch(error){button.disabled=false;notify(error.message)}
+  return;
+ }
 
  if(e.target.id==='demo-inspection-form'){
   e.preventDefault();if(user?.role!=='vistoriador')return;

@@ -1,5 +1,9 @@
 # DESIGN | Rondas Pro · Grupo Maxvel
 
+## Tema vigente — 01/11/2026
+A fonte canônica é assets/theme.css. Superfícies de janela usam --rp-window-surface, --rp-window-border, --rp-window-radius e --rp-window-gap. Grafite escuro quase opaco, raio de 16 px, margens de 16 px, texto claro em Inter/Segoe UI/Arial e azul para ações. O vermelho identifica bordas discretas, pânico e risco. Não criar uma folha final para anular estilos antigos.
+Preservar a composição e altura do cabeçalho aprovado. No Android, barras e teclado são responsabilidade do contêiner nativo, consumidos antes da WebView, sem faixa adicional. Janelas usam altura de conteúdo e limites de viewport; chat conserva área operacional e reduz seu cabeçalho em pouca altura. Fundo de páginas secundárias deve ser inerte. Consultar docs/REVISAO-UI-ANDROID-2.2.4.md para validação e limites.
+
 ## Identidade preservada
 Este é um produto do Grupo Maxvel. A identidade pública não exibe a marca Horizon. O mapa deve permanecer protagonista nos acessos Vigia e Vistoriador. O contexto de missão e a próxima ação são o restante do primeiro plano. Vermelho de alto impacto é reservado ao pânico e a riscos/alertas; não deve pintar toda a interface.
 

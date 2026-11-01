@@ -34,8 +34,12 @@
  function updateConnectionStatus(){
   let pending=0;try{pending=Math.max(0,Math.min(9999,Number(bridge.pending())||0));}catch{}
   const state=online===null?'connecting':online?'online':'offline';
-  // A faixa nativa reserva espaço fora da WebView; nunca cobre mapa ou controles.
-  try{window.AndroidTracking?.setConnectionStatus(state,pending);}catch{}
+  // Estado disponível sem criar faixa, padding ou sobreposição no HTML aprovado.
+  const previous=window.__rondaConnection;
+  if(previous?.state===state&&previous.pending===pending)return;
+  const detail={state,pending};
+  window.__rondaConnection=detail;
+  window.dispatchEvent(new CustomEvent('rondapro:connection',{detail}));
  }
  async function jsonRequest(input,options={}){
   const url=new URL(typeof input==='string'?input:input.url,location.href);

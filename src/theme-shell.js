@@ -9,8 +9,10 @@ function animatePanelClose(element,finish,horizontal=true){
  const animation=element.animate([{opacity:1,translate:'0 0'},{opacity:0,translate:move}],{
   duration:210,easing:'cubic-bezier(.4,0,.8,.3)',fill:'forwards'
  });
- animation.addEventListener('finish',finish,{once:true});
- animation.addEventListener('cancel',finish,{once:true});
+ let completed=false;
+ const complete=()=>{if(completed)return;completed=true;finish();animation.cancel();};
+ animation.addEventListener('finish',complete,{once:true});
+ animation.addEventListener('cancel',complete,{once:true});
 }
 let installed=false,scheduled=false;
 function closeOtherFieldPanels(except){

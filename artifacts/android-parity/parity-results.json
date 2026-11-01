@@ -1,0 +1,2011 @@
+{
+  "passed": true,
+  "apk": "Ronda-Pro-2.2.4-Operacional.apk",
+  "results": [
+    {
+      "variant": "before",
+      "width": 393,
+      "map": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 19.640625,
+          "y": 83,
+          "w": 353.71875,
+          "h": 715,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": false,
+      "historyTitleVisible": false,
+      "submissionsEmptyVisible": false,
+      "chat": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 19.640625,
+          "y": 68,
+          "w": 353.6875,
+          "h": 732,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 49.640625,
+          "y": 667,
+          "w": 240.6875,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "errors": []
+    },
+    {
+      "variant": "html",
+      "width": 360,
+      "map": {
+        "width": 360,
+        "height": 740,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 360,
+        "height": 740,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 12,
+          "y": 80.0244369506836,
+          "w": 336,
+          "h": 429.40625,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 360,
+        "height": 740,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 336,
+          "h": 560,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 557,
+          "w": 240,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 360,
+        "height": 458,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 336,
+          "h": 366,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 371,
+          "w": 240,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "errors": []
+    },
+    {
+      "variant": "html",
+      "width": 393,
+      "map": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 12,
+          "y": 80,
+          "w": 369,
+          "h": 429.40625,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 369,
+          "h": 560,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 557,
+          "w": 273,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 393,
+        "height": 458,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 369,
+          "h": 366,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 371,
+          "w": 273,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "errors": []
+    },
+    {
+      "variant": "html",
+      "width": 412,
+      "map": {
+        "width": 412,
+        "height": 844,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 412,
+        "height": 844,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 12,
+          "y": 80.02442932128906,
+          "w": 388,
+          "h": 412.359375,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 412,
+        "height": 844,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 388,
+          "h": 560,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 557,
+          "w": 292,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 412,
+        "height": 458,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 388,
+          "h": 366,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 371,
+          "w": 292,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "errors": []
+    },
+    {
+      "variant": "html",
+      "width": 873,
+      "map": {
+        "width": 873,
+        "height": 345,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 873,
+        "height": 345,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 196.5,
+          "y": 80.00055694580078,
+          "w": 480,
+          "h": 253,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 873,
+        "height": 345,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 196.5,
+          "y": 80,
+          "w": 480,
+          "h": 253,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 219.5,
+          "y": 258,
+          "w": 384,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 873,
+        "height": 300,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 196.5,
+          "y": 80,
+          "w": 480,
+          "h": 208,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 219.5,
+          "y": 246.953125,
+          "w": 384,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "errors": []
+    },
+    {
+      "variant": "apk",
+      "width": 360,
+      "map": {
+        "width": 360,
+        "height": 740,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 360,
+        "height": 740,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 12,
+          "y": 80.00055694580078,
+          "w": 336,
+          "h": 429.40625,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 360,
+        "height": 740,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 336,
+          "h": 560,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 557,
+          "w": 240,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 360,
+        "height": 458,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 360,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 97.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 336,
+          "h": 366,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 371,
+          "w": 240,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "errors": []
+    },
+    {
+      "variant": "apk",
+      "width": 393,
+      "map": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 12,
+          "y": 80.02442932128906,
+          "w": 369,
+          "h": 429.40625,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 393,
+        "height": 820,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 369,
+          "h": 560,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 557,
+          "w": 273,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 393,
+        "height": 458,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 393,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 114,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 369,
+          "h": 366,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 371,
+          "w": 273,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "pollDraftPreserved": true,
+      "pollFocusPreserved": true,
+      "errors": []
+    },
+    {
+      "variant": "apk",
+      "width": 412,
+      "map": {
+        "width": 412,
+        "height": 844,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 412,
+        "height": 844,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 12,
+          "y": 80.0243911743164,
+          "w": 388,
+          "h": 412.3594055175781,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 412,
+        "height": 844,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 388,
+          "h": 560,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 557,
+          "w": 292,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 412,
+        "height": 458,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 412,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 123.5,
+          "y": 19.5,
+          "w": 165,
+          "h": 28,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 12,
+          "y": 80,
+          "w": 388,
+          "h": 366,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 35,
+          "y": 371,
+          "w": 292,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "errors": []
+    },
+    {
+      "variant": "apk",
+      "width": 873,
+      "map": {
+        "width": 873,
+        "height": 345,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": null,
+        "input": null
+      },
+      "history": {
+        "width": 873,
+        "height": 345,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": {
+          "x": 196.5,
+          "y": 80.02442932128906,
+          "w": 480,
+          "h": 253.00001525878906,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        },
+        "chat": null,
+        "input": null
+      },
+      "panicBehindPage": true,
+      "historyTitleVisible": true,
+      "submissionsEmptyVisible": true,
+      "chat": {
+        "width": 873,
+        "height": 345,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 196.5,
+          "y": 80,
+          "w": 480,
+          "h": 253,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 219.5,
+          "y": 258,
+          "w": 384,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "keyboard": {
+        "width": 873,
+        "height": 300,
+        "scale": 1,
+        "overflow": 0,
+        "header": {
+          "x": 0,
+          "y": 0,
+          "w": 873,
+          "h": 68,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "menu": {
+          "x": 18,
+          "y": 11.5,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "profile": {
+          "x": 64,
+          "y": 16,
+          "w": 44,
+          "h": 44,
+          "font": "13.3333px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "brand": {
+          "x": 354,
+          "y": 16.5,
+          "w": 165,
+          "h": 34,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "grid"
+        },
+        "overlay": null,
+        "chat": {
+          "x": 196.5,
+          "y": 80,
+          "w": 480,
+          "h": 208,
+          "font": "14px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "flex"
+        },
+        "input": {
+          "x": 219.5,
+          "y": 246.953125,
+          "w": 384,
+          "h": 44,
+          "font": "16px",
+          "family": "Inter, \"Segoe UI\", Arial, sans-serif",
+          "display": "block"
+        }
+      },
+      "draftPreserved": true,
+      "errors": []
+    }
+  ],
+  "simulatedGpsForUiOnly": true,
+  "physicalAndroidTested": false,
+  "emulatorStarted": false,
+  "productionDataChanged": false
+}

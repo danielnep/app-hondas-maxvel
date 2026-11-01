@@ -23,7 +23,7 @@ test('web demo e central compartilham camadas na mesma ordem, cache só inclui C
  const expected={index:['ronda-pro','operational','mobile-critical','field','theme'],central:['central','operational','field','theme']};
  for(const [page,order] of Object.entries(expected)){
   const links=[...read(page+'.html').matchAll(/href="\.\/assets\/([^"?]+)\.css\?v=(\d+)"/g)];
-  assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]===(m[1]==='theme'?'63':m[1]==='ronda-pro'?'54':m[1]==='field'?'53':m[1]==='operational'?'52':'50')));
+  assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]===(m[1]==='theme'?'64':m[1]==='ronda-pro'?'54':m[1]==='field'?'53':m[1]==='operational'?'52':'50')));
  }
  const cached=[...read('sw.js').matchAll(/'\.\/assets\/([^']+\.css)'/g)].map(m=>m[1]).filter(x=>!x.startsWith('vendor/')).sort();
  assert.deepEqual(cached,files);
@@ -36,5 +36,5 @@ test('login central ocupa viewport e mantém inputs acessíveis sem interferir n
  assert.match(css,/body\.rp-theme #central-login input\s*\{/);
  assert.match(css,/min-height: 48px !important/);
  assert.match(read('src/central.js'),/form id="central-login"/);
- assert.match(read('central.html'),/theme\.css\?v=63/);
+ assert.match(read('central.html'),/theme\.css\?v=64/);
 });

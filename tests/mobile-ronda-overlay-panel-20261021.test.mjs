@@ -67,8 +67,9 @@ test('overlay real do despacho mantem campos navegaveis, glass fosco e versoes n
  assert.match(wizard,/name="reason"/);
  assert.match(wizard,/kind:'ronda'/);
  assert.match(theme,/rp-dispatch-dialog\[open\]/);
- assert.match(theme,/rgba\(23,30,39,\.94\)/);
+ assert.match(theme,/--rp-window-surface:\s*linear-gradient\(/);
+ assert.match(theme,/background:\s*var\(--rp-window-surface\)/);
  assert.match(field,/\.rp-guard-quick-panel\.is-collapsed/);
- assert.match(index,/theme\.css\?v=63/);
- assert.match(index,/app\.js\?v=79/);
+ assert.match(index,/theme\.css\?v=64/);
+ assert.match(index,/app\.js\?v=80/);
 });
