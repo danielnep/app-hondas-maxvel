@@ -12,7 +12,7 @@ A central autenticada recebe chat privado com recibos de entrega/leitura, exclus
 
 ## Ampliação demonstrativa · GPS, QR, pânico, offline e relatórios (13/10/2026)
 
-**Acessos atuais:** somente **Administração** (todas as funções gerenciais e relatórios) e **Operação de Ronda** (execução e registros, sem telas ou atalhos de relatório).
+**Acessos da demonstração web:** **Vigia / Operação de Ronda** (execução e histórico próprio), **Operadores / Central de Monitoramento** (rondas, alertas, ocorrências e equipe) e **Administrativo** (indicadores, gestão, relatórios e configurações). O ambiente é de avaliação; a central autenticada com dados compartilhados requer infraestrutura operacional configurada.
 
 Uma ramificação de trabalho acrescenta ao Rondas Pro: botão de pânico sempre acessível ao vigia, alerta local com vigia e horário, acesso ao discador 190 mediante confirmação, escolha administrativa **GPS / QR / GPS + QR**, registro de ocorrências com foto, áudio e vídeo, armazenamento offline em **IndexedDB** e rotas/esquemas disponíveis localmente, **relatório inteligente** e exportação configurável **HTML, CSV, JSON**, exclusivamente na página **Relatórios** da Administração.
 
@@ -23,13 +23,15 @@ A identidade Maxvel e as regras antigas de GPS (raio 25 m, permanência 30 s, se
 
 Aplicativo e demonstração profissional de **acompanhamento de rondas**. Interface mobile-first com logo original do Grupo Maxvel, fundo preto, superfícies cinza muito escuro e detalhes celeste/violeta, supervisão e gestão; mapa cartográfico real do OpenStreetMap com rotas e instalações **fictícias** na simulação.
 
-## Implantação do Rondas Pro no Railway
+## Hospedagem vigente: Render (OnRender)
 
-Aplicação preparada para usar a branch `main` deste repositório, incluindo as correções integradas da PR #30. Nome do projeto: **App Rondas Pro**. Nome do serviço: `rondas-pro`. A criação do serviço e a publicação precisam ser confirmadas no Railway; esta preparação não significa que já exista uma implantação ativa.
+- **App público:** https://rondas-pro-maxvel.onrender.com/ (serviço Render `rondas-pro-maxvel`).
+- **Repositório:** `danielnep/app-hondas-maxvel`, branch `main`, com código-fonte dos três perfis. A `main` pode avançar antes de um novo deploy, portanto não presuma que o commit mais novo já está no servidor.
+- **Snapshot histórico de um deploy LIVE anterior:** branch [`render-live-3-perfis-20261014`](../../tree/render-live-3-perfis-20261014), commit `e7b0d402`.
+- **Snapshot do deploy LIVE verificado mais recentemente em 14/10/2026:** branch [`render-live-19176c3b-20261014`](../../tree/render-live-19176c3b-20261014), commit `19176c3b69a559d32495feaea52a81e93f36bc39`. São referências históricas do código por commit; a publicação pode avançar automaticamente sem alterar essas branches.
+- **Serviço:** Node.js, comando de compilação `npm install && npm run check && npm test`, inicialização `npm start`, porta definida pela variável `PORT` e endpoint `/health` disponibilizado pelo servidor. O serviço Render não possui healthcheck configurado neste momento.
 
-Configuração do serviço: runtime **Node.js 24**, comando de início `npm start`, healthcheck `/health` e domínio público HTTPS gerado pelo Railway. O ambiente usa a `PORT` definida pela plataforma e não requer chave de API para a cartografia OpenStreetMap.
-
-Execute `npm start` com Node.js 24. O servidor usa `PORT` fornecida pelo Railway, publica somente os arquivos da interface e oferece `/health`. Esta hospedagem mantém a versão de avaliação; o servidor HTTP não implementa autenticação, banco nem sincronização de rondas entre aparelhos. Os registros locais continuam vinculados ao domínio de cada navegador; mudar de domínio não transfere esse armazenamento.
+A **demonstração** usa registros locais do navegador; interface publicada não implica autenticação real, banco persistente ou sincronização entre dispositivos. O diretório do GitHub contém o projeto e suas branches, não uma segunda hospedagem automaticamente sincronizada. Dados locais de domínios diferentes não são transferidos entre eles.
 
 ## Refinamento visual · 13/10/2026
 
@@ -122,7 +124,7 @@ A demonstração não substitui validação em dispositivos reais, autenticaçã
 - **Primeira abertura:** aviso claro de uso de localização durante a ronda, inclusive segundo plano no Android nativo. Botão **“Li e aceito · Continuar”** só ativa com marcação de ciência. Permissão do sistema é pedida separadamente.
 - **Experiência de ronda:** 4 pontos em sequência, raio de **25 m**, **30 segundos contínuos** com sinal confiável, retorno obrigatório à base.
 - **Desvios:** bloqueio de avanço, solicitação de justificativa, retorno ao ponto e repetição da permanência; ocorrência vinculada ao contexto.
-- **Simulação no aplicativo:** o mesmo sistema exibe os dois acessos: Operação de Ronda e Administração, com alertas e recebimentos simulados **somente neste navegador**. Sem segundo mockup vertical.
+- **Simulação no aplicativo:** a mesma interface oferece três acessos: **Vigia (Operação de Ronda)**, **Operadores (Central de Monitoramento)** e **Administrativo**, com alertas e recebimentos simulados **somente neste navegador**. As permissões reais da central operacional autenticada dependem do backend e da configuração de produção.
 - **Cartografia:** mapa real OpenStreetMap/Leaflet com trajetos ilustrativos, pinos, áreas de 25 m e posição animada, com mapa esquemático alternativo offline. Os trechos desenhados são linhas ilustrativas, não uma rota de navegação nas vias.
 - **Android nativo (fonte + APK debug):** o projeto Android Studio com serviço de localização, notificação persistente e ação de parar compilou no GitHub Actions. **Ainda exige teste físico e validação das permissões/segundo plano**, e não substitui um sistema de produção.
 - **UI/UX:** ajuda contextual a todo instante, etapas didáticas, área do ronda otimizada para uso móvel, painel de supervisão e gestão dentro da Administração. Sem gamificação.
