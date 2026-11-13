@@ -7,7 +7,7 @@ const theme=read('assets/theme.css');
 const central=read('src/central.js');
 const index=read('index.html');
 const centralPage=read('central.html');
-const glassSection=theme.slice(theme.indexOf('/* Responsive geometry of the approved Glass UI'));
+const glassSection=theme.slice(theme.indexOf('/* Responsive geometry of the approved Glass UI'),theme.indexOf('/* Login em tela curta/teclado:'));
 
 test('a versão aprovada Glass UI permanece como base visual do projeto',()=>{
   assert.match(theme,/--rp-glass:\s*rgba\(27,37,46,\.67\)/);

@@ -2,7 +2,7 @@ import {chromium} from 'playwright-core';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
-const root=resolve('.'),origin='https://ronda-pro-production.up.railway.app';
+const root=resolve('.'),origin='https://danielnep.github.io';
 const types={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png'};
 let browser;
 try{
@@ -49,7 +49,8 @@ try{
   if(width<=900){
    const map=await page.locator('.patrol-map-panel').boundingBox(),panic=await page.locator('.ops-panic').boundingBox(),card=await page.locator('.patrol-actions').boundingBox();
    assert.ok(panic.x>=0&&panic.y>=0&&panic.x+panic.width<=width+2&&panic.y+panic.height<=844+2,'pânico deve permanecer acessível na tela');
-   assert.ok(card.width<=321,'card compacto');
+   assert.ok(card.width<=Math.max(321,width-30),'card deve caber na largura do dispositivo');
+   if(width<=430)assert.ok(card.width<=321,'card compacto no celular');
    assert.equal(await page.locator('[data-ops="central-alert"] svg').evaluate(e=>getComputedStyle(e).color),'rgb(250, 204, 21)');
    assert.equal(await page.locator('[data-ops="central-message"] svg').evaluate(e=>getComputedStyle(e).color),'rgb(255, 255, 255)');
   }
@@ -65,13 +66,13 @@ try{
   await page.locator('#incident-form button[type=submit]').click();
   await page.locator('#dialog').waitFor({state:'hidden'});
   await page.locator('[data-ops="central-message"]').click();
-  await page.locator('#demo-chat-body').waitFor({state:'visible'});
-  await page.locator('#demo-chat-body').fill('Mensagem de teste ao COI');
-  await page.locator('#demo-chat-form button').click();
-  assert.match(await page.locator('.field-chat-thread').innerText(),/Mensagem de teste ao COI/);
-  assert.equal(await page.locator('.field-chat-contact-row:visible').count(),0,'Chat do vigia deve abrir diretamente na conversa');
+  await page.locator('#rp-demo-chat-overlay').waitFor({state:'visible'});
+  assert.match(await page.locator('#rp-demo-chat-overlay').innerText(),/Mensagens/);
+  assert.match(await page.locator('.field-chat-surface').innerText(),/CONVERSAS/);
   assert.equal(await page.locator('.field-chat-surface').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px','Chat não pode ficar dentro de card com borda');
-  await page.locator('.field-chat-back').click();
+  // O piloto em Pages não possui conversa remota. Abrir o chat não pode inventar mensagem entregue ao COI.
+  await page.keyboard.press('Escape');
+  await page.locator('#rp-demo-chat-overlay').waitFor({state:'hidden'});
   assert.ok(await page.locator('.patrol-actions').isVisible());
   assert.deepEqual(errors,[]);
   console.log('PASS compact field flows',width);

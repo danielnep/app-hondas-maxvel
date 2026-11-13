@@ -11,7 +11,7 @@ const EVENT_LABELS={
  message:'Nova mensagem do campo',inspection:'Novo laudo de vistoria',patrol_end:'Ronda ou atendimento concluído',patrol_start:'Início de atendimento'
 };
 const clean=x=>String(x??'').trim();
-export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}){
+export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds,sectorAllows=()=>true}){
  db.exec('CREATE TABLE IF NOT EXISTS coi_permissions(module TEXT PRIMARY KEY,enabled INTEGER NOT NULL DEFAULT 1,updated_by TEXT,updated_at INTEGER NOT NULL)');
  db.exec('CREATE TABLE IF NOT EXISTS dispatches(id TEXT PRIMARY KEY,worker_id TEXT NOT NULL,author_id TEXT NOT NULL,address TEXT NOT NULL,reason TEXT NOT NULL,latitude REAL,longitude REAL,created_at INTEGER NOT NULL,acknowledged_at INTEGER)');
  db.exec('CREATE INDEX IF NOT EXISTS idx_dispatch_worker ON dispatches(worker_id,created_at)');
@@ -20,7 +20,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  db.exec('CREATE TABLE IF NOT EXISTS operational_presence(user_id TEXT PRIMARY KEY,last_seen INTEGER NOT NULL)');
  // Migração aditiva: preserva todas as presenças e os registros existentes.
  const presenceCols=new Set(db.prepare('PRAGMA table_info(operational_presence)').all().map(c=>c.name));
- for(const [field,type] of [['lat','REAL'],['lng','REAL'],['accuracy','REAL'],['fix_at','INTEGER']])if(!presenceCols.has(field))db.exec(`ALTER TABLE operational_presence ADD COLUMN ${field} ${type}`);
+ for(const [field,type] of [['lat','REAL'],['lng','REAL'],['accuracy','REAL'],['fix_at','INTEGER'],['shift_state',"TEXT NOT NULL DEFAULT 'active'"],['ended_at','INTEGER']])if(!presenceCols.has(field))db.exec(`ALTER TABLE operational_presence ADD COLUMN ${field} ${type}`);
  db.exec('CREATE TABLE IF NOT EXISTS inspection_destinations(id TEXT PRIMARY KEY,client_name TEXT NOT NULL,contact_name TEXT NOT NULL DEFAULT "",phone TEXT NOT NULL DEFAULT "",email TEXT NOT NULL DEFAULT "",address TEXT NOT NULL,latitude REAL,longitude REAL,active INTEGER NOT NULL DEFAULT 1,created_by TEXT NOT NULL,created_at INTEGER NOT NULL)');
  const dispatchCols=db.prepare('PRAGMA table_info(dispatches)').all().map(x=>x.name);
  if(!dispatchCols.includes('kind'))db.exec("ALTER TABLE dispatches ADD COLUMN kind TEXT NOT NULL DEFAULT 'ronda'");
@@ -32,16 +32,24 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  if(!fields.includes('completion_note'))db.exec("ALTER TABLE dispatches ADD COLUMN completion_note TEXT NOT NULL DEFAULT ''");
  if(!fields.includes('route_points'))db.exec("ALTER TABLE dispatches ADD COLUMN route_points TEXT NOT NULL DEFAULT '[]'");
   if(!fields.includes('arrived_at'))db.exec('ALTER TABLE dispatches ADD COLUMN arrived_at INTEGER');
+  if(!fields.includes('cancelled_at'))db.exec('ALTER TABLE dispatches ADD COLUMN cancelled_at INTEGER');
+  if(!fields.includes('cancellation_reason'))db.exec("ALTER TABLE dispatches ADD COLUMN cancellation_reason TEXT NOT NULL DEFAULT ''");
  const clients=new Map();
  const announce=userId=>{
   for(const res of clients.get(userId)||[])try{res.write('event: change\ndata: {}\n\n')}catch{}
+ };
+ const broadcastReview=()=>{
+  for(const r of REVIEW_ROLES){
+   const uList=db.prepare("SELECT id FROM users WHERE active=1 AND role=?").all(r);
+   for(const u of uList)announce(u.id);
+  }
  };
 
  const seed=db.prepare('INSERT OR IGNORE INTO coi_permissions(module,enabled,updated_at) VALUES(?,1,?)');
  for(const module of MODULES)seed.run(module,now());
  const admin=u=>ADMIN_ROLES.includes(u.role);
  const review=u=>REVIEW_ROLES.includes(u.role);
- const allows=(u,module)=>admin(u)||review(u)&&!!db.prepare('SELECT enabled FROM coi_permissions WHERE module=?').get(module)?.enabled;
+ const allows=(u,module)=>admin(u)||review(u)&&sectorAllows(u,module)&&!!db.prepare('SELECT enabled FROM coi_permissions WHERE module=?').get(module)?.enabled;
  const insert=db.prepare('INSERT INTO notifications(id,user_id,kind,title,body,event_id,dispatch_id,created_at) VALUES(?,?,?,?,?,?,?,?)');
  function notify(roles,kind,title,message,{eventId=null,dispatchId=null,except=[]}={}){
   if(!roles.length)return;
@@ -80,9 +88,21 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
  function availability(){
   const busy=new Set(recentRounds().filter(r=>r.status==='em_andamento').map(r=>r.userId));
   const inspecting=new Set(db.prepare("SELECT worker_id FROM dispatches WHERE kind='vistoria' AND completed_at IS NULL AND started_at IS NOT NULL").all().map(x=>x.worker_id));
-  const workers=db.prepare("SELECT u.id,u.name,u.role,u.site,u.active,p.last_seen,p.lat,p.lng,p.accuracy,p.fix_at FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role IN ('ronda','vistoriador') ORDER BY u.name").all();
-  return workers.map(w=>({...w,status:!w.active?'Fora de serviço':w.role==='vistoriador'&&inspecting.has(w.id)?'Em vistoria':busy.has(w.id)?'Em ronda':w.last_seen&&now()-w.last_seen<120000?'Disponível':'Fora de serviço',
-   position:w.fix_at&&now()-w.fix_at<120000&&Number.isFinite(w.lat)&&Number.isFinite(w.lng)?{lat:w.lat,lng:w.lng,accuracy:w.accuracy,at:w.fix_at}:null}));
+  const workers=db.prepare("SELECT u.id,u.name,u.role,u.site,u.active,p.last_seen,p.lat,p.lng,p.accuracy,p.fix_at,p.shift_state,p.ended_at FROM users u LEFT JOIN operational_presence p ON p.user_id=u.id WHERE u.role IN ('ronda','vistoriador') ORDER BY u.name").all();
+  const at=now(),ttl=120000;
+  return workers.map(w=>{
+   const offDuty=!w.active||w.shift_state==='off'||!w.last_seen;
+   const connected=!offDuty&&at-w.last_seen<ttl&&at>=w.last_seen-60000;
+   const activity=w.role==='vistoriador'&&inspecting.has(w.id)?'Em vistoria':busy.has(w.id)?'Em ronda':null;
+   return {...w,connectionStatus:offDuty?'off_duty':connected?'online':'offline',
+    lastContactAt:w.last_seen||null,activity,
+    status:offDuty?'Fora de serviço':!connected?'Offline por falta de conexão':activity||'Disponível',
+    position:connected&&w.fix_at&&at-w.fix_at<ttl&&Number.isFinite(w.lat)&&Number.isFinite(w.lng)?{lat:w.lat,lng:w.lng,accuracy:w.accuracy,at:w.fix_at}:null};
+  });
+ }
+ function endShift(user){
+  const at=now();
+  db.prepare("INSERT INTO operational_presence(user_id,last_seen,shift_state,ended_at) VALUES(?,?,'off',?) ON CONFLICT(user_id) DO UPDATE SET shift_state='off',ended_at=excluded.ended_at").run(user.id,at,at);
  }
  async function handle(req,res,user,p,method){
   if(p==='/api/presence'&&method==='POST'){
@@ -91,13 +111,13 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    const valid=position&&Number.isFinite(position.lat)&&Number.isFinite(position.lng)&&Math.abs(position.lat)<=90&&Math.abs(position.lng)<=180&&
     (position.accuracy==null||Number.isFinite(position.accuracy)&&position.accuracy>=0&&position.accuracy<=5000);
    const at=now();
-   db.prepare('INSERT INTO operational_presence(user_id,last_seen,lat,lng,accuracy,fix_at) VALUES(?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen,lat=COALESCE(excluded.lat,operational_presence.lat),lng=COALESCE(excluded.lng,operational_presence.lng),accuracy=COALESCE(excluded.accuracy,operational_presence.accuracy),fix_at=COALESCE(excluded.fix_at,operational_presence.fix_at)')
+   db.prepare("INSERT INTO operational_presence(user_id,last_seen,lat,lng,accuracy,fix_at,shift_state,ended_at) VALUES(?,?,?,?,?,?,'active',NULL) ON CONFLICT(user_id) DO UPDATE SET last_seen=excluded.last_seen,lat=COALESCE(excluded.lat,operational_presence.lat),lng=COALESCE(excluded.lng,operational_presence.lng),accuracy=COALESCE(excluded.accuracy,operational_presence.accuracy),fix_at=COALESCE(excluded.fix_at,operational_presence.fix_at),shift_state='active',ended_at=NULL")
     .run(user.id,at,valid?position.lat:null,valid?position.lng:null,valid?position.accuracy??null:null,valid?at:null);
    resp(res,200,{ok:true,positionRecorded:!!valid});return true;
   }
   if(p==='/api/presence/off'&&method==='POST'){
    if(!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Presença reservada à equipe de campo'});return true;}
-   db.prepare('DELETE FROM operational_presence WHERE user_id=?').run(user.id);
+   endShift(user);
    resp(res,200,{ok:true});return true;
   }
   if(p==='/api/availability'&&method==='GET'){
@@ -115,7 +135,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
   }
   if(p==='/api/coi-permissions'&&method==='GET'){
    if(!review(user)){resp(res,403,{error:'Acesso restrito à central'});return true;}
-   resp(res,200,{modules:db.prepare('SELECT module,enabled,updated_at FROM coi_permissions ORDER BY module').all()});return true;
+   resp(res,200,{modules:db.prepare('SELECT module,enabled,updated_at FROM coi_permissions ORDER BY module').all().map(row=>({...row,enabled:admin(user)?row.enabled:(allows(user,row.module)?1:0)}))});return true;
   }
   if(p==='/api/coi-permissions'&&method==='PUT'){
    if(!admin(user)){resp(res,403,{error:'A configuração de permissões pertence à administração'});return true;}
@@ -181,11 +201,50 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    audit(user,'inspection.destination.create',destId);
    resp(res,201,{id:destId});return true;
   }
+  if(p==='/api/dispatches/inspections-batch'&&method==='POST'){
+   if(!review(user)||!allows(user,'despachos')){resp(res,403,{error:'Despacho indisponível'});return true;}
+   const data=serialize((await body(req)).toString())||{},reason=clean(data.reason),stops=data.stops;
+   const worker=db.prepare("SELECT id,name,site,active,role FROM users WHERE id=? AND role IN ('vistoriador','ronda')").get(clean(data.workerId));
+   if(!worker?.active||reason.length<10||reason.length>1000||!Array.isArray(stops)||!stops.length||stops.length>12||
+    stops.some(point=>!point||typeof point.lat!=='number'||typeof point.lng!=='number'||!Number.isFinite(point.lat)||!Number.isFinite(point.lng)||Math.abs(point.lat)>90||Math.abs(point.lng)>180||clean(point.address).length<5||clean(point.address).length>350)){
+    resp(res,422,{error:'Selecione o profissional, orientações e entre 1 e 12 locais com endereço e coordenadas válidas.'});return true;
+   }
+   if(!availability().some(w=>w.id===worker.id&&['Disponível','Em vistoria','Em ronda'].includes(w.status))){
+    resp(res,409,{error:'Profissional indisponível. Os locais continuam no formulário; aguarde a presença ou escolha outro profissional.'});return true;
+   }
+   const resolved=[];
+   for(const point of stops){
+    const destinationId=clean(point.destinationId),dest=destinationId?db.prepare('SELECT * FROM inspection_destinations WHERE id=? AND active=1').get(destinationId):null;
+    if(destinationId&&!dest){resp(res,422,{error:'Um destino cadastrado foi removido ou desativado. Atualize a seleção.'});return true;}
+    resolved.push({...point,address:dest?.address||clean(point.address),lat:dest?.latitude??point.lat,lng:dest?.longitude??point.lng,destinationId:dest?.id||null,site:dest?.client_name||worker.site||''});
+   }
+   const at=now(),created=[];
+   const routePointsJson=JSON.stringify(resolved.map(p=>({lat:p.lat,lng:p.lng,label:p.address})));
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    for(const point of resolved){
+     const dispatchId=id(),address=point.address;
+     const kind=worker.role==='ronda'?'ronda':'vistoria';
+     db.prepare('INSERT INTO dispatches(id,worker_id,author_id,address,reason,latitude,longitude,created_at,kind,destination_id,site,route_points) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
+      .run(dispatchId,worker.id,user.id,address,reason,point.lat,point.lng,at,kind,point.destinationId,point.site,routePointsJson);
+     insert.run(id(),worker.id,'dispatch',kind==='ronda'?'Nova ronda atribuída':'Nova vistoria atribuída',address+' · '+reason,null,dispatchId,at);
+     notify(REVIEW_ROLES,'dispatch','Despacho sob demanda registrado',user.name+' → '+worker.name+' · '+address+' · '+reason,{dispatchId,except:[user.id]});
+     audit(user,kind==='ronda'?'dispatch.ronda.create':'dispatch.vistoria.create',dispatchId);
+     created.push({id:dispatchId,address,latitude:point.lat,longitude:point.lng});
+    }
+    db.exec('COMMIT');
+   }catch(error){db.exec('ROLLBACK');throw error;}
+   announce(worker.id);broadcastReview();resp(res,201,{dispatches:created,createdAt:at});return true;
+  }
   if(p==='/api/dispatches'&&method==='GET'){
    if(!['ronda','vistoriador'].includes(user.role)&&(!review(user)||!allows(user,'despachos'))){resp(res,403,{error:'Despachos sem permissão'});return true;}
    const query='SELECT d.*,worker.name worker,operator.name author FROM dispatches d JOIN users worker ON worker.id=d.worker_id JOIN users operator ON operator.id=d.author_id ';
    const items=['ronda','vistoriador'].includes(user.role)?db.prepare(query+'WHERE d.worker_id=? ORDER BY d.created_at DESC LIMIT 120').all(user.id):db.prepare(query+'ORDER BY d.created_at DESC LIMIT 120').all();
-   resp(res,200,{dispatches:items});return true;
+   const mapped=items.map(d=>({
+    ...d,
+    status:d.cancelled_at?'cancelado':d.completed_at?'concluido':d.arrived_at?'no_local':d.started_at?'em_deslocamento':d.acknowledged_at?'aceito':'atribuido'
+   }));
+   resp(res,200,{dispatches:mapped});return true;
   }
   if(p==='/api/dispatches'&&method==='POST'){
    const selfInspection=user.role==='vistoriador';
@@ -194,7 +253,7 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
     kind=data.kind==='inspection'?'vistoria':'ronda';
    const role=kind==='vistoria'?'vistoriador':'ronda';
    if(selfInspection&&clean(data.workerId)!==user.id){resp(res,403,{error:'Vistoriador só pode criar seus próprios atendimentos'});return true;}
-   const worker=selfInspection?db.prepare("SELECT id,name,site,role,active FROM users WHERE id=? AND role='vistoriador'").get(user.id):db.prepare('SELECT id,name,site,role,active FROM users WHERE id=? AND role=?').get(clean(data.workerId),role);
+   const worker=selfInspection?db.prepare("SELECT id,name,site,role,active FROM users WHERE id=? AND role='vistoriador'").get(user.id):db.prepare("SELECT id,name,site,role,active FROM users WHERE id=? AND role IN ('ronda','vistoriador')").get(clean(data.workerId));
    const hasDestination=kind==='vistoria'&&Boolean(clean(data.destinationId));
    const dest=hasDestination?db.prepare('SELECT * FROM inspection_destinations WHERE id=? AND active=1').get(clean(data.destinationId)):null;
    const address=dest?.address||clean(data.address),site=dest?.client_name||worker?.site||'';
@@ -221,22 +280,27 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    insert.run(id(),worker.id,'dispatch',kind==='vistoria'?'Nova vistoria atribuída':'Nova ronda adicionada',
     address+' · '+reason,null,dispatchId,at);
    announce(worker.id);
-   notify(ADMIN_ROLES,'dispatch','Despacho sob demanda registrado',user.name+' → '+worker.name+' · '+address+' · '+reason,{dispatchId,except:[user.id]});
+   notify(REVIEW_ROLES,'dispatch','Despacho sob demanda registrado',user.name+' → '+worker.name+' · '+address+' · '+reason,{dispatchId,except:[user.id]});
+   broadcastReview();
    audit(user,selfInspection?'dispatch.self.'+kind+'.create':'dispatch.'+kind+'.create',dispatchId);
    resp(res,201,{id:dispatchId,createdAt:at});return true;
   }
   const ack=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/ack$/i);
   if(ack&&method==='POST'){
    const result=db.prepare('UPDATE dispatches SET acknowledged_at=COALESCE(acknowledged_at,?) WHERE id=? AND worker_id=?').run(now(),ack[1],user.id);
-   if(result.changes)audit(user,'dispatch.acknowledge',ack[1]);
+   if(result.changes){
+    audit(user,'dispatch.acknowledge',ack[1]);
+    announce(user.id);
+    broadcastReview();
+   }
    resp(res,result.changes?200:404,result.changes?{ok:true}:{error:'Atribuição não encontrada'});return true;
   }
   const arrival=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/arrive$/i);
   if(arrival&&method==='POST'){
-   if(user.role!=='vistoriador'){resp(res,403,{error:'Chegada reservada ao vistoriador'});return true;}
-   const row=db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria'").get(arrival[1],user.id);
-   if(!row){resp(res,404,{error:'Vistoria não encontrada'});return true;}
-   if(!row.started_at||row.completed_at){resp(res,409,{error:'Inicie o deslocamento antes de confirmar chegada'});return true;}
+   if(!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Chegada reservada ao agente'});return true;}
+   const row=db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=?").get(arrival[1],user.id);
+   if(!row){resp(res,404,{error:'Atendimento não encontrado'});return true;}
+   if(!row.started_at||row.completed_at||row.cancelled_at){resp(res,409,{error:'Inicie o deslocamento antes de confirmar chegada'});return true;}
    if(row.arrived_at){resp(res,200,{ok:true,already:true,at:row.arrived_at});return true;}
    const payload=serialize((await body(req,2000)).toString())||{},point=payload.position;
    const valid=point&&Number.isFinite(point.lat)&&Number.isFinite(point.lng)&&Math.abs(point.lat)<=90&&Math.abs(point.lng)<=180;
@@ -245,11 +309,13 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
    try{
     db.prepare('UPDATE dispatches SET arrived_at=? WHERE id=? AND arrived_at IS NULL').run(at,row.id);
     db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-     .run(eventId,user.id,'checkpoint',row.id,at,at,valid?point.lat:null,valid?point.lng:null,valid?point.accuracy??null:null,null,'Chegada à vistoria: '+row.address,JSON.stringify({dispatchId:row.id,stage:'inspection_arrival',gpsRecorded:!!valid}),row.site||user.site||'');
+     .run(eventId,user.id,'checkpoint',row.id,at,at,valid?point.lat:null,valid?point.lng:null,valid?point.accuracy??null:null,null,'Chegada confirmada (Estou aqui): '+row.address,JSON.stringify({dispatchId:row.id,stage:'arrival',gpsRecorded:!!valid}),row.site||user.site||'');
     db.exec('COMMIT');
    }catch(error){db.exec('ROLLBACK');throw error}
-   audit(user,'inspection.arrive',row.id);
-   notify(REVIEW_ROLES,'dispatch','Vistoriador chegou ao destino',user.name+' · '+row.address,{eventId,dispatchId:row.id,except:[user.id]});
+   audit(user,row.kind==='vistoria'?'inspection.arrive':'dispatch.arrive',row.id);
+   announce(user.id);
+   broadcastReview();
+   notify(REVIEW_ROLES,'dispatch','Ronda chegou ao local · Estou aqui',user.name+' · '+row.address,{eventId,dispatchId:row.id,except:[user.id]});
    resp(res,200,{ok:true,at,gpsRecorded:!!valid});return true;
   }
   const task=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/(start|complete)$/i);
@@ -285,11 +351,72 @@ export function createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOp
     db.exec('COMMIT');
    }catch(error){db.exec('ROLLBACK');throw error}
    audit(user,'dispatch.'+task[2],item.id);
+   announce(user.id);
+   broadcastReview();
    notify(REVIEW_ROLES,'dispatch',task[2]==='start'?'Atendimento iniciado':'Atendimento concluído',user.name+' · '+item.address+' · '+(comment||item.reason),{eventId,dispatchId:item.id,except:[user.id]});
    resp(res,200,{ok:true,at,roundId:item.id});return true;
+  }
+  const cancel=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})\/cancel$/i);
+  if(cancel&&method==='POST'){
+   if(!review(user)&&!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Cancelamento sem permissão'});return true;}
+   const item=db.prepare('SELECT * FROM dispatches WHERE id=?').get(cancel[1]);
+   if(!item){resp(res,404,{error:'Atendimento não encontrado'});return true;}
+   if(item.completed_at||item.cancelled_at){resp(res,409,{error:'Atendimento já finalizado ou cancelado'});return true;}
+   const data=serialize((await body(req)).toString())||{},at=now(),reason=clean(data.reason)||'Cancelado pelo operador COI';
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    db.prepare('UPDATE dispatches SET cancelled_at=?,cancellation_reason=? WHERE id=?').run(at,reason,item.id);
+    const eventId=id();
+    db.prepare('INSERT INTO events(id,user_id,kind,round_id,occurred_at,received_at,lat,lng,accuracy,battery,description,details,site) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
+     .run(eventId,item.worker_id,'patrol_interrupted',item.id,at,at,null,null,null,null,'Despacho cancelado: '+reason,JSON.stringify({dispatchId:item.id,cancelledBy:user.name,reason}),item.site||'');
+    db.exec('COMMIT');
+   }catch(err){db.exec('ROLLBACK');throw err;}
+   audit(user,'dispatch.cancel',item.id);
+   insert.run(id(),item.worker_id,'dispatch','Atendimento cancelado',reason,null,item.id,at);
+   announce(item.worker_id);
+   broadcastReview();
+   notify(REVIEW_ROLES,'dispatch','Atendimento cancelado',user.name+' cancelou atendimento de '+item.address+' ('+reason+')',{dispatchId:item.id,except:[user.id]});
+   resp(res,200,{ok:true,id:item.id,cancelled_at:at});return true;
+  }
+  const alter=p.match(/^\/api\/dispatches\/([a-f0-9-]{36})$/i);
+  if(alter&&method==='PUT'){
+   if(!review(user)||!allows(user,'despachos')){resp(res,403,{error:'Sem permissão para alterar'});return true;}
+   const item=db.prepare('SELECT * FROM dispatches WHERE id=?').get(alter[1]);
+   if(!item||item.completed_at||item.cancelled_at){resp(res,409,{error:'Atendimento inexistente ou já finalizado'});return true;}
+   const data=serialize((await body(req)).toString())||{};
+   const workerId=clean(data.workerId)||item.worker_id;
+   const address=clean(data.address)||item.address;
+   const reason=clean(data.reason)||item.reason;
+   const routePoints=Array.isArray(data.routePoints)?JSON.stringify(data.routePoints):item.route_points;
+   db.prepare('UPDATE dispatches SET worker_id=?,address=?,reason=?,route_points=? WHERE id=?')
+     .run(workerId,address,reason,routePoints,item.id);
+   audit(user,'dispatch.update',item.id);
+   announce(item.worker_id);
+   if(workerId!==item.worker_id)announce(workerId);
+   broadcastReview();
+   resp(res,200,{ok:true,id:item.id});return true;
+  }
+  if(p==='/api/tracking/trail'&&method==='GET'){
+   if(!review(user)&&!['ronda','vistoriador'].includes(user.role)){resp(res,403,{error:'Acesso não autorizado'});return true;}
+   const url=new URL(req.url,'http://local');
+   const workerId=url.searchParams.get('userId')||(review(user)?'':user.id);
+   const roundId=url.searchParams.get('roundId')||'';
+   const since=Number(url.searchParams.get('since'))||(now()-24*3600*1000);
+   let query="SELECT id,user_id,round_id,lat,lng,accuracy,occurred_at,details FROM events WHERE kind='gps' AND occurred_at>=? ";
+   const args=[since];
+   if(workerId){query+="AND user_id=? ";args.push(workerId);}
+   if(roundId){query+="AND round_id=? ";args.push(roundId);}
+   query+="ORDER BY occurred_at ASC LIMIT 5000";
+   const rows=db.prepare(query).all(...args);
+   const points=rows.map(r=>{
+    const d=serialize(r.details)||{};
+    const isGap=Boolean(d.gap||d.segmentStart);
+    return {id:r.id,userId:r.user_id,roundId:r.round_id,lat:r.lat,lng:r.lng,accuracy:r.accuracy,at:r.occurred_at,speed:d.speed,bearing:d.bearing,gap:isGap,segmentStart:isGap};
+   });
+   resp(res,200,{trail:points});return true;
   }
   return false;
  }
  function broadcast(){for(const key of clients.keys())announce(key);}
- return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast};
+ return {handle,notifyEvent,notifyReview,notifyMessage,allows,availability,broadcast,endShift};
 }

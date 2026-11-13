@@ -8,3 +8,5 @@ android/local.properties
 android/app/build/
 *.apk
 *.aab
+# Saída local do empacotador Beta (APK e intermediários).
+artifacts/beta-build/

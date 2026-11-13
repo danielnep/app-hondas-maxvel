@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only UX audit of Hondas Maxvel. Does not modify product files."""
+"""Read-only UX audit of Rondas Maxvel. Does not modify product files."""
 import json, os, subprocess, time, traceback
 from pathlib import Path
 from playwright.sync_api import sync_playwright

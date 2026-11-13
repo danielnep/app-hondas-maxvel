@@ -32,16 +32,16 @@ export function assessGps(fix,{now=Date.now(),maxAgeMs=15000,maxAccuracyM=25,cor
   reason:lowerBound>corridorWidthM?'fora do corredor mesmo considerando erro GPS':'posição dentro da margem de incerteza',
   marginM:Math.round(lowerBound)};
 }
-export function addTrackSample(track=[],fix,{maxSpeedKmh=30,maxGapMs=120000,minMoveM=3}={}){
+export function addTrackSample(track=[],fix,{maxSpeedKmh=120,maxGapMs=120000,minMoveM=3,maxAccuracy=60}={}){
  if(!fix||![fix.lat,fix.lng,fix.at,fix.accuracy].every(finite))return {track,distanceM:0,accepted:false,reason:'invalid'};
  const next=[...track],prev=next.at(-1);
  if(prev&&fix.at<=prev.at)return {track,distanceM:0,accepted:false,reason:'out-of-order'};
- if(fix.accuracy>25)return {track,distanceM:0,accepted:false,reason:'low-accuracy'};
+ if(fix.accuracy>maxAccuracy)return {track,distanceM:0,accepted:false,reason:'low-accuracy'};
  const delta=prev?fix.at-prev.at:0,dist=prev?metersBetween(prev,fix):0;
  if(prev&&delta>maxGapMs)return {track:[...next,{...fix,segmentStart:true}],distanceM:0,accepted:true,reason:'gap'};
  if(prev&&dist>minMoveM&&delta>0&&dist/(delta/1000)*3.6>maxSpeedKmh)
   return {track,distanceM:0,accepted:false,reason:'speed-outlier'};
- next.push({lat:fix.lat,lng:fix.lng,at:fix.at,accuracy:fix.accuracy});
+ next.push({lat:fix.lat,lng:fix.lng,at:fix.at,accuracy:fix.accuracy,...(fix.segmentStart?{segmentStart:true}:{}),...(Number.isFinite(fix.speed)?{speed:fix.speed}:{}),...(Number.isFinite(fix.bearing)?{bearing:fix.bearing}:{})});
  return {track:next,distanceM:prev&&dist>=minMoveM?dist:0,accepted:true,reason:'ok'};
 }
 export function summarizePatrol(s,events=[]){

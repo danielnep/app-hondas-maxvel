@@ -1286,7 +1286,7 @@ dialog h2{letter-spacing:-.8px}
 .dashboard .map-container,.dashboard .patrol-map-canvas,.dashboard .map-command-map{border-color:var(--mx-line)}
 .dashboard :is(input,select,textarea){border:1px solid var(--mx-line)}
 .dashboard :is(label,small,p,span){text-wrap:pretty}
-.entry-screen{display:flex;flex-direction:column;overflow-x:clip}
+.entry-screen{display:flex;flex-direction:column}
 .entry-screen .entry-topnav{width:min(1180px,100% - 36px);margin:0 auto;min-height:90px;padding:10px 0;display:flex;gap:18px;align-items:center;justify-content:space-between;border-color:var(--mx-line)}
 .entry-screen .entry-topnav .brand-lockup{width:min(100%,290px)}
 .entry-screen .entry-topnav .brand{min-width:0;max-width:calc(100vw - 180px);flex-shrink:1}
@@ -1938,7 +1938,13 @@ body[data-rp-field="true"] :is(#app,.dashboard,.dashboard .app-shell,.dashboard 
 .dashboard .simulation-rolebar .simulation-roles button[data-role="admin"]{display:none!important}
 .dashboard .app-content{flex:1 1 auto!important;min-height:0!important;max-height:none!important;width:100%!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;padding:3px 8px!important;display:flex!important;flex-direction:column!important;gap:3px!important}
 body[data-rp-field="true"] .dashboard .app-content{overflow:hidden!important}
-body:not([data-rp-field="true"]) .dashboard .app-content:not(.ronda-page){display:block!important;flex:none!important;min-height:calc(100dvh - 110px)!important;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+/* A central e o planejamento rolam dentro do viewport; apenas o cockpit de campo é travado. */
+body:not([data-rp-field="true"]) .dashboard .app-content:not(.ronda-page){
+ display:block!important;flex:1 1 0%!important;min-height:0!important;max-height:none!important;
+ overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;
+ scroll-padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));
+ padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important;
+}
 .dashboard .app-content .page-title{flex:0 0 auto!important;margin:0!important;padding:3px 1px!important}
 .dashboard .app-content .page-title h1{font-size:16px!important;line-height:1.2!important}
 .dashboard .app-content .page-title p{display:none!important}
@@ -2050,11 +2056,11 @@ dialog .rules{margin:4px 0!important}
 dialog .rules li{padding:4px 5px!important;margin:0!important}
 dialog .rules li strong{font-size:11px!important}
 dialog .rules li p{font-size:10px!important}
-.entry-screen{display:grid!important;grid-template-rows:54px minmax(0,1fr) 34px!important;padding:0 12px!important}
+.entry-screen{display:grid!important;grid-template-rows:minmax(54px,auto) minmax(min-content,1fr) minmax(34px,auto)!important;padding:0 12px!important}
 .entry-screen .topnav{padding:0!important;height:54px!important;min-height:54px!important;border-bottom:1px solid var(--mx-line)!important}
 .entry-screen .topnav .brand{width:155px!important;min-width:0!important}
 .entry-screen .entry-aside{display:none!important}
-.entry-screen:not(:has(#live-login-form)) .entry-main{min-height:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:0 3px!important;gap:0!important;overflow:hidden!important}
+.entry-screen:not(:has(#live-login-form)) .entry-main{min-height:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;padding:0 3px!important;gap:0!important;overflow-y:visible!important}
 .entry-screen:not(:has(#live-login-form)) .entry-panel{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}
 .entry-screen:not(:has(#live-login-form)) .entry-panel h1{font-size:clamp(22px,6vw,32px)!important;line-height:1.14!important;margin:8px 0!important;letter-spacing:-.03em!important}
 .entry-screen:not(:has(#live-login-form)) .entry-panel>p{font-size:12px!important;line-height:1.55!important;margin:5px 0 11px!important}
@@ -3051,8 +3057,8 @@ body.simulation-running #toast { top:auto!important; bottom:max(12px,env(safe-ar
 .entry-screen .entry-topnav .brand.maxvel-only-brand { width:260px!important; max-width:100%!important; flex:0 1 auto!important; }
 .entry-screen .brand .ronda-pro-wordmark { font-size:25px!important; }
 .entry-screen .brand .maxvel-real-logo { width:96px!important; }
-.entry-screen { height:100dvh!important; min-height:0!important; max-height:100dvh!important; overflow:hidden!important; }
-.entry-screen .entry-main { min-height:0!important; flex:1 1 auto!important; overflow-y:auto; }
+.entry-screen { min-height:100dvh!important; height:auto!important; max-height:none!important; overflow-x:clip!important; overflow-y:visible!important; }
+.entry-screen .entry-main { min-height:0!important; max-height:none!important; height:auto!important; flex:1 1 auto!important; overflow-y:visible; }
 
 /* Surfaces replace repeated outlines. Focus and meaningful map geometry stay visible. */
 :is(.button,.help-toggle,.user-pill,.context-help,.app-menu-button,.ux06-expand-button,.ux06-sheet-back,.choice,.role-picker-list button,.ux-access-menu button) { border:0!important; }
@@ -4846,6 +4852,5 @@ body.checkpoint-arrived .map-person-ring{border-color:var(--rpro-ok)!important}
  .dashboard .ronda-page .patrol-workspace.sheet-auto-minimized .patrol-action-body{display:none!important}
  .dashboard .ronda-page .patrol-workspace.sheet-auto-minimized .patrol-sheet-toggle{display:none!important}
 }
-
 
 }

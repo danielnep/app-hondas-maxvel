@@ -1,3 +1,4 @@
+import {privacyRequests} from './privacy.js';
 import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {dirname,resolve,join} from 'node:path';
@@ -5,9 +6,11 @@ import {randomBytes,scryptSync,timingSafeEqual,createHash,randomUUID} from 'node
 import {addTrackSample} from '../src/field-intelligence.js';
 import {validateConclusion} from '../src/conclusion-validation.js';
 import {createOpsCenter} from './ops-center.js';
+import {createSectorManagement} from './sector-management.js';
 import {createInternalChat} from './internal-chat.js';
 import {createActivityHistory} from './activity-history.js';
 import {createTreatments} from './treatments.js';
+import {createVerification} from './verification.js';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const now=()=>Date.now(),id=()=>randomUUID();
 const roles=['ronda','operador','admin','master','coi','cliente','vistoriador'];
@@ -17,6 +20,18 @@ const authHash=(password,salt)=>scryptSync(password,salt,64).toString('hex');
 const resp=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
 const serialize=(raw)=>{try{return JSON.parse(raw)}catch{return null}};
 const clean=x=>String(x??'').trim();
+function decodePolyline(str){
+ let index=0,lat=0,lng=0,coordinates=[];
+ while(index<str.length){
+  let b,shift=0,result=0;
+  do{b=str.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);
+  const dlat=(result&1)!==0?~(result>>1):(result>>1);lat+=dlat;shift=0;result=0;
+  do{b=str.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);
+  const dlng=(result&1)!==0?~(result>>1):(result>>1);lng+=dlng;
+  coordinates.push({lat:lat*1e-5,lng:lng*1e-5});
+ }
+ return coordinates;
+}
 async function body(req,max=1e6){let n=0;const a=[];for await(const x of req){n+=x.length;if(n>max)throw Object.assign(new Error('Tamanho excedido'),{status:413});a.push(x)}return Buffer.concat(a);}
 const presets=[
  ['incident','Ocorrência operacional','manual','high',1,0],
@@ -31,7 +46,7 @@ const presets=[
 ];
 function initialize(){
  const file=process.env.RONDA_PRO_DB_PATH,email=clean(process.env.RONDA_PRO_MASTER_EMAIL).toLowerCase(),pass=process.env.RONDA_PRO_MASTER_PASSWORD;
- if(!file||!email||!pass||pass.length<12)return null;
+ if(!file||!email||!pass||pass.length<(process.env.RONDA_PRO_PILOT_PASSWORD?10:12))return null;
  const path=resolve(file);mkdirSync(dirname(path),{recursive:true});
  const db=new DatabaseSync(path);db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
  const ddl=[
@@ -48,6 +63,8 @@ function initialize(){
   'CREATE TABLE IF NOT EXISTS audit(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,action TEXT NOT NULL,subject_id TEXT,at INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS planned_routes(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,site TEXT NOT NULL,name TEXT NOT NULL,points TEXT NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,created_by TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))',
   'CREATE INDEX IF NOT EXISTS idx_planned_routes_user ON planned_routes(user_id,updated_at)',
+  'CREATE TABLE IF NOT EXISTS saved_points(id TEXT PRIMARY KEY,name TEXT NOT NULL,address TEXT NOT NULL,latitude REAL NOT NULL,longitude REAL NOT NULL,created_by TEXT NOT NULL,created_at INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1)',
+  'CREATE INDEX IF NOT EXISTS idx_saved_points_active ON saved_points(active,created_at)',
   'CREATE TABLE IF NOT EXISTS event_treatments(id TEXT PRIMARY KEY,event_id TEXT NOT NULL,author_id TEXT NOT NULL,from_status TEXT NOT NULL,to_status TEXT NOT NULL,conclusion TEXT NOT NULL,created_at INTEGER NOT NULL,FOREIGN KEY(event_id) REFERENCES events(id))',
   'CREATE INDEX IF NOT EXISTS idx_treatment_event ON event_treatments(event_id,created_at)'
  ];for(const statement of ddl)db.exec(statement);
@@ -63,13 +80,15 @@ function initialize(){
  if(!db.prepare('PRAGMA table_info(events)').all().some(x=>x.name==='site'))db.exec("ALTER TABLE events ADD COLUMN site TEXT NOT NULL DEFAULT ''");
  db.exec('CREATE INDEX IF NOT EXISTS idx_events_site_time ON events(site,occurred_at)');
  db.exec('CREATE TABLE IF NOT EXISTS app_state(user_id TEXT PRIMARY KEY,data TEXT NOT NULL,updated_at INTEGER NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))');
+ db.exec('CREATE TABLE IF NOT EXISTS routes_cache(signature TEXT PRIMARY KEY, geometry TEXT NOT NULL, distance_meters REAL NOT NULL, duration_seconds REAL NOT NULL, provider TEXT NOT NULL, created_at INTEGER NOT NULL)');
+ db.exec('CREATE TABLE IF NOT EXISTS api_usage_metrics(service TEXT NOT NULL, month TEXT NOT NULL, call_count INTEGER NOT NULL, PRIMARY KEY(service, month))');
  if(!db.prepare("PRAGMA table_info(recipients)").all().some(x=>x.name==='group_name'))db.exec('ALTER TABLE recipients ADD COLUMN group_name TEXT NOT NULL DEFAULT "operations"');
  if(!db.prepare("SELECT id FROM users WHERE role='master' LIMIT 1").get()){
   const salt=randomBytes(16).toString('hex');
   db.prepare('INSERT INTO users(id,email,name,role,salt,password_hash,description,created_at) VALUES(?,?,?,?,?,?,?,?)')
    .run(id(),email,'Master','master',salt,authHash(pass,salt),'Conta principal',now());
  }
- // Contas iniciais configuradas por segredo do Railway; nunca credenciais no codigo.
+ // Contas iniciais configuradas no ambiente privado da VPS; nunca credenciais no codigo.
  if(process.env.RONDA_PRO_INITIAL_ACCOUNTS){
   let seeds=[];try{seeds=JSON.parse(process.env.RONDA_PRO_INITIAL_ACCOUNTS)}catch{throw new Error('RONDA_PRO_INITIAL_ACCOUNTS invalido')}
   if(!Array.isArray(seeds))throw new Error('Contas iniciais invalidas');
@@ -126,7 +145,8 @@ export function aggregateOperationalRounds(events=[]){
   if(e.kind==='gps_issue')r.gpsIssues++;
   if(e.kind==='gps'&&Number.isFinite(e.lat)&&Number.isFinite(e.lng)){
    r.gpsSamples++;
-   const measurement={lat:e.lat,lng:e.lng,at:e.occurred_at,accuracy:e.accuracy};
+   const ed=serialize(e.details)||{};
+   const measurement={lat:e.lat,lng:e.lng,at:e.occurred_at,accuracy:e.accuracy,...(Number.isFinite(ed.speed)?{speed:ed.speed}:{}),...(Number.isFinite(ed.bearing)?{bearing:ed.bearing}:{}),...(ed.gap||ed.segmentStart?{segmentStart:true}:{})};
    const accepted=addTrackSample(r.gpsTrace,measurement);
    r.gpsTrace=accepted.track;r.km+=accepted.distanceM/1000;
    if(accepted.accepted){r.lastFix={lat:e.lat,lng:e.lng,accuracy:e.accuracy};r.lastFixAt=e.occurred_at;}
@@ -153,15 +173,22 @@ export function createOperationalApi(){
  const audit=(u,action,subject)=>db.prepare('INSERT INTO audit(id,user_id,action,subject_id,at) VALUES(?,?,?,?,?)').run(id(),u.id,action,subject,now());
  const userFrom=req=>{
   const match=String(req.headers.authorization||'').match(/^Bearer ([0-9a-f]{64})$/i);if(!match)return null;
-  return db.prepare('SELECT u.id,u.name,u.email,u.username,u.role,u.active,u.site,u.phone FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(hash(match[1]),now())||null;
+  const tokenHash=hash(match[1]);
+  const user=db.prepare('SELECT u.id,u.name,u.email,u.username,u.role,u.active,u.site,u.phone FROM tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=? AND t.expires_at>?').get(tokenHash,now())||null;
+  if(user){
+   try{db.prepare('UPDATE tokens SET expires_at=? WHERE token_hash=? AND expires_at<?').run(now()+2592000000,tokenHash,now()+1296000000);}catch{}
+  }
+  return user;
  };
  const event=id=>db.prepare('SELECT * FROM events WHERE id=?').get(id);
  const visible=(u,e)=>u.role==='cliente'?Boolean(u.site&&e.site===u.site&&['inspection','checkpoint','patrol_start','patrol_end'].includes(e.kind)):['ronda','vistoriador'].includes(u.role)?e.user_id===u.id:true;
  const criteriaKeys=['acessos','estrutura','equipamentos','sinalizacao'];
- const operations=db?createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds}):null;
+ const sectors=db?createSectorManagement(db,{now,id,audit,resp,body,serialize}):null;
+ const operations=db?createOpsCenter(db,{now,id,audit,resp,body,serialize,aggregateOperationalRounds,sectorAllows:sectors.allows}):null;
  const chat=db?createInternalChat(db,{now,id,audit,resp,body,serialize}):null;
  const activity=db?createActivityHistory(db,{resp,serialize,aggregateOperationalRounds,visible,operations}):null;
  const treatmentService=db?createTreatments(db,{now,id,audit,resp,body,serialize,operations}):null;
+ const verification=db?createVerification(db,{now,audit,resp,body,serialize,operations}):null;
  async function notifyEmail(record,template){
   const targetGroups=serialize(template.recipients)||[];
   const emails=db.prepare('SELECT email,group_name FROM recipients WHERE enabled=1').all().filter(x=>!targetGroups.length||targetGroups.includes(x.group_name)).map(x=>x.email);
@@ -188,13 +215,19 @@ export function createOperationalApi(){
     const d=serialize((await body(req)).toString())||{},email=clean(d.email).toLowerCase();
     const row=db.prepare('SELECT * FROM users WHERE (email=? OR username=? COLLATE NOCASE) AND active=1').get(email,email);
     const candidate=typeof d.password==='string'&&row?authHash(d.password,row.salt):null;
-    if(!candidate||!timingSafeEqual(Buffer.from(candidate,'hex'),Buffer.from(row.password_hash,'hex'))){resp(res,401,{error:'Credenciais inválidas'});return true;}
-    const token=randomBytes(32).toString('hex');db.prepare('INSERT INTO tokens(token_hash,user_id,expires_at) VALUES(?,?,?)').run(hash(token),row.id,now()+28800000);
-    audit(row,'login',row.id);resp(res,200,{token,user:{id:row.id,name:row.name,role:row.role,site:row.site||''},expiresIn:28800});return true;
+    if(!candidate||!timingSafeEqual(Buffer.from(candidate,'hex'),Buffer.from(row.password_hash,'hex'))){const reference=randomBytes(6).toString('hex');console.warn('RONDA_AUTH_FAILURE',JSON.stringify({reference,identifier:email.slice(0,254),client:String(req.headers['user-agent']||'').slice(0,300)}));resp(res,401,{error:'Credenciais inválidas',reference});return true;}
+    const token=randomBytes(32).toString('hex');db.prepare('INSERT INTO tokens(token_hash,user_id,expires_at) VALUES(?,?,?)').run(hash(token),row.id,now()+2592000000);
+    audit(row,'login',row.id);resp(res,200,{token,user:{id:row.id,name:row.name,role:row.role,site:row.site||''},expiresIn:2592000});return true;
    }
    const a=userFrom(req);
    if(!a||!a.active){resp(res,401,{error:'Entre com uma conta operacional'});return true;}
+   if(p==='/api/privacy-requests'&&m==='GET'){if(a.role!=='master'){resp(res,403,{error:'Acesso restrito ao responsável da plataforma.'});return true;}resp(res,200,{requests:privacyRequests()});return true;}
    if(p==='/api/me'&&m==='GET'){resp(res,200,{user:a});return true;}
+   // Sector capabilities restrict role grants, but never block emergency events,
+   // evidence, personal history, authentication or internal communications.
+   const sectorModule=/^\/api\/(dashboard)(?:\/|$)/.test(p)?'mapa':/^\/api\/(routes|rounds|availability)(?:\/|$)/.test(p)?'rondas':/^\/api\/dispatches(?:\/|$)/.test(p)?'despachos':/^\/api\/(export|reports)(?:\/|$)/.test(p)?'relatorios':/^\/api\/users(?:\/|$)/.test(p)?'equipe':null;
+   if(sectorModule&&!sectors.allows(a,sectorModule)){resp(res,403,{error:'Módulo indisponível nos setores vinculados.'});return true;}
+   if(await verification(req,res,a))return true;
    if(p==='/api/app-state'&&m==='GET'){
     const record=db.prepare('SELECT data,updated_at FROM app_state WHERE user_id=?').get(a.id);
     resp(res,200,{state:record?serialize(record.data):null,updatedAt:record?.updated_at||null});return true;
@@ -208,15 +241,109 @@ export function createOperationalApi(){
     resp(res,200,{stored:true});return true;
    }
    if(p==='/api/profile'&&m==='PUT'){const d=serialize((await body(req)).toString())||{};if(typeof d.phone!=='string'||d.phone.length>35){resp(res,422,{error:'Telefone inválido'});return true;}db.prepare('UPDATE users SET phone=? WHERE id=?').run(clean(d.phone),a.id);resp(res,200,{ok:true});return true;}
-   if(p==='/api/logout'&&m==='POST'){db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
+   if(p==='/api/logout'&&m==='POST'){if(['ronda','vistoriador'].includes(a.role))operations.endShift(a);db.prepare('DELETE FROM tokens WHERE token_hash=?').run(hash(req.headers.authorization.slice(7)));resp(res,200,{ok:true});return true;}
    if(await chat.handle(req,res,a,p,m))return true;
    if(await activity.handle(req,res,a,p,m))return true;
    if(await treatmentService.handle(req,res,a,p,m))return true;
+   if(await sectors.handle(req,res,a,p,m))return true;
    if(await operations.handle(req,res,a,p,m))return true;
+   if(p==='/api/routes-calc'&&m==='POST'){
+    const payload=serialize((await body(req)).toString())||{}, stops=payload.stops;
+    if(!Array.isArray(stops)||stops.length<2||stops.length>35||stops.some(s=>!s||!Number.isFinite(Number(s.lat))||!Number.isFinite(Number(s.lng)))){
+     resp(res,422,{error:'Envie entre 2 e 35 pontos válidos com latitude e longitude.'});return true;
+    }
+    const cleanStops=stops.map(s=>({lat:Number(s.lat),lng:Number(s.lng)}));
+    const sig=cleanStops.map(s=>s.lat.toFixed(6)+','+s.lng.toFixed(6)).join(';');
+    const cached=db.prepare('SELECT geometry, distance_meters, duration_seconds, provider FROM routes_cache WHERE signature=?').get(sig);
+    if(cached){
+     resp(res,200,{path:JSON.parse(cached.geometry),distanceMeters:cached.distance_meters,durationSeconds:cached.duration_seconds,cached:true,provider:cached.provider});
+     return true;
+    }
+    const googleKey=process.env.GOOGLE_ROUTES_API_KEY||process.env.GOOGLE_MAPS_API_KEY;
+    const currentMonth=new Date().toISOString().slice(0,7);
+    let monthUsage=db.prepare("SELECT call_count FROM api_usage_metrics WHERE service='google_routes' AND month=?").get(currentMonth)?.call_count||0;
+    const MAX_GOOGLE_ROUTES_MONTHLY=9500;
+    let routeResult=null;
+    if(googleKey&&monthUsage<MAX_GOOGLE_ROUTES_MONTHLY){
+     try{
+      const googleRes=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
+       method:'POST',
+       headers:{
+        'Content-Type':'application/json',
+        'X-Goog-Api-Key':googleKey,
+        'X-Goog-FieldMask':'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline'
+       },
+       body:JSON.stringify({
+        origin:{location:{latLng:{latitude:cleanStops[0].lat,longitude:cleanStops[0].lng}}},
+        destination:{location:{latLng:{latitude:cleanStops[cleanStops.length-1].lat,longitude:cleanStops[cleanStops.length-1].lng}}},
+        intermediates:cleanStops.slice(1,-1).map(s=>({location:{latLng:{latitude:s.lat,longitude:s.lng}}})),
+        travelMode:'DRIVE',
+        routingPreference:'TRAFFIC_AWARE'
+       }),
+       signal:AbortSignal.timeout(9000)
+      });
+      if(googleRes.ok){
+       const data=await googleRes.json();
+       const route=data.routes?.[0];
+       if(route?.polyline?.encodedPolyline){
+        const decoded=decodePolyline(route.polyline.encodedPolyline);
+        const distanceMeters=Number(route.distanceMeters)||0;
+        const durationSeconds=parseInt(route.duration||'0',10)||0;
+        db.prepare("INSERT INTO api_usage_metrics(service,month,call_count) VALUES('google_routes',?,1) ON CONFLICT(service,month) DO UPDATE SET call_count=call_count+1").run(currentMonth);
+        routeResult={path:decoded,distanceMeters,durationSeconds,provider:'google'};
+       }
+      }
+     }catch(err){
+      console.warn('[Routes] Google Routes API error, falling back to OSRM:',err.message);
+     }
+    }
+    if(!routeResult){
+     try{
+      const osrmUrl='https://router.project-osrm.org/route/v1/driving/'+cleanStops.map(s=>s.lng.toFixed(6)+','+s.lat.toFixed(6)).join(';')+'?overview=full&geometries=geojson&steps=false';
+      const osrmRes=await fetch(osrmUrl,{signal:AbortSignal.timeout(9000)});
+      if(osrmRes.ok){
+       const osrmData=await osrmRes.json();
+       if(osrmData.code==='Ok'&&osrmData.routes?.[0]?.geometry?.coordinates){
+        const path=osrmData.routes[0].geometry.coordinates.map(c=>({lat:Number(c[1]),lng:Number(c[0])}));
+        const distanceMeters=Number(osrmData.routes[0].distance)||0;
+        const durationSeconds=Number(osrmData.routes[0].duration)||0;
+        routeResult={path,distanceMeters,durationSeconds,provider:'osrm'};
+       }
+      }
+     }catch{}
+    }
+    if(!routeResult){
+     routeResult={path:cleanStops,distanceMeters:0,durationSeconds:0,provider:'indicative'};
+    }
+    db.prepare('INSERT OR REPLACE INTO routes_cache(signature,geometry,distance_meters,duration_seconds,provider,created_at) VALUES(?,?,?,?,?,?)')
+      .run(sig,JSON.stringify(routeResult.path),routeResult.distanceMeters,routeResult.durationSeconds,routeResult.provider,now());
+    resp(res,200,{...routeResult,cached:false});
+    return true;
+   }
+   // Ponto geografico compartilhado: migração aditiva e auditoria; setor nao eleva permissao.
+   if(p==='/api/saved-points'&&m==='GET'){
+    if(!['admin','master','coi','operador'].includes(a.role)){resp(res,403,{error:'Pontos disponíveis somente para supervisão'});return true;}
+    resp(res,200,{points:db.prepare('SELECT id,name,address,latitude AS lat,longitude AS lng,created_at AS createdAt FROM saved_points WHERE active=1 ORDER BY name COLLATE NOCASE LIMIT 250').all()});return true;
+   }
+   if(p==='/api/saved-points'&&m==='POST'){
+    if(!manager(a)){resp(res,403,{error:'Somente Administração cadastra pontos'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name).slice(0,100),address=clean(d.address).slice(0,350),lat=Number(d.lat),lng=Number(d.lng);
+    if(name.length<2||address.length<5||d.lat==null||d.lng==null||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){resp(res,422,{error:'Informe nome, endereço e coordenadas válidas'});return true;}
+    const pointId=id();
+    db.prepare('INSERT INTO saved_points(id,name,address,latitude,longitude,created_by,created_at) VALUES(?,?,?,?,?,?,?)').run(pointId,name,address,lat,lng,a.id,now());
+    audit(a,'saved_point.create',pointId);resp(res,201,{id:pointId,name,address,lat,lng});return true;
+   }
+   const savedPointDelete=p.match(/^\/api\/saved-points\/([^/]+)$/);
+   if(savedPointDelete&&m==='DELETE'){
+    if(!manager(a)){resp(res,403,{error:'Somente Administração arquiva pontos'});return true;}
+    const changed=db.prepare('UPDATE saved_points SET active=0 WHERE id=? AND active=1').run(savedPointDelete[1]).changes;
+    if(!changed){resp(res,404,{error:'Ponto não encontrado'});return true;}
+    audit(a,'saved_point.archive',savedPointDelete[1]);resp(res,200,{ok:true});return true;
+   }
    if(p==='/api/users'&&m==='GET'&&(manager(a)||reviewer(a)&&operations.allows(a,'rondas'))){resp(res,200,{users:db.prepare('SELECT id,email,username,name,role,description,site,phone,created_at,active FROM users ORDER BY created_at DESC').all()});return true;}
    if(p==='/api/users'&&m==='POST'&&manager(a)){
-    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),newPassword=process.env.RONDA_PRO_PILOT_PASSWORD||d.password;
-    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof newPassword!=='string'||newPassword.length<(process.env.RONDA_PRO_PILOT_PASSWORD?10:12)||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e uma senha válida'});return true;}
+    const d=serialize((await body(req)).toString())||{},name=clean(d.name),email=clean(d.email).toLowerCase(),username=clean(d.username).toLowerCase()||null,phone=clean(d.phone),site=clean(d.site).slice(0,100),newPassword=d.password;
+    if(!roles.includes(d.role)||(d.role==='master'&&a.role!=='master')||!email.includes('@')||name.length<2||(username&&!/^[a-z0-9._-]{3,40}$/.test(username))||typeof newPassword!=='string'||newPassword.length<12||phone.length>35){resp(res,422,{error:'Informe nome, e-mail, telefone, usuario e uma senha válida'});return true;}
     if(clean(d.phone).length>35){resp(res,422,{error:'Telefone inválido'});return true;}
     if(db.prepare('SELECT id FROM users WHERE email=? OR username=? COLLATE NOCASE').get(email,username)){resp(res,409,{error:'E-mail ou usuario ja cadastrado'});return true;}
     const salt=randomBytes(16).toString('hex'),uid=id();
@@ -257,9 +384,9 @@ export function createOperationalApi(){
     if(plannedStart!==null&&(!Number.isInteger(plannedStart)||plannedStart<1577836800000||plannedStart>4102444800000)){
      resp(res,422,{error:'Horário de início programado inválido'});return true;
     }
-    if(!user||!user.site||title.length<3||!Array.isArray(points)||points.length<2||points.length>30||
+    if(!user||!user.site||title.length<3||!Array.isArray(points)||points.length<1||points.length>30||
       !points.every(p=>p&&typeof p==='object'&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&Number.isFinite(p.lng)&&Math.abs(p.lng)<=180&&clean(p.name).length>0&&clean(p.name).length<=100)){
-      resp(res,422,{error:'Selecione um vigia com posto e informe nome e 2 a 30 pontos válidos'});return true;
+      resp(res,422,{error:'Selecione um vigia com posto e informe nome e 1 a 30 pontos válidos'});return true;
     }
     const safe=points.map(p=>({name:clean(p.name).slice(0,100),address:clean(p.address).slice(0,250),lat:p.lat,lng:p.lng}));
     if(routeMatch){
@@ -280,19 +407,21 @@ export function createOperationalApi(){
     inspection=d.kind==='inspection'?d.details?.criteria:null,
     dispatchId=d.kind==='inspection'?clean(d.details?.dispatchId):'',
     inspectionAssignment=dispatchId?db.prepare("SELECT * FROM dispatches WHERE id=? AND worker_id=? AND kind='vistoria' AND started_at IS NOT NULL AND completed_at IS NULL").get(dispatchId,a.id):null;
-    if(d.kind==='inspection'&&(a.role!=='vistoriador'||(!a.site&&!inspectionAssignment)||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
+    if(d.kind==='inspection'&&!sectors.allows(a,'vistorias')){resp(res,403,{error:'Vistorias indisponíveis nos setores vinculados.'});return true;}
+    if(d.kind==='inspection'&&(!['ronda','vistoriador'].includes(a.role)||(!a.site&&!inspectionAssignment)||!inspection||typeof inspection!=='object'||Array.isArray(inspection)||Object.keys(inspection).length!==criteriaKeys.length||!criteriaKeys.every(key=>typeof inspection[key]==='boolean'))){
      resp(res,422,{error:'Vistoria inválida: avalie todos os quatro critérios com um local cadastrado'});return true;
     }
     if(dispatchId&&!inspectionAssignment){resp(res,422,{error:'Vistoria exige despacho válido iniciado e atribuído ao profissional'});return true;}
     const validCriteria=d.kind==='inspection'?Object.fromEntries(criteriaKeys.map(key=>[key,inspection[key]])):null;
+    const gpsDetails=d.kind==='gps'?{...(Number.isFinite(position?.speed)?{speed:position.speed}:{}),...(Number.isFinite(position?.bearing)?{bearing:position.bearing}:{}),...(d.gap?{gap:true}:{})}:{};
     const details=JSON.stringify(validCriteria?{criteria:validCriteria,qualityPercent:Math.round(100*criteriaKeys.filter(key=>validCriteria[key]).length/criteriaKeys.length),...(inspectionAssignment?{dispatchId,destinationId:inspectionAssignment.destination_id}: {})}:
-     {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{})});
+     {...((d.details&&typeof d.details==='object'&&!Array.isArray(d.details))?d.details:{}),...(templateKey?{templateId:templateKey}:{}),...gpsDetails});
     if(!['panic','gps','battery','checkpoint','incident','message','alert','patrol_start','patrol_end','patrol_incomplete','patrol_interrupted','media','gps_issue','route_deviation','inspection'].includes(d.kind)||!Number.isFinite(d.occurredAt)||Math.abs(now()-d.occurredAt)>30*86400000||clean(d.description).length>2000||details.length>10000||battery!=null&&(!Number.isFinite(battery)||battery<0||battery>100)||position&&(!Number.isFinite(position.lat)||!Number.isFinite(position.lng)||Math.abs(position.lat)>90||Math.abs(position.lng)>180)){
      resp(res,422,{error:'Evento inválido'});return true;
     }
     if(d.kind==='patrol_start'&&d.details?.routeId){
      const valid=db.prepare('SELECT id FROM planned_routes WHERE id=? AND user_id=?').get(clean(d.details.routeId),a.id);
-     if(!valid){resp(res,403,{error:'Rota não atribuída a este vigia'});return true;}
+     if(!valid){resp(res,403,{error:'Rota não atribuída a este profissional'});return true;}
     }
     const eid=/^[0-9a-z-]{8,80}$/i.test(d.id||'')?d.id:id();
     const existing=event(eid);

@@ -93,7 +93,7 @@ test('composição COI mantém abas, mapa contextual e distinção de GPS antigo
  assert.match(module,/lastFixAt/);
  assert.match(module,/última posição|Última posição/);
  assert.match(module,/requestAnimationFrame\(animate\)/);
- assert.match(module,/basemaps\.cartocdn\.com\/dark_all/);
+ assert.match(module,/(?:tile\.openstreetmap\.org|basemaps\.cartocdn\.com\/dark_all)/);
  assert.match(module,/privacy|GPS recente|sem coordenadas/i);
  assert.match(central,/function treatmentsView\(\)/);
  assert.match(central,/coi\.render\(/);

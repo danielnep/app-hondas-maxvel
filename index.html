@@ -1,30 +1,34 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
+<head><script>window.__RONDA_PRODUCTION__=true;if(location.hostname==='danielnep.github.io')location.replace('https://maxvel.hzsys.tech/');</script>
  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
  <meta name="theme-color" content="#050505"><meta name="description" content="Grupo Maxvel: acompanhamento de rondas, supervisão e gestão operacional.">
  <title>Ronda Pro · Grupo Maxvel | Acompanhamento Operacional</title>
  <link rel="preconnect" href="https://tile.openstreetmap.org"><link rel="preconnect" href="https://unpkg.com">
- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
+ <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
+ <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet-rotate.css">
  <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/webp" href="./assets/maxvel-logo.webp"><link rel="apple-touch-icon" href="./assets/maxvel-logo.webp">
 
-<link rel="stylesheet" href="./assets/ronda-pro.css?v=53">
+<link rel="stylesheet" href="./assets/ronda-pro.css?v=55">
 <link rel="stylesheet" href="./assets/operational.css?v=52">
 <link rel="stylesheet" href="./assets/mobile-critical.css?v=50">
-<link rel="stylesheet" href="./assets/field.css?v=52">
-<link rel="stylesheet" href="./assets/theme.css?v=61">
+<link rel="stylesheet" href="./assets/field.css?v=53">
+<link rel="stylesheet" href="./assets/theme.css?v=65">
+<link rel="stylesheet" href="./assets/beta-ui.css?v=226">
 </head>
 <body class="rp-theme">
  <a href="#main" class="skip-link">Ir para o conteúdo</a>
  <div id="app"><div class="boot"><img src="./assets/maxvel-logo.webp" width="180" height="56" alt="Maxvel"><strong>Ronda Pro</strong><span>Preparando o ambiente operacional…</span></div></div>
  <div id="toast" role="status" aria-live="polite"></div>
  <dialog id="dialog" aria-label="Janela de informações"></dialog>
- <script type="module" src="./src/app.js?v=76"></script>
- <script type="module" src="./src/inspection-demo-camera.js?v=1"></script>
- <script type="module" src="./src/soft-polish.js?v=1"></script>
+ <script defer src="./assets/vendor/leaflet/leaflet.js?v=95"></script>
+ <script defer src="./assets/vendor/leaflet/leaflet-rotate.js?v=95"></script>
+ <script type="module" src="./src/app.js?v=82"></script>
+ <script type="module" src="./src/inspection-demo-camera.js?v=95"></script>
+ <script type="module" src="./src/soft-polish.js?v=95"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.includes("appassets.androidplatform.net")){
-  const updateKey="rondas-pro-updated-v72";
+  const updateKey="rondas-pro-updated-v95";
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
     if(sessionStorage.getItem(updateKey))return;
     sessionStorage.setItem(updateKey,"1");
@@ -34,14 +38,14 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&!location.host.in
     else{
       const notice=document.createElement("div");
       notice.setAttribute("role","status");
-      notice.style.cssText="position:fixed;left:14px;right:14px;bottom:16px;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #38bdf8;border-radius:12px;background:#09090bf2;color:#fff;box-shadow:0 12px 36px #000a";
-      notice.innerHTML="<span>Nova versão pronta. Atualize após terminar a ronda.</span><button type='button' style='padding:9px 12px;background:#e7edf5;color:#151b22;border:0;border-radius:8px'>Atualizar</button>";
+      notice.style.cssText="position:fixed;left:14px;right:14px;bottom:16px;z-index:999999;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid #cc243b;border-radius:12px;background:#09090bf2;color:#fff;box-shadow:0 12px 36px #000a";
+      notice.innerHTML="<span>Nova versão pronta. Atualize após terminar a ronda.</span><button type='button' style='padding:9px 12px;background:#e5232a;color:#ffffff;border:0;border-radius:8px;font-weight:700;'>Atualizar</button>";
       notice.querySelector("button").addEventListener("click",()=>location.reload());
       document.body.append(notice);
     }
   });
-  navigator.serviceWorker.register("./sw.js?v=72",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+  navigator.serviceWorker.register("./sw.js?v=95",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
 }
 </script>
-</body>
+<footer style="padding:16px;text-align:center;font-size:12.5px;display:flex;gap:16px;justify-content:center;align-items:center;"><a href="/downloads" style="color:#e5232a;font-weight:700;text-decoration:none;padding:8px 14px;border:1px solid rgba(229,35,42,0.4);border-radius:8px;">📲 Baixar Aplicativo Android (APK)</a><a href="/assets/privacy.html" style="color:#a1a1aa;text-decoration:none;">Privacidade</a></footer></body>
 </html>

@@ -3,13 +3,24 @@ const chatIcon=path=>'<svg aria-hidden="true" width="20" height="20" viewBox="0 
 const clipIcon=chatIcon('<path d="m8 13 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9"/>');
 const stamp=t=>new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
 const check=s=>s==='visualizada'?'✓✓ Visualizada':s==='recebida'?'✓✓ Recebida':'✓ Enviada';
-export function createInternalChatUI({api,flash,navigate,getAccount}){
+export function createInternalChatUI({api,flash,navigate,getAccount,getPreviousPage}){
  let conversations=[],contacts=[],unread=0,active=null,rows=[],hasMore=false,reply=null,search='',busy=false,epoch=0,recording=null,audioStream=null,recorder=null,recorded=[],sending=null;
  let observer=null,urls=new Map(),drafts=new Map(),lastTyping=0;
+ const brandLockup='<div class="chat-brand-lockup"><span class="rp-brand-text">Ronda <span class="rp-brand-pro">Pro</span></span> <span class="rp-brand-sep">|</span> <span class="rp-brand-logo-wrap"><img src="/assets/maxvel-icon.svg" class="rp-brand-maxvel-logo" width="22" height="22" alt="Maxvel"></span></div>';
+ const backToOrigin=()=>{
+  const prev=getPreviousPage?.();
+  if(prev&&prev!=='chat')return prev;
+  const r=getAccount()?.role;
+  if(r==='vistoriador')return 'inspections';
+  if(r==='cliente')return 'client';
+  if(['coi','operador'].includes(r))return 'monitor';
+  if(['admin','master'].includes(r))return 'gestao';
+  return 'dashboard';
+ };
  const mine=()=>getAccount()?.id;
  const conversation=()=>conversations.find(c=>c.id===active);
  const preview=(c)=>c.last?.deleted_at?'Mensagem excluída':c.last?.body||(c.last?.attachments?.length?'📎 Anexo':'Conversa iniciada');
- const convRows=list=>list.length?list.map(c=>'<button type="button" data-chat-open="'+esc(c.id)+'" class="chat-conversation '+(c.id===active?'is-selected':'')+'"><span class="chat-avatar">'+esc(c.title.slice(0,1))+'</span><span><strong>'+esc(c.title)+'</strong><small>'+esc(preview(c).slice(0,95))+'</small></span><span><small>'+stamp(c.updated_at)+'</small>'+(c.unread?'<b class="rp-unread-count">'+c.unread+'</b>':'')+'</span></button>').join(''):'<div class="chat-list-empty" role="status"><strong>Nenhuma conversa por aqui</strong><p>Use “Iniciar conversa” para falar com a equipe.</p></div>';
+ const convRows=list=>list.length?list.map(c=>'<button type="button" data-chat-open="'+esc(c.id)+'" class="chat-conversation '+(c.id===active?'is-selected':'')+'"><span class="chat-avatar">'+esc(c.title.slice(0,1).toUpperCase())+'</span><span class="chat-conv-info"><strong class="chat-conv-title">'+esc(c.title)+'</strong><small class="chat-conv-preview">'+esc(preview(c).slice(0,95))+'</small></span><span class="chat-conv-meta"><small class="chat-conv-stamp">'+stamp(c.updated_at)+'</small>'+(c.unread?'<b class="rp-unread-count">'+c.unread+'</b>':'')+'</span></button>').join(''):'<div class="chat-list-empty" role="status"><strong>Nenhuma conversa por aqui</strong><p>Use “Iniciar conversa” para falar com a equipe.</p></div>';
  function badge(){
   // Field chat: top and bottom buttons must launch the same operational sheet.
   if(isField())return '<button type="button" class="rp-blue-button rp-field-header-chat '+(unread?'has-unread':'')+'" data-chat-open-quick aria-label="Abrir mensagens'+(unread?' ('+unread+' não lidas)':'')+'"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 3h16v14H9l-5 4zM8 7h8M8 11h6"/></svg><span>Mensagens</span>'+(unread?'<b class="rp-unread-count">'+unread+'</b>':'')+'</button>';
@@ -25,10 +36,13 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
  }
  function messageHtml(m){
   const me=m.author_id===mine(),attachment=m.attachments.map(f=>'<div data-chat-file="'+esc(f.id)+'" data-mime="'+esc(f.mimetype)+'" data-filename="'+esc(f.filename)+'"><button type="button" data-chat-download="'+esc(f.id)+'">' +clipIcon+' '+esc(f.filename)+'</button></div>').join('');
-  const location=m.kind==='location'&&!m.deleted_at&&Number.isFinite(m.metadata?.lat)&&Number.isFinite(m.metadata?.lng)?'<a target="_blank" rel="noopener noreferrer" href="https://www.openstreetmap.org/?mlat='+m.metadata.lat+'&mlon='+m.metadata.lng+'#map=17/'+m.metadata.lat+'/'+m.metadata.lng+'">📍 Abrir localização</a>':'';
+  const location=m.kind==='location'&&!m.deleted_at&&Number.isFinite(m.metadata?.lat)&&Number.isFinite(m.metadata?.lng)?'<div class="chat-location-wrap"><a target="_blank" rel="noopener noreferrer" class="chat-location-link" href="https://www.openstreetmap.org/?mlat='+m.metadata.lat+'&mlon='+m.metadata.lng+'#map=17/'+m.metadata.lat+'/'+m.metadata.lng+'">📍 Abrir localização</a></div>':'';
   return '<article class="chat-bubble '+(me?'is-mine':'')+'" data-chat-message="'+esc(m.id)+'"><strong>'+esc(m.author)+'</strong>'+(m.reply?'<blockquote>'+esc(m.reply.author)+': '+esc(m.reply.body.slice(0,120))+'</blockquote>':'')+'<p>'+esc(m.body)+'</p>'+attachment+location+'<small>'+stamp(m.created_at)+(me?' · <span class="'+(m.state==='visualizada'?'chat-read':'')+'">'+check(m.state)+'</span>':'')+'</small>'+(m.reactions.length?'<p class="chat-reactions">'+m.reactions.map(r=>esc(r.emoji)).join(' ')+'</p>':'')+'<details class="chat-message-actions"><summary aria-label="Opções da mensagem">⋯</summary><div>'+(!m.deleted_at?'<button type="button" data-chat-reply="'+esc(m.id)+'">Responder</button><button type="button" data-chat-forward="'+esc(m.id)+'">Encaminhar</button><button type="button" data-chat-react="'+esc(m.id)+'">Reagir</button>':'')+(me?'<button type="button" data-chat-info="'+esc(m.id)+'">Entrega e leitura</button>':'')+'<button type="button" data-chat-delete="'+esc(m.id)+'">Excluir para mim</button>'+(m.canDelete?'<button type="button" data-chat-delete-all="'+esc(m.id)+'">Excluir para todos</button>':'')+'</div></details></article>';
  }
- function view(){return '<section class="chat-page"><header class="toolbar"><h1>Chat interno</h1><div class="row"><button type="button" data-chat-new>Iniciar conversa</button><button type="button" data-chat-profile>Meu telefone</button></div></header><div class="chat-workspace '+(active?'has-active':'')+'"><aside class="chat-sidebar"><label>Buscar conversas<input data-chat-search type="search" placeholder="Nome do contato ou grupo"></label><div data-chat-conversations>'+convRows(conversations)+'</div></aside><section class="chat-main">'+(active?'<header class="chat-thread-heading"><button type="button" data-chat-back aria-label="Voltar às conversas">←</button><div><h2>'+esc(conversation()?.title||'Conversa')+'</h2><small data-chat-typing></small></div>'+(!conversation()?.is_group?'<button type="button" data-chat-call="audio">☎ Áudio</button><button type="button" data-chat-call="video">▣ Vídeo</button>':'')+'</header><label class="chat-message-search">Buscar nesta conversa<input type="search" data-chat-message-search placeholder="Texto da mensagem" value="'+esc(search)+'"></label><button type="button" data-chat-older '+(!hasMore?'hidden':'')+'>Mensagens anteriores</button><div class="chat-thread" data-chat-thread tabindex="0" aria-label="Mensagens da conversa">'+rows.map(messageHtml).join('')+'</div><form data-chat-compose class="chat-composer"><div data-chat-reply-preview></div><label class="sr-only" for="chat-body">Mensagem</label><textarea id="chat-body" name="body" maxlength="4000" placeholder="Mensagem" rows="2">'+esc(drafts.get(active)||'')+'</textarea><div class="chat-compose-tools"><label class="chat-attach" aria-label="Anexar arquivo" title="Anexar arquivo">'+clipIcon+'<input type="file" data-chat-attachment multiple accept="image/*,video/mp4,video/webm,audio/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip"></label><button type="button" data-chat-emoji aria-label="Inserir emoji" title="Inserir emoji">'+chatIcon('<circle cx="12" cy="12" r="9"/><path d="M8 9h.01M16 9h.01M8 14q4 5 8 0"/>')+'</button><button type="button" data-chat-location aria-label="Enviar localização" title="Enviar localização">'+chatIcon('<path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/>')+'</button><button type="button" data-chat-record aria-label="Gravar áudio" title="Gravar áudio">'+chatIcon('<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>')+'</button><button type="submit" class="primary">Enviar</button></div><small data-chat-files-label></small><small data-chat-send-state role="status"></small></form>':'<div class="empty">Selecione uma conversa ou inicie uma nova.</div>')+'</section></div></section>'}
+ function view(){
+  const callAudioBtn='<button type="button" class="chat-call-btn" data-chat-call="audio" aria-label="Chamada de áudio" title="Chamada de áudio"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>';
+  const callVideoBtn='<button type="button" class="chat-call-btn" data-chat-call="video" aria-label="Chamada de vídeo" title="Chamada de vídeo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg></button>';
+  return '<section class="chat-page">'+(active?'':'<header class="toolbar"><div class="chat-toolbar-left"><button type="button" class="ronda-chat-back-to-map" data-chat-to-map data-chat-overlay-close aria-label="Voltar">← Voltar</button>'+brandLockup+'</div><div class="row"><button type="button" class="chat-btn-new-conv" data-chat-new>+ Nova</button><button type="button" class="chat-btn-profile" data-chat-profile aria-label="Meu telefone" title="Meu telefone">📱</button></div></header>')+'<div class="chat-workspace '+(active?'has-active':'')+'"><aside class="chat-sidebar"><div class="chat-search-wrap"><svg class="chat-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input data-chat-search type="search" placeholder="Buscar conversas..." aria-label="Buscar conversas"></div><div data-chat-conversations>'+convRows(conversations)+'</div></aside><section class="chat-main">'+(active?'<header class="chat-thread-heading"><button type="button" class="chat-back-btn" data-chat-back aria-label="Voltar às conversas">←</button>'+brandLockup+'<div class="chat-thread-user"><h2>'+esc(conversation()?.title||'Conversa')+'</h2><small data-chat-typing>● Central COI · Conectado</small></div>'+(!conversation()?.is_group?'<div class="chat-call-actions">'+callAudioBtn+callVideoBtn+'</div>':'')+'</header><button type="button" data-chat-older '+(!hasMore?'hidden':'')+'>Mensagens anteriores</button><div class="chat-thread" data-chat-thread tabindex="0" aria-label="Mensagens da conversa">'+rows.map(messageHtml).join('')+'</div><form data-chat-compose class="chat-composer"><div data-chat-reply-preview></div><label class="sr-only" for="chat-body">Mensagem</label><textarea id="chat-body" name="body" maxlength="4000" placeholder="Mensagem..." rows="1">'+esc(drafts.get(active)||'')+'</textarea><div class="chat-compose-tools"><label class="chat-attach" aria-label="Anexar arquivo" title="Anexar arquivo">'+clipIcon+'<input type="file" data-chat-attachment multiple accept="image/*,video/mp4,video/webm,audio/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip"></label><button type="button" data-chat-emoji aria-label="Inserir emoji" title="Inserir emoji">'+chatIcon('<circle cx="12" cy="12" r="9"/><path d="M8 9h.01M16 9h.01M8 14q4 5 8 0"/>')+'</button><button type="button" data-chat-location aria-label="Enviar localização" title="Enviar localização">'+chatIcon('<path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/>')+'</button><button type="button" data-chat-record aria-label="Gravar áudio" title="Gravar áudio">'+chatIcon('<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>')+'</button><button type="submit" class="primary chat-send-btn" aria-label="Enviar mensagem" title="Enviar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span class="chat-send-label">Enviar</span></button></div><small data-chat-files-label></small><small data-chat-send-state role="status"></small></form>':'<div class="empty">Selecione uma conversa ou inicie uma nova.</div>')+'</section></div></section>'}
  function revoke(){for(const v of urls.values())URL.revokeObjectURL(v);urls.clear()}
  function observe(){observer?.disconnect();if(!active||document.hidden||!document.hasFocus())return;
   const container=document.querySelector('[data-chat-thread]');if(!container)return;
@@ -71,19 +85,30 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
  }
  function fieldOverlay(){
   let overlay=document.querySelector('#rp-field-chat-overlay');
+  document.body.classList.add('has-chat-overlay');
   if(!overlay){
    overlay=document.createElement('dialog');overlay.id='rp-field-chat-overlay';overlay.className='rp-field-chat-overlay';
-   overlay.innerHTML='<div class="rp-field-chat-overlay-head"><strong>Mensagens</strong></div>'+view()+'<button type="button" class="rp-chat-grip" data-chat-overlay-close aria-label="Recolher mensagens"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 7-7 7 7"/></svg></button>';
+   overlay.innerHTML='<div class="rp-field-chat-overlay-head" '+(active?'style="display:none"':'')+'><button type="button" class="ronda-chat-back-btn" data-chat-overlay-close aria-label="Voltar">← Voltar</button>'+brandLockup+'<span class="rp-chat-status-dot"></span></div>'+view()+'<button type="button" class="rp-chat-grip" data-chat-overlay-close aria-label="Recolher mensagens" style="display:none"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 7-7 7 7"/></svg></button>';
    document.body.append(overlay);
-   overlay.addEventListener('close',()=>{observer?.disconnect();overlay.remove()},{once:true});
+   overlay.addEventListener('close',()=>{document.body.classList.remove('has-chat-overlay');observer?.disconnect();overlay.remove()},{once:true});
    overlay.addEventListener('cancel',event=>{event.preventDefault();closeFieldSheet()});
    overlay.showModal();
-  }else{const old=overlay.querySelector('.chat-page');if(old)old.outerHTML=view();}
+  }else{
+   const head=overlay.querySelector('.rp-field-chat-overlay-head');
+   if(head)head.style.display=active?'none':'';
+   const old=overlay.querySelector('.chat-page');if(old)old.outerHTML=view();
+  }
   requestAnimationFrame(()=>void mount());return overlay;
  }
  async function open(cid){
   active=cid;rows=[];reply=null;search='';
-  if(isField()){fieldOverlay();await loadMessages();await mount();}
+  if(isField()){
+   if(document.querySelector('.rp-field-page-overlay .chat-page')){
+    navigate('chat');await loadMessages();requestAnimationFrame(()=>void mount());
+   }else{
+    fieldOverlay();await loadMessages();await mount();
+   }
+  }
   else{navigate('chat');await loadMessages();requestAnimationFrame(()=>void mount());}
  }
  function modal(html){document.querySelector('#chat-dialog')?.remove();const d=document.createElement('dialog');d.id='chat-dialog';d.className='rp-record-dialog';d.innerHTML='<button type="button" data-chat-close class="chat-dialog-close" aria-label="Fechar">✕</button>'+html;document.body.append(d);d.addEventListener('close',()=>d.remove(),{once:true});d.showModal();return d}
@@ -95,12 +120,14 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
   await api('/chat/conversations/'+cid+'/messages',{method:'POST',data:payload});reply=null;await refresh();
  }
  async function click(t){
-  if(t.hasAttribute('data-chat-overlay-close')){closeFieldSheet();return true}
-   if(t.hasAttribute('data-chat-close')){close();return true}
-  if(t.hasAttribute('data-chat-open-quick')){if(isField()){fieldOverlay();return true;}if(active&&conversations.some(c=>c.id===active))await open(active);else if(conversations.length)await open(conversations[0].id);else navigate('chat');return true}
-   if(t.hasAttribute('data-chat-page')){if(isField())fieldOverlay();else navigate('chat');return true}
-  if(t.dataset.chatOpen){await open(t.dataset.chatOpen);return true}
-  if(t.hasAttribute('data-chat-back')){active=null;if(isField()&&document.querySelector('#rp-field-chat-overlay'))fieldOverlay();else navigate('chat');return true}
+  if(t.closest?.('.chat-message-actions button')){t.closest('.chat-message-actions')?.removeAttribute('open');}
+  if(t.hasAttribute('data-chat-overlay-close')||t.closest?.('[data-chat-overlay-close]')||t.hasAttribute('data-chat-to-map')||t.closest?.('[data-chat-to-map]')){if(isField()&&document.querySelector('#rp-field-chat-overlay'))closeFieldSheet();else navigate(backToOrigin());return true}
+   if(t.hasAttribute('data-chat-close')||t.closest?.('[data-chat-close]')){close();return true}
+  if(t.hasAttribute('data-chat-open-quick')||t.closest?.('[data-chat-open-quick]')){if(isField()){fieldOverlay();return true;}if(active&&conversations.some(c=>c.id===active))await open(active);else if(conversations.length)await open(conversations[0].id);else navigate('chat');return true}
+   if(t.hasAttribute('data-chat-page')||t.closest?.('[data-chat-page]')){if(isField())fieldOverlay();else navigate('chat');return true}
+  const openTarget=t.dataset?.chatOpen?t:t.closest?.('[data-chat-open]');
+  if(openTarget){await open(openTarget.dataset.chatOpen);return true}
+  if(t.hasAttribute('data-chat-back')||t.closest?.('[data-chat-back]')){active=null;if(isField()&&document.querySelector('#rp-field-chat-overlay'))fieldOverlay();else navigate('chat');return true}
   if(t.hasAttribute('data-chat-older')){await loadMessages(true);return true}
   if(t.hasAttribute('data-chat-new')){
    contacts=(await api('/chat/contacts')).contacts;modal('<h2>Nova conversa ou grupo</h2><form data-chat-create><label>Nome do grupo (ao selecionar vários contatos)<input name="title" maxlength="100"></label><div class="chat-contact-options">'+contacts.map(c=>'<label><input type="checkbox" name="members" value="'+esc(c.id)+'">'+esc(c.name)+' · '+esc(c.role)+'</label>').join('')+'</div><button type="submit" class="primary">Iniciar conversa</button></form>');return true;
@@ -143,6 +170,25 @@ export function createInternalChatUI({api,flash,navigate,getAccount}){
  });
  document.addEventListener('change',e=>{if(e.target.matches('[data-chat-attachment]'))document.querySelector('[data-chat-files-label]').textContent=[...e.target.files].map(f=>f.name).join(' · ')});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)observer?.disconnect();else observe()});globalThis.addEventListener?.('focus',observe);
+ document.addEventListener('click',e=>{
+  const summary=e.target.closest?.('.chat-message-actions summary');
+  if(summary){
+   const current=summary.closest('.chat-message-actions');
+   document.querySelectorAll('.chat-message-actions[open]').forEach(d=>{if(d!==current)d.removeAttribute('open');});
+   if(current){
+    const thread=current.closest('[data-chat-thread]');
+    if(thread){
+     const tr=thread.getBoundingClientRect(),dr=current.getBoundingClientRect();
+     if(tr.bottom-dr.bottom<250)current.classList.add('open-upward');
+     else current.classList.remove('open-upward');
+    }
+   }
+   return;
+  }
+  const actionBtn=e.target.closest?.('.chat-message-actions button');
+  if(actionBtn){actionBtn.closest('.chat-message-actions')?.removeAttribute('open');return;}
+  if(!e.target.closest?.('.chat-message-actions')){document.querySelectorAll('.chat-message-actions[open]').forEach(d=>d.removeAttribute('open'));}
+ },true);
  function reset(){epoch++;conversations=[];contacts=[];active=null;rows=[];unread=0;drafts.clear();observer?.disconnect();revoke();if(recorder?.state==='recording'){recording=null;recorder.stop()}audioStream?.getTracks().forEach(t=>t.stop());document.querySelector('#chat-dialog')?.close();document.querySelector('#rp-field-chat-overlay')?.close();}
  return {badge,view,refresh,open,mount,click,submit,reset,active:()=>active,conversation};
 }

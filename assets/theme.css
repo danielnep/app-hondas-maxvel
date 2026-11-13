@@ -13,19 +13,31 @@
     --rp-glass: rgba(27,37,46,.67) !important;
     --rp-deep: #151c23 !important;
     --rp-radius: 12px !important;
-    color-scheme: dark !important
+    color-scheme: dark !important;
+    --rp-font-ui: Inter,"Segoe UI",Arial,sans-serif !important;
+    --rp-window-surface: linear-gradient(155deg,rgba(31,44,56,.97),rgba(19,28,37,.97)) !important;
+    --rp-window-border: #637b8d66 !important;
+    --rp-window-radius: 16px !important;
+    --rp-window-shadow: 0 20px 60px #060c1480,0 2px 10px #0004 !important;
+    --rp-window-gap: 16px !important
+  }
+  [hidden] {
+    display: none !important;
+  }
+  dialog:not([open]) {
+    display: none !important;
   }
   body.rp-theme {
     margin: 0 !important;
     background: radial-gradient(ellipse at 85% 0%,#33404a 0,transparent 52%),radial-gradient(ellipse at 8% 95%,#30252a 0,transparent 45%),#171e25 !important;
     color: var(--rp-ink) !important;
-    font-family: Inter,"Segoe UI",Arial,sans-serif !important
+    font-family: var(--rp-font-ui) !important
   }
   .rp-theme :is(button,input,textarea,select) {
-    font-family: inherit !important
+    font-family: var(--rp-font-ui) !important
   }
   .rp-theme :is(h1,h2,h3,h4) {
-    font-family: inherit !important;
+    font-family: var(--rp-font-ui) !important;
     color: var(--rp-ink) !important;
     letter-spacing: -.025em !important
   }
@@ -41,7 +53,7 @@
     color: var(--rp-soft) !important
   }
   .rp-theme :is(.eyebrow,.rp2-nav-eyebrow,.side-caption) {
-    color: var(--rp-blue) !important;
+    color: #e5232a !important;
     font-size: 10px !important;
     letter-spacing: 1.5px !important;
     font-weight: 650 !important
@@ -50,37 +62,41 @@
     color: inherit !important
   }
   .rp-theme :is(button,a,input,textarea,select,summary):focus-visible {
-    outline: 2px solid var(--rp-blue) !important;
-    outline-offset: 4px !important
+    outline: 2px solid #535353 !important;
+    outline-offset: 2px !important
   }
-  .rp-theme :is(button,.button) {
-    border: 1px solid #a1bed13d !important;
-    background: #ffffff08 !important;
+  .rp-theme :is(button:not(.primary):not(.danger):not(.rp-map-btn-zoom):not(.rp-map-btn-compass):not(.rp-map-btn-recenter):not(.ronda-chip):not(.rp-search-btn-clear):not(.rp-search-btn-pin):not(.rp-search-btn-close):not(.rp-agent-tool-btn):not(.rp-agent-menu-toggle):not(.rp-btn-torch):not(.rp2-nav-item),.button:not(.primary):not(.danger):not(.rp-map-btn-zoom):not(.rp-map-btn-compass):not(.rp-map-btn-recenter):not(.ronda-chip):not(.rp-search-btn-clear):not(.rp-search-btn-pin):not(.rp-search-btn-close):not(.rp-agent-tool-btn):not(.rp-agent-menu-toggle):not(.rp-btn-torch):not(.rp2-nav-item)) {
+    border: 1px solid #535353 !important;
+    background: #262626 !important;
     color: var(--rp-ink) !important;
-    border-radius: 7px !important;
-    min-height: 40px !important;
+    border-radius: 10px !important;
+    min-height: 44px !important;
     padding: 9px 15px !important;
     font-weight: 600 !important;
     box-shadow: none !important
   }
   .rp-theme :is(button,.button):hover {
-    background: #ffffff12 !important;
-    border-color: #a1bed17a !important
+    background: #303030 !important;
+    border-color: #737373 !important
   }
   .rp-theme :is(button,.button):disabled {
     opacity: .5 !important;
     cursor: not-allowed !important
   }
   .rp-theme :is(button.primary,.button.primary,.rp-inspection-main-action) {
-    background: linear-gradient(110deg,#075b99bb,#1478a4bb) !important;
-    border-color: #4dbaffad !important;
-    color: #f4fbff !important;
-    box-shadow: inset 0 0 13px #53bcff13 !important
+    background: #cc243b !important;
+    border: 1px solid #e5232a !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(204, 36, 59, 0.35) !important
+  }
+  .rp-theme :is(button.primary,.button.primary,.rp-inspection-main-action):hover {
+    background: #e5232a !important;
+    border-color: #ff334b !important
   }
   .rp-theme :is(input,textarea,select) {
-    border: 1px solid #abc4d149 !important;
-    border-radius: 7px !important;
-    background: #101d2599 !important;
+    border: 1px solid #535353 !important;
+    border-radius: 10px !important;
+    background: #262626 !important;
     color: var(--rp-ink) !important;
     min-height: 42px !important;
     padding: 10px 12px !important
@@ -97,18 +113,23 @@
   .rp-theme option {
     background: #202d37 !important
   }
-  .rp-theme :is(dialog,.rp-record-dialog,.conclusion-dialog,.login:not(#live-login-form),.rp-popover-list) {
-    background: rgba(25,35,44,.86) !important;
+  .rp-theme :is(dialog,.rp-record-dialog,.conclusion-dialog,.login:not(#live-login-form),.rp-field-page-overlay) {
+    background: var(--rp-window-surface) !important;
     color: var(--rp-ink) !important;
-    border: 1px solid #899fad55 !important;
-    border-radius: 12px !important;
-    backdrop-filter: blur(20px) saturate(.8) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(.8) !important;
-    box-shadow: 0 15px 65px #0005 !important
+    border: 1px solid var(--rp-window-border) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: var(--rp-window-radius) !important;
+    backdrop-filter: blur(20px) saturate(.9) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(.9) !important;
+    box-shadow: var(--rp-window-shadow) !important;
+    font-family: var(--rp-font-ui) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important
   }
   .rp-theme dialog::backdrop {
-    background: #0d141b44 !important;
-    backdrop-filter: blur(2px) !important
+    background: #08121d80 !important;
+    backdrop-filter: blur(4px) !important
   }
   .rp-theme .login:not(#live-login-form) {
     border-top: 2px solid var(--rp-red) !important;
@@ -123,21 +144,21 @@
     background: transparent !important
   }
   .rp-theme :is(.top,.app-header) {
-    background: rgba(21,30,38,.8) !important;
+    background: rgba(15,20,28,.88) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border: 0 !important;
-    border-bottom: 1px solid #ff172256 !important;
-    box-shadow: 0 1px 7px #ff172218 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.5) !important;
     color: var(--rp-ink) !important
   }
   .rp-theme :is(.sidebar,.side) {
-    background: rgba(24,34,43,.67) !important;
+    background: rgba(17,23,32,.92) !important;
     backdrop-filter: blur(18px) !important;
     border: 0 !important;
-    border-right: 1px solid #ff17225f !important;
+    border-right: 1px solid rgba(255,255,255,0.08) !important;
     border-radius: 0 !important;
-    box-shadow: 2px 0 9px #ff17221f !important
+    box-shadow: 2px 0 16px rgba(0,0,0,0.5) !important
   }
   .rp-theme :is(.side-link,.rp2-nav-item) {
     border: 0 !important;
@@ -152,9 +173,9 @@
   }
   .rp-theme :is(.side-link.active,.rp2-nav-item.active) {
     border: 0 !important;
-    border-left: 3px solid var(--rp-red) !important;
-    background: linear-gradient(90deg,#ff172222,transparent) !important;
-    box-shadow: inset 0 1px #ff17223b,inset 0 -1px #ff17223b !important;
+    border-left: 3px solid #38bdf8 !important;
+    background: rgba(56,189,248,0.12) !important;
+    box-shadow: none !important;
     color: #fff !important
   }
   .rp-theme :is(.side-link,.rp2-nav-item) svg {
@@ -216,7 +237,6 @@
     gap: 22px !important
   }
   .rp-theme .rp-event-column {
-    border-top: 2px solid #ff17226b !important;
     padding: 14px 0 !important
   }
   .rp-theme .rp-event-card {
@@ -291,6 +311,10 @@
   /* Header-only geometry: management controls stay compact, field HUD is unchanged. */
   /* Icon-button padding must not inherit the 15px global control padding: at 36px wide it leaves only 6px for the menu and squeezes the avatar into an oval. */
   .rp-theme:not([data-rp-field=true]) .app-header :is(.app-menu-button,.rp-blue-button,.user-profile-button) {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -302,28 +326,44 @@
     flex-shrink: 0 !important
   }
   .rp-theme .rp-popover-list {
-    border-left: 1px solid var(--rp-red) !important;
-    border-right: 1px solid var(--rp-red) !important;
-    box-shadow: var(--rp-neon) !important
+    background: #191919 !important;
+    border: 1px solid #535353 !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
-  .rp-theme :is(.rp-popover-list,.side,.sidebar) {
+  .rp-theme .rp-popover-list :is(.ops-notification-row,.rp-notice-row,.event-item) {
+    background: #262626 !important;
+    border: 1px solid #535353 !important;
+    color: #FFFFFF !important;
+    border-radius: 8px !important;
+    margin-bottom: 6px !important;
+  }
+  .rp-theme .rp-popover-list :is(.ops-notification-row,.rp-notice-row,.event-item):hover {
+    background: #303030 !important;
+  }
+  .rp-theme :is(.side,.sidebar) {
     position: relative !important
   }
   .rp-theme .rp-popover-list {
-    position: absolute !important
+    position: absolute;
+  }
+  @media (max-width: 768px) {
+    .rp-theme .rp-popover-list,
+    body.rp-theme header.top .rp-popover-list,
+    body:has(#central-root) > header.top .rp-popover-list {
+      position: fixed !important;
+      left: 12px !important;
+      right: 12px !important;
+      width: auto !important;
+      max-width: calc(100vw - 24px) !important;
+      top: calc(64px + env(safe-area-inset-top, 0px)) !important;
+      z-index: 10050 !important;
+    }
   }
   .rp-theme :is(.sidebar,.side)::after {
-    content: '' !important;
-    position: absolute !important;
-    right: -1px !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    width: 1px !important;
-    background: linear-gradient(transparent,#ff1722,#ff4b31,#ff1722,transparent) !important;
-    background-size: 100% 250% !important;
-    animation: rp-neon-vertical 7s linear infinite !important;
-    box-shadow: var(--rp-neon) !important;
-    pointer-events: none !important
+    display: none !important;
+    content: none !important;
   }
   @keyframes rp-neon-vertical {
     to {
@@ -336,17 +376,31 @@
     }
   }
   /* Field retains the real map. No dark tint over cartography. */
-  .rp-theme .maxvel-osm-dark-adapted,.rp-theme .leaflet-tile-pane {
+  .rp-theme[data-rp-field="true"] .maxvel-osm-dark-adapted,.rp-theme[data-rp-field="true"] .leaflet-tile-pane {
     filter: none !important
   }
   .rp-theme .fallback-svg {
     background: #e7ece6 !important
+  }
+  /* Touch target compliance >= 44x44px for privacy links and footers */
+  a[href*="privacy.html"], footer a, .consent-small a {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 48px !important;
+    min-width: 48px !important;
+    padding: 12px 16px !important;
+    box-sizing: border-box !important;
   }
   .rp-theme .fallback-svg>rect:first-of-type {
     fill: #e7ece6 !important
   }
   .rp-theme .fallback-svg text {
     fill: #485a66 !important
+  }
+  /* Offline route-only map uses real road geometry, not fictional roads. */
+  .rp-theme .route-only-svg>text,.rp-theme .route-only-svg g text {
+    fill: #fff !important
   }
   .rp-theme .fallback-svg pattern path {
     stroke: #d3dbd6 !important
@@ -361,26 +415,18 @@
     stroke: white !important
   }
   .rp-theme .rp-field-controls,.rp-theme .patrol-actions,.rp-theme .rp-inspection-commands {
-    background: rgba(27,37,46,.59) !important;
-    backdrop-filter: blur(18px) saturate(.85) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(.85) !important;
-    border: 1px solid #a1bed13f !important;
-    border-top: 2px solid var(--rp-red) !important;
-    border-radius: 13px !important;
-    box-shadow: 0 -2px 9px #ff17223b,0 10px 28px #14232d2b !important
+    background: rgba(14,19,27,.94) !important;
+    backdrop-filter: blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    border-top: 1px solid rgba(255,255,255,.18) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,.75) !important;
+    font-family: var(--rp-font-ui) !important
   }
   .rp-theme .rp-field-controls:before {
-    content: '' !important;
-    position: absolute !important;
-    top: -2px !important;
-    left: 10px !important;
-    right: 10px !important;
-    height: 2px !important;
-    background: linear-gradient(90deg,#d0141b33,#ff1722,#ff4930,#ff1722,#d0141b33) !important;
-    background-size: 250% 100% !important;
-    animation: rp-neon-horizontal 5s linear infinite !important;
-    box-shadow: var(--rp-neon) !important;
-    pointer-events: none !important
+    display: none !important;
+    content: none !important;
   }
   .rp-theme .rp-field-controls :is(.patrol-actions,.rp-inspection-commands) {
     border: 0 !important;
@@ -398,12 +444,13 @@
     color: #fff !important
   }
   .rp-theme :is(.patrol-map-heading,.rp-inspection-route-bar) {
-    background: rgba(27,37,46,.65) !important;
-    backdrop-filter: blur(16px) !important;
-    border: 1px solid #a1bed13f !important;
-    border-left: 3px solid var(--rp-red) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 0 6px #ff172230 !important;
+    background: rgba(15,20,28,.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    border-left: 3px solid #38bdf8 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,.45) !important;
     color: #fff !important
   }
   .rp-theme :is(.patrol-map-heading-copy strong,.patrol-map-heading-copy small) {
@@ -444,13 +491,17 @@
     color: #fff !important
   }
   .rp-theme .rp-field-chat-overlay {
-    background: rgba(25,35,44,.97) !important;
-    border: 1px solid var(--rp-red) !important;
-    border-top: 0 !important;
-    border-bottom: 0 !important;
-    box-shadow: var(--rp-neon) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important
+    position: fixed !important;
+    inset: calc(80px + env(safe-area-inset-top,0px)) auto auto 50% !important;
+    margin: 0 !important;
+    transform: translateX(-50%) !important;
+    width: min(480px,calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    height: min(560px,calc(100dvh - 92px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))) !important;
+    max-height: calc(100dvh - 92px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important
   }
   .rp-theme .field-chat-surface {
     display: flex !important;
@@ -461,35 +512,46 @@
     box-shadow: none !important
   }
   .rp-theme :is(.field-chat-compose,.chat-compose) {
-    border: 1px solid #d7e5ed88 !important;
-    border-radius: 28px !important;
-    background: transparent !important
+    border: 1px solid var(--rp-window-border) !important;
+    border-radius: 12px !important;
+    background: #ffffff05 !important
   }
   .rp-theme :is(.field-chat-compose button[type=submit],.chat-compose button[type=submit]) {
     background: #108bc8 !important;
     border: 1px solid #53bcff !important;
-    border-radius: 25px !important;
+    border-radius: 10px !important;
     color: #fff !important
   }
   .rp-theme .rp-chat-grip {
     display: grid !important;
     place-items: center !important;
-    min-height: 44px !important;
+    min-height: 32px !important;
     touch-action: none !important;
     border: 0 !important;
     background: transparent !important;
     width: 100% !important;
-    padding: 6px 0 max(7px,env(safe-area-inset-bottom)) !important;
-    color: #fff !important
+    padding: 4px 0 !important;
+    color: #fff !important;
+    height: 32px !important;
+    opacity: .75 !important
   }
   .rp-theme .rp-chat-grip svg {
-    width: 27px !important;
-    height: 27px !important
+    width: 20px !important;
+    height: 20px !important
   }
   .rp-theme .rp-field-chat-overlay-head {
-    background: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-height: 72px !important;
+    flex-shrink: 0 !important;
+    padding: 12px 16px !important;
+    background: transparent !important;
     border: 0 !important;
-    touch-action: none !important
+    border-bottom: 1px solid var(--rp-rule) !important;
+    touch-action: none !important;
+    justify-content: flex-start !important;
+    text-align: left !important
   }
   .rp-theme .field-chat-empty {
     color: var(--rp-blue) !important
@@ -564,7 +626,8 @@
     padding: 0!important;
     margin: 0!important
   }
-  .rp-theme[data-rp-field=true] :is(.rp2-contextbar,.page-title,.footer-app,.patrol-statusline,.patrol-map-footer,.rp-inspection-status-readout) {
+  .rp-theme[data-rp-field=true] :is(.rp2-contextbar,.footer-app,.patrol-statusline,.patrol-map-footer,.rp-inspection-status-readout),
+  .rp-theme[data-rp-field=true] :is(.app-content,#conteudo,.content)>.page-title {
     display: none!important
   }
   .rp-theme[data-rp-field=true] :is(.patrol-workspace,.rp-inspection-cockpit) {
@@ -663,68 +726,87 @@
   }
   .rp-theme[data-rp-field=true] :is(.ops-panic,.rp-inspection-panic) {
     position: fixed!important;
-    top: 159px!important;
-    left: 20px!important;
-    right: auto!important;
+    top: max(8px, env(safe-area-inset-top, 8px))!important;
+    right: calc(env(safe-area-inset-right, 0px) + 94px)!important;
+    left: auto!important;
     bottom: auto!important;
-    width: 64px!important;
-    height: 64px!important;
-    border-radius: 50%!important;
-    z-index: 4300!important
+    width: auto!important;
+    min-width: 44px!important;
+    height: 38px!important;
+    border-radius: 20px!important;
+    z-index: 4300!important;
+    display: inline-flex!important;
+    flex-direction: row!important;
+    align-items: center!important;
+    justify-content: center!important;
+    gap: 6px!important
   }
   .rp-theme[data-rp-field=true] :is(.ux06-map-help,.rp-inspection-help,.rp-field-help) {
     position: fixed!important;
-    top: 235px!important;
-    left: 31px!important;
+    top: calc(env(safe-area-inset-top, 0px) + 64px)!important;
+    left: 14px!important;
     right: auto!important;
     bottom: auto!important;
-    width: 42px!important;
-    height: 42px!important;
-    border-radius: 50%!important;
+    width: 38px!important;
+    height: 38px!important;
+    border-radius: 12px!important;
     z-index: 4300!important
   }
   .rp-theme[data-rp-field=true] .rp-inspection-torch {
     position: fixed!important;
-    top: 159px!important;
-    right: 20px!important;
+    top: calc(env(safe-area-inset-top, 0px) + 64px)!important;
+    right: 58px!important;
+    left: auto!important;
     bottom: auto!important;
-    width: 66px!important;
-    height: 66px!important;
-    border-radius: 50%!important;
+    width: 38px!important;
+    height: 38px!important;
+    border-radius: 12px!important;
     z-index: 4300!important
-  }
-  .rp-theme .rp-field-chat-overlay {
-    position: fixed!important;
-    inset: calc(68px + env(safe-area-inset-top,0px)) 5% 0!important;
-    margin: 0!important;
-    width: 90%!important;
-    max-width: none!important;
-    height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
-    max-height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
-    padding: 12px 0 calc(8px + env(safe-area-inset-bottom,0px))!important;
-    border-radius: 15px 15px 0 0!important;
-    overflow: hidden!important
   }
   .rp-theme .rp-field-chat-overlay[open] {
     display: flex!important;
     flex-direction: column!important
   }
+  /* Lista vazia/contatos usa painel proporcional. Conversas ativas preservam altura operacional. */
+  .rp-theme .rp-field-chat-overlay[open]:has(.field-chat-list) {
+    height: auto !important;
+    max-height: calc(100dvh - 92px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) !important;
+  }
   .rp-theme .rp-field-chat-overlay .field-chat-screen {
-    height: 100%!important;
-    width: 100%!important;
-    border: 0!important;
-    display: flex!important;
-    flex-direction: column!important;
-    padding: 0!important;
-    min-height: 0!important;
-    background: transparent!important;
-    box-shadow: none!important
+    flex:1 1 auto!important;
+    height:auto!important;
+    width:100%!important;
+    border:0!important;
+    border-radius:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    padding:0!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    background:transparent!important;
+    box-shadow:none!important
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-list{
+    background:transparent!important;
+    border:0!important;
+    min-height:0!important;
+  }
+  .rp-theme .rp-field-chat-overlay .field-chat-contact-row{
+    background:rgba(40,54,67,.38)!important;
+    border:1px solid rgba(126,166,190,.20)!important;
+    border-radius:11px!important;
+    margin-bottom:8px
   }
   .rp-theme .rp-field-chat-overlay .field-chat-surface {
-    flex: 1!important;
-    min-height: 0!important;
-    overflow: auto!important;
-    padding: 0 16px!important
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 12px 16px 0 !important;
+    background: transparent !important;
+    border: 0 !important
   }
   .rp-theme .rp-field-chat-overlay .field-chat-conversation {
     height: 100%!important;
@@ -733,20 +815,31 @@
     min-height: 0!important
   }
   .rp-theme .rp-field-chat-overlay .field-chat-thread {
-    flex: 1!important;
-    min-height: 0!important;
-    overflow: auto!important
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: auto !important;
+    padding: 12px 0 !important;
+    font-size: 14px !important
   }
   .rp-theme .rp-field-chat-overlay .field-chat-compose {
-    flex-shrink: 0!important;
-    margin: 10px 0!important;
-    position: static!important
-  }
-  .rp-theme .rp-field-chat-overlay-head {
-    padding: 8px 20px!important
+    flex-shrink: 0 !important;
+    margin: 12px 0 0 !important;
+    position: static !important;
+    min-height: 56px !important;
+    padding: 5px !important;
+    gap: 6px !important
   }
   .rp-theme .rp-field-chat-overlay-head>button {
-    display: none!important
+    display: grid !important;
+    place-items: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    border: 1px solid var(--rp-window-border) !important;
+    background: transparent !important;
+    flex-shrink: 0 !important
   }
   @media(min-width:1000px) {
     .rp-theme .workspace {
@@ -798,9 +891,9 @@
       display: block !important
     }
     .rp-theme .side.rp2-role-nav {
-      background: rgba(25,35,44,.8) !important;
-      backdrop-filter: blur(20px) !important;
-      border-right: 1px solid var(--rp-red) !important
+      background: rgba(13, 17, 24, 0.98) !important;
+      backdrop-filter: blur(28px) saturate(180%) !important;
+      border-right: 1px solid rgba(255, 255, 255, 0.12) !important
     }
     .rp-theme .rp-compact-actions {
       gap: 0 !important
@@ -920,41 +1013,42 @@
     padding: 0 0 9px!important
   }
   .rp-theme #dialog.rp-side-drawer[open] {
-    position: fixed!important;
-    inset: 0 auto 0 0!important;
-    width: 84vw!important;
-    max-width: 430px!important;
-    max-height: 100dvh!important;
-    height: 100dvh!important;
-    margin: 0!important;
-    padding: 24px 18px!important;
-    border: 0!important;
-    border-right: 1px solid var(--rp-red)!important;
-    border-radius: 0 14px 14px 0!important;
-    box-shadow: var(--rp-neon)!important;
-    overflow: auto!important
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    width: 84vw !important;
+    max-width: 430px !important;
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 20px 16px !important;
+    border: 0 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 0 20px 20px 0 !important;
+    box-shadow: 20px 0 60px rgba(0, 0, 0, 0.75) !important;
+    overflow: auto !important
   }
   .rp-theme .rp-notification-popover[open]>.rp-popover-list {
-    background: rgba(25,35,44,.97) !important;
-    backdrop-filter: blur(20px) saturate(.8) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(.8) !important;
-    border: 0 !important;
-    border-left: 1px solid var(--rp-red) !important;
-    box-shadow: var(--rp-neon) !important;
-    color: var(--rp-ink) !important;
-    position: fixed!important;
-    inset: calc(68px + env(safe-area-inset-top,0px)) 0 0 auto!important;
-    width: min(82vw,380px)!important;
-    max-width: min(82vw,380px)!important;
-    height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
-    max-height: calc(100dvh - 68px - env(safe-area-inset-top,0px))!important;
-    border-radius: 15px 0 0 15px!important;
-    padding: 20px 16px!important;
-    z-index: 5500!important;
-    overflow-x: hidden!important;
-    overflow-y: auto!important;
-    overscroll-behavior-y: contain!important;
-    touch-action: pan-y!important
+    background: #191919 !important;
+    background-color: #191919 !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #535353 !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95), 0 0 0 100vmax rgba(0, 0, 0, 0.6) !important;
+    color: #FFFFFF !important;
+    position: fixed !important;
+    inset: calc(68px + env(safe-area-inset-top,0px)) 0 0 auto !important;
+    width: min(82vw,380px) !important;
+    max-width: min(82vw,380px) !important;
+    height: calc(100dvh - 68px - env(safe-area-inset-top,0px)) !important;
+    max-height: calc(100dvh - 68px - env(safe-area-inset-top,0px)) !important;
+    border-radius: 15px 0 0 15px !important;
+    padding: 20px 16px !important;
+    z-index: 5500 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important
   }
   @media (max-width:900px) {
     .rp-theme[data-rp-field=true] .app-header>.brand {
@@ -1066,7 +1160,7 @@
     min-height: 0 !important
   }
   .rp-theme .rp-event-column {
-    border-top: 2px solid #ff172278 !important;
+    border-top: 1px solid rgba(255,255,255,0.12) !important;
     min-height: 0 !important
   }
   .rp-theme .rp-event-column>header {
@@ -1090,10 +1184,10 @@
     position: absolute !important;
     left: 64px !important;
     top: 16px !important;
-    width: 35px !important;
-    min-width: 35px !important;
-    height: 35px !important;
-    min-height: 35px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
     padding: 0 !important;
     margin: 0 !important;
     background: none !important;
@@ -1103,8 +1197,10 @@
     padding: 0 !important;
     display: grid !important;
     place-items: center !important;
-    width: 35px !important;
-    min-width: 35px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
     flex-shrink: 0 !important
   }
   .rp-theme[data-rp-field=true] .app-header .app-menu-button svg {
@@ -1115,26 +1211,26 @@
   }
   .rp-theme[data-rp-field=true] :is(.field-torch-fab,.rp-inspection-torch) {
     position: fixed !important;
-    top: 159px !important;
-    right: 20px !important;
+    top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
+    right: 58px !important;
     left: auto !important;
     bottom: auto !important;
-    width: 66px !important;
-    height: 66px !important;
-    border-radius: 50% !important;
-    background: rgba(27,37,46,.94) !important;
-    border: 1px solid #ffffff66 !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+    background: rgba(18,24,33,.92) !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
     backdrop-filter: blur(16px) !important;
     color: #fff !important;
     z-index: 4300 !important;
-    box-shadow: 0 4px 16px #13202c22 !important
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important
   }
   .rp-theme[data-rp-field=true] :is(.ops-panic,.rp-inspection-panic) {
-    background: linear-gradient(140deg,#ff2432,#d40c20) !important;
-    border: 1px solid #ffadb4 !important;
-    box-shadow: 0 0 14px #ff172259 !important;
+    background: linear-gradient(135deg, #e11d48, #9f1239) !important;
+    border: 1.5px solid rgba(255, 205, 210, 0.7) !important;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.5) !important;
     color: #fff !important;
-    padding: 6px !important
+    padding: 0 12px !important
   }
   .rp-theme[data-rp-field=true] :is(.ux06-map-help,.rp-inspection-help) {
     background: rgba(27,37,46,.52) !important;
@@ -1332,28 +1428,17 @@
     text-align: left !important
   }
   .rp-theme .ux-access-menu>button.rp-menu-selected {
-    border-left: 3px solid var(--rp-red) !important;
-    background: linear-gradient(90deg,#ff17222e,transparent) !important;
-    box-shadow: inset 0 1px #ff172244,inset 0 -1px #ff172244 !important
+    border-left: 3px solid #38bdf8 !important;
+    background: rgba(56,189,248,0.12) !important;
+    box-shadow: none !important
   }
-  .rp-theme .rp-field-chat-overlay :is(.field-chat-thread,.field-chat-threadbar,.field-chat-topbar,.chat-thread,.chat-thread-heading,.chat-main,.field-chat-conversation) {
+  .rp-theme .rp-field-chat-overlay :is(.field-chat-thread,.field-chat-threadbar,.chat-thread,.chat-thread-heading,.chat-main,.field-chat-conversation) {
     background: transparent !important;
     box-shadow: none !important;
     border-radius: 0 !important
   }
-  .rp-theme .rp-field-chat-overlay .rp-field-chat-overlay-head {
-    height: 22px !important;
-    min-height: 22px !important;
-    padding: 0 !important
-  }
-  .rp-theme .rp-field-chat-overlay .rp-field-chat-overlay-head strong {
-    display: none !important
-  }
   .rp-theme .rp-field-chat-overlay .field-chat-topbar {
-    padding: 15px 20px !important;
-    height: auto !important;
-    min-height: 78px !important;
-    border: 0 !important
+    display: none !important
   }
   .rp-theme .rp-field-chat-overlay .field-chat-topbar .field-chat-back {
     display: none !important
@@ -1384,30 +1469,66 @@
     font-size: 10px !important;
     color: var(--rp-soft) !important
   }
+  .rp-theme .rp-field-page-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    isolation: isolate;
+    pointer-events: none;
+    filter: blur(3px) brightness(.7) !important
+  }
   .rp-theme .rp-field-page-overlay {
     position: fixed !important;
-    inset: 83px 5% 22px !important;
+    inset: calc(80px + env(safe-area-inset-top,0px)) auto auto 50% !important;
     z-index: 4600 !important;
     overflow: auto !important;
-    background: rgba(25,35,44,.78) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border: 1px solid #ff17229c !important;
-    border-radius: 12px !important;
-    padding: 18px !important;
-    box-shadow: var(--rp-neon) !important;
-    overscroll-behavior: contain !important
+    padding: var(--rp-window-gap) !important;
+    overscroll-behavior: contain !important;
+    width: min(480px,calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    height: auto !important;
+    max-height: calc(100dvh - 92px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) !important;
+    transform: translateX(-50%) !important
   }
   .rp-theme[data-rp-field=true] #central-panic {
     display: none !important
   }
   .rp-theme[data-rp-field=true][data-rp-role=ronda] #central-panic {
-    display:flex!important;
-    position:fixed!important;z-index:6500!important;
-    left:max(12px,env(safe-area-inset-left,0px))!important;
-    right:auto!important;top:calc(148px + env(safe-area-inset-top,0px))!important;bottom:auto!important;
-    width:70px!important;height:70px!important;border-radius:50%!important;transform:none!important;
-    opacity:1!important;filter:none!important;background:#b8233a!important;color:#fff!important;border:2px solid #ffc0c6!important;box-shadow:0 6px 24px #0008,0 0 0 2px #b8233a55!important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    position: fixed !important;
+    z-index: 2000 !important;
+    top: max(8px, env(safe-area-inset-top, 8px)) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 94px) !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    min-width: 44px !important;
+    height: 38px !important;
+    padding: 0 12px !important;
+    border-radius: 20px !important;
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    background: linear-gradient(135deg, #e11d48, #9f1239) !important;
+    color: #fff !important;
+    border: 1.5px solid rgba(255, 205, 210, 0.7) !important;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.5) !important;
+  }
+  .rp-theme[data-rp-field=true][data-rp-role=ronda] #central-panic span {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    border: 1.5px solid #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
   }
   .rp-theme[data-rp-field=true][data-rp-role=ronda] #central-panic strong {font-size:10px!important}
 
@@ -1767,8 +1888,16 @@
       max-width: 100% !important;
     }
     body.rp-theme[data-rp-field="false"] .dashboard .app-content:not(.ronda-page) {
-      padding: 18px clamp(12px,3.8vw,26px) calc(35px + env(safe-area-inset-bottom,0px)) !important;
-      overflow: visible !important;
+      flex: 1 1 0% !important;
+      min-height: 0 !important;
+      height: auto !important;
+      max-height: none !important;
+      padding: 18px clamp(12px,3.8vw,26px) calc(96px + env(safe-area-inset-bottom,0px)) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: contain !important;
+      scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom,0px));
+      -webkit-overflow-scrolling: touch;
     }
     body.rp-theme[data-rp-field="false"] main#conteudo {
       box-sizing: border-box !important;
@@ -1912,14 +2041,14 @@
       visibility: visible !important;
       pointer-events: auto !important;
     }
-    body.rp-theme[data-rp-field="false"] #central-root:has(.rp2-role-nav.is-open)::before {
+    body.rp-theme #central-root:has(.rp2-role-nav.is-open)::before {
       content: "" !important;
       position: fixed !important;
       inset: 0 !important;
       z-index: 100 !important;
       background: rgba(8,14,20,.55) !important;
     }
-    body.rp-theme[data-rp-field="false"] #central-root .rp2-nav-dismiss {
+    body.rp-theme #central-root .rp2-nav-dismiss {
       display: flex !important;
       width: 100% !important;
       min-height: 46px !important;
@@ -1992,8 +2121,173 @@
     body.rp-theme[data-rp-field="false"] #central-root .side.rp2-role-nav {
       transition: none !important;
     }
-  }
+  }/* Configuração central: o mesmo componente nas entradas web e Android. */
+.rp-theme .rp-verification-settings{display:grid;gap:16px;min-width:0;margin-block:20px 24px}
+.rp-theme .rp-verification-settings :is(h2,h3,p){margin:0}
+.rp-theme .rp-verification-settings p{line-height:1.55}
+.rp-theme .rp-verification-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;min-width:0}
+.rp-theme .rp-verification-form label{display:grid;gap:8px;min-width:0;font-size:13px;font-weight:600}
+.rp-theme .rp-verification-form :is(input,select){width:100%;min-width:0;min-height:44px;box-sizing:border-box}
+.rp-theme .rp-verification-form>:is(p,output){grid-column:1/-1}
+.rp-theme .rp-verification-form button{min-height:44px;justify-self:start;align-self:end}
+.rp-theme .rp-verification-form output{display:block;font-size:13px;line-height:1.5}
+.rp-theme .rp-verification-settings [data-verification-qr-labels]{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:20px;min-width:0}
+.rp-theme .rp-verification-settings [data-verification-qr-labels] h3{grid-column:1/-1}
+.rp-theme .rp-verification-settings figcaption{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:700px){.rp-theme .rp-verification-form{grid-template-columns:minmax(0,1fr)}.rp-theme .rp-verification-form button{width:100%;justify-self:stretch}}
+.rp-theme :is(dialog,.rp-field-page-overlay) h1 {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    margin: 0 !important
 
+  }
+.rp-theme :is(dialog,.rp-field-page-overlay) h2 {
+    font-size: 18px !important;
+    line-height: 1.3 !important
+
+  }
+.rp-theme :is(dialog,.rp-field-page-overlay) p {
+    line-height: 1.55 !important
+
+  }
+.rp-theme .rp-field-page-overlay .page-title {
+    margin: 16px 0 20px !important;
+    padding: 0 0 16px !important;
+    border-bottom: 1px solid var(--rp-rule) !important
+
+  }
+.rp-theme .rp-field-page-overlay .page-title .eyebrow {
+    display: none !important
+
+  }
+.rp-theme .rp-field-page-overlay .page-title p {
+    margin: 7px 0 0 !important;
+    font-size: 13px !important
+
+  }
+.rp-theme .rp-field-page-overlay .rp-page-back {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 40px !important;
+    padding: 6px 10px !important;
+    background: transparent !important;
+    border: 1px solid var(--rp-window-border) !important;
+    font-size: 13px !important;
+    text-decoration: none !important
+
+  }
+.rp-theme .rp-window-empty {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 10px !important;
+    padding: 24px 12px !important
+
+  }
+.rp-theme .rp-window-empty>span {
+    color: var(--rp-blue) !important;
+    display: grid !important;
+    place-items: center !important
+
+  }
+.rp-theme .rp-window-empty svg {
+    width: 28px !important;
+    height: 28px !important
+
+  }
+.rp-theme .rp-window-empty strong {
+    font-size: 15px !important;
+    font-weight: 650 !important;
+    color: var(--rp-ink) !important
+
+  }
+.rp-theme .rp-window-empty p {
+    margin: 0 !important;
+    font-size: 13px !important;
+    max-width: 30ch !important;
+    color: var(--rp-soft) !important
+
+  }
+.rp-theme .rp-field-chat-overlay-head>button svg {
+    width: 20px !important;
+    height: 20px !important
+
+  }
+.rp-theme .rp-field-chat-overlay-head strong {
+    display: block !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important
+
+  }
+.rp-theme .rp-field-chat-overlay-head small {
+    display: block !important;
+    font-size: 12px !important;
+    margin-top: 5px !important;
+    color: var(--rp-soft) !important
+
+  }
+.rp-theme .rp-field-chat-overlay .field-chat-threadbar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 44px !important;
+    padding: 0 0 10px !important;
+    border-bottom: 1px solid var(--rp-rule) !important;
+    flex-shrink: 0 !important
+
+  }
+.rp-theme .rp-field-page-overlay .schedule-workspace {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important
+
+  }
+@media (max-height:500px) {
+    .rp-theme .rp-field-chat-overlay-head {
+      min-height: 56px !important;
+      padding: 8px 12px !important
+
+    }
+    .rp-theme .rp-field-chat-overlay-head small {
+      display: none !important
+
+    }
+    .rp-theme .rp-field-chat-overlay .field-chat-threadbar {
+      min-height: 36px !important;
+      padding: 0 0 4px !important
+
+    }
+    .rp-theme .rp-field-chat-overlay .field-chat-compose {
+      margin: 6px 0 0 !important
+
+    }
+    .rp-theme .rp-chat-grip {
+      min-height: 24px !important;
+      height: 24px !important;
+      padding: 2px 0 !important
+
+    }
+
+  }
+.rp-theme #dialog[open]:not(.rp-side-drawer):not(.rp-dispatch-dialog):not(.role-picker-dialog):not(.guide-dialog):not(.ux06-fullscreen) {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: auto !important;
+    width: min(480px,calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    height: max-content !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 24px) !important;
+    padding: 20px !important;
+    overflow: auto !important
+
+  }
 
 }
 
@@ -2099,6 +2393,8 @@
  .rp-theme .dashboard .rp-plan-panel{padding:11px;margin-bottom:10px;border-radius:9px}
  .rp-theme .dashboard .rp-plan-panel h2{font-size:16px!important;margin-bottom:10px}
  .rp-theme .dashboard .rp-plan-type{gap:7px;margin-bottom:10px}
+ .rp-theme .dashboard .rp-plan-heading{flex-wrap:wrap}
+ .rp-theme .dashboard .rp-plan-access{white-space:normal;max-width:100%}
  .rp-theme .dashboard .rp-plan-type button{padding:9px!important;min-height:58px}
  .rp-theme .dashboard .rp-plan-type strong{font-size:11px}
  .rp-theme .dashboard .rp-plan-type small{font-size:10px}
@@ -2110,15 +2406,20 @@
  .rp-theme .dashboard .rp-plan-map{height:170px}
  .rp-theme .dashboard .rp-plan-fields{grid-template-columns:1fr 1fr}
  .rp-theme .dashboard .rp-plan-summary{grid-template-columns:1fr;gap:9px}
- .rp-theme .dashboard .rp-plan-saved{display:none}
  .rp-theme .dashboard .rp-plan[data-step="1"] [data-part="2"],.rp-theme .dashboard .rp-plan[data-step="1"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="2"] [data-part="3"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="1"],.rp-theme .dashboard .rp-plan[data-step="3"] [data-part="2"]{display:none!important}
- .rp-theme .dashboard .rp-plan-actions{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;gap:8px;background:rgba(27,37,46,.82);padding:9px;border:1px solid #9ab4c35c;border-radius:9px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+ .rp-theme .dashboard .rp-plan-actions{position:static;display:flex;gap:8px;background:transparent;padding:9px 0;border:0;border-radius:0;box-shadow:none}
+ .rp-theme .dashboard .rp-plan :is(input,select){scroll-margin-bottom:110px}
  .rp-theme .dashboard .rp-plan-actions button{padding:8px 11px!important;min-height:42px!important;height:auto!important;font-size:12px;min-width:0}
  .rp-theme .dashboard .rp-plan-actions :is(.rp-plan-next,.rp-plan-save){flex:1}
  .rp-theme .dashboard .rp-plan-actions .rp-plan-save[data-mobile-final="hidden"]{display:none!important}
  .rp-theme .dashboard .rp-plan-demo{font-size:11px;padding:8px 10px}
  .rp-theme .dashboard .rp-demo-banner-global{padding:7px 12px;font-size:11px}
  .rp-theme .dashboard .field-chat-surface{max-height:calc(100dvh - 280px)!important;min-height:180px!important}
+}
+@media(max-width:380px){
+ .rp-theme .dashboard .rp-plan-type{grid-template-columns:1fr}
+ .rp-theme .dashboard .rp-plan-heading h1{font-size:23px!important}
+ .rp-theme .dashboard .rp-plan-steps button{flex-direction:column;gap:5px;line-height:1.2;text-align:center;min-height:66px}
 }
 @media(min-width:761px) and (max-width:1050px){
  .rp-theme .dashboard .rp-plan-layout{grid-template-columns:minmax(310px,1fr) minmax(320px,1fr)}
@@ -2137,7 +2438,6 @@
 .rp-theme #dialog .rp-demo-worker-list button strong{font-size:15px}
 .rp-theme #dialog .rp-demo-worker-list button small{font-size:11px;color:#adc6d7!important}
 .rp-theme #dialog .rp-demo-worker-list .icon-svg{width:20px;height:20px;color:#48bafa}
-
 
 /* Solicitação de ronda: fluxo por etapas, compacto e no tema Glass Maxvel. */
 @layer rp-layout {
@@ -2170,14 +2470,11 @@
   height:max-content!important;min-height:0!important;max-height:calc(100dvh - 24px)!important;
   padding:22px 22px 19px!important;overflow-y:auto!important;
   overflow-x:hidden!important;overscroll-behavior:contain;
-  background:rgba(23,30,39,.94)!important;color:#f7f8fa!important;backdrop-filter:blur(24px)!important;-webkit-backdrop-filter:blur(24px)!important;
-  border:1px solid #575057!important;border-top:3px solid #f03850!important;
-  border-radius:16px!important;box-shadow:0 28px 90px #000c!important;
  }
  .rp-theme #dialog.rp-dispatch-dialog .dialog-close{
   position:absolute!important;top:14px!important;right:13px!important;
-  display:grid!important;place-items:center!important;width:36px!important;height:36px!important;
-  min-width:36px!important;min-height:36px!important;border-radius:8px!important;
+  display:grid!important;place-items:center!important;width:44px!important;height:44px!important;
+  min-width:44px!important;min-height:44px!important;border-radius:8px!important;
   border:1px solid #5b5960!important;background:#2b2c34!important;color:#fff!important;z-index:2!important;
  }
  .rp-theme #dialog .rp-dispatch-wizard{display:flex;flex-direction:column;gap:0;min-width:0}
@@ -2284,12 +2581,6 @@
  #central-root .ops-dispatch-itinerary li a{font-size:10px;color:#9bdefd;min-height:30px;display:inline-flex;align-items:center}
  #central-root .ops-dispatch-itinerary>small{font-size:10px;color:#bdcbd7}
  /* Janelas de operacao: vidro fosco legivel, com fundo isolado na camada modal real. */
- .rp-theme #dialog[open]:not(.role-picker-dialog):not(.rp-dispatch-dialog):not(.guide-dialog):not(.ux06-fullscreen){
-  background:rgba(24,31,40,.94)!important;color:#f5f8fb!important;
-  backdrop-filter:blur(24px) saturate(120%)!important;-webkit-backdrop-filter:blur(24px) saturate(120%)!important;
-  border-color:rgba(147,173,190,.47)!important;
- }
- .rp-theme #dialog[open]::backdrop{background:rgba(2,7,15,.74)!important;backdrop-filter:blur(7px)!important;-webkit-backdrop-filter:blur(7px)!important}
  .rp-theme #dialog[open]:not(.role-picker-dialog) :is(input,select,textarea){color:#f5f8fb}
  /* Modal de áreas permanece visível sobre o desfoque, inclusive após abrir outro diálogo. */
  .rp-theme #dialog.role-picker-dialog[open]{
@@ -2297,9 +2588,7 @@
   box-sizing:border-box!important;opacity:1!important;visibility:visible!important;transform:none!important;
   width:min(440px,calc(100vw - 26px))!important;max-width:min(440px,calc(100vw - 26px))!important;
   height:max-content!important;min-height:0!important;max-height:calc(100dvh - 26px)!important;
-  overflow:auto!important;padding:20px!important;border:1px solid #66575f!important;
-  border-top:3px solid #f03850!important;border-radius:14px!important;
-  background:rgba(23,29,38,.94)!important;backdrop-filter:blur(24px)!important;-webkit-backdrop-filter:blur(24px)!important;color:#fff!important;box-shadow:0 24px 80px #000c!important;
+  overflow:auto!important;padding:20px!important;
  }
  .rp-theme #dialog.role-picker-dialog .role-picker-list{display:grid!important;gap:7px}
  .rp-theme #dialog.role-picker-dialog .role-picker-list button{
@@ -2316,8 +2605,7 @@
    position:fixed!important;inset:auto 0 0 0!important;margin:0 auto!important;
    width:100vw!important;max-width:100vw!important;box-sizing:border-box!important;
    height:max-content!important;max-height:calc(100dvh - 12px)!important;overflow-y:auto!important;
-   padding:20px 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-   border-radius:19px 19px 0 0!important;border-bottom:0!important;
+   padding:20px 16px calc(16px + env(safe-area-inset-bottom,0px))!important;border-bottom:0!important;
   }
   .rp-theme #dialog .rp-dispatch-steps{gap:3px}
   .rp-theme #dialog .rp-dispatch-steps small{font-size:9px!important}
@@ -2329,4 +2617,120 @@
   .rp-theme #dialog .rp-dispatch-steps{padding:7px 0}
   .rp-theme #dialog.rp-dispatch-dialog[open]{max-height:calc(100dvh - 14px)!important}
  }
+
+  body.rp-theme {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+  }
+
+  /* Login em tela curta/teclado: o fundo pertence ao documento, não à viewport.
+     Correção recuperada de fix/ronda-despacho-mobile-20261021, integrada na origem. */
+  html:has(body.rp-theme .entry-screen) {
+    min-height:100%;
+    height:auto;
+    max-height:none;
+    overflow-x:hidden;
+    overflow-y:auto;
+    background-color:#171e25!important;
+    background-image:radial-gradient(ellipse at 85% 0%,#33404a 0,transparent 52%),radial-gradient(ellipse at 8% 95%,#30252a 0,transparent 45%)!important;
+    background-attachment:scroll,scroll!important;
+    background-size:100% 100%,100% 100%!important;
+    background-repeat:no-repeat!important;
+  }
+  body.rp-theme:has(.entry-screen) {
+    min-height:100dvh!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    background:transparent!important;
+  }
+  body.rp-theme:has(.entry-screen) #app,
+  body.rp-theme:has(.entry-screen) .entry-screen {
+    min-height:100dvh!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow-x:clip!important;
+    overflow-y:visible!important;
+    background:transparent!important;
+  }
+  @media (max-height:640px) {
+    body.rp-theme:has(.entry-screen) .entry-main {
+      margin-block:0 auto;
+      padding-block:12px 20px;
+    }
+  }
+
+  /* SECTION: MAXVEL LOGIN VIEWPORT 20261022
+     Isolate auth styling: never stretch the login background only to the
+     document content height or leak login geometry into operational pages. */
+  body.rp-theme:has(#central-login) {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: radial-gradient(ellipse at 82% 12%, #293846 0%, transparent 57%),
+      radial-gradient(ellipse at 12% 94%, #292127 0%, transparent 50%),
+      #151c24 !important;
+  }
+  body.rp-theme:has(#central-login) > header.top {
+    flex: 0 0 auto !important;
+  }
+  body.rp-theme:has(#central-login) > main#conteudo {
+    flex: 1 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: clamp(18px, 4vh, 38px) 16px !important;
+    margin: 0 !important;
+  }
+  body.rp-theme:has(#central-login) #central-root {
+    width: 100% !important;
+    max-width: 410px !important;
+    min-width: 0 !important;
+  }
+  body.rp-theme #central-login {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: clamp(20px, 5vw, 28px) !important;
+    gap: 13px !important;
+    border-radius: 12px !important;
+  }
+  body.rp-theme #central-login h1 {
+    font-size: clamp(21px, 4.7vw, 25px) !important;
+    line-height: 1.18 !important;
+    margin: 0 !important;
+    letter-spacing: -.025em !important;
+  }
+  body.rp-theme #central-login p {
+    margin: 0 0 3px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+  body.rp-theme #central-login label {
+    gap: 7px !important;
+    font-size: 13px !important;
+    font-weight: 650 !important;
+  }
+  body.rp-theme #central-login input {
+    min-height: 48px !important;
+    padding: 11px 12px !important;
+    font-size: 16px !important;
+  }
+  body.rp-theme #central-login button.primary {
+    min-height: 48px !important;
+    font-size: 15px !important;
+    margin-top: 3px !important;
+  }
+  @media (max-height: 620px) {
+    body.rp-theme:has(#central-login) > main#conteudo {
+      place-items: start center !important;
+      padding-top: 14px !important;
+      padding-bottom: 24px !important;
+    }
+  }
+
 }

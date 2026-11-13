@@ -38,7 +38,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 }
 .rp-blue-button.has-unread{border-color:var(--mx-atelier-accent)!important;box-shadow:inset 0 0 0 1px #49b7ed44!important}
 .dashboard .app-header .rp-popover-list,.rp-popover-list{
- position:absolute!important;inset:auto 0 auto auto!important;top:calc(100% + 12px)!important;
+ position:absolute;inset:auto 0 auto auto;top:calc(100% + 12px);
  width:min(405px,calc(100vw - 24px));height:auto!important;max-height:min(75dvh,620px);
  padding:12px;border-radius:16px!important;background:#1a191e!important;
  border:1px solid #49464f!important;box-shadow:0 20px 65px #000d!important;z-index:10050;
@@ -485,7 +485,7 @@ body,.dashboard,#central-root{color:var(--mx-atelier-ink)}
 /* Cartografia aberta com acabamento dark aplicado localmente aos tiles reais. */
 .rp-inspection-map .leaflet-tile,
 .rp-plan-map .leaflet-tile{
- filter:grayscale(1) invert(.91) hue-rotate(180deg) brightness(.58) contrast(1.16)!important
+ filter:none!important
 }
 .rp-inspection-map .leaflet-control-zoom a,
 .rp-plan-map .leaflet-control-zoom a{
@@ -935,10 +935,10 @@ body:has(#central-root) > header.top .rp-header-popover{
 body:has(#central-root) > header.top .rp-popover-list{
  z-index:5052!important;pointer-events:auto!important;
 }
-@media(max-width:720px){
+@media(max-width:768px){
  body:has(#central-root) > header.top .rp-popover-list{
   position:fixed!important;top:calc(64px + env(safe-area-inset-top,0px))!important;
-  right:12px!important;left:auto!important;width:min(410px,calc(100vw - 24px))!important;
+  left:12px!important;right:12px!important;width:auto!important;max-width:calc(100vw - 24px)!important;
   max-height:calc(100dvh - 90px)!important;
  }
 }

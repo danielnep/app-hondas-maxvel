@@ -1,9 +1,10 @@
 import {loadLeaflet} from './map.js';
 import {fetchRoadItinerary} from './inspection-street-route.js';
+import {searchPlaces,rankPlaces,searchFocus,requestSearchFocus,distanceLabel,getLearnedPlaces,recordLearnedPlace,searchPlacesWithLearned} from './place-search.js';
 /** Despacho compacto por etapas. O backend continua sendo a autoridade da operação. */
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=>[],request,refresh,redraw,notify}){
- let locationPoint=null,destinations=[],previewMap=null,previewLayers=[],previewEpoch=0,routeController=null,searchController=null,searchTimer=null;
+ let locationPoint=null,destinations=[],savedPoints=[],previewMap=null,previewLayers=[],previewEpoch=0,routeController=null,searchController=null,searchTimer=null;
  dialog.addEventListener('close',()=>clearPreview());
  const names=['Profissional','Destino','Orientações','Revisão'];
  function open(){
@@ -20,6 +21,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    '<p>O vigia receberá a solicitação na área de Ronda.</p></section>'+
    '<section class="rp-dispatch-stage" data-dispatch-stage="2" hidden><span class="rp-dispatch-counter">02 / 04 · DESTINOS</span><h3>Por quais lugares o vigia passará?</h3>'+
    '<label for="rp-dispatch-address">Pesquisar próximo destino<input id="rp-dispatch-address" name="address" minlength="5" maxlength="350" autocomplete="off" placeholder="Rua, número, bairro e cidade"></label>'+
+   '<label for="rp-dispatch-saved">Ponto geográfico salvo<select id="rp-dispatch-saved"><option value="">Pesquisar novo endereço</option></select></label>'+
    '<div id="rp-dispatch-suggestions" class="rp-plan-suggestions" role="listbox" aria-label="Locais encontrados"></div>'+
    '<div id="rp-dispatch-preview-map" class="rp-plan-map" aria-label="Mapa dos destinos da ronda">O mapa mostrará os endereços escolhidos.</div>'+ '<p id="rp-dispatch-route-status" class="rp-dispatch-road-status" role="status" aria-live="polite">Ao incluir dois destinos, calcularemos o percurso pelas ruas.</p>'+
    '<p id="rp-dispatch-location-status" class="rp-dispatch-location-status" role="status" aria-live="polite">Pesquise um endereço, selecione o resultado e confira no mapa.</p>'+ '<button type="button" id="rp-dispatch-add-destination" class="rp-dispatch-add" disabled>+ Adicionar destino</button>'+ '<div class="rp-dispatch-stops-heading"><strong>Destinos da ronda (<span id="rp-dispatch-stop-count">0</span>/12)</strong><small>Na ordem em que o vigia deverá visitar</small></div>'+ '<ol id="rp-dispatch-stops" class="rp-dispatch-stops" aria-label="Destinos confirmados"></ol>'+
@@ -40,7 +42,17 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   dialog.querySelector('#rp-dispatch-worker')?.focus({preventScroll:true});
   if(!workers.length){const error=dialog.querySelector('.rp-dispatch-error');error.textContent='Cadastre um vigia ativo antes de solicitar a ronda.';error.hidden=false;}
   const input=dialog.querySelector('#rp-dispatch-address');
-  if(input)input.addEventListener('input',()=>scheduleLocation(input.value));
+  if(input){
+   input.addEventListener('input',()=>scheduleLocation(input.value));
+   input.addEventListener('focus',()=>{
+    if(!input.value.trim()){
+     const learned=getLearnedPlaces({limit:6});
+     displaySuggestions(learned.length?learned:registered().slice(0,8));
+    }
+   });
+  }
+  dialog.querySelector('#rp-dispatch-saved')?.addEventListener('change',event=>{const entry=savedPoints[Number(event.target.value)];if(entry&&event.target.value!=='')selectPoint(entry);});
+  void loadSavedPoints();
   dialog.querySelector('#rp-dispatch-add-destination')?.addEventListener('click',addDestination);
   dialog.querySelector('#rp-dispatch-stops')?.addEventListener('error',event=>{if(event.target?.tagName==='IMG')event.target.hidden=true;},true);
   dialog.querySelector('#rp-dispatch-stops')?.addEventListener('click',event=>{
@@ -58,6 +70,18 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   renderDestinations();
  }
 
+ async function loadSavedPoints(){
+  savedPoints=[];
+  const chooser=dialog.querySelector('#rp-dispatch-saved');
+  try{
+   const result=await request('/saved-points');
+   if(!chooser?.isConnected)return;
+   savedPoints=(result.points||[]).filter(p=>Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).map(p=>({...p,lat:Number(p.lat),lng:Number(p.lng)}));
+   chooser.innerHTML='<option value="">Pesquisar novo endereço</option>'+savedPoints.map((p,i)=>'<option value="'+i+'">'+escape(p.name)+' · '+escape(p.address)+'</option>').join('');
+   chooser.closest('label').hidden=!savedPoints.length;
+  }catch{if(chooser?.isConnected)chooser.closest('label').hidden=true;}
+ }
+
  function clearPreview(){
   routeController?.abort();routeController=null;
   if(searchController)searchController.abort();
@@ -67,7 +91,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
  }
  const valid=p=>p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180;
  function registered(){
-  const points=[];
+  const points=[...savedPoints];
   for(const r of getPlaces()||[])for(const p of r.points||[]){
    if(valid(p))points.push({name:p.name||p.address||'Ponto',address:p.address||p.name||'Ponto',lat:p.lat,lng:p.lng});
   }
@@ -152,6 +176,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
  function selectPoint(point){
   if(!valid(point))return;
   locationPoint=point;
+  recordLearnedPlace(point);
   const field=dialog.querySelector('#rp-dispatch-address');
   if(field)field.value=String(point.address||point.name).slice(0,350);
   const list=dialog.querySelector('#rp-dispatch-suggestions');if(list)list.textContent='';
@@ -168,6 +193,7 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   }
   destinations.push(point);locationPoint=null;
   const field=dialog.querySelector('#rp-dispatch-address');if(field)field.value='';
+  const savedChooser=dialog.querySelector('#rp-dispatch-saved');if(savedChooser)savedChooser.value='';
   const add=dialog.querySelector('#rp-dispatch-add-destination');if(add)add.disabled=true;
   renderDestinations();
   displaySuggestions([]);
@@ -183,8 +209,13 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
    if(!valid(point))continue;
    const button=document.createElement('button');button.type='button';
    button.setAttribute('role','option');button.className='rp-dispatch-location-choice';
-   const strong=document.createElement('strong');strong.textContent=point.name||'Ponto encontrado';
-   const small=document.createElement('small');small.textContent=point.address||'Local encontrado';
+   const strong=document.createElement('strong');
+   if(point.isRecurrent){
+    strong.innerHTML=escape(point.name||'Ponto encontrado')+' <span class="rp-recurrent-tag">★ Recorrente</span>';
+   }else{
+    strong.textContent=point.name||'Ponto encontrado';
+   }
+   const small=document.createElement('small');small.textContent=(point.address||'Local encontrado')+(Number.isFinite(point.distanceMeters)?' · '+distanceLabel(point.distanceMeters):'');
    button.append(strong,small);
    button.addEventListener('click',()=>selectPoint(point));host.append(button);
   }
@@ -196,27 +227,28 @@ export function createDispatchWizard({dialog,showDialog,getWorkers,getPlaces=()=
   const a=dialog.querySelector('[name="latitude"]'),b=dialog.querySelector('[name="longitude"]');
   if(a)a.value='';if(b)b.value='';
   const status=dialog.querySelector('#rp-dispatch-location-status');
-  if(value.trim().length<3){displaySuggestions(registered().slice(0,8));if(status)status.textContent='Escolha um ponto cadastrado ou pesquise o próximo endereço.';if(destinations.length)void showPreview(destinations.at(-1));return;}
+  if(value.trim().length<3){
+   const learned=getLearnedPlaces({limit:6});
+   displaySuggestions(learned.length?learned:registered().slice(0,8));
+   if(status)status.textContent='Empresas recorrentes e pontos cadastrados disponíveis.';
+   if(destinations.length)void showPreview(destinations.at(-1));
+   return;
+  }
   const known=registered().filter(p=>(p.name+' '+p.address).toLocaleLowerCase('pt-BR').includes(value.trim().toLocaleLowerCase('pt-BR')));
   displaySuggestions(known);
   if(status)status.textContent='Localizando o endereço para mostrar no mapa...';
   searchTimer=setTimeout(async()=>{
    const controller=new AbortController();searchController=controller;
    try{
-    const response=await fetch('https://photon.komoot.io/api/?lang=default&limit=6&q='+encodeURIComponent(value.trim()),{signal:controller.signal});
-    if(!response.ok)throw Error('Pesquisa de endereço indisponível');
-    const data=await response.json();
+    const focus=await requestSearchFocus({fallback:searchFocus(null,previewMap)||destinations.at(-1)||null});
     if(controller.signal.aborted)return;
-    const found=(data.features||[]).map(f=>{
-     const props=f.properties||{},coords=f.geometry?.coordinates||[];
-     return {name:String(props.name||props.street||'Local'),address:[props.street,props.housenumber,props.city,props.state].filter(Boolean).join(', ')||String(props.name||value),
-      lat:Number(coords[1]),lng:Number(coords[0])};
-    }).filter(valid);
-    displaySuggestions([...known,...found]);
+    const found=await searchPlacesWithLearned(value.trim(),{focus,signal:controller.signal});
+    if(controller.signal.aborted)return;
+    displaySuggestions(rankPlaces([...known,...found],focus));
     if(found.length){void showPreview(found[0]);if(status)status.textContent='Confira o ponto encontrado no mapa e toque no endereço correto.';}
     else if(status)status.textContent='Nenhum resultado encontrado. Experimente rua, número, bairro e cidade.';
    }catch(e){if(!controller.signal.aborted&&status)status.textContent='Não foi possível consultar endereços agora. Tente novamente.';}
-  },650);
+  },500);
  }
 
  function step(next){

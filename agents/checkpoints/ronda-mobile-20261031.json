@@ -1,0 +1,65 @@
+{
+  "task": "Correção de busca real, contatos, rodapé e SDK Android",
+  "branch": "fix/ronda-real-search-mobile-20261031",
+  "base": "ec3c1983f0da363caa901320613efbf949bcd3da",
+  "apkVersion": "2.2.3",
+  "apkSha256": "9682f8c61a34a1c57dee93353d8334522bdc06f977a943f2cadfcbc898f8ee9b",
+  "apkBytes": 617143,
+  "completed": [
+    "Busca compartilhada por foco real e distância",
+    "Contato anterior reproduzido e corrigido",
+    "Rodapé no fluxo sem cobrir mapa",
+    "Mapa claro sem inversão de tiles",
+    "SDK/Gradle instalados e auditoria do APK aprovada",
+    "Android Lint sem erros e assembleRelease aprovado",
+    "APK disponibilizado durante a execução",
+    "Credenciais preservadas; recusas com diagnóstico sem segredos",
+    "Branch publicada no PR #112; produção 2.2.3 e assets conferidos pela URL pública; quatro perfis autenticados, contas e rotas preservadas"
+  ],
+  "pending": [
+    "Homologação física e diagnóstico da recusa de login não reproduzida no telefone"
+  ],
+  "emulatorCancelled": true,
+  "deployment": {
+    "publicHealth": 200,
+    "version": "2.2.3",
+    "roles": [
+      {
+        "role": "master",
+        "status": 200
+      },
+      {
+        "role": "admin",
+        "status": 200
+      },
+      {
+        "role": "coi",
+        "status": 200
+      },
+      {
+        "role": "ronda",
+        "status": 200
+      }
+    ],
+    "unauthorized": 401,
+    "policy": {
+      "verificationMode": "gps",
+      "dwellSeconds": 30,
+      "updatedAt": 0
+    },
+    "sourceCommit": "d885c96cf205be8d0a27663c8f96d7c415151618",
+    "image": "k7ebxmh2wtrwqxx3eq74xgyr:d885c96cf205be8d0a27663c8f96d7c415151618",
+    "backup": "/opt/ronda-pro-backups/ui-223-20261031T193403Z",
+    "accounts": 4,
+    "routes": 0,
+    "existingAccountsAndRoutesPreserved": true,
+    "servedAssets": {
+      "src/place-search.js": true,
+      "src/route-planner.js": true,
+      "assets/field.css": true,
+      "assets/theme.css": true
+    },
+    "completedAt": "2026-10-31T19:34:09.731746+00:00"
+  },
+  "pullRequest": "https://github.com/danielnep/app-hondas-maxvel/pull/112"
+}

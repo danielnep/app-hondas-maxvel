@@ -33,16 +33,45 @@ export function parseStreetRoute(body){
  if(points.some(p=>!Number.isFinite(p.lat)||!Number.isFinite(p.lng)||Math.abs(p.lat)>90||Math.abs(p.lng)>180))throw Error('Geometria viária inválida');
  return points;
 }
+// Persist real road geometry automatically; never fabricate road directions offline.
+// The official OSM raster tile servers forbid bulk offline pre-download.
+const cachePrefix='ronda-road-geometry-v1:';
+function signature(route){
+ const stops=inspectionRoutingStops(route);
+ if(stops.length<2)return null;
+ return stops.map(p=>p.lat.toFixed(6)+','+p.lng.toFixed(6)).join(';');
+}
+export function readOfflineStreetPath(route){
+ try{
+  const key=signature(route);if(!key||typeof localStorage==='undefined')return null;
+  const stored=JSON.parse(localStorage.getItem(cachePrefix+key)||'null');
+  return Array.isArray(stored)&&stored.length>=2&&stored.length<=35000&&stored.every(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng))?stored:null;
+ }catch{return null}
+}
+function rememberStreetPath(route,path){
+ try{
+  const key=signature(route);if(key&&typeof localStorage!=='undefined'&&path.length<=35000)localStorage.setItem(cachePrefix+key,JSON.stringify(path));
+ }catch{/* low local storage: report unavailable via UI fallback */}
+}
+export async function prefetchRoadPaths(routes){
+ if(typeof navigator!=='undefined'&&!navigator.onLine)return;
+ for(const route of routes.slice(0,6)){
+  if(!route?.roadRouting||readOfflineStreetPath(route))continue;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+  try{await fetchInspectionStreetPath(route,{signal:controller.signal})}catch{}finally{clearTimeout(timer)}
+ }
+}
 export async function fetchInspectionStreetPath(route,{fetcher=fetch,signal}={}){
  const points=inspectionRoutingStops(route);
  if(!points.length)return null;
+ const cached=readOfflineStreetPath(route);if(cached)return cached;
  let lastError;
  for(const endpoint of STREET_ROUTE_ENDPOINTS){
   if(signal?.aborted)throw Error('Consulta cancelada');
   try{
    const response=await fetcher(streetRouteUrl(points,endpoint),{signal,mode:'cors'});
    if(!response.ok)throw Error('Servidor viário: HTTP '+response.status);
-   return parseStreetRoute(await response.json());
+   const path=parseStreetRoute(await response.json());rememberStreetPath(route,path);return path;
   }catch(e){
    if(signal?.aborted)throw e;
    lastError=e;

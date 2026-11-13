@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import postcss from 'postcss';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const files=['central.css','field.css','mobile-critical.css','operational.css','ronda-pro.css','theme.css'];
+const files=['beta-ui.css','central.css','field.css','mobile-critical.css','operational.css','ronda-pro.css','theme.css'];
 test('fontes canônicas CSS válidas, sem módulos órfãos ou imports locais ocultos',()=>{
  assert.deepEqual(readdirSync(new URL('../assets',import.meta.url)).filter(x=>x.endsWith('.css')).sort(),files);
  for(const file of files){
@@ -20,11 +20,21 @@ test('botão enviar do chat termina antes do hover e dos demais componentes',()=
  }
 });
 test('web demo e central compartilham camadas na mesma ordem, cache só inclui CSS existente',()=>{
- const expected={index:['ronda-pro','operational','mobile-critical','field','theme'],central:['central','operational','field','theme']};
+ const expected={index:['ronda-pro','operational','mobile-critical','field','theme','beta-ui'],central:['central','operational','field','theme','beta-ui']};
  for(const [page,order] of Object.entries(expected)){
   const links=[...read(page+'.html').matchAll(/href="\.\/assets\/([^"?]+)\.css\?v=(\d+)"/g)];
-  assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]===(m[1]==='theme'?'61':m[1]==='ronda-pro'?'53':m[1]==='field'?'52':m[1]==='operational'?'52':'50')));
+  assert.deepEqual(links.map(m=>m[1]),order);assert.ok(links.every(m=>m[2]===(m[1]==='beta-ui'?'226':m[1]==='theme'?'65':m[1]==='ronda-pro'?'55':m[1]==='field'?'53':m[1]==='operational'?'52':'50')));
  }
- const cached=[...read('sw.js').matchAll(/'\.\/assets\/([^']+\.css)'/g)].map(m=>m[1]).sort();
+ const cached=[...read('sw.js').matchAll(/'\.\/assets\/([^']+\.css)'/g)].map(m=>m[1]).filter(x=>!x.startsWith('vendor/')).sort();
  assert.deepEqual(cached,files);
+});
+
+test('login central ocupa viewport e mantém inputs acessíveis sem interferir na área logada',()=>{
+ const css=read('assets/theme.css');
+ assert.match(css,/body\.rp-theme:has\(#central-login\)\s*\{/);
+ assert.match(css,/min-height: 100dvh !important/);
+ assert.match(css,/body\.rp-theme #central-login input\s*\{/);
+ assert.match(css,/min-height: 48px !important/);
+ assert.match(read('src/central.js'),/form id="central-login"/);
+ assert.match(read('central.html'),/theme\.css\?v=65/);
 });

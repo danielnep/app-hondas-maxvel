@@ -1,0 +1,66 @@
+[
+  {
+    "file": "01-coi-acompanhamento.png",
+    "role": "coi",
+    "view": "monitor",
+    "size": 592622,
+    "errors": [],
+    "visible_text": "Ronda Pro\nCENTRAL OPERACIONAL\nEventos\n29\nMensagens\nCOI\nSair\nTRABALHO · COI\nCOI · Acompanhamento\nHistórico de tratativas\nDespachos\nEventos\nMAIS ÁREAS\n⌄\nRotas por vigia\nOcorrências\nVigias\nAlertas e e-mails\nRelatórios\nGuia completo\nAjuda · tutorial\nChat interno\nHistórico de rondas\nCOI · Acompanhamento\n"
+  },
+  {
+    "file": "02-coi-despachos.png",
+    "role": "coi",
+    "view": "dispatches",
+    "size": 549123,
+    "errors": [],
+    "visible_text": "Ronda Pro\nCENTRAL OPERACIONAL\nEventos\n29\nMensagens\nCOI\nSair\nTRABALHO · COI\nCOI · Acompanhamento\nHistórico de tratativas\nDespachos\nEventos\nMAIS ÁREAS\n⌄\nRotas por vigia\nOcorrências\nVigias\nAlertas e e-mails\nRelatórios\nGuia completo\nAjuda · tutorial\nChat interno\nHistórico de rondas\nDespachos\nCOI · Acess"
+  },
+  {
+    "file": "03-coi-eventos.png",
+    "role": "coi",
+    "view": "notifications",
+    "size": 381664,
+    "errors": [],
+    "visible_text": "Ronda Pro\nCENTRAL OPERACIONAL\nEventos\n30\nMensagens\nCOI\nSair\nTRABALHO · COI\nCOI · Acompanhamento\nHistórico de tratativas\nDespachos\nEventos\nMAIS ÁREAS\n⌄\nRotas por vigia\nOcorrências\nVigias\nAlertas e e-mails\nRelatórios\nGuia completo\nAjuda · tutorial\nChat interno\nHistórico de rondas\nEventos\nCOI · Acesso "
+  },
+  {
+    "file": "04-agente-de-ronda.png",
+    "role": "ronda",
+    "view": "dashboard",
+    "size": 1273997,
+    "errors": [],
+    "visible_text": "B\n1\nRonda\nPro\n|\nLanterna\nSOS\nGPS Ativo\n🔓 Câmera: Livre\nBuscar endereço\n1 Postos\n🌐 Mapa Online · Divinópolis\n+ Nova Ronda\nN\nLIVRE\nPainel de Rondas\nPróxima Ronda: Ponto no mapa (-20.166585, -44.858370)\nPontos programados\n1 posto\nIniciar Rota de Ronda\nAgente de Ronda\nAgente · v2.4.0\nHistórico\nRondas Di"
+  },
+  {
+    "file": "05-perfil-operador.png",
+    "role": "operador",
+    "view": "monitor",
+    "size": 321114,
+    "errors": [],
+    "visible_text": "Ronda Pro\nCENTRAL OPERACIONAL\nEventos\n40\nMensagens\nMonitoramento\nSair\nTRABALHO · Monitoramento\nCOI · Acompanhamento\nHistórico de tratativas\nDespachos\nEventos\nMAIS ÁREAS\n⌄\nRotas por vigia\nOcorrências\nVigias\nAlertas e e-mails\nRelatórios\nGuia completo\nAjuda · tutorial\nChat interno\nHistórico de rondas\nC"
+  },
+  {
+    "file": "06-perfil-vistoriador.png",
+    "role": "vistoriador",
+    "view": "inspections",
+    "size": 858027,
+    "errors": [],
+    "visible_text": "Ronda Pro\nV\nTRABALHO · Agente de Ronda Técnico\nVistorias e qualidade\nMeus despachos\nEventos\nComunicar COI\nMAIS ÁREAS\n⌄\nMeus alertas e ocorrências\nGuia completo\nAjuda · tutorial\nChat interno\nHistórico de rondas\nSair\n+\n−\n Leaflet | © OpenStreetMap contributors\nMeus atendimentos operacionais\nAguardando"
+  },
+  {
+    "file": "07-portal-do-cliente.png",
+    "role": "cliente",
+    "view": "client",
+    "size": 611228,
+    "errors": [],
+    "visible_text": "Ronda Pro\nCENTRAL OPERACIONAL\nEventos\nMensagens\nCliente\nSair\nTRABALHO · Cliente\nMeu acompanhamento\nMAIS ÁREAS\n⌄\nGuia completo\nAjuda · tutorial\nChat interno\nHistórico de rondas\nMeu acompanhamento\nCliente · Acesso autenticado\nAtualizar ↻\nPATRIMÔNIO PROTEGIDO · PORTAL DO CLIENTE\nGrupo Maxvel\n\nAcompanha"
+  },
+  {
+    "file": "08-administrador.png",
+    "role": "admin",
+    "view": "dashboard",
+    "size": 569420,
+    "errors": [],
+    "visible_text": "Ronda Pro\nCENTRAL OPERACIONAL\nEventos\n45\nMensagens\nAdministrador\nSair\nTRABALHO · Administrador\nIndicadores\nCOI · Acompanhamento\nHistórico de tratativas\nEventos\nMAIS ÁREAS\n⌄\nPainel de Gestão\nDespachos\nConfigurações\nRotas por vigia\nOcorrências\nColaboradores\nAlertas e e-mails\nRelatórios\nGuia completo\nA"
+  }
+]

@@ -14,7 +14,15 @@ export function createActivityHistoryUI({api,flash,openEvent}){
   const L=globalThis.L;if(!L){el.textContent='Cartografia indisponível. Os registros de coordenadas continuam disponíveis abaixo.';return}
   const valid=p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng),rawTrack=(data.track||[]).filter(valid),track=rawTrack.reduce((accepted,p)=>addTrackSample(accepted,p).track,[]),markers=(data.markers||[]).filter(valid),points=(data.route?.points||[]).filter(valid),all=[...track,...markers];
   if(!all.length){el.textContent='Sem GPS registrado para esta execução.';return}
-  const m=L.map(el,{scrollWheelZoom:false});L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(m);
+  const m=L.map(el,{scrollWheelZoom:false});
+  const tileLayer=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19,className:'maxvel-osm-dark-adapted'}).addTo(m);
+  tileLayer.on('tileerror',e=>{
+   if(e.tile&&!e.tile.dataset.offlineTried){
+    e.tile.dataset.offlineTried='true';
+    const c=e.coords;
+    if(c&&Number.isFinite(c.z))e.tile.src=`./assets/tiles/${c.z}/${c.x}/${c.y}.png`;
+   }
+  });
   const segments=[];let segment=[];for(const p of track){const prev=segment.at(-1);if(prev&&(p.segmentStart||p.at-prev.at>120000||p.accuracy>25||prev.accuracy>25)){if(segment.length)segments.push(segment);segment=[]}if((p.accuracy??0)<=25)segment.push(p)}if(segment.length)segments.push(segment);
   for(const s of segments)if(s.length>1)L.polyline(s.map(p=>[p.lat,p.lng]),{color:'#47b5f5',weight:4}).addTo(m);
   for(const p of points)L.circleMarker([p.lat,p.lng],{radius:6,color:'#ccc',fillOpacity:.2}).addTo(m).bindPopup(esc(p.name||'Ponto previsto'));

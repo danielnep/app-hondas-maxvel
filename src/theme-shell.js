@@ -9,8 +9,10 @@ function animatePanelClose(element,finish,horizontal=true){
  const animation=element.animate([{opacity:1,translate:'0 0'},{opacity:0,translate:move}],{
   duration:210,easing:'cubic-bezier(.4,0,.8,.3)',fill:'forwards'
  });
- animation.addEventListener('finish',finish,{once:true});
- animation.addEventListener('cancel',finish,{once:true});
+ let completed=false;
+ const complete=()=>{if(completed)return;completed=true;finish();animation.cancel();};
+ animation.addEventListener('finish',complete,{once:true});
+ animation.addEventListener('cancel',complete,{once:true});
 }
 let installed=false,scheduled=false;
 function closeOtherFieldPanels(except){
@@ -45,7 +47,7 @@ export function decorateTheme(role,name=''){
  const field=['ronda','vistoriador'].includes(role),workspace=$('.patrol-workspace');
  document.body.dataset.rpField=String(field&&!!workspace);
  document.body.dataset.rpRole=role||'';
- if(field&&workspace){
+ if(field&&workspace&&role!=='ronda'){
   const centralHeader=$('header.top'),trigger=$('#central-root [data-central-menu]')||$('[data-central-menu]');
   const previous=centralHeader&&$('[data-central-menu]',centralHeader);if(previous&&previous!==trigger)previous.remove();
   if(centralHeader&&trigger){centralHeader.append(trigger);trigger.innerHTML=glyph('<path d="M4 6h16M4 12h16M4 18h16"/>');trigger.setAttribute('aria-label','Abrir menu de navegação');
@@ -68,7 +70,7 @@ export function decorateTheme(role,name=''){
     if(extras.length){const disclosure=document.createElement('details');disclosure.className='rp-field-records';const label=document.createElement('summary');label.textContent='Meus registros e informações';disclosure.append(label,...extras);controls.append(disclosure);}
    }
    const stage=$('.patrol-stage-index',controls),heading=$('.patrol-action-heading',controls);
-   if(stage&&heading&&!heading.contains(stage))heading.insertBefore(stage,$('button',heading));
+   if(stage&&heading&&!heading.contains(stage)){const next=[...heading.children].find(child=>child.tagName==='BUTTON')||null;heading.insertBefore(stage,next);}
    const hud=$('.rp-inspection-map-hud',workspace);if(hud&&!controls.contains(hud))controls.prepend(hud);
    const upcoming=$('.rp-inspection-upcoming',controls);
    if(upcoming&&!$('[data-rp-guard-options]',controls)){upcoming.hidden=true;const heading=$('.patrol-action-heading',controls);if(heading){const option=document.createElement('button');option.type='button';option.dataset.rpGuardOptions='';option.textContent='⋯';option.setAttribute('aria-label','Ver pontos da ronda');option.addEventListener('click',()=>{upcoming.hidden=!upcoming.hidden;upcoming.open=!upcoming.hidden});heading.append(option)}}

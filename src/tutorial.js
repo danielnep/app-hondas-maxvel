@@ -2,23 +2,28 @@
    É uma ajuda opcional; não concede GPS nem interfere na segurança da ronda. */
 export const TOUR_STORAGE_KEY='horizon-maxvel-tour-v2';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function createSpotlightTour({app,steps,onClose=()=>{},storage=localStorage}){
+export function createSpotlightTour({app,steps,onClose=()=>{},storage=localStorage,getAccount=()=> 'guest',onSeen=()=>{}}){
+ const key=()=>TOUR_STORAGE_KEY+':2.3.0-production:'+getAccount();
+ const getStepList=()=>typeof steps==='function'?steps():steps;
  let index=0,overlay=null,lastFocus=null,live=false;
  const finish=()=>{
   if(!live)return;
-  live=false;window.removeEventListener('resize',place);document.removeEventListener('keydown',keys,true);
+  live=false;window.removeEventListener('resize',place);window.visualViewport?.removeEventListener('resize',place);document.removeEventListener('scroll',place,true);document.removeEventListener('keydown',keys,true);
   overlay?.remove();overlay=null;app.inert=false;
-  try{storage.setItem(TOUR_STORAGE_KEY,'seen')}catch{}
+  try{storage.setItem(key(),'seen')}catch{}
+  try{onSeen()}catch{}
   if(lastFocus?.isConnected&&typeof lastFocus.focus==='function')lastFocus.focus();
   onClose();
  };
  function place(){
   if(!live||!overlay)return;
-  const step=steps[index];
+  const list=getStepList();
+  const step=list?.[index];
+  if(!step)return;
   const visible=element=>{const r=element.getBoundingClientRect();return r.width>0&&r.height>0;};
   const target=[...document.querySelectorAll(step.target)].find(visible)||[...document.querySelectorAll('.schedule-workspace, .ops-workspace, .app-content')].find(visible);
   const cut=overlay.querySelector('.tour-cutout'),panel=overlay.querySelector('.tour-panel');
-  const vpW=window.innerWidth,vpH=window.innerHeight;
+  const vpW=window.visualViewport?.width||window.innerWidth,vpH=window.visualViewport?.height||window.innerHeight;
   if(target){
    const r=target.getBoundingClientRect(),pad=5;
    const x=Math.max(7,r.left-pad),y=Math.max(7,r.top-pad);
@@ -34,19 +39,22 @@ export function createSpotlightTour({app,steps,onClose=()=>{},storage=localStora
   panel.style.left='50%';panel.style.transform='translateX(-50%)';
  }
  function paint(){
-  const step=steps[index];
+  const list=getStepList();
+  const step=list?.[index];
+  if(!step)return;
   if(!overlay){
    overlay=document.createElement('div');overlay.id='horizon-tour';overlay.className='horizon-tour';
    overlay.innerHTML='<div class="tour-cutout" aria-hidden="true"></div><section class="tour-panel" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description"></section>';
    document.body.append(overlay);
   }
   const panel=overlay.querySelector('.tour-panel');
-  panel.innerHTML='<div class="tour-kicker">TOUR DO APLICATIVO · '+(index+1)+'/'+steps.length+'</div>'+
+  panel.innerHTML='<div class="tour-kicker">GUIA DO APLICATIVO · '+(index+1)+'/'+list.length+'</div>'+
    '<h2 id="tour-title">'+esc(step.title)+'</h2><p id="tour-description">'+esc(step.description)+'</p>'+
-   '<p class="tour-hint">Você pode fechar o tutorial agora e reabri-lo em Ajuda ou no menu lateral.</p>'+
-   '<div class="tour-buttons"><button type="button" data-tour="close">Fechar tutorial</button>'+
-   (index?'<button type="button" data-tour="back">Anterior</button>':'')+
-   '<button type="button" class="tour-next" data-tour="next">'+(index===steps.length-1?'Concluir':'Entendi · continuar')+'</button></div>';
+   '<p class="tour-hint">Você pode reabrir o guia a qualquer momento em Ajuda · tutorial no menu lateral.</p>'+
+   (document.querySelector('[data-ops="panic-confirm"]')?'<button type="button" data-tour="emergency">Emergência · Pânico</button>':'')+
+   '<div class="tour-buttons"><button type="button" data-tour="close">Encerrar</button>'+
+   (index?'<button type="button" data-tour="back">Voltar</button>':'')+
+   '<button type="button" class="tour-next" data-tour="next">'+(index===list.length-1?'Concluir':'Próximo')+'</button></div>';
   place();panel.querySelector('[data-tour="next"]').focus();
  }
  function keys(e){
@@ -60,18 +68,22 @@ export function createSpotlightTour({app,steps,onClose=()=>{},storage=localStora
  }
  function open(start=0){
   if(live)finish();
-  if(!Array.isArray(steps)||!steps.length)return;
-  index=Math.min(Math.max(0,start),steps.length-1);
+  const list=getStepList();
+  if(!Array.isArray(list)||!list.length)return;
+  index=Math.min(Math.max(0,start),list.length-1);
   lastFocus=document.activeElement;live=true;app.inert=true;
-  window.addEventListener('resize',place);document.addEventListener('keydown',keys,true);
+  window.addEventListener('resize',place);window.visualViewport?.addEventListener('resize',place);document.addEventListener('scroll',place,true);document.addEventListener('keydown',keys,true);
   paint();
  }
  document.addEventListener('click',e=>{
+  if(live&&e.target.closest('[data-ops="panic-confirm"]')){finish();return;}
   if(!live||!overlay?.contains(e.target))return;
   const action=e.target.closest('[data-tour]')?.dataset.tour;
+  if(action==='emergency'){const panic=[...document.querySelectorAll('[data-ops="panic-confirm"]')].find(el=>el.getBoundingClientRect().width>0&&!el.closest('[aria-hidden="true"]'));finish();panic?.click();return;}
   if(action==='close')finish();
-  if(action==='next'){if(index>=steps.length-1)finish();else{index++;paint()}}
+  const list=getStepList();
+  if(action==='next'){if(index>=list.length-1)finish();else{index++;paint()}}
   if(action==='back'){index=Math.max(0,index-1);paint()}
  });
- return {open,close:finish,isOpen:()=>live,hasSeen:()=>{try{return storage.getItem(TOUR_STORAGE_KEY)==='seen'}catch{return false}}};
+ return {open,close:finish,isOpen:()=>live,hasSeen:()=>{try{return storage.getItem(key())==='seen'}catch{return false}}};
 }

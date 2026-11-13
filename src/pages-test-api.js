@@ -3,7 +3,7 @@
  * Sem servidor: credenciais e registros deste teste sao PUBLICOS/locais ao navegador.
  * Nunca usar estas senhas para acesso real nem confiar em papeis locais como seguranca.
  */
-export const isPagesTestMode = () => typeof location !== 'undefined' && location.hostname === 'danielnep.github.io';
+export const isPagesTestMode = () => !globalThis.__RONDA_PRODUCTION__ && typeof location !== 'undefined' && location.hostname === 'danielnep.github.io';
 export const PAGES_TEST_ACCOUNTS=Object.freeze([
  {name:'Administrador',username:'admin',email:'admin@rondapro.local',role:'admin',password:'Admin@Maxvel26!'},
  {name:'Operador COI',username:'coi',email:'coi@rondapro.local',role:'coi',password:'Coi@Maxvel26!'},
@@ -61,8 +61,8 @@ export async function pagesTestRequest(path,{method='GET',data}={}){
   const rows=read('routes',[]);
   if(method==='GET')return {routes:a.role==='ronda'?own(rows,user.id):rows};
   if(method==='POST'){
-   if(a.role!=='admin')throw fail('Somente administração cria rotas.',403);
-   if(!data?.userId||!Array.isArray(data?.points)||data.points.length<2)throw fail('Informe responsável e dois pontos.',422);
+   if(!['admin','coi'].includes(a.role))throw fail('Somente administração ou COI cria rotas.',403);
+   if(!data?.userId||!Array.isArray(data?.points)||data.points.length<1)throw fail('Informe responsável e pelo menos um ponto.',422);
    const entry={...data,id:newId(),createdAt:Date.now(),updatedAt:Date.now(),site:'Grupo Maxvel'};
    store('routes',[...rows,entry]);return {id:entry.id};
   }

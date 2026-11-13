@@ -1,10 +1,11 @@
-/** Administrative route workspace. Live readings are displayed only when received from the authenticated API. */
+/** Administrative and COI route workspace. Live readings are displayed only when received from the authenticated API. */
+import {searchPlacesWithLearned,recordLearnedPlace,searchFocus,distanceLabel} from './place-search.js';
 export function createRouteBoard({api,getContext,redraw,notify}){
- let watcher='',editing=null,editor=false,points=[],maps=[],draftMap=null,previewPoints=null;
+ let watcher='',editing=null,editor=false,points=[],maps=[],draftMap=null,previewPoints=null,addressAbort=null,addressDebounce=null,addressResults=[];
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const stamp=t=>Number.isFinite(t)&&t>0?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'Não registrado';
  const datetimeLocal=t=>{if(!Number.isFinite(t))return '';const d=new Date(t),pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())};
- const canEdit=()=>['admin','master'].includes(getContext().account?.role);
+ const canEdit=()=>['admin','master','coi','operador'].includes(getContext().account?.role);
  const statuses={em_andamento:'Em andamento',concluida:'Concluída',interrompida:'Interrompida',incompleta:'Incompleta',sem_inicio:'Sem início'};
  const shortStatus=r=>statuses[r.status]||'Aguardando sincronização';
  const isFresh=t=>Number.isFinite(t)&&Date.now()-t<90000;
@@ -61,18 +62,26 @@ export function createRouteBoard({api,getContext,redraw,notify}){
  function editorHtml(){
   if(!editor||!canEdit())return '';
   const worker=chosenWorker();
-  return '<section class="surface route-editor" id="route-editor"><div class="toolbar"><div><div class="eyebrow">ADMINISTRAÇÃO · CADASTRO DE ROTAS</div><h2>'+(editing?'Editar rota':'Criar nova rota')+'</h2><p class="muted">Colaborador: '+esc(worker?.name||'Não selecionado')+' · '+esc(worker?.site||'Sem local')+'</p></div><button type="button" data-route-cancel>Fechar</button></div>'+
+  return '<section class="surface route-editor" id="route-editor"><div class="toolbar"><div><div class="eyebrow">COI & ADMINISTRAÇÃO · CADASTRO E ENVIO DE ROTAS</div><h2>'+(editing?'Editar rota':'Criar e enviar rota para vigia')+'</h2><p class="muted">Colaborador: '+esc(worker?.name||'Não selecionado')+' · '+esc(worker?.site||'Sem local')+'</p></div><button type="button" data-route-cancel>Fechar</button></div>'+
    '<form id="route-form" class="stack"><label>Nome da rota<input name="name" required minlength="3" maxlength="120" value="'+esc(editing?.name||'')+'" placeholder="Ex.: Ronda noturna · Perímetro externo"></label>'+
-   '<label>Início programado (opcional)<input type="datetime-local" name="plannedStart" value="'+esc(datetimeLocal(editing?.plannedStart))+'"></label><p class="muted">O horário informado será exibido ao cliente do posto e utilizado para estimar o término da ronda. Deixe vazio quando não houver programação confirmada.</p>'+
-   '<p class="muted">Toque no mapa para marcar pontos em ordem. Também é possível inserir coordenadas manualmente.</p>'+
+   '<label>Início programado (opcional)<input type="datetime-local" name="plannedStart" value="'+esc(datetimeLocal(editing?.plannedStart))+'"></label><p class="muted">O horário informado será exibido ao vigia e ao cliente do posto. Deixe vazio para disponibilizar imediatamente na tela do vigia.</p>'+
+   '<div class="route-address-search-box" style="display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.12);">'+
+   '<label style="margin:0;"><strong>Endereço do ponto / destino</strong> <small class="muted">(rua, número, bairro, empresa ou condomínio)</small>'+
+   '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">'+
+   '<input id="route-point-address" type="search" autocomplete="off" placeholder="Digite o endereço (ex.: Av. Amazonas, 1200, Divinópolis ou Praça da Catedral)" style="flex:1;min-width:200px;">'+
+   '<button type="button" data-route-search-address class="secondary">Buscar endereço</button>'+
+   '</div></label>'+
+   '<div id="route-address-suggestions" class="route-address-suggestions" hidden style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-top:4px;"></div>'+
+   '</div>'+
+   '<p class="muted">Busque pelo endereço acima, toque no mapa para marcar pontos em ordem ou informe as coordenadas abaixo.</p>'+
    '<div id="route-editor-map" class="route-editor-map" aria-label="Mapa para escolher pontos"><span class="muted">O mapa será exibido quando a cartografia carregar.</span></div>'+
-   '<div class="route-coordinate-entry"><label>Nome do ponto<input id="route-point-name" placeholder="Portaria principal" maxlength="100"></label>'+
+   '<div class="route-coordinate-entry"><label>Nome / identificação do ponto<input id="route-point-name" placeholder="Ex.: Portaria principal / Endereço" maxlength="100"></label>'+
    '<label>Latitude<input id="route-point-lat" type="number" step="any" min="-90" max="90" placeholder="-20.14"></label>'+
    '<label>Longitude<input id="route-point-lng" type="number" step="any" min="-180" max="180" placeholder="-44.89"></label>'+
-   '<button type="button" data-route-add>Adicionar ponto</button></div>'+
-   '<div class="route-editor-points"><h3>Pontos em ordem <small>('+points.length+')</small></h3>'+
-   (points.length?points.map((p,i)=>'<div class="route-edit-point"><b>'+String(i+1).padStart(2,'0')+'</b><label>Identificação<input data-route-rename="'+i+'" maxlength="100" value="'+esc(p.name)+'" aria-label="Nome do ponto '+(i+1)+'"></label><small>'+p.lat.toFixed(5)+', '+p.lng.toFixed(5)+'</small><button type="button" data-route-remove="'+i+'" aria-label="Remover ponto '+(i+1)+'">Remover</button></div>').join(''):'<p class="muted">Adicione pelo menos dois pontos para salvar.</p>')+'</div>'+
-   '<button type="submit" class="primary" '+(points.length<2?'disabled':'')+'>Salvar rota para '+esc(worker?.name||'colaborador')+'</button></form></section>';
+   '<button type="button" data-route-add>+ Adicionar ponto à rota</button></div>'+
+   '<div class="route-editor-points"><h3>Pontos da rota em ordem <small>('+points.length+')</small></h3>'+
+   (points.length?points.map((p,i)=>'<div class="route-edit-point"><b>'+String(i+1).padStart(2,'0')+'</b><div style="flex:1;display:flex;flex-direction:column;gap:4px;"><label>Identificação<input data-route-rename="'+i+'" maxlength="100" value="'+esc(p.name)+'" aria-label="Nome do ponto '+(i+1)+'"></label>'+(p.address?'<small class="muted">📍 '+esc(p.address)+'</small>':'')+'<small>'+Number(p.lat).toFixed(5)+', '+Number(p.lng).toFixed(5)+'</small></div><button type="button" data-route-remove="'+i+'" aria-label="Remover ponto '+(i+1)+'">Remover</button></div>').join(''):'<p class="muted">Adicione pelo menos um endereço ou ponto no mapa para enviar a rota ao vigia.</p>')+'</div>'+
+   '<button type="submit" class="primary" '+(points.length<1?'disabled':'')+'>Salvar e enviar rota para '+esc(worker?.name||'vigia')+'</button></form></section>';
  }
  function render(){
   const workerList=chooseWorker(),person=chosenWorker(),items=routeHistory();
@@ -122,12 +131,80 @@ export function createRouteBoard({api,getContext,redraw,notify}){
    const map=draw(host,points,[],null);draftMap=map;
    if(map){
     if(base)map.setView([base.lat,base.lng],16);
-    map.on('click',e=>{if(!editor)return;points.push({name:'Ponto '+(points.length+1),lat:e.latlng.lat,lng:e.latlng.lng});redraw();});
+    map.on('click',e=>{
+     if(!editor)return;
+     const addrInput=document.querySelector('#route-point-address')?.value.trim()||'';
+     const nameInput=document.querySelector('#route-point-name')?.value.trim()||'';
+     points.push({name:nameInput||addrInput||'Ponto '+(points.length+1),address:addrInput,lat:e.latlng.lat,lng:e.latlng.lng});
+     redraw();
+    });
+   }
+   const addrField=document.querySelector('#route-point-address');
+   if(addrField&&!addrField.dataset.bound){
+    addrField.dataset.bound='true';
+    addrField.addEventListener('input',()=>{
+     clearTimeout(addressDebounce);
+     const q=addrField.value.trim();
+     if(q.length<3){
+      const box=document.querySelector('#route-address-suggestions');
+      if(box){box.hidden=true;box.innerHTML='';}
+      return;
+     }
+     addressDebounce=setTimeout(()=>void runAddressSearch(q),260);
+    });
    }
   }
  }
+ async function runAddressSearch(query){
+  const box=document.querySelector('#route-address-suggestions');
+  if(!box)return [];
+  const q=String(query??document.querySelector('#route-point-address')?.value??'').trim();
+  if(q.length<3){notify('Digite pelo menos 3 caracteres do endereço.');return [];}
+  if(addressAbort)addressAbort.abort();
+  addressAbort=new AbortController();
+  box.hidden=false;
+  box.innerHTML='<small class="muted">Buscando endereços…</small>';
+  try{
+   const focus=searchFocus(null,draftMap)||{lat:-20.14030,lng:-44.88400};
+   const items=await searchPlacesWithLearned(q,{focus,limit:6,signal:addressAbort.signal});
+   addressResults=items||[];
+   if(!addressResults.length){
+    box.innerHTML='<small class="muted">Nenhum endereço encontrado automaticamente. Você pode tocar no mapa ou informar latitude/longitude.</small>';
+    return [];
+   }
+   box.innerHTML=addressResults.map((p,i)=>'<button type="button" data-route-address-option="'+i+'" style="display:flex;justify-content:space-between;align-items:center;text-align:left;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);color:#f8fafc;gap:8px;"><span><strong style="display:block;font-size:13px;">'+esc(p.name)+'</strong><small style="color:#94a3b8;font-size:11.5px;">'+esc(p.address||'Endereço localizado')+'</small></span><span style="font-size:11px;color:#cbd5e1;white-space:nowrap;">'+(p.distanceMeters?esc(distanceLabel(p.distanceMeters)):'Selecionar')+'</span></button>').join('');
+   return addressResults;
+  }catch(err){
+   if(err?.name!=='AbortError')box.innerHTML='<small class="muted">Busca de endereço indisponível no momento.</small>';
+   return [];
+  }
+ }
  async function click(button){
-  if(!canEdit()&&button.matches('[data-route-create],[data-route-edit],[data-route-remove],[data-route-add],[data-route-cancel]'))return true;
+  if(!canEdit()&&button.matches('[data-route-create],[data-route-edit],[data-route-remove],[data-route-add],[data-route-cancel],[data-route-search-address],[data-route-address-option]'))return true;
+  if(button.hasAttribute('data-route-search-address')){
+   await runAddressSearch();
+   return true;
+  }
+  if(button.hasAttribute('data-route-address-option')){
+   const idx=Number(button.dataset.routeAddressOption);
+   const chosen=addressResults[idx];
+   if(chosen&&Number.isFinite(chosen.lat)&&Number.isFinite(chosen.lng)){
+    recordLearnedPlace({name:chosen.name,address:chosen.address||chosen.name,lat:chosen.lat,lng:chosen.lng});
+    const nameEl=document.querySelector('#route-point-name');
+    const addrEl=document.querySelector('#route-point-address');
+    const latEl=document.querySelector('#route-point-lat');
+    const lngEl=document.querySelector('#route-point-lng');
+    const box=document.querySelector('#route-address-suggestions');
+    if(nameEl&&!nameEl.value.trim())nameEl.value=chosen.name;
+    if(addrEl)addrEl.value=chosen.address||chosen.name;
+    if(latEl)latEl.value=String(chosen.lat);
+    if(lngEl)lngEl.value=String(chosen.lng);
+    if(box)box.hidden=true;
+    if(draftMap){try{draftMap.setView([chosen.lat,chosen.lng],17);}catch{}}
+    notify('Endereço selecionado: '+chosen.name+'. Clique em "+ Adicionar ponto à rota" para confirmar.');
+   }
+   return true;
+  }
   if(button.hasAttribute('data-route-create')){
    if(!chosenWorker())return true;
    editor=true;editing=null;points=[];redraw();document.querySelector('#route-editor')?.scrollIntoView({block:'start',behavior:'smooth'});return true;
@@ -143,10 +220,24 @@ export function createRouteBoard({api,getContext,redraw,notify}){
    redraw();return true;
   }
   if(button.hasAttribute('data-route-add')){
-   const name=document.querySelector('#route-point-name')?.value.trim()||'Ponto '+(points.length+1);
-   const lat=Number(document.querySelector('#route-point-lat')?.value),lng=Number(document.querySelector('#route-point-lng')?.value);
-   if(!document.querySelector('#route-point-lat')?.value||!document.querySelector('#route-point-lng')?.value||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){notify('Informe coordenadas válidas.');return true;}
-   points.push({name,lat,lng});redraw();return true;
+   const addrVal=document.querySelector('#route-point-address')?.value.trim()||'';
+   let name=document.querySelector('#route-point-name')?.value.trim()||addrVal||'Ponto '+(points.length+1);
+   let latRaw=document.querySelector('#route-point-lat')?.value;
+   let lngRaw=document.querySelector('#route-point-lng')?.value;
+   let lat=Number(latRaw),lng=Number(lngRaw);
+   if((!latRaw||!lngRaw||!Number.isFinite(lat)||!Number.isFinite(lng))&&addrVal.length>=3){
+    const found=await runAddressSearch(addrVal);
+    if(found.length&&Number.isFinite(found[0].lat)&&Number.isFinite(found[0].lng)){
+     lat=found[0].lat;lng=found[0].lng;latRaw=String(lat);lngRaw=String(lng);
+     if(!document.querySelector('#route-point-name')?.value.trim())name=found[0].name||addrVal;
+     recordLearnedPlace({name:found[0].name||name,address:found[0].address||addrVal,lat,lng});
+    }
+   }
+   if(!latRaw||!lngRaw||!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){
+    notify('Busque e selecione um endereço válido ou informe as coordenadas do ponto.');return true;
+   }
+   points.push({name:name.slice(0,100),address:addrVal.slice(0,250),lat,lng});
+   redraw();return true;
   }
   if(button.hasAttribute('data-route-events')){
    const details=document.querySelector('[data-route-timeline="'+button.dataset.routeEvents+'"]');
@@ -165,12 +256,12 @@ export function createRouteBoard({api,getContext,redraw,notify}){
   return false;
  }
  async function submit(form){
-  if(!canEdit())throw Error('Somente a administração altera rotas.');
+  if(!canEdit())throw Error('Somente o COI ou a administração altera rotas.');
   if(form.id!=='route-form')return false;
   const worker=chosenWorker();
   const name=String(new FormData(form).get('name')||'').trim();
-  if(!worker||name.length<3||points.length<2||points.some(p=>p.name.trim().length<1)){
-   notify('Informe vigia, nome da rota e ao menos dois pontos identificados.');return true;
+  if(!worker||name.length<3||points.length<1||points.some(p=>p.name.trim().length<1)){
+   notify('Informe vigia, nome da rota e pelo menos um ponto ou endereço identificado.');return true;
   }
   const scheduled=String(new FormData(form).get('plannedStart')||'').trim();
   const plannedStart=scheduled?Date.parse(scheduled):null;

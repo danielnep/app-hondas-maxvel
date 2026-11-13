@@ -4,7 +4,7 @@ import {readFileSync,writeFileSync,readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=fileURLToPath(new URL('../',import.meta.url));
-const files=['ronda-pro.css','central.css','operational.css','mobile-critical.css','field.css','theme.css'];
+const files=['ronda-pro.css','central.css','operational.css','mobile-critical.css','field.css','theme.css','beta-ui.css'];
 const clean=process.argv.includes('--clean'),report=[];
 // Later identical values are safe even where a browser needs a fallback.
 // Different values are pruned only for longhands with baseline literal syntax.
@@ -55,15 +55,15 @@ for(const {file,source,ast} of sheets){
  report.push({file,bytesBefore:Buffer.byteLength(source),bytesAfter:Buffer.byteLength(readFileSync(path.join(root,'assets',file),'utf8')),redundantDeclarations:removed,emptyRules:empty,remainingDifferentValues:conflicts.length,examples:conflicts.slice(-8)});
 }
 for(const file of readdirSync(path.join(root,'assets')).filter(x=>x.endsWith('.css')))if(!files.includes(file))throw Error('Untracked CSS layer: '+file);
-const expected={index:['ronda-pro','operational','mobile-critical','field','theme'],central:['central','operational','field','theme']};
+const expected={index:['ronda-pro','operational','mobile-critical','field','theme','beta-ui'],central:['central','operational','field','theme','beta-ui']};
 for(const [page,names] of Object.entries(expected)){
  const html=readFileSync(path.join(root,page+'.html'),'utf8');
- const links=[...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^\"]+)"[^>]*>/g)].map(m=>m[1]).filter(x=>!x.startsWith('https://'));
+ const links=[...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*href="([^\"]+)"[^>]*>/g)].map(m=>m[1]).filter(x=>!x.startsWith('https://')&&!x.includes('/vendor/'));
  if(JSON.stringify(links.map(x=>path.basename(x).split('?')[0]))!==JSON.stringify(names.map(x=>x+'.css')))throw Error('CSS order mismatch in '+page);
 }
 const sw=readFileSync(path.join(root,'sw.js'),'utf8');
 for(const file of files)if(!sw.includes('./assets/'+file))throw Error('CSS absent from offline cache: '+file);
-for(const link of sw.matchAll(/'([^']+\.css)'/g))if(!files.some(f=>link[1]==='./assets/'+f))throw Error('Obsolete cache reference: '+link[1]);
+for(const link of sw.matchAll(/'([^']+\.css)'/g))if(!link[1].startsWith('./assets/vendor/')&&!files.some(f=>link[1]==='./assets/'+f))throw Error('Obsolete cache reference: '+link[1]);
 if(process.env.CSS_AUDIT_OUTPUT)writeFileSync(process.env.CSS_AUDIT_OUTPUT,JSON.stringify(report,null,2));
 console.log(JSON.stringify(report.map(({examples,...item})=>item),null,2));
 if(!clean&&report.some(r=>r.redundantDeclarations))throw Error('Redundant declarations reintroduced; review npm run check:styles output.');

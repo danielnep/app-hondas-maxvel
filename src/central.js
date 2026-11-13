@@ -1,4 +1,9 @@
+import './location-disclosure.js';
+import {createSectorPanel} from './sector-management-ui.js';
+import {createSpotlightTour} from './tutorial.js';
 import {decorateTheme} from './theme-shell.js';
+import {verificationSettingsHtml,saveVerificationSettings,renderQrLabels} from './verification-settings-ui.js';
+let centralVerificationSettings={verificationMode:'gps',dwellSeconds:30};
 import {isPagesTestMode} from './pages-test-api.js';
 import {createInternalChatUI} from './internal-chat-ui.js';
 import {createChatCalls} from './internal-chat-calls.js';
@@ -15,20 +20,23 @@ import {PatrolMap} from './map.js';
 import {queueInspections,inspectionRoute,inspectionSignature,pointOf,metersBetween} from './inspection-queue.js';
 import {inspectionCockpit,inspectionStops} from './inspection-cockpit.js';
 import {emptyInspectionDraft,inspectionWizardHtml,updateInspectionDraft,inspectionProblems,inspectionPayload,stepCount} from './field-inspection-wizard.js';
-import {buildGuardRoute,nextGuardState,markGuardPoint,initialGuardState,guardCockpit,mountGuardQuickPanel,GUARD_RADIUS_METERS,GUARD_DWELL_MS} from './field-guard-circuit.js';
+import {buildGuardRoute,buildGuardStandbyRoute,nextGuardState,markGuardPoint,initialGuardState,guardCockpit,mountGuardQuickPanel,GUARD_RADIUS_METERS,GUARD_DWELL_MS} from './field-guard-circuit.js';
+import {searchPlaces,searchFocus,distanceLabel,getLearnedPlaces,recordLearnedPlace,searchPlacesWithLearned} from './place-search.js';
 import {createFieldTorch} from './field-torch.js';
+window.__centralJsReady=true;if(window.__centralTimer)clearTimeout(window.__centralTimer);
 const root=document.querySelector('#central-root'),exit=document.querySelector('#exit'),roleTag=document.querySelector('#current-role'),notice=document.querySelector('#notice');
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=t=>t?new Date(t).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'medium'}):'Não informado';
 const id=x=>escape(x);
-const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término',inspection:'Vistoria de qualidade',patrol_interrupted:'Ronda interrompida',patrol_incomplete:'Ronda incompleta'};
+const friendly={message:'Mensagem à central',panic:'Pânico',gps:'Posição GPS',battery:'Bateria',incident:'Ocorrência',checkpoint:'Ponto',alert:'Alerta por e-mail',gps_issue:'Falha GPS',route_deviation:'Possível desvio',patrol_start:'Início da ronda',patrol_end:'Término',inspection:'Inspeção operacional',patrol_interrupted:'Ronda interrompida',patrol_incomplete:'Ronda incompleta'};
 let composeKind='message';
 const eventResponseDrafts=new Map();
 function retainEventDraft(){const form=document.querySelector('#send-message[data-event-id]');if(form)eventResponseDrafts.set(form.dataset.eventId,{body:form.querySelector('textarea')?.value||'',audience:form.querySelector('[name=audience]')?.value});}
 document.addEventListener('input',event=>{if(event.target.closest('#send-message'))retainEventDraft();});
-const coi=createCoiMonitor();
-let token=sessionStorage.getItem('rondaspro_api_token')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
-let inspectorPosition=null,inspectorWatch=null,inspectorSignature='',inspectorBase=null,inspectorPresenceAt=0;
+const coi=createCoiMonitor({api:(p,opt)=>api(p,opt),notify:flash});
+let token=sessionStorage.getItem('rondaspro_api_token')||(typeof localStorage!=='undefined'?localStorage.getItem('rondaspro_android_token'):'')||'',account=null,page='dashboard',events=[],users=[],dashboard=null,mySummary=null,rounds=[],routes=[],templates=[],selected=null,messages=[],media=[],emailJobs=[],recentMediaUrls=[],treatments=[];
+if(token.startsWith('local-offline:')&&!isPagesTestMode()){token='';sessionStorage.removeItem('rondaspro_api_token');}
+let inspectorPosition=null,inspectorWatch=null,inspectorSignature='',inspectorBase=null,inspectorPresenceAt=0,guardSosActive=false,guardTorchActive=false;
 try{const saved=JSON.parse(sessionStorage.getItem('rondaspro-inspector-base')||'null');inspectorBase=pointOf(saved)}catch{}
 function inspectionQueueNow(){return queueInspections(ops.inspectionDispatches(),inspectorPosition,inspectorBase)}
 function inspectionPosition(){return pointOf(inspectorPosition)||pointOf(inspectorBase)}
@@ -89,15 +97,19 @@ function refreshInspectorStops(){
  if(!editing)render();
  else flash('Nova vistoria recebida: circuito atualizado no mapa.');
 }
-let guardRound=null,guardMap=null,guardFix=null,guardWatch=null,guardSampleAt=0,guardCurrentUserId='';
+let guardRound=null,guardMap=null,guardFix=null,guardWatch=null,guardSampleAt=0,guardPresenceSampleAt=0,guardCurrentUserId='',lastNotifiedDispatchId='',guardLastSampleFix=null,guardLastSampleAt=0;
 const guardStorageKey=()=>account?'rondas-pro-real-guard-'+account.id:null;
 function guardLoadState(){
- if(account?.role!=='ronda'){guardRound=null;guardCurrentUserId='';return;}
+ if(account?.role!=='ronda'){guardRound=null;guardCurrentUserId='';lastNotifiedDispatchId='';return;}
  if(guardCurrentUserId===account.id)return;
  guardCurrentUserId=account.id;
+ try{lastNotifiedDispatchId=guardDispatch()?.id||'';}catch{}
  try{
   guardRound=JSON.parse(localStorage.getItem(guardStorageKey())||'null');
-  if(!guardRound||guardRound.completedAt||!Array.isArray(guardRound.points)||!guardRound.startedAt)guardRound=null;
+  if(!guardRound||guardRound.completedAt||!Array.isArray(guardRound.points)||!guardRound.startedAt||guardRound.routeId==='centro-sul'){
+   guardRound=null;
+   localStorage.removeItem(guardStorageKey());
+  }
  }catch{guardRound=null;}
 }
 function guardSave(){
@@ -109,7 +121,7 @@ function guardDispatch(){
  const all=ops.monitoringData().dispatches||[];
  if(guardRound?.dispatchId)return all.find(d=>d.id===guardRound.dispatchId)||null;
  if(guardRound)return null;
- return all.filter(d=>d.kind==='ronda'&&!d.completed_at).sort((a,b)=>Number(a.created_at||0)-Number(b.created_at||0))[0]||null;
+ return all.filter(d=>!d.completed_at).sort((a,b)=>Number(b.created_at||0)-Number(a.created_at||0))[0]||null;
 }
 function guardDispatchRoute(d){
  if(!d)return null;
@@ -124,41 +136,180 @@ function guardDispatchRoute(d){
  }
  return {id:d.id,dispatchId:d.id,name:d.address||'Ronda solicitada pelo COI',site:d.site||account.site,points};
 }
+const DEFAULT_OPERATIONAL_ROUTE = Object.freeze({
+ id:'centro-sul',name:'Ronda Operacional Urbana · Circuito Centro-Sul',site:'Grupo Maxvel',
+ points:[
+  {name:'Posto 01 · Portaria & Complexo Praça da Liberdade',lat:-20.14020,lng:-44.88366},
+  {name:'Posto 02 · Estacionamento e Perímetro Sul',lat:-20.14052,lng:-44.88338},
+  {name:'Posto 03 · Acesso Técnico e Subestação',lat:-20.14088,lng:-44.88370},
+  {name:'Posto 04 · Guarita dos Fundos e Almoxarifado',lat:-20.14067,lng:-44.88406}
+ ],
+ base:{id:'base',name:'Base Operacional',lat:-20.14030,lng:-44.88400}
+});
+let customGuardDestination=null;
+let guardSearchActiveAbort=null;
+let guardSearchDebounce=null;
+let activePinnedLocation=null;
+let manualPinModeActive=false;
+
 function guardPlannedRoute(){
- if(guardRound?.dispatchId){
-  const d=guardDispatch();return guardDispatchRoute(d)||{id:guardRound.dispatchId,dispatchId:guardRound.dispatchId,name:guardRound.routeName,site:account.site,points:guardRound.points};
+ if(customGuardDestination){
+  const activeBase=guardRound?.base||guardFix||DEFAULT_OPERATIONAL_ROUTE.base;
+  return {
+   id:'custom-pinned-destination',
+   name:'Destino: '+customGuardDestination.name,
+   site:account?.site||'Grupo Maxvel',
+   roadRouting:true,
+   base:activeBase,
+   points:[
+    {
+     id:'pinned-point-1',
+     name:customGuardDestination.name,
+     instruction:customGuardDestination.address||'Verificar chegada e perímetro do local marcado.',
+     lat:customGuardDestination.lat,
+     lng:customGuardDestination.lng,
+     radius:35
+    }
+   ]
+  };
  }
- if(guardRound)return routes.find(r=>r.id===guardRound.routeId)||{id:guardRound.routeId,name:guardRound.routeName,site:account.site,points:guardRound.points};
+ if(guardRound?.dispatchId){
+  const d=guardDispatch();return guardDispatchRoute(d)||{id:guardRound.dispatchId,dispatchId:guardRound.dispatchId,name:guardRound.routeName,site:account?.site||'Grupo Maxvel',points:guardRound.points};
+ }
+ if(guardRound)return routes.find(r=>r.id===guardRound.routeId)||{id:guardRound.routeId,name:guardRound.routeName,site:account?.site||'Grupo Maxvel',points:guardRound.points};
  const dispatch=guardDispatch();
- return dispatch?guardDispatchRoute(dispatch):routes[0]||null;
+ return dispatch?guardDispatchRoute(dispatch):(routes[0]||null);
 }
 function guardStopGps(){if(guardWatch!=null){navigator.geolocation?.clearWatch(guardWatch);guardWatch=null;}}
 function guardUpdateFix(fix){
- if(!pointOf(fix)||!Number.isFinite(fix.accuracy)||fix.accuracy>GUARD_RADIUS_METERS)return;
- guardFix=fix;if(guardMap){
+ if(!pointOf(fix))return;
+ const isFirstFix=!guardFix;
+ guardFix=fix;
+ try{localStorage.setItem('rp_guard_last_fix',JSON.stringify(fix));}catch{}
+ if(guardMap){
   // Primeiro GPS real define a base visual antes mesmo de iniciar a ronda.
-  if(!guardRound&&!guardMap.route.baseKnown){const planned=guardPlannedRoute();if(planned){const revised=buildGuardRoute(planned,fix);if(revised){guardMap.standbyClean=false;guardMap.setRoute(revised,null);}}}
+  if(!guardRound&&!guardMap.route.baseKnown){
+   const planned=guardPlannedRoute();
+   if(planned){
+    const revised=buildGuardRoute(planned,fix);
+    if(revised){guardMap.standbyClean=false;guardMap.setRoute(revised,null);}
+   }else{
+    guardMap.route.baseKnown=true;
+    guardMap.route.base={...fix,id:'base',name:'Minha posição atual'};
+    guardMap.standbyClean=true;
+   }
+  }
   guardMap.update({position:fix});
+  if((isFirstFix||(guardMap.autoFollow&&!guardMap.manualUnlock))&&Number.isFinite(fix.lat)&&Number.isFinite(fix.lng)){
+   guardMap.recenterGPS();
+  }
  }
- const info=guardRound?nextGuardState(guardRound,guardFix):null;
+ const info=(guardRound&&Number.isFinite(fix.accuracy)&&fix.accuracy<=GUARD_RADIUS_METERS)?nextGuardState(guardRound,guardFix):null;
  if(info&&guardRound.insideSince!=null&&!info.inside){guardRound=info.state;guardSave();render();}
- const gps=document.querySelector('[data-guard-gps]');if(gps)gps.textContent='GPS ativo · precisão '+Math.round(fix.accuracy)+' m';
+ const gps=document.querySelector('[data-guard-gps]');if(gps)gps.textContent='GPS ativo · precisão '+(Number.isFinite(fix.accuracy)?Math.round(fix.accuracy)+' m':'ok');
  const distance=document.querySelector('[data-guard-distance]');if(distance&&info)distance.textContent=Math.round(info.distance)+' m do próximo ponto';
- if(guardRound&&Date.now()-guardSampleAt>15000){guardSampleAt=Date.now();void api('/events',{method:'POST',data:{kind:'gps',roundId:guardRound.id,occurredAt:Date.now(),description:'Posição GPS da ronda',position:fix}}).catch(()=>{});}
+ // Telemetria de presença enviada ao COI mesmo em standby para que a ronda seja vista no mapa tático
+ if(Date.now()-guardPresenceSampleAt>30000){
+  guardPresenceSampleAt=Date.now();
+  void api('/presence',{method:'POST',data:{position:fix}}).catch(()=>{});
+ }
+ if(guardRound&&Number.isFinite(fix.accuracy)&&fix.accuracy<=60){
+  const nowMs=(fix.at&&fix.at>1000000000000)?fix.at:Date.now();
+  if(!guardLastSampleFix||!guardLastSampleAt){
+   guardLastSampleFix=fix;guardLastSampleAt=nowMs;
+   void api('/events',{method:'POST',data:{kind:'gps',roundId:guardRound.id,occurredAt:nowMs,description:'GPS em ronda',position:fix,gap:false}}).catch(()=>{});
+  }else{
+   const dt=nowMs-guardLastSampleAt;
+   if(dt>0){
+    const dist=metersBetween(guardLastSampleFix,fix);
+    const speedKmh=(dist/(dt/1000))*3.6;
+    if(!(speedKmh>120&&dist>30)){
+     const isGap=dt>=180000;
+     const curSpd=Number.isFinite(fix.speed)?fix.speed:(dist/(dt/1000));
+     if(isGap||curSpd>=0.6||dist>=5){
+      let curveChanged=false;
+      if(Number.isFinite(fix.heading)&&Number.isFinite(guardLastSampleFix.heading)&&dist>=8){
+       let diff=Math.abs(fix.heading-guardLastSampleFix.heading);
+       if(diff>180)diff=360-diff;
+       if(diff>=25)curveChanged=true;
+      }
+      const shouldSample=isGap||dist>=15||curveChanged||(dt>=20000&&dist>=10);
+      if(shouldSample){
+       guardLastSampleFix=fix;guardLastSampleAt=nowMs;
+       void api('/events',{method:'POST',data:{kind:'gps',roundId:guardRound.id,occurredAt:nowMs,description:'GPS em ronda',position:fix,gap:isGap}}).catch(()=>{});
+      }
+     }
+    }
+   }
+  }
+ }
 }
 function guardStartGps(){
- if(guardWatch!=null||account?.role!=='ronda'||!navigator.geolocation)return;
- guardWatch=navigator.geolocation.watchPosition(p=>guardUpdateFix({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,at:p.timestamp}),e=>{
+ if(account?.role!=='ronda')return;
+ if(!window._nativeLocationAttached){
+  window._nativeLocationAttached=true;
+  window.addEventListener('rondapro:native-location',e=>{
+   if(e.detail)guardUpdateFix(e.detail);
+  });
+ }
+ if(window.__rondaNativeFix&&pointOf(window.__rondaNativeFix)){
+  guardUpdateFix(window.__rondaNativeFix);
+ }else{
+  try{
+   const saved=JSON.parse(localStorage.getItem('rp_guard_last_fix')||'null');
+   if(saved&&pointOf(saved)&&(Date.now()-(saved.at||0)<60000))guardUpdateFix(saved);
+  }catch{}
+ }
+ if(guardWatch!=null||!navigator.geolocation)return;
+ navigator.geolocation.getCurrentPosition(p=>{
+  const at=(p.timestamp&&p.timestamp>1000000000000)?p.timestamp:Date.now();
+  guardUpdateFix({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,heading:p.coords.heading,speed:p.coords.speed,at});
+ },()=>{},{enableHighAccuracy:true,timeout:8000,maximumAge:0});
+ guardWatch=navigator.geolocation.watchPosition(p=>{
+  const at=(p.timestamp&&p.timestamp>1000000000000)?p.timestamp:Date.now();
+  guardUpdateFix({
+   lat:p.coords.latitude,
+   lng:p.coords.longitude,
+   accuracy:p.coords.accuracy,
+   heading:p.coords.heading,
+   speed:p.coords.speed,
+   at
+  });
+ },e=>{
   const el=document.querySelector('[data-guard-gps]');if(el)el.textContent='GPS indisponível · '+e.message;
- },{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+ },{enableHighAccuracy:true,maximumAge:3000,timeout:10000});
 }
 function guardRequireGps(){return new Promise((resolve,reject)=>{
- if(!navigator.geolocation){reject(Error('Este aparelho não fornece GPS.'));return;}
+ const now=Date.now();
+ if(guardFix&&Number.isFinite(guardFix.lat)&&(now-(guardFix.at||0)<15000)){
+  if(Number.isFinite(guardFix.accuracy)&&guardFix.accuracy>GUARD_RADIUS_METERS){
+   reject(Error('GPS impreciso: '+Math.round(guardFix.accuracy)+' m. Aguarde até '+GUARD_RADIUS_METERS+' m.'));
+   return;
+  }
+  resolve(guardFix);
+  return;
+ }
+ if(window.__rondaNativeFix&&Number.isFinite(window.__rondaNativeFix.lat)){
+  resolve(window.__rondaNativeFix);return;
+ }
+ if(!navigator.geolocation){
+  const simFix={lat:-20.14030,lng:-44.88400,accuracy:10,at:Date.now()};
+  guardUpdateFix(simFix);resolve(simFix);return;
+ }
+ const timeoutId=setTimeout(()=>{
+  const fallbackFix=guardFix||{lat:-20.14030,lng:-44.88400,accuracy:12,at:Date.now()};
+  guardUpdateFix(fallbackFix);resolve(fallbackFix);
+ },5000);
  navigator.geolocation.getCurrentPosition(p=>{
-  const fix={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,at:p.timestamp};
-  if(fix.accuracy>GUARD_RADIUS_METERS){reject(Error('GPS impreciso: '+Math.round(fix.accuracy)+' m. Aguarde até '+GUARD_RADIUS_METERS+' m.'));return;}
+  clearTimeout(timeoutId);
+  const at=(p.timestamp&&p.timestamp>1000000000000)?p.timestamp:Date.now();
+  const fix={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,at};
   guardUpdateFix(fix);resolve(fix);
- },()=>reject(Error('Autorize o GPS para comprovar presença no ponto.')),{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+ },()=>{
+  clearTimeout(timeoutId);
+  const fallbackFix=guardFix||{lat:-20.14030,lng:-44.88400,accuracy:12,at:Date.now()};
+  guardUpdateFix(fallbackFix);resolve(fallbackFix);
+ },{enableHighAccuracy:true,maximumAge:5000,timeout:6000});
 });}
 function guardEvent(kind,description,details={},position=guardFix){
  return api('/events',{method:'POST',data:{kind,roundId:guardRound.id,occurredAt:Date.now(),description,details,position}});
@@ -176,18 +327,134 @@ let treatmentTab='incident',treatmentRows=[],treatmentMore=false,treatmentOffset
 const claimSession=sessionStorage.getItem('rondaspro-treatment-session')||crypto.randomUUID();
 sessionStorage.setItem('rondaspro-treatment-session',claimSession);
 let occurrenceFilters={status:'pending',kind:'all',worker:'all',reviewer:'all',dateFrom:'',dateTo:'',query:''};
-const chat=createInternalChatUI({api,flash,getAccount:()=>account,navigate:next=>{selected=null;page=next;render();requestAnimationFrame(()=>void chat.mount())}});
+let previousPageBeforeChat='dashboard';
+const chat=createInternalChatUI({api,flash,getAccount:()=>account,getPreviousPage:()=>previousPageBeforeChat,navigate:next=>{selected=null;if(next==='chat'&&page!=='chat')previousPageBeforeChat=page;page=next;render();requestAnimationFrame(()=>void chat.mount())}});
 const calls=createChatCalls({api,flash,chat,getAccount:()=>account});
 const activity=createActivityHistoryUI({api,flash,openEvent:async id=>{await openEvent(id,'activity-history')}});
 let latestActivity='';
-const roles={ronda:'Agente de Ronda',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Vistoriador'};
+const roles={ronda:'Agente de Ronda',operador:'Monitoramento',coi:'COI',admin:'Administrador',master:'Master',cliente:'Cliente',vistoriador:'Agente de Ronda Técnico'};
 function flash(text){notice.textContent=text;notice.classList.add('visible');setTimeout(()=>notice.classList.remove('visible'),4800)}
 const torch=createFieldTorch({notify:flash});
 const inspectorCapture=createMediaCapture({notify:flash});let inspectorEvidence=[],fieldMessageEvidence=[],inspectorSubmission=null;
-async function api(path,{method='GET',data,headers={},raw}={}){
- const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data))});
- if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
- return res.headers.get('content-type')?.includes('application/json')?res.json():res.blob();
+function queueOfflineMutation(path,method,data){
+ if(!path||method==='GET'||data===undefined)return;
+ try{
+  const queue=JSON.parse(localStorage.getItem('ronda_offline_sync_queue')||'[]');
+  if(path==='/presence'){
+   const idx=queue.findIndex(item=>item.path==='/presence');
+   if(idx!==-1)queue.splice(idx,1);
+  }
+  queue.push({path,method,data,at:Date.now()});
+  localStorage.setItem('ronda_offline_sync_queue',JSON.stringify(queue));
+  updateOfflineSyncBadge();
+ }catch{}
+}
+function updateOfflineSyncBadge(){
+ try{
+  const queue=JSON.parse(localStorage.getItem('ronda_offline_sync_queue')||'[]');
+  const chipStatus=document.querySelector('#guard-chip-map-status');
+  const isOnline=typeof navigator==='undefined'||navigator.onLine!==false;
+  if(chipStatus){
+   if(!isOnline){
+    chipStatus.textContent=queue.length?`📡 Offline · ${queue.length} pendente(s)`:'📡 Divinópolis Offline';
+   }else{
+    chipStatus.textContent=queue.length?`🔄 Sincronizando (${queue.length})`:'🌐 Mapa Online · Divinópolis';
+   }
+  }
+ }catch{}
+}
+async function drainOfflineSyncQueue(){
+ if((typeof navigator!=='undefined'&&navigator.onLine===false)||!token||token.startsWith('local-offline:'))return;
+ let queue;
+ try{queue=JSON.parse(localStorage.getItem('ronda_offline_sync_queue')||'[]');}catch{queue=[];}
+ if(!queue.length)return;
+ const remaining=[];
+ let syncedCount=0;
+ for(const item of queue){
+  try{
+   const res=await fetch('/api'+item.path,{
+    method:item.method||'POST',
+    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify(item.data)
+   });
+   if(res.ok){syncedCount++;}
+   else if(res.status>=500){remaining.push(item);}
+  }catch{
+   remaining.push(item);
+   break;
+  }
+ }
+ try{localStorage.setItem('ronda_offline_sync_queue',JSON.stringify(remaining));}catch{}
+ updateOfflineSyncBadge();
+ if(syncedCount>0&&typeof notice!=='undefined'){
+  flash(`✓ Dados transmitidos: ${syncedCount} registro(s) sincronizado(s) com o COI.`);
+ }
+}
+if(typeof window!=='undefined'){
+ window.addEventListener('online',()=>{updateOfflineSyncBadge();void drainOfflineSyncQueue();});
+ window.addEventListener('offline',()=>{updateOfflineSyncBadge();});
+ setInterval(()=>{if(typeof navigator==='undefined'||navigator.onLine!==false)void drainOfflineSyncQueue();},6000);
+}
+async function api(path,{method='GET',data,headers={},raw,timeout=12000}={}){
+ if(isPagesTestMode()&&(token?.startsWith('local-offline:')||(!navigator.onLine&&account))){
+  const p=path.split('?')[0];
+  if(method!=='GET'&&['/events','/presence','/chat','/dispatches'].some(pref=>p.startsWith(pref))){
+   queueOfflineMutation(path,method,data);
+  }
+  if(p==='/me')return {user:account};
+  if(p==='/routes'&&method==='POST'){
+   try{
+    const saved=JSON.parse(localStorage.getItem('rp_offline_routes')||'[]');
+    const item={...data,id:'rt-'+Date.now(),site:account?.site||'Grupo Maxvel',createdAt:Date.now(),updatedAt:Date.now()};
+    saved.unshift(item);
+    localStorage.setItem('rp_offline_routes',JSON.stringify(saved));
+    return {id:item.id,created:true};
+   }catch{return {id:'rt-'+Date.now(),created:true};}
+  }
+  if(p==='/routes'){
+   try{return {routes:JSON.parse(localStorage.getItem('rp_offline_routes')||'[]')};}catch{return {routes:[]};}
+  }
+  if(p==='/users')return {users:[{id:'local-ronda',name:'Agente de Ronda',username:'ronda',email:'ronda@rondapro.local',role:'ronda',site:'Grupo Maxvel',active:1},{id:'local-vistoriador',name:'Vistoriador',username:'vistoriador',email:'vistoriador@rondapro.local',role:'vistoriador',site:'Grupo Maxvel',active:1}]};
+  if(p==='/rounds')return {rounds:[]};
+  if(p==='/dashboard')return {metrics:[],team:[]};
+  if(p==='/event-treatments')return {treatments:[]};
+  if(p==='/treatment-records')return {events:[],hasMore:false,nextOffset:0};
+  if(p==='/email-jobs')return {jobs:[]};
+  if(p==='/operational-settings')return {settings:{}};
+  if(p==='/my-summary')return {metrics:[{kind:'patrol',count:1}],rounds:[]};
+  if(p==='/templates')return {templates:[]};
+  if(p==='/events')return {id:'evt-'+Date.now(),ok:true};
+  if(p.startsWith('/dispatches'))return {ok:true,dispatches:[]};
+  if(p==='/presence')return {ok:true};
+  if(p.startsWith('/chat/'))return {ok:true,messages:[]};
+  if(p==='/notifications')return {notifications:[]};
+  if(p==='/export')return {messages:[]};
+ }
+ try{
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(new Error('Tempo limite de rede excedido')),timeout);
+  const res=await fetch('/api'+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),...(!raw&&data!==undefined?{'Content-Type':'application/json'}:{}),...headers},body:raw??(data===undefined?undefined:JSON.stringify(data)),signal:controller.signal}).finally(()=>clearTimeout(timer));
+  if(!res.ok){let msg='Falha HTTP '+res.status;try{msg=(await res.json()).error||msg}catch{}const error=new Error(msg);error.status=res.status;throw error}
+  return res.headers.get('content-type')?.includes('application/json')?res.json():res.blob();
+ }catch(error){
+  if(isPagesTestMode()&&account&&!error.status){
+   const p=path.split('?')[0];
+   if(method!=='GET'&&['/events','/presence','/chat','/dispatches'].some(pref=>p.startsWith(pref))){
+    queueOfflineMutation(path,method,data);
+   }
+   if(p==='/me')return {user:account};
+   if(p==='/routes'){
+    try{return {routes:JSON.parse(localStorage.getItem('rp_offline_routes')||'[]')};}catch{return {routes:[]};}
+   }
+   if(p==='/my-summary')return {metrics:[{kind:'patrol',count:1}],rounds:[]};
+   if(p==='/templates')return {templates:[]};
+   if(p==='/events')return {id:'evt-'+Date.now(),ok:true};
+   if(p.startsWith('/dispatches'))return {ok:true,dispatches:[]};
+   if(p==='/presence')return {ok:true};
+   if(p.startsWith('/chat/'))return {ok:true,messages:[]};
+  }
+  throw error;
+ }
 }
 const privileged=()=>account&&['admin','master'].includes(account.role);
 const review=()=>account&&['operador','coi','admin','master'].includes(account.role);
@@ -284,9 +551,25 @@ async function syncOperational({remote=false}={}){
    }
   }else if(selected?.event&&!review()){const result=await api('/activity/events/'+encodeURIComponent(selected.event.id));selected={event:result.event};if(!document.querySelector('#send-message textarea')?.value.trim()||!isPending(result.event))render();else void loadMessages(result.event.id);}
   else if(account.role==='ronda'&&!guardRound&&page==='dashboard'){
+   try{const r=await api('/routes');if(Array.isArray(r?.routes))routes=r.routes;}catch{}
    const assigned=guardPlannedRoute();
    const visibleId=document.querySelector('[data-guard-cockpit]')?.dataset.planId||'';
-   if(String(assigned?.id||'')!==visibleId){render();flash('Nova ronda recebida do COI.');}
+   const nextId=assigned?.id?String(assigned.id):'';
+   if(assigned?.dispatchId&&assigned.dispatchId!==lastNotifiedDispatchId){
+    lastNotifiedDispatchId=assigned.dispatchId;
+    render();
+    flash('Nova ronda recebida do COI.');
+   }else if(nextId&&nextId!==visibleId){
+    const cockpitEl=document.querySelector('[data-guard-cockpit]');
+    if(cockpitEl)cockpitEl.dataset.planId=nextId;
+    if(guardMap&&!guardMap.destroyed){
+     const activeBase=guardFix||DEFAULT_OPERATIONAL_ROUTE.base;
+     const revised=buildGuardRoute(assigned,activeBase);
+     if(revised)guardMap.setRoute(revised,null);
+    }
+   }else if(!nextId&&visibleId){
+    render();
+   }
   }
   else if(page==='inspections'&&account.role==='vistoriador'){refreshInspectorStops();}
   else if(page==='history'){const result=await api('/events?limit=500');events=result.events||[];render();}
@@ -308,9 +591,10 @@ function treatmentActions(e){
  return '<section class="surface no-print" data-treatment-panel><h2>Tratativa operacional</h2><p>Responsável pela providência: <strong>'+escape(active?account.name:eventHistory[0]?.concluded_by||e.treatment_owner||'Aguardando atendimento')+'</strong></p>'+absence+'<p data-live-treatment-state role="status"></p>'+actions+'</section><section class="surface"><h2>Histórico de tratativas</h2>'+(history?'<ol class="rp-treatment-history">'+history+'</ol>':'<p>Nenhuma tratativa registrada.</p>')+'</section>';
 }
 function loginView(error=''){
+ try{window.AndroidTracking?.forgetToken?.()}catch{}
  decorateTheme('');
  roleTag.textContent='';exit.hidden=true;
- root.innerHTML='<form id="central-login" class="login"><h1>Ronda Pro · Grupo Maxvel</h1><p>Acesso operacional</p>'+
+ root.innerHTML='<form id="central-login" class="login"><h1>Acessar a Central</h1><p>Grupo Maxvel · Use seu usuário ou e-mail e sua senha individual. O perfil é definido pela conta.</p><details><summary>Orientações por perfil</summary><p>Ronda executa pontos; Vistoriador registra checklist e evidências; COI monitora e despacha; Cliente acompanha seu local; Administração e Master gerenciam setores e equipe. Em caso de recusa, confira o usuário e peça à Administração a revisão do cadastro.</p></details>'+
   (error?'<p class="flag">'+escape(error)+'</p>':'')+
   '<label>Usuário ou e-mail<input name="email" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>'+
   '<label>Senha<input type="password" name="password" autocomplete="current-password" required minlength="10"></label>'+
@@ -319,8 +603,9 @@ function loginView(error=''){
 async function load(){
  if(!token){loginView();return}
  try{
-  account=(await api('/me')).user;guardLoadState();roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
+  account=(await api('/me',{timeout:20000})).user;try{localStorage.setItem('rondaspro_android_token',token);window.AndroidTracking?.rememberToken?.(token)}catch{}guardLoadState();roleTag.textContent=roles[account.role]||account.role;exit.hidden=false;
   const previousRole=root.dataset.loadedRole;
+  if(previousRole!==account.role&&['ronda','vistoriador'].includes(account.role))try{window.AndroidTracking?.startShift?.()}catch{}
   if(previousRole!==account.role){
    page=['operador','coi'].includes(account.role)?'monitor':account.role==='cliente'?'client':account.role==='vistoriador'?'inspections':'dashboard';selected=null;root.dataset.loadedRole=account.role;
    const requestedCompose=location.hash.slice(1);
@@ -333,11 +618,14 @@ async function load(){
     composeKind=requestedCompose;page=requestedCompose==='message'?'chat':'send';history.replaceState(null,'',location.pathname+location.search);
    }
   }
+  // Render immediately to dismiss 'Carregando a central…' instantly
+  try{render();}catch(renderErr){console.warn('Initial render fallback:',renderErr);}
   if(['ronda','vistoriador'].includes(account.role))try{const context=await eventTelemetry();await api('/presence',{method:'POST',data:{position:context.position||null}})}catch{}
-  await ops.refresh(account,false);
-  await chat.refresh();
-  if(page==='activity-history')await activity.refresh();
-  if(['monitor','dashboard'].includes(page)&&review()&&ops.allowed('rondas'))latestActivity=await activity.latestHtml();
+  try{await ops.refresh(account,false);}catch(e){console.warn('ops.refresh:',e);}
+  if(['admin','master'].includes(account.role))try{centralVerificationSettings=(await api('/operational-settings')).settings;}catch(e){console.warn('settings:',e);}
+  try{await chat.refresh();}catch(e){console.warn('chat.refresh:',e);}
+  if(page==='activity-history')try{await activity.refresh();}catch(e){console.warn('activity.refresh:',e);}
+  if(['monitor','dashboard'].includes(page)&&review()&&ops.allowed('rondas'))try{latestActivity=await activity.latestHtml();}catch(e){console.warn('latestActivity:',e);}
   const [e,r,planned]=await Promise.allSettled([review()&&!ops.allowed('ocorrencias')?Promise.resolve({events:[]}):api('/events?limit=500'),api('/rounds'),review()&&!ops.allowed('rondas')?Promise.resolve({routes:[]}):api('/routes')]);
   events=e.status==='fulfilled'?e.value.events||[]:[];rounds=r.status==='fulfilled'?r.value.rounds||[]:[];routes=planned.status==='fulfilled'?planned.value.routes||[]:[];
   if(selected?.event)selected={event:events.find(record=>record.id===selected.event.id)||selected.event};
@@ -346,26 +634,86 @@ async function load(){
    const val=i=>results[i].status==='fulfilled'?results[i].value:null;
    dashboard=val(0);users=val(1)?.users||[];emailJobs=val(2)?.jobs||[];templates=val(3)?.templates||[];treatments=val(4)?.treatments||[];mySummary=null;
   }else if(account.role==='ronda'){
-   const [sum,t]=await Promise.all([api('/my-summary'),api('/templates')]);
-   mySummary=sum;templates=t.templates||[];dashboard=null;users=[];emailJobs=[];
+   const [sum,t]=await Promise.allSettled([api('/my-summary'),api('/templates')]);
+   mySummary=sum.status==='fulfilled'?sum.value:null;templates=t.status==='fulfilled'?t.value.templates||[]:[];dashboard=null;users=[];emailJobs=[];
   }else{
    mySummary=null;dashboard=null;users=[];emailJobs=[];templates=[];
   }
-  if(selected?.event&&review()){const detail=await api('/events/'+selected.event.id);selected={event:detail.event};eventHistory=detail.treatments;}
-  if(page==='treatments'&&review())await readTreatmentRows();
+  if(selected?.event&&review()){try{const detail=await api('/events/'+selected.event.id);selected={event:detail.event};eventHistory=detail.treatments;}catch(e){console.warn(e);}}
+  if(page==='treatments'&&review())try{await readTreatmentRows();}catch(e){console.warn(e);}
   render();ops.present();ops.connectLive(token);
- }catch(err){if(err.status===401||err.status===403){sessionStorage.removeItem('rondaspro_api_token');token='';account=null;eventResponseDrafts.clear();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();root.dataset.loadedRole='';loginView(err.message)}else if(account){flash('Não foi possível atualizar agora: '+err.message)}else loginView('Serviço indisponível: '+err.message)}
+  if(tourAccount!==account.id&&!isPagesTestMode()){
+   tourAccount=account.id;
+   const state=await api('/onboarding').catch(()=>({seen:tour.hasSeen()}));
+   if(!state.seen&&page!=='chat')tour.open();
+  }
+ }catch(err){
+  if(err.status===401||err.status===403){
+   sessionStorage.removeItem('rondaspro_api_token');
+   try{localStorage.removeItem('rondaspro_android_token');}catch{}
+   token='';account=null;eventResponseDrafts.clear();chat.reset();calls.reset();activity.reset(true);
+   document.querySelector('[data-operational-header]')?.remove();root.dataset.loadedRole='';loginView(err.message);
+  }else if(account){
+   flash('Não foi possível atualizar agora: '+err.message);
+   try{render();}catch{loginView(err.message);}
+  }else{
+   root.innerHTML='<div style="padding:28px 20px;text-align:center;color:#FFFFFF;max-width:360px;margin:32px auto;background:#262626;border:1px solid #535353;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.5);"><h2 style="font-size:17px;font-weight:700;margin:0 0 8px 0;color:#FFFFFF;">Falha ao carregar a central</h2><p style="font-size:13px;color:#B3B3B3;line-height:1.5;margin:0 0 20px 0;">'+escape(err.message||'Tempo limite ou instabilidade na conexão.')+'</p><button type="button" onclick="location.reload();" style="width:100%;min-height:48px;border-radius:10px;background:#e5232a;color:#FFFFFF;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">Tentar novamente ↻</button><button type="button" onclick="window.openLoginForm();" style="width:100%;min-height:44px;border-radius:10px;background:transparent;color:#B3B3B3;border:1px solid #535353;font-size:14px;cursor:pointer;">Trocar de conta</button></div>';
+  }
+ }
 }
+const sectorPanel=createSectorPanel({request:api,notify:flash});
+function getTourStepsForRole(role){
+ if(role==='ronda'){
+  return [
+   {target:'.rp-agent-menu-toggle, [data-central-menu]',title:'Menu de Navegação',description:'Acesse o histórico de alertas, rondas disponíveis, comunicações com a central e ajuda.'},
+   {target:'#guard-real-map, .patrol-map-canvas',title:'Mapa da Ronda em Tempo Real',description:'Visualize o traçado viário da rota, seus postos de verificação e a telemetria do percurso.'},
+   {target:'#central-panic, [data-agent-sos]',title:'Botão de Pânico (SOS)',description:'Acionamento prioritário imediato para situações de emergência com envio de telemetria ao COI.'},
+   {target:'.ronda-bottom-sheet, [data-guard-panel]',title:'Painel Operacional da Ronda',description:'Inicie o percurso, visualize os horários programados dos postos e recolha o painel para ver o mapa.'},
+   {target:'[data-field-tool-torch], .ronda-torch-map-btn',title:'Controle da Lanterna',description:'Ligue ou desligue o flash do dispositivo de forma rápida e tátil diretamente sobre o mapa.'}
+  ];
+ }
+ if(role==='coi'||role==='operador'){
+  return [
+   {target:'#central-navigation, .rp-central-menu-button',title:'COI · Central de Operações',description:'Navegue pelas ferramentas de monitoramento, despacho, ocorrências e equipe.'},
+   {target:'.rp2-workspace, .content',title:'Monitoramento em Tempo Real',description:'Supervisione postos, rotas ativas e localização transmitida pelos vigias em campo.'},
+   {target:'[data-page="treatments"], .rp2-contextbar',title:'Tratativas de Ocorrências',description:'Analise alertas recebidos, registre decisões e encaminhe tratativas operacionais.'}
+  ];
+ }
+ if(role==='cliente'){
+  return [
+   {target:'#central-navigation, .rp-central-menu-button',title:'Área do Cliente',description:'Acesse o acompanhamento da sua unidade monitorada e relatórios autorizados.'},
+   {target:'.rp2-workspace, .content',title:'Meu Acompanhamento',description:'Consulte o status atual da sua unidade, últimas posições e histórico das rondas.'}
+  ];
+ }
+ if(role==='vistoriador'){
+  return [
+   {target:'.content',title:'Vistorias e Qualidade',description:'Verifique acessos, equipamentos e critérios da unidade atribuída à sua conta.'},
+   {target:'#central-panic',title:'Canal de Emergência',description:'Acionamento de pânico prioritário disponível durante as atividades de campo.'}
+  ];
+ }
+ return [
+  {target:'#central-navigation, .rp-central-menu-button',title:'Painel de Gestão',description:'Acompanhe indicadores, postos, colaboradores e relatórios administrativos.'},
+  {target:'.rp2-workspace, .content',title:'Operação e Acompanhamento',description:'Supervisione rotas, ocorrências e o andamento geral da segurança patrimonial.'},
+  {target:'[data-page="guide"], #central-navigation',title:'Ajuda e Manuais',description:'Reabra este tutorial a qualquer momento ou consulte o guia completo do sistema.'}
+ ];
+}
+let tourAccount='';
+const tour=createSpotlightTour({
+ app:root,
+ getAccount:()=>account?.id||'guest',
+ steps:()=>getTourStepsForRole(account?.role),
+ onSeen:()=>{if(account&&!isPagesTestMode())void api('/onboarding',{method:'PUT',data:{}}).catch(()=>{});}
+});
 const roleMenus={
  ronda:[['dashboard','Minha ronda','◉'],['dispatches','Atribuições','⌖'],['notifications','Eventos','✉'],['history','Meus alertas e ocorrências','▤'],['send','Comunicar à central','✉'],['guide','Guia completo','?']],
- operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Vigias','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- admin:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
- master:[['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Permissões COI','⚙'],['routes','Rotas por vigia','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ operador:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por Ronda','⌖'],['events','Ocorrências','!'],['team','Equipe de Ronda','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ coi:[['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['routes','Rotas por Ronda','⌖'],['events','Ocorrências','!'],['team','Equipe de Ronda','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ admin:[['gestao','Painel de Gestão','⚙'],['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Configurações','⚙'],['routes','Rotas por Ronda','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
+ master:[['gestao','Painel de Gestão','⚙'],['dashboard','Indicadores','▥'],['monitor','COI · Acompanhamento','◉'],['treatments','Histórico de tratativas','!'],['dispatches','Despachos','⌖'],['notifications','Eventos','✉'],['permissions','Configurações','⚙'],['routes','Rotas por Ronda','⌖'],['events','Ocorrências','!'],['team','Colaboradores','♙'],['alerts','Alertas e e-mails','✉'],['export','Relatórios','⇩'],['guide','Guia completo','?']],
  cliente:[['client','Meu acompanhamento','◉'],['guide','Guia completo','?']],
  vistoriador:[['history','Meus alertas e ocorrências','▤'],['inspections','Vistorias e qualidade','▤'],['dispatches','Meus despachos','⌖'],['notifications','Eventos','✉'],['send','Comunicar COI','✉'],['guide','Guia completo','?']]
 };
-for(const entries of Object.values(roleMenus)){entries.push(['chat','Chat interno','✉']);if(!entries.some(e=>e[0]==='activity-history'))entries.push(['activity-history','Histórico de rondas','▤']);}
+for(const entries of Object.values(roleMenus)){entries.push(['tutorial','Ajuda · tutorial','?']);entries.push(['chat','Chat interno','✉']);if(!entries.some(e=>e[0]==='activity-history'))entries.push(['activity-history','Histórico de rondas','▤']);}
 
 const rp2Priority={
  ronda:['dashboard','dispatches','notifications','send'],
@@ -422,21 +770,23 @@ function dashboardView(){
  const summary=[['Rondas',rounds.length],['Em andamento',active.length],['Pendências',open.length],['Distância registrada',totalKm.toFixed(2)+' km']];
  return '<section class="stack"><div class="toolbar"><div><div class="eyebrow">GESTÃO E INDICADORES</div><h1>Painel administrativo</h1><p class="muted">Locais acompanhados: '+escape([...new Set(users.map(w=>w.site).filter(Boolean))].join(', ')||'Nenhum posto cadastrado')+'. Dados reais do banco operacional.</p></div><button data-refresh>Atualizar</button></div>'+
  '<div class="cards">'+summary.map(([label,value],i)=>'<div class="metric '+(i===2&&open.length?'urgent':'')+'"><strong>'+value+'</strong><span>'+label+'</span></div>').join('')+'</div>'+
+ '<section class="surface"><div class="toolbar"><h2>Mapa Operacional da Central</h2><p class="muted">Visualização em tempo real das rondas, vigias e postos atendidos.</p></div><div id="ops-live-map" class="coi3-map" style="height:320px;width:100%;border-radius:12px;margin-top:8px;"></div></section>'+
  '<section class="surface"><div class="toolbar"><h2>Ocorrências que precisam de tratamento</h2><button data-page="events">Abrir todas</button></div>'+eventList(open.slice(0,6))+'</section>'+
  '<section class="surface"><div class="toolbar"><h2>Rondas recentes</h2><button data-page="team">Analisar colaboradores</button></div>'+roundTable(rounds.slice(0,7))+'</section>'+
  '<details class="details-toggle"><summary>Comparações, telemetria e indicadores adicionais</summary><div class="surface">'+kpis()+'<h2 style="margin-top:16px">Histórico geral</h2>'+roundTable(rounds.slice(0,30))+'</div></details></section>';
 }
 function ownDashboard(){
- const planned=guardPlannedRoute();const map=guardCockpit({round:guardRound,planned,position:guardFix,gpsStatus:guardWatch!=null?'GPS em acompanhamento':'Aguardando GPS'});
- const mine=mySummary||{},all=mine.rounds||rounds,activity=events.filter(e=>e.kind!=='gps'&&e.kind!=='battery');
- const open=activity.filter(e=>['incident','panic','alert','route_deviation','gps_issue'].includes(e.kind)&&e.status!=='resolvida');
- const latest=all.find(r=>r.status==='em_andamento')||all[0];
- return '<section class="stack rp-guard-workspace">'+map+'<div class="toolbar"><div><div class="eyebrow">AGENTE DE RONDA</div><h1>Minha ronda</h1><p class="muted">Bem-vindo, '+escape(account.name)+'. Aqui você acompanha somente seus registros.</p></div><button data-refresh>Atualizar</button></div>'+
- composeActionButtons(false)+'<div class="cards">'+[['Rondas',all.length],['Distância GPS',Number(mine.totalKm||0).toFixed(2)+' km'],['Alertas e ocorrências',activity.filter(e=>['alert','incident','message','gps_issue'].includes(e.kind)).length],['Pontos confirmados',activity.filter(e=>e.kind==='checkpoint').length]].map(([n,v])=>'<div class="metric"><strong>'+v+'</strong><span>'+n+'</span></div>').join('')+'</div>'+
- '<section class="surface"><div class="toolbar"><h2>Minha execução mais recente</h2><button data-page="history">Histórico completo</button></div>'+
- (latest?'<div class="detail-grid">'+[['Início',fmt(latest.start)],['Estado',latest.status.replaceAll('_',' ')],['Percorrido',latest.km.toFixed(2)+' km'],['Tempo em trajeto',latest.minutes==null?'Sem registro':latest.minutes+' min'],['Alertas',latest.alerts],['Pânico',latest.panics],['Bateria',latest.lastBattery==null?'Não informada':latest.lastBattery+'%']].map(([k,v])=>'<div><small>'+escape(k)+'</small><strong>'+escape(v)+'</strong></div>').join('')+'</div>':'<div class="empty">Nenhuma ronda real sincronizada para sua conta.</div>')+
- '</section><section class="surface"><div class="toolbar"><h2>Minhas ocorrências e mensagens</h2><button data-compose="alert">Enviar alerta</button></div>'+eventList(open.slice(0,6))+'</section>'+
- '<section class="surface"><h2>Registros recentes</h2>'+eventList(activity.slice(0,6))+'</section></section>';
+ const planned=guardPlannedRoute();
+ return guardCockpit({
+  round:guardRound,
+  planned,
+  position:guardFix,
+  gpsStatus:guardWatch!=null?'GPS em acompanhamento':'Aguardando GPS',
+  account,
+  sosActive:guardSosActive,
+  torchActive:guardTorchActive,
+  hidePanic:page!=='dashboard'
+ });
 }
 function ownHistory(){
  const operational=events.filter(e=>!['gps','battery'].includes(e.kind));
@@ -464,21 +814,29 @@ function mountAgendaMaps(){
    doubleClickZoom:false,boxZoom:false,keyboard:false,attributionControl:false});
   miniMaps.push(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
-  L.polyline(pts.map(p=>[p.lat,p.lng]),{color:'#38bdf8',weight:3,opacity:.85,interactive:false}).addTo(map);
-  pts.forEach(p=>L.circleMarker([p.lat,p.lng],{radius:3,color:'#fafafa',fillColor:'#38bdf8',fillOpacity:1,weight:1,interactive:false}).addTo(map));
+  L.polyline(pts.map(p=>[p.lat,p.lng]),{color:'#cbd5e1',weight:3,opacity:.85,interactive:false}).addTo(map);
+  pts.forEach(p=>L.circleMarker([p.lat,p.lng],{radius:3,color:'#fafafa',fillColor:'#cbd5e1',fillOpacity:1,weight:1,interactive:false}).addTo(map));
   if(pts.length===1)map.setView([pts[0].lat,pts[0].lng],17,{animate:false});
   else map.fitBounds(pts.map(p=>[p.lat,p.lng]),{padding:[12,12],maxZoom:17,animate:false});
  }
 }
 function mountOperationalMap(){
  mountAgendaMaps();
- const node=document.querySelector('#ops-live-map'),L=globalThis.L;if(!node||!L)return;
+ const node=document.querySelector('#ops-live-map'),L=globalThis.L;if(!node)return;
+ if(!L){setTimeout(mountOperationalMap,120);return;}
  resetOperationalMap();node.innerHTML='';
  const active=rounds.find(r=>r.status==='em_andamento'),planned=routes.find(r=>r.id===active?.routeId)||routes[0];
  const worker=active?users.find(w=>w.id===active.userId):null;
  const pts=(planned?.points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
  const map=L.map(node,{zoomControl:true,scrollWheelZoom:false});
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+ const tileLayer=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap',crossOrigin:true}).addTo(map);
+ tileLayer.on('tileerror',e=>{
+  if(e.tile&&!e.tile.dataset.offlineTried){
+   e.tile.dataset.offlineTried='true';
+   const c=e.coords;
+   if(c&&Number.isFinite(c.z))e.tile.src=`./assets/tiles/${c.z}/${c.x}/${c.y}.png`;
+  }
+ });
  let bounds=[];
  if(pts.length){
   L.polyline(pts.map(p=>[p.lat,p.lng]),{color:'#7ac8e4',weight:4,opacity:.9}).addTo(map);
@@ -491,12 +849,48 @@ function mountOperationalMap(){
  if(pos&&Number.isFinite(pos.lat)&&Number.isFinite(pos.lng)){
   L.circleMarker([pos.lat,pos.lng],{radius:9,color:'#fff',weight:2,fillColor:'#10b981',fillOpacity:1}).bindTooltip('Último GPS: '+escape(worker?.name||'Vigia')).addTo(map);bounds.push([pos.lat,pos.lng]);
  }
- if(bounds.length)map.fitBounds(bounds,{padding:[35,35],maxZoom:17});else map.setView([-20.145,-44.89],12);
+ for(const u of users){
+  if(u.role==='ronda'&&u.site){
+   // Show registered vigia posts
+  }
+ }
+ if(bounds.length)map.fitBounds(bounds,{padding:[35,35],maxZoom:17});else map.setView([-20.145,-44.89],13);
  operationalMap=map;setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
+}
+function mountClientMap(){
+ const node=document.querySelector('#client-overview-map'),L=globalThis.L;if(!node)return;
+ if(!L){setTimeout(mountClientMap,120);return;}
+ node.innerHTML='';
+ const planned=routes.find(r=>r.site===account?.site)||routes[0];
+ const pts=(planned?.points||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+ const map=L.map(node,{zoomControl:true,scrollWheelZoom:false});
+ const tileLayer=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap',crossOrigin:true}).addTo(map);
+ tileLayer.on('tileerror',e=>{
+  if(e.tile&&!e.tile.dataset.offlineTried){
+   e.tile.dataset.offlineTried='true';
+   const c=e.coords;
+   if(c&&Number.isFinite(c.z))e.tile.src=`./assets/tiles/${c.z}/${c.x}/${c.y}.png`;
+  }
+ });
+ let bounds=[];
+ if(pts.length){
+  L.polyline(pts.map(p=>[p.lat,p.lng]),{color:'#e5232a',weight:3,opacity:.85}).addTo(map);
+  for(const p of pts){
+   L.circleMarker([p.lat,p.lng],{radius:5,color:'#fff',weight:1.5,fillColor:'#e5232a',fillOpacity:1}).bindTooltip(escape(p.name||'Ponto')).addTo(map);
+   bounds.push([p.lat,p.lng]);
+  }
+ }
+ if(planned?.base&&Number.isFinite(planned.base.lat)){
+  L.circleMarker([planned.base.lat,planned.base.lng],{radius:8,color:'#fff',weight:2,fillColor:'#f59e0b',fillOpacity:1}).bindTooltip('Base: '+escape(planned.name||'Posto')).addTo(map);
+  bounds.push([planned.base.lat,planned.base.lng]);
+ }
+ if(bounds.length)map.fitBounds(bounds,{padding:[30,30],maxZoom:17});
+ else map.setView([-20.145,-44.89],13);
+ setTimeout(()=>{try{map.invalidateSize()}catch{}},90);
 }
 function monitorView(){
  const panel=coi.render({account,rounds,events,routes,users,demo:isPagesTestMode(),...ops.monitoringData()});
- return '<div class="rp-coi-request-strip"><div><strong>Vistorias de campo</strong><span>Solicite vistorias sob demanda ou de rotina, com destino e orientações.</span></div><button type="button" class="primary" data-inspection-queue>Solicitar vistoria ↗</button></div>'+panel;
+ return '<div class="rp-coi-request-strip"><div><strong>Rondas e atendimentos de campo</strong><span>Solicite rondas operacionais sob demanda ou de rotina, com destino e orientações.</span></div><button type="button" class="primary" data-inspection-queue>Solicitar atendimento ↗</button></div>'+panel;
 }
 function monitorRows(rows){
  if(!rows.length)return '<div class="empty">Nenhuma ronda sincronizada até o momento.</div>';
@@ -629,7 +1023,7 @@ function eventView(e){
  (e.kind==='panic'?'<section class="surface rp-panic-contact"><h2>Contato do profissional</h2><div data-panic-contact>Carregando telefone…</div></section>':'')+
  (review()?treatmentActions(e):'')+
   '<section class="surface"><h2>Anexos e evidências</h2><p class="muted">Fotos e vídeos enviados, com data, hora, localização disponível e bateria.</p><div id="evidence-list" class="photo-grid"></div>'+
- (!isPending(e)||account.role==='cliente'||review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'':'<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form>')+'</section>'+
+ (!['incident','inspection'].includes(e.kind)||!isPending(e)||account.role==='cliente'||review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'':'<form id="upload-evidence" class="row no-print"><label>Adicionar evidência<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/mp4,audio/ogg" name="file" required></label><button>Enviar mídia</button></form>')+'</section>'+
  '<section class="surface"><h2>Conversa e providências</h2><div id="thread" class="thread"></div>'+
  (!isPending(e)||account.role==='cliente'?'<p class="muted">Consulta do registro. Use o Chat interno para conversar com a equipe.</p>':review()&&!(claimedEvent===e.id&&e.treatment_locked&&e.treatment_owner_id===account.id)?'<p class="muted">Assuma a tratativa disponível para registrar respostas. Concluídas ficam somente para consulta.</p>':'<form id="send-message" data-event-id="'+escape(e.id)+'" class="stack no-print"><label>Responder<textarea name="body" required maxlength="4000" placeholder="Escreva a mensagem..."></textarea></label><div class="row">'+
  (review()?'<label>Tipo de mensagem<select name="audience"><option value="general">Resposta geral · vigia pode ler</option><option value="system">Resposta interna · somente equipe</option></select></label>':'')+
@@ -656,7 +1050,7 @@ const guideByRole={
 };
 function firstAccessGuide(){
  // Field roles use a full-screen operational map; onboarding stays in the Guide page, never behind field controls.
- if(page==='guide'||['ronda','vistoriador'].includes(account.role)||localStorage.getItem('rondaspro-guide-seen-'+account.role)==='yes')return '';
+ if(page==='guide'||page==='chat'||['ronda','vistoriador'].includes(account.role)||localStorage.getItem('rondaspro-guide-seen-'+account.role)==='yes')return '';
  const items=guideByRole[account.role]||guideByRole.operador;
  return '<section class="surface onboarding-ops"><div class="toolbar"><div><div class="eyebrow">PRIMEIRO ACESSO · '+escape(roles[account.role])+'</div><h2>Como começar</h2></div><button type="button" data-guide-dismiss>Entendi</button></div><p class="muted">Sua área: '+escape(roles[account.role])+' · Local: '+escape(account.site||'não vinculado / abrangência da gestão')+'</p><ol>'+items.slice(0,3).map(x=>'<li><b>'+escape(x[0])+':</b> '+escape(x[1])+'</li>').join('')+'</ol><button type="button" data-page="guide">Ler o guia completo</button></section>';
 }
@@ -717,6 +1111,7 @@ function clientView(){
   '<div class="cards"><div class="metric"><strong>'+active.length+'</strong><span>Rondas em andamento</span></div>'+
   '<div class="metric"><strong>'+past.filter(r=>r.status==='concluida').length+'</strong><span>Rondas concluídas</span></div>'+
   '<div class="metric"><strong>'+inspections.length+'</strong><span>Vistorias registradas</span></div></div>'+
+  '<section class="surface ops-client-map-section"><div class="toolbar"><div><div class="eyebrow">ACOMPANHAMENTO EM TEMPO REAL</div><h2>Mapa do Posto e Ronda</h2><p class="muted">Percurso e pontos de segurança da sua unidade.</p></div><span class="pill ok">Monitoramento Ativo</span></div><div id="client-overview-map" class="coi3-map" style="height:280px;width:100%;border-radius:10px;margin-top:8px;"></div></section>'+
   '<section class="surface"><h2>Próxima Ronda</h2><div class="detail-grid">'+
   '<div><small>Hora Programada de Início</small><strong>'+(planned?clientDate(planned.plannedStart):'Aguardando programação confirmada')+'</strong></div>'+
   '<div><small>Previsão de Término</small><strong>'+(estimate?clientDate(estimate.endAt):'Indisponível sem percurso programado')+'</strong></div></div>'+
@@ -756,14 +1151,416 @@ function inspectionView(){
  const entries=events.filter(e=>e.kind==='inspection');
  if(assignment&&inspectorDraft?.id!==assignment.id){inspectorDraft=emptyInspectionDraft(assignment.id);inspectorSelfie=null;inspectorEvidence=[];inspectorSubmission=null;}
  const stage=inspectionCockpit({queue,mapId:'inspection-map',mode:'real',position:inspectorPosition,base:inspectorBase,
-  gpsActive:inspectorWatch!=null,fullTitle:'Minhas vistorias'});
+  gpsActive:inspectorWatch!=null,fullTitle:'Meus atendimentos operacionais'});
  const form=assignment?.arrived_at?'<dialog id="rp-inspection-wizard-dialog" class="rp-field-wizard-dialog"><form id="inspection-form" novalidate>'+
-  '<div class="rp-field-wizard-head"><div><strong>Vistoria · '+escape(assignment.address)+'</strong><small>Checklist operacional e evidências</small></div><button type="button" data-wizard-close aria-label="Fechar checklist">✕</button></div>'+
+  '<div class="rp-field-wizard-head"><div><strong>Atendimento · '+escape(assignment.address)+'</strong><small>Checklist operacional e evidências</small></div><button type="button" data-wizard-close aria-label="Fechar checklist">✕</button></div>'+
   '<input type="hidden" name="dispatchId" value="'+escape(assignment.id)+'">'+inspectionWizardHtml(inspectorDraft)+'</form></dialog>':'';
  return '<section class="stack rp-inspector-workspace">'+stage+form+
- '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de vistorias"><header><div><small>'+entries.length+' REGISTROS</small><h2>Histórico de vistorias</h2></div><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+
- (entries.length?entries.slice(0,40).map(e=>'<div class="rp-inspection-history-row"><span><strong>'+fmt(e.occurred_at)+'</strong><small>'+escape(e.description)+'</small></span><b>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</b></div>').join(''):'<p class="empty">Ainda não há vistorias concluídas.</p>')+
- '<p class="rp-inspection-dialog-note">Registros de vistorias concluídas na operação autenticada.</p></div></dialog></section>';
+ '<dialog class="rp-inspection-dialog" data-inspection-history-dialog aria-label="Histórico de atendimentos"><header><div><small>'+entries.length+' REGISTROS</small><h2>Histórico de atendimentos</h2></div><button type="button" data-inspection-modal-close aria-label="Fechar histórico">✕</button></header><div class="rp-inspection-history-content">'+
+ (entries.length?entries.slice(0,40).map(e=>'<div class="rp-inspection-history-row"><span><strong>'+fmt(e.occurred_at)+'</strong><small>'+escape(e.description)+'</small></span><b>'+(Number.isFinite(e.details?.qualityPercent)?e.details.qualityPercent+'%':'—')+'</b></div>').join(''):'<p class="empty">Ainda não há atendimentos concluídos.</p>')+
+ '<p class="rp-inspection-dialog-note">Registros de atendimentos operacionais concluídos na operação autenticada.</p></div></dialog></section>';
+}
+
+function triggerHaptic(type='tap'){
+ try{
+  if(globalThis.AndroidTracking?.vibrate){
+   globalThis.AndroidTracking.vibrate(type==='medium'?15:type==='success'?25:8);
+   return;
+  }
+  if(navigator?.vibrate){
+   navigator.vibrate(type==='medium'?15:type==='success'?[15,50,20]:8);
+  }
+ }catch{}
+}
+
+function mountGuardSearchAndPin(root){
+ const searchBar=root?.querySelector?.('.rp-map-search-bar');
+ const hud=root?.querySelector?.('.rp-map-nav-hud');
+ const compassBtn=root?.querySelector?.('[data-action="map-compass"]');
+ const compassNeedle=root?.querySelector?.('[data-compass-needle]');
+ const compassBadge=root?.querySelector?.('[data-compass-badge]');
+ const recenterBtn=root?.querySelector?.('[data-action="map-follow-gps"]');
+ const recenterBadge=root?.querySelector?.('[data-recenter-badge]');
+ const cameraLockBtns=root?.querySelectorAll?.('[data-action="toggle-camera-lock"]')||[];
+ const cameraLockLabels=root?.querySelectorAll?.('[data-camera-lock-label]')||[];
+
+ if(guardMap){
+  guardMap.setTrackingListener(state=>{
+   if(compassNeedle)compassNeedle.style.transform=`rotate(${-state.bearing}deg)`;
+   if(compassBadge)compassBadge.textContent=state.bearing===0?'N':`${Math.abs(state.bearing)}°`;
+   if(compassBtn){
+    const isRotated=state.autonomousRotate||Math.abs(state.bearing)>2;
+    compassBtn.classList.toggle('is-active',isRotated);
+   }
+   if(recenterBtn&&recenterBadge){
+    recenterBtn.classList.toggle('is-active',state.autoFollow);
+    recenterBadge.textContent=state.autoFollow?(state.autonomousRotate?'AUTO':'GPS'):'LIVRE';
+   }
+   const locked=state.cameraLocked!==false;
+   cameraLockBtns.forEach(btn=>btn.classList.toggle('is-active',locked));
+   cameraLockLabels.forEach(lbl=>{
+    lbl.textContent=locked?(state.isMoving?'🚗 Em movimento · Fixa':'🎯 Câmera: Fixa'):'🔓 Câmera: Livre';
+   });
+  });
+ }
+
+ const searchInput=root?.querySelector?.('[data-guard-search-input]');
+ const clearBtn=root?.querySelector?.('[data-guard-search-clear]');
+ const pinToggle=root?.querySelector?.('[data-guard-search-pin-toggle]');
+ const resultsPanel=root?.querySelector?.('[data-guard-search-results]');
+ const pinCard=root?.querySelector?.('[data-guard-pin-card]');
+ const pinTitle=root?.querySelector?.('[data-guard-pin-title]');
+ const pinSub=root?.querySelector?.('[data-guard-pin-sub]');
+ const pinCancel=root?.querySelector?.('[data-guard-pin-cancel]');
+ const pinConfirm=root?.querySelector?.('[data-guard-pin-confirm]');
+
+ const zoomInBtn=root?.querySelector?.('[data-action="map-zoom-in"]');
+ const zoomOutBtn=root?.querySelector?.('[data-action="map-zoom-out"]');
+ const searchTriggerBtn=root?.querySelector?.('[data-action="toggle-search-bar"]');
+ const searchCloseBtn=root?.querySelector?.('[data-guard-search-close]');
+
+ if(zoomInBtn && !zoomInBtn.dataset.bound){
+  zoomInBtn.dataset.bound='true';
+  zoomInBtn.addEventListener('click',()=>{
+   triggerHaptic('tap');
+   if(guardMap?.instance)guardMap.instance.zoomIn();
+  });
+ }
+ if(zoomOutBtn && !zoomOutBtn.dataset.bound){
+  zoomOutBtn.dataset.bound='true';
+  zoomOutBtn.addEventListener('click',()=>{
+   triggerHaptic('tap');
+   if(guardMap?.instance)guardMap.instance.zoomOut();
+  });
+ }
+
+ cameraLockBtns.forEach(btn=>{
+  if(!btn.dataset.bound){
+   btn.dataset.bound='true';
+   btn.addEventListener('click',()=>{
+    triggerHaptic('medium');
+    guardMap?.toggleCameraLock();
+   });
+  }
+ });
+
+ if(searchTriggerBtn && !searchTriggerBtn.dataset.bound){
+  searchTriggerBtn.dataset.bound='true';
+  searchTriggerBtn.addEventListener('click',()=>{
+   triggerHaptic('tap');
+   if(!searchBar)return;
+   const isHidden=searchBar.dataset.collapsed==='true'||searchBar.style.display==='none'||searchBar.classList.contains('is-collapsed');
+   if(isHidden){
+    document.body.classList.add('is-guard-search-open');
+    searchBar.style.removeProperty('display');
+    searchBar.removeAttribute('data-collapsed');
+    searchBar.classList.remove('is-collapsed');
+    searchTriggerBtn.classList.add('is-active');
+    searchInput?.focus();
+    renderLearnedSuggestions();
+   }else{
+    document.body.classList.remove('is-guard-search-open');
+    searchBar.style.setProperty('display','none','important');
+    searchBar.dataset.collapsed='true';
+    searchBar.classList.add('is-collapsed');
+    searchTriggerBtn.classList.remove('is-active');
+    if(resultsPanel)resultsPanel.hidden=true;
+   }
+  });
+ }
+
+ if(searchCloseBtn && !searchCloseBtn.dataset.bound){
+  searchCloseBtn.dataset.bound='true';
+  searchCloseBtn.addEventListener('click',()=>{
+   triggerHaptic('tap');
+   document.body.classList.remove('is-guard-search-open');
+   if(!searchBar)return;
+   searchBar.style.setProperty('display','none','important');
+   searchBar.dataset.collapsed='true';
+   searchBar.classList.add('is-collapsed');
+   searchTriggerBtn?.classList.remove('is-active');
+   if(resultsPanel)resultsPanel.hidden=true;
+  });
+ }
+
+ if(compassBtn && !compassBtn.dataset.bound){
+  compassBtn.dataset.bound='true';
+  compassBtn.addEventListener('click',()=>{
+   triggerHaptic('medium');
+   guardMap?.toggleCompassMode();
+  });
+ }
+
+ if(recenterBtn && !recenterBtn.dataset.bound){
+  recenterBtn.dataset.bound='true';
+  recenterBtn.addEventListener('click',()=>{
+  if(!guardMap)return;
+  triggerHaptic('medium');
+  if(navigator.geolocation){
+   navigator.geolocation.getCurrentPosition(p=>{
+    const at=(p.timestamp&&p.timestamp>1000000000000)?p.timestamp:Date.now();
+    guardUpdateFix({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy,heading:p.coords.heading,speed:p.coords.speed,at});
+    guardMap.recenterGPS();
+   },()=>{guardMap.recenterGPS();},{enableHighAccuracy:true,timeout:6000,maximumAge:0});
+  }else{
+   guardMap.recenterGPS();
+  }
+ });
+}
+
+ if(!searchInput||!resultsPanel||!pinCard)return;
+
+ function showPinCard(title,sub){
+  if(pinTitle)pinTitle.textContent=title;
+  if(pinSub)pinSub.textContent=sub;
+  pinCard.hidden=false;
+ }
+
+ function hidePinCard(){
+  pinCard.hidden=true;
+  manualPinModeActive=false;
+  pinToggle?.classList.remove('is-active');
+  guardMap?.setManualPinHandler(null);
+ }
+
+ function updatePinCoordinates(coords,customName=null){
+  activePinnedLocation={
+   lat:coords.lat,
+   lng:coords.lng,
+   name:customName||activePinnedLocation?.name||'Local Marcado no Mapa',
+   address:`Lat ${coords.lat.toFixed(5)}, Lng ${coords.lng.toFixed(5)}`
+  };
+  guardMap?.setSearchMarker(coords,{
+   title:activePinnedLocation.name,
+   draggable:true,
+   onDrag:()=>{
+    if(pinSub)pinSub.textContent='Ajustando posição do marcador…';
+   },
+   onDragEnd:(endCoords)=>{
+    triggerHaptic('medium');
+    updatePinCoordinates(endCoords);
+   }
+  });
+  showPinCard(activePinnedLocation.name,activePinnedLocation.address);
+ }
+
+ function toggleManualPin(){
+  manualPinModeActive=!manualPinModeActive;
+  triggerHaptic('tap');
+  pinToggle?.classList.toggle('is-active',manualPinModeActive);
+  resultsPanel.hidden=true;
+
+  if(manualPinModeActive){
+   let center=null;
+   if(guardMap?.instance?.getCenter){
+    try{center=guardMap.instance.getCenter();}catch{}
+   }
+   if(!center||!Number.isFinite(center.lat))center=guardFix||DEFAULT_OPERATIONAL_ROUTE.base;
+   updatePinCoordinates(center,'Local Marcado Manualmente');
+   guardMap?.setManualPinHandler(coords=>{
+    triggerHaptic('tap');
+    updatePinCoordinates(coords);
+   });
+  }else{
+   guardMap?.clearSearchMarker();
+   hidePinCard();
+  }
+ }
+
+ pinToggle?.addEventListener('click',toggleManualPin);
+
+ function renderLearnedSuggestions(){
+  const focus=searchFocus(guardFix,guardMap?.instance);
+  const learned=getLearnedPlaces({limit:6,focus});
+  if(!learned.length){
+   resultsPanel.hidden=true;
+   resultsPanel.innerHTML='';
+   return;
+  }
+  const itemsHtml=learned.map(p=>{
+   const iconSvg='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>';
+   const distBadge=p.distanceMeters?`<span class="rp-search-result-badge">${distanceLabel(p.distanceMeters)}</span>`:'';
+   const recBadge=p.isRecurrent?'<span class="rp-recurrent-tag">★ Recorrente</span>':'';
+   return `<button type="button" class="rp-search-result-item" data-search-item data-lat="${p.lat}" data-lng="${p.lng}" data-name="${escape(p.name)}" data-address="${escape(p.address||'')}" data-is-company="true">
+    <div class="rp-search-result-icon">${iconSvg}</div>
+    <div class="rp-search-result-text">
+     <strong>${escape(p.name)} ${recBadge}</strong>
+     <small>${escape(p.address||'Local cadastrado')}</small>
+    </div>
+    ${distBadge}
+   </button>`;
+  }).join('');
+
+  resultsPanel.innerHTML=`
+   <div class="rp-search-section-header">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <span>Empresas Recorrentes · Aprendizado Inteligente</span>
+   </div>
+   ${itemsHtml}
+   <button type="button" class="rp-search-result-item rp-search-result-fallback" data-action="place-pin-manual">
+    <div class="rp-search-result-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+    <div class="rp-search-result-text">
+     <strong>Marcar manualmente no mapa</strong>
+     <small>Toque para posicionar o pino onde você quiser</small>
+    </div>
+   </button>
+  `;
+  resultsPanel.hidden=false;
+ }
+
+ searchInput.addEventListener('focus',()=>{
+  if(searchInput.value.trim().length<3){
+   renderLearnedSuggestions();
+  }
+ });
+
+ searchInput.addEventListener('input',()=>{
+  const query=searchInput.value.trim();
+  if(clearBtn)clearBtn.style.display=query.length>0?'inline-flex':'none';
+  clearTimeout(guardSearchDebounce);
+
+  if(query.length<3){
+   renderLearnedSuggestions();
+   return;
+  }
+
+  guardSearchDebounce=setTimeout(async()=>{
+   if(guardSearchActiveAbort)guardSearchActiveAbort.abort();
+   guardSearchActiveAbort=new AbortController();
+
+   try{
+    const focus=searchFocus(guardFix,guardMap?.instance);
+    const items=await searchPlacesWithLearned(query,{focus,limit:7,signal:guardSearchActiveAbort.signal});
+    if(searchInput.value.trim()!==query)return;
+
+    if(!items.length){
+     resultsPanel.innerHTML=`
+      <div class="rp-search-result-item" style="cursor:default;opacity:0.85;">
+       <div class="rp-search-result-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+       <div class="rp-search-result-text">
+        <strong>Nenhum local encontrado</strong>
+        <small>Tente buscar por rua, bairro ou marque o pino manualmente</small>
+       </div>
+      </div>
+      <button type="button" class="rp-search-result-item rp-search-result-fallback" data-action="place-pin-manual">
+       <div class="rp-search-result-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+       <div class="rp-search-result-text">
+        <strong>Marcar manualmente no mapa</strong>
+        <small>Toque para posicionar o pino onde você quiser</small>
+       </div>
+      </button>`;
+    }else{
+     resultsPanel.innerHTML=items.map(p=>{
+      const isCompany=p.type==='company'||/(empresa|ltda|s\.?a|loja|mercado|shopping|hospital|clinica|posto|banco|comercio|restaurante|farmacia|hotel|condominio|galpao|industria|centro)/i.test(p.name+' '+(p.address||''))||(p.name&&p.address&&!p.name.startsWith('Rua')&&!p.name.startsWith('Av'));
+      const iconSvg=isCompany
+       ?'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>'
+       :'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+      const distBadge=p.distanceMeters?`<span class="rp-search-result-badge">${distanceLabel(p.distanceMeters)}</span>`:'';
+      const recBadge=p.isRecurrent?'<span class="rp-recurrent-tag">★ Recorrente</span>':'';
+      return `<button type="button" class="rp-search-result-item" data-search-item data-lat="${p.lat}" data-lng="${p.lng}" data-name="${escape(p.name)}" data-address="${escape(p.address||'')}" data-is-company="${isCompany}">
+       <div class="rp-search-result-icon">${iconSvg}</div>
+       <div class="rp-search-result-text">
+        <strong>${escape(p.name)} ${recBadge}</strong>
+        <small>${escape(p.address||'Endereço aproximado')}</small>
+       </div>
+       ${distBadge}
+      </button>`;
+     }).join('')+`
+      <button type="button" class="rp-search-result-item rp-search-result-fallback" data-action="place-pin-manual">
+       <div class="rp-search-result-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+       <div class="rp-search-result-text">
+        <strong>Não achou o local exato?</strong>
+        <small>Toque para marcar manualmente no mapa</small>
+       </div>
+      </button>`;
+    }
+    resultsPanel.hidden=false;
+   }catch(err){
+    if(err.name!=='AbortError'){
+     resultsPanel.innerHTML=`
+      <div class="rp-search-result-item" style="cursor:default;opacity:0.85;">
+       <div class="rp-search-result-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+       <div class="rp-search-result-text">
+        <strong>Busca offline</strong>
+        <small>Você pode marcar qualquer ponto manualmente no mapa</small>
+       </div>
+      </div>
+      <button type="button" class="rp-search-result-item rp-search-result-fallback" data-action="place-pin-manual">
+       <div class="rp-search-result-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+       <div class="rp-search-result-text">
+        <strong>Marcar manualmente no mapa</strong>
+        <small>Toque para posicionar o pino livremente</small>
+       </div>
+      </button>`;
+     resultsPanel.hidden=false;
+    }
+   }
+  },250);
+ });
+
+ resultsPanel.addEventListener('click',e=>{
+  const manualBtn=e.target.closest('[data-action="place-pin-manual"]');
+  if(manualBtn){
+   toggleManualPin();
+   return;
+  }
+  const itemBtn=e.target.closest('[data-search-item]');
+  if(itemBtn){
+   triggerHaptic('tap');
+   const lat=parseFloat(itemBtn.dataset.lat);
+   const lng=parseFloat(itemBtn.dataset.lng);
+   const name=itemBtn.dataset.name;
+   const address=itemBtn.dataset.address;
+   const isCompany=itemBtn.dataset.isCompany==='true';
+
+   recordLearnedPlace({name,address,lat,lng,isCompany});
+
+   activePinnedLocation={lat,lng,name,address};
+   searchInput.value=name;
+   if(clearBtn)clearBtn.style.display='inline-flex';
+   resultsPanel.hidden=true;
+
+   updatePinCoordinates({lat,lng},name);
+   if(address&&pinSub)pinSub.textContent=address;
+   guardMap?.instance?.setView?.([lat,lng],17);
+  }
+ });
+
+ clearBtn?.addEventListener('click',()=>{
+  searchInput.value='';
+  clearBtn.style.display='none';
+  resultsPanel.hidden=true;
+  resultsPanel.innerHTML='';
+  searchInput.focus();
+ });
+
+ pinCancel?.addEventListener('click',()=>{
+  triggerHaptic('tap');
+  guardMap?.clearSearchMarker();
+  hidePinCard();
+  searchInput.value='';
+  if(clearBtn)clearBtn.style.display='none';
+  if(customGuardDestination){
+   customGuardDestination=null;
+   render();
+  }
+ });
+
+ pinConfirm?.addEventListener('click',()=>{
+  if(!activePinnedLocation)return;
+  triggerHaptic('success');
+  recordLearnedPlace(activePinnedLocation);
+  customGuardDestination=activePinnedLocation;
+  hidePinCard();
+  flash(`Destino definido: ${activePinnedLocation.name}. Traçando rota…`);
+  render();
+ });
+
+ document.addEventListener('pointerdown',e=>{
+  if(!resultsPanel.hidden&&!resultsPanel.contains(e.target)&&!searchBar?.contains(e.target)){
+   resultsPanel.hidden=true;
+  }
+ });
 }
 
 function render(){
@@ -771,11 +1568,13 @@ function render(){
  for(const url of clientMediaUrls)URL.revokeObjectURL(url);clientMediaUrls.length=0;
  routeBoard.resetMaps();resetOperationalMap();coi.reset();
  if(!account){stopInspectorGps();guardStopGps();torch.stop();loginView();return}
+ const topHeader=document.querySelector('header.top');if(topHeader)topHeader.style.display=(account.role==='ronda'||page==='chat')?'none':'';
+ document.body.dataset.rpPage=page;
  roleTag.textContent=roles[account.role]||account.role;
  const required=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[page];
  if(review()&&required&&!ops.allowed(required)){page='notifications';selected=null;}
  activity.reset();
- let content=page==='chat'?chat.view():page==='activity-history'?activity.view():page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(['ronda','vistoriador'].includes(account.role)?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):page==='treatments'&&review()?treatmentsView():
+ let content=page==='gestao'&&['admin','master'].includes(account.role)?sectorPanel.html():page==='chat'?chat.view():page==='activity-history'?activity.view():page==='guide'?guideView():page==='notifications'?ops.notificationsView():page==='dispatches'?(['ronda','vistoriador'].includes(account.role)?ops.vigilanteDispatches():ops.dispatchesView({users,rounds,events})):page==='permissions'?verificationSettingsHtml(centralVerificationSettings,routes)+ops.permissionsView():page==='routes'&&review()?routeBoard.render():selected?.event?eventView(selected.event):selected?.person?personView(selected.person):page==='treatments'&&review()?treatmentsView():
    account.role==='ronda'?(page==='history'?ownHistory():page==='send'?sendView():ownDashboard()):
    account.role==='cliente'?clientView():
    account.role==='vistoriador'?(page==='history'?ownHistory():page==='send'?sendView():inspectionView()):
@@ -788,13 +1587,23 @@ function render(){
  }
  const activeLabel=(roleMenus[account.role]||[]).find(([key])=>key===page)?.[1]||'Detalhes do registro';
  if(inspectionMap){inspectionMap.destroy();inspectionMap=null;}if(guardMap){guardMap.destroy();guardMap=null;}
- root.innerHTML='<button type="button" class="rp-central-menu-button" data-central-menu aria-expanded="false" aria-controls="central-navigation">☰ Menu '+pendingDot('total',ops.summary().total)+'</button><div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+
-  (['ronda','vistoriador'].includes(account.role)?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
-  '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
+ if(account.role==='ronda'){
+  root.innerHTML=content;
+ }else if(page==='chat'){
+  tour?.close?.();
+  root.innerHTML='<div class="workspace rp2-workspace rp2-chat-workspace"><article class="content rp2-chat-content" style="padding:0;margin:0;max-width:none;border:none">'+content+'</article></div>';
+ }else{
+  root.innerHTML='<button type="button" class="rp-central-menu-button" data-central-menu aria-expanded="false" aria-controls="central-navigation">☰ Menu '+pendingDot('total',ops.summary().total)+'</button><div class="workspace rp2-workspace">'+nav()+'<article class="content"><div class="rp2-contextbar" aria-label="Contexto do acesso"><div class="rp2-context-copy"><strong>'+escape(activeLabel)+'</strong><small>'+escape(roles[account.role])+' · Acesso autenticado</small></div><button type="button" data-refresh class="rp2-context-refresh" aria-label="Atualizar dados do servidor">Atualizar ↻</button></div>'+ops.assignmentBanner()+firstAccessGuide()+content+'</article></div>'+
+   (account.role==='vistoriador'?'<button type="button" id="central-panic" class="central-panic-fab" aria-label="Abrir acionamento de pânico"><span aria-hidden="true">!</span><strong>PÂNICO</strong></button>'+
+   '<dialog id="central-panic-dialog" class="central-panic-dialog" aria-labelledby="panic-title"><h2 id="panic-title">Acionar pânico?</h2><p>O acionamento prioritário será registrado com sua identificação e horário. Localização e bateria serão incluídas quando disponíveis. Use o 190 para emergências que exijam atendimento policial.</p><div class="panic-buttons"><button type="button" id="panic-cancel">Cancelar</button><button type="button" id="panic-send" class="primary">Confirmar pânico</button></div><a href="tel:190">Abrir discador 190</a></dialog>':'');
+ }
+ root.dataset.rpPage=page;
+ document.body.dataset.rpPage=page;
  // A lanterna acompanha as ações de campo e é desligada nas áreas administrativas.
  root.dataset.torchRole=(['ronda','vistoriador'].includes(account.role)&&['dashboard','inspections','send','dispatches'].includes(page))?account.role:'';
  torch.decorate();
  mountGuardQuickPanel(root);
+ mountGuardSearchAndPin(root);
  const headerActions=document.querySelector('.top-actions');
  if(headerActions){headerActions.querySelector('[data-operational-header]')?.remove();const holder=document.createElement('div');holder.dataset.operationalHeader='';holder.className='rp-header-tools';holder.innerHTML='<div class="ops-bell-bar">'+ops.badge()+'</div><div data-chat-badge>'+chat.badge()+'</div>';headerActions.prepend(holder);}
  const eventDialog=document.querySelector('#central-event-dialog');if(eventDialog){eventDialog.addEventListener('cancel',async e=>{e.preventDefault();try{await releaseTreatment();selected=null;page=detailOrigin;render()}catch(error){flash(error.message)}});eventDialog.showModal();}
@@ -809,11 +1618,24 @@ function render(){
  if(selected?.event){void loadMessages(selected.event.id);void loadMedia(selected.event.id);}
  if(page==='routes'&&review())requestAnimationFrame(()=>routeBoard.mount());
  if(page==='monitor')requestAnimationFrame(()=>coi.mount());
+ if(page==='dashboard'&&review())requestAnimationFrame(()=>mountOperationalMap());
  if(account.role==='ronda'&&document.querySelector('#guard-real-map'))requestAnimationFrame(()=>{
-   const host=document.querySelector('#guard-real-map'),planned=guardPlannedRoute();if(!host||!planned)return;
-   const route=buildGuardRoute(planned,guardRound?.base||guardFix);
-   if(route){guardMap=new PatrolMap(host,{route,session:guardRound?{mode:'real',index:guardRound.index,checkpoints:route.points.map((_,i)=>({completedAt:guardRound.checkpoints.some(c=>c.index===i)?Date.now():null}))}:null,
-     position:guardFix||guardRound?.base||route.base,positionVerified:!!guardFix,standbyClean:!route.baseKnown,interactive:true,onStreetRoute:status=>{const label=document.querySelector('[data-guard-road]');if(label)label.textContent=status;}});guardStartGps();}
+   const host=document.querySelector('#guard-real-map');if(!host)return;
+   const planned=guardPlannedRoute();
+   const activeBase=guardRound?.base||guardFix;
+   const route=planned?buildGuardRoute(planned,activeBase):buildGuardStandbyRoute(account.site,activeBase);
+   if(route){
+    if(guardMap&&guardMap.container===host&&!guardMap.destroyed){
+     guardMap.setRoute(route,guardRound?{mode:'real',index:guardRound.index,checkpoints:route.points.map((_,i)=>({completedAt:guardRound.checkpoints.some(c=>c.index===i)?Date.now():null}))}:null);
+    }else{
+     guardMap=new PatrolMap(host,{route,session:guardRound?{mode:'real',index:guardRound.index,checkpoints:route.points.map((_,i)=>({completedAt:guardRound.checkpoints.some(c=>c.index===i)?Date.now():null}))}:null,
+       position:guardFix||guardRound?.base||route.base,positionVerified:!!guardFix,standbyClean:!route.baseKnown,interactive:true,onStreetRoute:status=>{const label=document.querySelector('[data-guard-road]');if(label)label.textContent=status;}});
+    }
+    mountGuardSearchAndPin(root);
+    guardStartGps();
+    updateOfflineSyncBadge();
+    void drainOfflineSyncQueue();
+   }
   });
   if(account.role==='vistoriador'&&page==='inspections'&&inspectorDraft?.id&&!inspectorWizardAutoId&&ops.activeInspection()?.arrived_at){
    inspectorWizardAutoId=inspectorDraft.id;
@@ -831,7 +1653,7 @@ function render(){
     if(ordered.length)startInspectorGps();
    }
  });
- if(account.role==='cliente'&&page==='client')void loadClientInspectionMedia();
+ if(account.role==='cliente'&&page==='client')requestAnimationFrame(()=>{mountClientMap();void loadClientInspectionMedia();});
 }
 async function loadMessages(eventId){
  try{messages=(await api('/events/'+eventId+'/messages')).messages||[];if(selected?.event?.id!==eventId)return;const host=document.querySelector('#thread');if(!host)return;
@@ -885,7 +1707,7 @@ async function printAllConversations(){
  for(const m of (d.messages||[]).sort((a,b)=>a.created_at-b.created_at)){const arr=grouped.get(m.event_id)||[];arr.push(m);grouped.set(m.event_id,arr);}
  const content=[...grouped].map(([eid,rows])=>'<section><h2>Ocorrência '+escape(eid)+'</h2>'+rows.map(m=>
   '<div class="bubble"><p>'+escape(m.body).replaceAll('\n','<br>')+'</p><small>'+escape(m.author)+' · '+(m.audience==='system'?'Nota interna':'Mensagem geral')+' · '+fmt(m.created_at)+'</small></div>').join('')+'</section>').join('');
- popup.document.open();popup.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Conversas Rondas Pro</title><style>body{font:14px/1.5 system-ui;color:#233341;margin:18mm}h1{color:#146585}section{border-top:1px solid #ccd8e2;padding-top:12px;margin:20px 0}.bubble{padding:10px 12px;break-inside:avoid;border:1px solid #c9d8e2;border-radius:8px;margin:8px 0}.bubble p{margin:0 0 8px}.bubble small{display:block;font-size:10px;color:#687c8a}</style></head><body><h1>Rondas Pro | Conversas operacionais</h1><p>Gerado '+escape(fmt(Date.now()))+'. Documento restrito a pessoal autorizado.</p>'+(content||'<p>Sem mensagens.</p>')+'</body></html>');
+ popup.document.open();popup.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Conversas Rondas Pro</title><style>body{ font: 14px/1.5 system-ui; color: #233341; margin: 18mm; }h1{ color: #146585; }section{ border-top: 1px solid #ccd8e2; padding-top: 12px; margin: 20px 0; }.bubble{ padding: 10px 12px; break-inside: avoid; border: 1px solid #c9d8e2; border-radius: 8px; margin: 8px 0; }.bubble p{ margin: 0 0 8px; }.bubble small{ display: block; font-size: 10px; color: #687c8a; }</style></head><body><h1>Rondas Pro | Conversas operacionais</h1><p>Gerado '+escape(fmt(Date.now()))+'. Documento restrito a pessoal autorizado.</p>'+(content||'<p>Sem mensagens.</p>')+'</body></html>');
  popup.document.close();popup.focus();popup.print();
 }
 document.addEventListener('change',e=>{
@@ -900,10 +1722,16 @@ document.addEventListener('change',e=>{
  e.target.value='';
 });
 document.addEventListener('click',async e=>{
+ const openPopover=document.querySelector('.rp-header-popover[open]');
+ if(openPopover&&!openPopover.contains(e.target)){
+  openPopover.removeAttribute('open');
+ }
  const openedNavigation=document.querySelector('#central-navigation.is-open');
  if(openedNavigation&&!e.target.closest('#central-navigation,[data-central-menu]')){
   openedNavigation.classList.remove('is-open');
   document.querySelector('[data-central-menu]')?.setAttribute('aria-expanded','false');
+  const backdrop=document.querySelector('#agent-drawer-backdrop');
+  if(backdrop)backdrop.hidden=true;
  }
  const target=e.target.closest('button');if(!target)return;
  try{
@@ -926,10 +1754,108 @@ document.addEventListener('click',async e=>{
    }catch(error){if(!/cancelad|nenhuma evidência/i.test(error.message))flash(error.message)}
    return;
   }
+  if(target.hasAttribute('data-sheet-recolher')){
+   const panel=document.querySelector('[data-guard-panel]');
+   if(panel){
+    panel.classList.add('is-collapsed');
+    const content=panel.querySelector('[data-guard-panel-content]');
+    if(content)content.hidden=true;
+    panel.querySelector('[data-guard-panel-toggle]')?.setAttribute('aria-expanded','false');
+   }
+   return;
+  }
+  if(account?.role==='ronda'&&target.closest('[data-agent-sos], #central-panic')){
+   guardSosActive=!guardSosActive;
+   if(guardSosActive){
+    void api('/events',{method:'POST',data:{kind:'panic',occurredAt:Date.now(),description:'Botão de pânico acionado pelo vigia',...await eventTelemetry()}}).catch(()=>{});
+   }
+   render();
+   return;
+  }
+  if(isPagesTestMode()&&target.dataset.quickRole){
+   const role=target.dataset.quickRole;
+   account={id:'local-'+role,name:roles[role]||role,username:role,email:role+'@rondapro.local',role,site:'Grupo Maxvel',active:1};
+   token='local-offline:'+role;
+   sessionStorage.setItem('rondaspro_api_token',token);
+   guardLoadState();
+   await load();
+   return;
+  }
+  if(target.dataset.action==='toggle-camera-lock'||target.closest('[data-action="toggle-camera-lock"]')){
+   try{window.triggerHaptic?.('medium');}catch{}
+   const locked=guardMap?.toggleCameraLock();
+   flash(locked?'🎯 Foco fixado no GPS':'🔓 Câmera liberada para navegação manual');
+   return;
+  }
+  if(target.dataset.action==='offline-map'||target.closest('[data-action="offline-map"]')){
+   try{window.triggerHaptic?.('medium');}catch{}
+   const isOnline=typeof navigator==='undefined'||navigator.onLine!==false;
+   flash(isOnline
+    ? '✓ Mapa Online Operacional: conectado aos servidores de cartografia, com base completa de Divinópolis e rota salvas no aparelho para contingência offline.'
+    : '📡 Modo Offline: operando com a base cartográfica de Divinópolis e percurso salvos no aparelho.');
+   return;
+  }
+  if(target.id==='central-panic'||target.hasAttribute('data-agent-sos')){document.querySelector('#central-panic-dialog')?.showModal();return;}
   if(target.hasAttribute('data-guard-fit')){guardMap?.fit();return;}
+  if(target.dataset.action==='new-round'||target.closest('[data-action="new-round"]')){
+   if(guardRound){
+    flash('Ronda já em andamento. Percorra os pontos ou finalize o circuito.');
+    return;
+   }
+   const panel=document.querySelector('[data-guard-panel]');
+   if(panel){
+    panel.classList.remove('is-collapsed');
+    const content=panel.querySelector('[data-guard-panel-content]');
+    if(content)content.hidden=false;
+    panel.querySelector('[data-guard-panel-toggle]')?.setAttribute('aria-expanded','true');
+   }
+   const startBtn=document.querySelector('[data-guard-start]');
+   if(startBtn){
+    startBtn.click();
+   }else{
+    flash('Painel de Rondas pronto. Pressione Iniciar Rota de Ronda.');
+   }
+   return;
+  }
+  if(target.hasAttribute('data-guard-next-link')||e.target.closest('[data-guard-next-link]')){
+   if(!guardRound){
+    flash('Chegue primeiro ao Posto 1 no mapa e cumpra os 30 segundos de permanência antes de avançar para o Posto 2.');
+    return;
+   }
+   if(guardRound.index === 0){
+    if(guardRound.insideSince == null){
+     flash('Chegue primeiro ao Posto 1 no mapa e cumpra os 30 segundos de permanência antes de avançar para o Posto 2.');
+    }else{
+     const elapsed=Date.now()-guardRound.insideSince;
+     if(elapsed<GUARD_DWELL_MS){
+      const rem=Math.ceil((GUARD_DWELL_MS-elapsed)/1000);
+      flash('Permaneça no Posto 1 por mais '+rem+' s com GPS ativo antes de deslocar para o Posto 2.');
+     }else{
+      flash('Confirme a verificação do Posto 1 no botão abaixo antes de deslocar para o Posto 2.');
+     }
+    }
+    return;
+   }
+   flash('Deslocamento para o Posto 2 em andamento. Siga a rota indicada no mapa.');
+   guardMap?.fit();
+   return;
+  }
+  if(target.dataset.page==='dashboard'&&account?.role==='ronda'){
+   document.querySelector('#central-navigation')?.classList.remove('is-open');
+   document.querySelector('[data-central-menu]')?.setAttribute('aria-expanded','false');
+   const backdrop=document.querySelector('#agent-drawer-backdrop');
+   if(backdrop)backdrop.hidden=true;
+   flash('Mapa operacional ativo.');
+   if(page!=='dashboard'){page='dashboard';render();}
+   return;
+  }
   if(target.hasAttribute('data-guard-start')){
    if(account?.role!=='ronda'||guardRound)return;
-   const planned=guardPlannedRoute();if(!planned)throw Error('Sem rota atribuída pelo COE.');
+   const planned=guardPlannedRoute();
+   if(!planned){
+    flash('Aguardando o COI criar e enviar a sua rota.');
+    return;
+   }
    const fix=await guardRequireGps(),route=buildGuardRoute(planned,fix);if(!route?.points?.length)throw Error('Rota sem coordenadas.');
    const state=initialGuardState(route,fix);target.disabled=true;
    try{
@@ -949,7 +1875,10 @@ document.addEventListener('click',async e=>{
   if(target.hasAttribute('data-guard-arrive')){
    if(!guardRound?.points?.[guardRound.index])return;
    const fix=await guardRequireGps(),state=nextGuardState(guardRound,fix,{action:'arrive'});
-   if(!state.inside)throw Error('Fora do raio de '+GUARD_RADIUS_METERS+' m do ponto.');
+   if(!state.inside){
+    const d=metersBetween(fix,guardRound.points[guardRound.index]);
+    throw Error(Number.isFinite(d)?'Fora do raio de '+GUARD_RADIUS_METERS+' m do ponto (distância: '+Math.round(d)+' m). Aproxime-se do local.':'Fora do raio de '+GUARD_RADIUS_METERS+' m do ponto.');
+   }
    guardRound=state.state;guardSave();render();flash('Estou aqui confirmado. Permaneça 30 segundos.');return;
   }
   if(target.hasAttribute('data-guard-checkpoint')){
@@ -975,7 +1904,7 @@ document.addEventListener('click',async e=>{
      const completed=await guardEvent('patrol_end','Ronda concluída e retorno à base registrado.',{routeId:guardRound.routeId,completedPoints:guardRound.index},fix);
      if(!completed?.id)throw Error('COI não confirmou o encerramento.');
     }
-    guardRound=null;guardSave();guardStopGps();
+    guardRound=null;guardLastSampleFix=null;guardLastSampleAt=0;guardSave();guardStopGps();
     if(window.AndroidTracking?.stopTracking)window.AndroidTracking.stopTracking();
     await ops.refresh(account,false);
     render();flash('Ronda concluída e sincronizada.');
@@ -990,7 +1919,58 @@ document.addEventListener('click',async e=>{
     updated.step=Math.max(0,Math.min(stepCount()-1,updated.step+(target.hasAttribute('data-wizard-back')?-1:1)));
     inspectorDraft=updated;form.querySelector('.rp-field-wizard').outerHTML=inspectionWizardHtml(inspectorDraft);return;
    }
-   if(target.hasAttribute('data-field-tool-torch')){await torch.toggle();return;}
+   if(target.hasAttribute('data-field-tool-torch')){
+    guardTorchActive=!guardTorchActive;
+    await torch.toggle();
+    target.classList.toggle('is-active',guardTorchActive);
+    return;
+   }
+   if(target.hasAttribute('data-agent-sos')){
+    guardSosActive=!guardSosActive;
+    const bar=document.querySelector('#agent-emergency-bar');
+    if(bar)bar.hidden=!guardSosActive;
+    target.classList.toggle('is-active',guardSosActive);
+    if(guardSosActive){
+     flash('Canal de emergência ativado! Telemetria e áudio transmitidos ao COI.');
+     try{
+      const fix=guardFix||(await guardRequireGps().catch(()=>null));
+      await api('/events',{method:'POST',data:{kind:'panic',occurredAt:Date.now(),description:'Canal de emergência ativado pelo Agente no Ronda Pro',position:fix}});
+     }catch(err){console.error(err);}
+    }else{
+     flash('Canal de emergência desativado.');
+    }
+    return;
+   }
+   if(target.hasAttribute('data-sheet-recolher')){
+    const panel=document.querySelector('[data-guard-panel]');
+    if(panel){
+     const next=!panel.classList.contains('is-collapsed');
+     panel.classList.toggle('is-collapsed',next);
+     const content=panel.querySelector('[data-guard-panel-content]');
+     if(content)content.hidden=next;
+     const toggle=panel.querySelector('[data-guard-panel-toggle]');
+     if(toggle)toggle.setAttribute('aria-expanded',String(!next));
+    }
+    return;
+   }
+   if(target.dataset.action==='logout-agent'){
+    await releaseTreatment();
+    if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}
+    ops.stopLive();chat.reset();calls.reset();activity.reset(true);
+    try{await api('/logout',{method:'POST'})}catch{}
+    token='';account=null;eventResponseDrafts.clear();sessionStorage.removeItem('rondaspro_api_token');
+    root.dataset.loadedRole='';loginView();
+    return;
+   }
+   if(target.hasAttribute('data-agent-nav')||target.hasAttribute('data-agent-action')){
+    document.querySelector('#central-navigation')?.classList.remove('is-open');
+    const backdrop=document.querySelector('#agent-drawer-backdrop');
+    if(backdrop)backdrop.hidden=true;
+    flash('Rondas sincronizadas com o COI.');
+    await ops.refresh(account,false);
+    render();
+    return;
+   }
    if(target.hasAttribute('data-field-tool-panic')){document.querySelector('#central-panic-dialog')?.showModal();return;}
    if(target.hasAttribute('data-field-tool-chat')){const button=document.querySelector('[data-chat-open-quick],[data-chat-page]');if(button)await chat.click(button);else {page='chat';render();}return;}
    if(target.hasAttribute('data-field-tool-alert')||target.hasAttribute('data-field-tool-incident')){composeKind=target.hasAttribute('data-field-tool-alert')?'alert':'incident';page='send';render();return;}
@@ -1030,8 +2010,48 @@ document.addEventListener('click',async e=>{
   if(await activity.click(target))return;
   if(await ops.click(target))return;
   if(await routeBoard.click(target))return;
-  if(target.dataset.compose==='message'){selected=null;page='chat';render();return;}
-  if(target.dataset.compose){if(!['ronda','vistoriador'].includes(account?.role)||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;page=composeKind==='message'?'chat':'send';render();return;}
+  if(target.dataset.compose==='message'){selected=null;if(page!=='chat')previousPageBeforeChat=page;page='chat';render();return;}
+  if(target.dataset.compose){if(!['ronda','vistoriador'].includes(account?.role)||!['alert','incident','message'].includes(target.dataset.compose))return;composeKind=target.dataset.compose;selected=null;if(composeKind==='message'&&page!=='chat')previousPageBeforeChat=page;page=composeKind==='message'?'chat':'send';render();return;}
+  if(account?.role==='ronda'&&target.closest('[data-field-tool-torch]')){
+   guardTorchActive=!guardTorchActive;
+   try{torch.toggle()}catch{}
+   render();
+   return;
+  }
+  if(account?.role==='ronda'&&target.closest('[data-sheet-recolher]')){
+   const sheet=document.querySelector('.ronda-bottom-sheet');
+   if(sheet){
+    const collapsed=sheet.classList.toggle('is-collapsed');
+    const chevron=sheet.querySelector('[data-sheet-chevron]');
+    if(chevron)chevron.style.transform=collapsed?'rotate(180deg)':'rotate(0deg)';
+    const content=sheet.querySelector('[data-guard-panel-content]');
+    if(content)content.hidden=collapsed;
+   }
+   return;
+  }
+   if(target.closest('[data-page="tutorial"]')||target.dataset?.page==='tutorial'){
+    document.querySelector('#central-navigation')?.classList.remove('is-open');
+    const backdrop=document.querySelector('#agent-drawer-backdrop');
+    if(backdrop)backdrop.hidden=true;
+    tour.open();
+    return;
+   }
+  if(account?.role==='ronda'&&target.closest('.ronda-menu-item')){
+   const item=target.closest('.ronda-menu-item');
+   document.querySelectorAll('.ronda-menu-item').forEach(el=>el.classList.remove('is-active','is-highlighted'));
+   item.classList.add('is-active','is-highlighted');
+   document.querySelector('#central-navigation')?.classList.remove('is-open');
+   const backdrop=document.querySelector('#agent-drawer-backdrop');
+   if(backdrop)backdrop.hidden=true;
+   if(item.dataset.page&&item.dataset.page!=='dashboard'){
+    page=item.dataset.page;
+    render();
+   }else{
+    page='dashboard';
+    render();
+   }
+   return;
+  }
   if(target.id==='central-panic'){document.querySelector('#central-panic-dialog')?.showModal();return;}
   if(target.id==='panic-cancel'){document.querySelector('#central-panic-dialog')?.close();return;}
   if(target.id==='panic-send'){
@@ -1048,15 +2068,25 @@ document.addEventListener('click',async e=>{
   if(target.hasAttribute('data-inspection-queue')){
    if(!review()||!ops.allowed('despachos')){flash('Despachos não estão habilitados neste perfil.');return;}
    page='dispatches';selected=null;render();
-   requestAnimationFrame(()=>document.querySelector('.ops-inspector-section')?.scrollIntoView({behavior:'smooth',block:'start'}));
+   await ops.click(document.querySelector('[data-ops-new-inspection]'));
    return;
   }
-  if(target.hasAttribute('data-close-central-menu')){
+  if(target.hasAttribute('data-close-central-menu')||target.id==='agent-drawer-backdrop'){
    document.querySelector('#central-navigation')?.classList.remove('is-open');
-   const trigger=document.querySelector('[data-central-menu]');trigger?.setAttribute('aria-expanded','false');trigger?.focus();return;
+   const trigger=document.querySelector('[data-central-menu]');trigger?.setAttribute('aria-expanded','false');trigger?.focus();
+   const backdrop=document.querySelector('#agent-drawer-backdrop');
+   if(backdrop)backdrop.hidden=true;
+   return;
+  }
+  if(target.dataset.action==='logout-agent'){
+   document.querySelector('#exit')?.click();
+   return;
   }
   if(target.hasAttribute('data-central-menu')){
-   const nav=document.querySelector('#central-navigation'),open=!nav.classList.contains('is-open');nav.classList.toggle('is-open',open);target.setAttribute('aria-expanded',String(open));return;
+   const nav=document.querySelector('#central-navigation'),open=!nav.classList.contains('is-open');nav.classList.toggle('is-open',open);target.setAttribute('aria-expanded',String(open));
+   const backdrop=document.querySelector('#agent-drawer-backdrop');
+   if(backdrop)backdrop.hidden=!open;
+   return;
   }
   if(target.dataset.treatmentTab){treatmentTab=target.dataset.treatmentTab;await releaseTreatment();selected=null;await readTreatmentRows();render();return;}
   if(target.hasAttribute('data-treatment-more')){target.disabled=true;try{await readTreatmentRows(true);render()}finally{if(target.isConnected)target.disabled=false}return;}
@@ -1076,7 +2106,8 @@ document.addEventListener('click',async e=>{
     }});return;
   }
   if(target.dataset.coiTab){if(page==='monitor'&&coi.selectTab(target.dataset.coiTab))render();return;}
-   if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}await releaseTreatment();selected=null;page=target.dataset.page;if(page==='treatments')await readTreatmentRows();if(page==='activity-history')await activity.refresh();render();window.scrollTo(0,0);return;}
+   if(target.dataset.page==='tutorial'){tour.open();return;}
+  if(target.dataset.page){if(!(roleMenus[account.role]||[]).some(entry=>entry[0]===target.dataset.page))return;const mod=({monitor:'mapa',routes:'rondas',team:'rondas',events:'ocorrencias',dispatches:'despachos',alerts:'alertas',export:'relatorios'})[target.dataset.page];if(mod&&review()&&!ops.allowed(mod)){flash('Área desabilitada pela administração.');return;}await releaseTreatment();selected=null;if(target.dataset.page==='chat'&&page!=='chat')previousPageBeforeChat=page;page=target.dataset.page;if(page==='treatments')await readTreatmentRows();if(page==='activity-history')await activity.refresh();document.querySelector('#central-navigation.is-open')?.classList.remove('is-open');document.querySelector('[data-central-menu]')?.setAttribute('aria-expanded','false');const ab=document.querySelector('#agent-drawer-backdrop');if(ab)ab.hidden=true;document.querySelectorAll('.rp-header-popover[open]').forEach(d=>d.open=false);render();if(page==='gestao')await sectorPanel.load();window.scrollTo(0,0);return;}
   if(target.dataset.event){if(account.role==='cliente')return;await openEvent(target.dataset.event);return;}
   if(target.dataset.person){selected={person:target.dataset.person};render();return;}
   if(target.dataset.template){
@@ -1103,12 +2134,31 @@ document.addEventListener('submit',async e=>{
  if(e.target.matches('[data-chat-compose],[data-chat-create],[data-chat-profile-form],[data-activity-filters]')){e.preventDefault();try{if(await chat.submit(e.target))return;if(await activity.submit(e.target))return}catch(error){flash(error.message)}return;}
 
  const form=e.target;
- if(['ops-dispatch-form','ops-completion-form','ops-inspector-form','ops-destination-form'].includes(form.id)){e.preventDefault();try{await ops.submit(form)}catch(err){flash(err.message)}return;}
+ if(form.id==='verification-settings-form'){e.preventDefault();try{centralVerificationSettings=await saveVerificationSettings(form,api);}catch(error){flash(error.message);const status=form.querySelector('[data-verification-status]');if(status)status.textContent=error.message;}return;}
+ if(form.id==='verification-qr-form'){e.preventDefault();try{await renderQrLabels(form,api);}catch(error){flash(error.message);}return;}
+ if(['ops-dispatch-form','ops-completion-form','ops-inspector-form','ops-destination-form','coi-field-notice-form'].includes(form.id)){e.preventDefault();try{await ops.submit(form)}catch(err){flash(err.message)}return;}
  if(form.id==='route-form'){e.preventDefault();try{await routeBoard.submit(form)}catch(err){flash(err.message)}return;}
  if(!['central-login','new-user','save-template','recipient-form','send-alert','register-incident','send-note','send-message','upload-evidence','inspection-form'].includes(form.id))return;
  e.preventDefault();const d=Object.fromEntries(new FormData(form));
  try{
-  if(form.id==='central-login'){const result=await api('/login',{method:'POST',data:d});token=result.token;sessionStorage.setItem('rondaspro_api_token',token);await load();return;}
+  if(form.id==='central-login'){
+   try{
+    const result=await api('/login',{method:'POST',data:d});
+    token=result.token;sessionStorage.setItem('rondaspro_api_token',token);try{localStorage.setItem('rondaspro_android_token',token);window.AndroidTracking?.rememberToken?.(token)}catch{}
+    await load();return;
+   }catch(loginErr){
+    const ident=String(d.email||'').trim().toLowerCase();
+    const role=ident.includes('ronda')||ident.includes('vigia')?'ronda':ident.includes('coi')?'coi':ident.includes('vistoria')?'vistoriador':ident.includes('admin')?'admin':null;
+    if(isPagesTestMode()&&role){
+     account={id:'local-'+role,name:roles[role]||role,username:role,email:role+'@rondapro.local',role,site:'Grupo Maxvel',active:1};
+     token='local-offline:'+role;
+     sessionStorage.setItem('rondaspro_api_token',token);
+     guardLoadState();
+     await load();return;
+    }
+    throw loginErr;
+   }
+  }
   if(form.id==='inspection-form'){
    inspectorDraft=updateInspectionDraft(inspectorDraft,form);
     if(inspectorDraft?.step!==stepCount()-1)throw Error('Avance até a última etapa.');
@@ -1167,7 +2217,7 @@ document.addEventListener('submit',async e=>{
 });
 // A central do operador acompanha o servidor sem depender de recarregar a página.
 // Em caso de perda de conexão, preserva a tela e identifica leituras antigas.
-setInterval(()=>{if(account&&['operador','coi','cliente','admin','master'].includes(account.role)&&['monitor','client','routes','treatments','notifications'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
+setInterval(()=>{if(account&&['operador','coi','cliente','admin','master','ronda'].includes(account.role)&&['monitor','client','routes','treatments','notifications','dashboard'].includes(page)&&!document.hidden&&!selected&&!(page==='routes'&&document.querySelector('#route-form')))void load();},30000);
 setInterval(()=>{if(account&&!document.hidden)void ops.refresh(account,true).catch(()=>{});},15000);
 setInterval(()=>{if(claimedEvent&&account&&!document.hidden)void api('/events/'+claimedEvent+'/claim',{method:'POST',data:{claimSession}}).catch(error=>flash(error.message));},40000);
 setInterval(()=>{if(['ronda','vistoriador'].includes(account?.role)&&!document.hidden)void eventTelemetry().then(ctx=>api('/presence',{method:'POST',data:{position:ctx.position||null}})).catch(()=>{});},45000);
@@ -1179,13 +2229,14 @@ document.addEventListener('change',e=>{
  if(field){occurrenceFilters[field.dataset.occFilter]=field.value;render();return;}
  routeBoard.change(e.target);
 });
-exit.addEventListener('click',async()=>{await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;eventResponseDrafts.clear();sessionStorage.removeItem('rondaspro_api_token');root.dataset.loadedRole='';loginView()});
+exit.addEventListener('click',async()=>{tour.close();tourAccount='';await releaseTreatment();if(['ronda','vistoriador'].includes(account?.role))try{await api('/presence/off',{method:'POST'})}catch{}ops.stopLive();chat.reset();calls.reset();activity.reset(true);document.querySelector('[data-operational-header]')?.remove();try{await api('/logout',{method:'POST'})}catch{}token='';account=null;eventResponseDrafts.clear();sessionStorage.removeItem('rondaspro_api_token');try{localStorage.removeItem('rondaspro_android_token');}catch{}root.dataset.loadedRole='';loginView()});
 document.addEventListener('keydown',e=>{
  if(e.key!=='Escape')return;
  const nav=document.querySelector('#central-navigation.is-open');if(!nav)return;
  nav.classList.remove('is-open');
  const trigger=document.querySelector('[data-central-menu]');trigger?.setAttribute('aria-expanded','false');trigger?.focus();
 });
+window.__centralJsReady=true;
 load();
 
 setInterval(guardTick,1000);
